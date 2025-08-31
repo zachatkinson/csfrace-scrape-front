@@ -1,4 +1,3 @@
-// @ts-check
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import tailwind from '@astrojs/tailwind';
@@ -20,9 +19,8 @@ export default defineConfig({
     port: 3000,
     host: true
   },
-  // Environment variables for backend API
-  env: {
-    API_BASE_URL: process.env.API_BASE_URL || 'http://localhost:8000',
-    WS_BASE_URL: process.env.WS_BASE_URL || 'ws://localhost:8000'
-  }
+  // Vite environment variables are handled automatically
+  // Backend API URLs should be defined in .env files as:
+  // VITE_API_BASE_URL=http://localhost:8000
+  // VITE_WS_BASE_URL=ws://localhost:8000
 });

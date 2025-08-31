@@ -1,24 +1,75 @@
-# build output
+# Build outputs
 dist/
-# generated types
-.astro/
+build/
+.netlify/
 
-# dependencies
+# Generated files
+.astro/
+*.tsbuildinfo
+
+# Dependencies
 node_modules/
 
-# logs
+# Package manager files (keep the one you use, ignore others)
+package-lock.json
+yarn.lock
+# pnpm-lock.yaml - Keep this committed for reproducible builds
+
+# Environment variables
+.env
+.env.local
+.env.production
+.env.staging
+.env.test
+.env.*.local
+
+# Logs
+logs/
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+lerna-debug.log*
 
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
 
-# environment variables
-.env
-.env.production
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+.nyc_output/
 
-# macOS-specific files
+# Temporary folders
+tmp/
+temp/
+
+# Cache directories
+.cache/
+.parcel-cache/
+.vite/
+
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-# jetbrains setting folder
+# Editor directories and files
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
 .idea/
+*.swp
+*.swo
+*~
+
+# Local development
+.local/
+.vercel/
