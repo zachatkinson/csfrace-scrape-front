@@ -1,0 +1,69 @@
+/**
+ * Global Styles
+ * Main entry point for all CSS including Tailwind and Liquid Glass
+ */
+
+/* Tailwind CSS Base Imports */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import our Liquid Glass system */
+@import './liquid-glass.css';
+
+/* Base styles for the application */
+@layer base {
+  html {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  
+  body {
+    @apply antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+    font-variation-settings: 'opsz' 32;
+  }
+  
+  /* SVG Base Styles - Ensure proper sizing */
+  svg {
+    display: inline-block;
+    flex-shrink: 0;
+    vertical-align: middle;
+  }
+  
+  /* Prevent SVGs from overflowing their containers */
+  svg:not([width]):not([height]) {
+    width: 1em;
+    height: 1em;
+  }
+}
+
+/* Component layer additions */
+@layer components {
+  /* Additional component styles can go here */
+}
+
+/* Utilities layer additions */
+@layer utilities {
+  /* Custom utility classes */
+  .text-shadow-sm {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+  
+  .text-shadow {
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .text-shadow-lg {
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+  }
+  
+  /* Ensure proper flex behavior */
+  .flex-center {
+    @apply flex items-center justify-center;
+  }
+  
+  /* Icon container fixes */
+  .icon-container {
+    @apply flex-shrink-0 flex items-center justify-center;
+  }
+}

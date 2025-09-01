@@ -1,0 +1,332 @@
+/**
+ * Liquid Glass CSS Framework
+ * Based on Apple's Official WWDC 2025 Liquid Glass Design System
+ * Implements authentic three-layer material system with lensing effects
+ */
+
+/* SVG Icon Fixes */
+svg {
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Ensure SVGs respect their width/height classes */
+svg.w-4 { width: 1rem !important; height: 1rem !important; }
+svg.w-5 { width: 1.25rem !important; height: 1.25rem !important; }
+svg.w-6 { width: 1.5rem !important; height: 1.5rem !important; }
+svg.w-8 { width: 2rem !important; height: 2rem !important; }
+svg.w-12 { width: 3rem !important; height: 3rem !important; }
+svg.w-16 { width: 4rem !important; height: 4rem !important; }
+
+/* CSS Custom Properties for Dynamic Theming */
+:root {
+  /* Official Apple Liquid Glass Three-Layer System */
+  --glass-highlight: rgba(255, 255, 255, 0.4);
+  --glass-shadow: rgba(31, 38, 135, 0.37);
+  --glass-illumination: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  
+  /* Environmental Adaptation */
+  --glass-blur: 20px;
+  --glass-saturation: 180%;
+  --glass-radius: 12px;
+  
+  /* Lensing Physics */
+  --lens-perspective: 1000px;
+  --lens-rotation: 1deg;
+  --refraction-strength: 0.5;
+  
+  /* Animation Timings */
+  --glass-transition: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --glass-bounce: 500ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Dark Mode Environmental Adaptation */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --glass-illumination: rgba(0, 0, 0, 0.2);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-highlight: rgba(255, 255, 255, 0.2);
+  }
+}
+
+/* Accessibility: Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --glass-transition: none;
+    --glass-bounce: none;
+    --lens-rotation: 0deg;
+  }
+}
+
+/* Accessibility: High Contrast */
+@media (prefers-contrast: high) {
+  :root {
+    --glass-illumination: rgba(255, 255, 255, 0.9);
+    --glass-border: rgba(0, 0, 0, 0.5);
+    --glass-blur: 5px;
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --glass-illumination: rgba(0, 0, 0, 0.8);
+      --glass-border: rgba(255, 255, 255, 0.5);
+    }
+  }
+}
+
+/* Core Liquid Glass Material System */
+
+/* Base Glass Material (Three-Layer Implementation) */
+.liquid-glass {
+  /* Illumination Layer - Base translucent background */
+  background: var(--glass-illumination);
+  
+  /* Environmental Adaptation - Backdrop blur and saturation */
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  
+  /* Shadow Layer - Depth and elevation */
+  box-shadow: 0 8px 32px var(--glass-shadow);
+  
+  /* Highlight Layer - Inner light reflection */
+  border: 1px solid var(--glass-border);
+  
+  /* Physical Properties */
+  border-radius: var(--glass-radius);
+  transition: all var(--glass-transition);
+  
+  /* Ensure proper stacking context */
+  position: relative;
+  z-index: 1;
+}
+
+/* Add inner highlight layer */
+.liquid-glass::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 1px 0 var(--glass-highlight);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Interactive Glass States */
+.liquid-glass-interactive {
+  cursor: pointer;
+  user-select: none;
+  
+  transition: all var(--glass-transition);
+}
+
+.liquid-glass-interactive:hover {
+  /* Enhanced depth on hover */
+  box-shadow: 
+    0 12px 40px rgba(31, 38, 135, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  
+  /* Subtle lift effect */
+  transform: translateY(-1px);
+}
+
+.liquid-glass-interactive:active {
+  /* Compressed state on press */
+  box-shadow: 
+    0 4px 16px rgba(31, 38, 135, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  
+  transform: translateY(0);
+}
+
+.liquid-glass-interactive:focus-visible {
+  outline: 2px solid rgba(59, 130, 246, 0.8);
+  outline-offset: 2px;
+}
+
+/* Content-Adaptive Glass (Apple's Deference Principle) */
+.liquid-glass-adaptive {
+  background: color-mix(in srgb, transparent 90%, currentColor 10%);
+  border-color: color-mix(in srgb, transparent 80%, currentColor 20%);
+}
+
+/* Lensing Effects (Physical Accuracy) */
+.liquid-glass-lens {
+  transform: perspective(var(--lens-perspective)) rotateX(var(--lens-rotation));
+  transform-style: preserve-3d;
+}
+
+/* Background Refraction Effect */
+.liquid-glass-refraction {
+  position: relative;
+  overflow: hidden;
+}
+
+.liquid-glass-refraction::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: inherit;
+  filter: blur(1px) contrast(1.1);
+  z-index: -1;
+  border-radius: inherit;
+}
+
+/* Glass Component Variants */
+
+/* Card Glass */
+.glass-card {
+  @apply liquid-glass p-6;
+  
+  /* Enhanced shadow for card elevation */
+  box-shadow: 
+    0 8px 32px var(--glass-shadow),
+    0 2px 8px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 var(--glass-highlight);
+}
+
+/* Button Glass */
+.glass-button {
+  @apply liquid-glass liquid-glass-interactive px-6 py-3;
+  
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  
+  /* Button-specific hover enhancement */
+  transition: all var(--glass-transition);
+}
+
+.glass-button:hover {
+  background: color-mix(in srgb, var(--glass-illumination) 80%, currentColor 20%);
+}
+
+.glass-button:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+/* Input Glass */
+.glass-input {
+  @apply liquid-glass px-4 py-3;
+  
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  
+  transition: all var(--glass-transition);
+}
+
+.glass-input:focus {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 
+    var(--glass-shadow),
+    0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.glass-input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Modal/Overlay Glass */
+.glass-modal {
+  @apply liquid-glass;
+  
+  /* Enhanced backdrop for modals */
+  backdrop-filter: blur(40px) saturate(120%);
+  -webkit-backdrop-filter: blur(40px) saturate(120%);
+  
+  /* Stronger shadow for overlay prominence */
+  box-shadow: 
+    0 25px 50px rgba(0, 0, 0, 0.4),
+    0 0 0 1px var(--glass-border),
+    inset 0 1px 0 var(--glass-highlight);
+}
+
+/* Navigation Glass */
+.glass-nav {
+  @apply liquid-glass;
+  
+  /* Navigation-specific backdrop */
+  backdrop-filter: blur(30px) saturate(150%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  
+  /* Subtle bottom border for definition */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0;
+}
+
+/* Status Indicator Glass */
+.glass-status {
+  @apply liquid-glass px-3 py-1 text-sm;
+  
+  border-radius: 20px;
+  font-weight: 500;
+  
+  /* Status-specific glow effect */
+  box-shadow: 
+    var(--glass-shadow),
+    0 0 20px currentColor;
+}
+
+/* Loading State Glass */
+.glass-loading {
+  @apply liquid-glass;
+  
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-loading::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(255, 255, 255, 0.3), 
+    transparent
+  );
+  animation: glass-shimmer 2s infinite;
+}
+
+@keyframes glass-shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* Responsive Glass Adjustments */
+@media (max-width: 768px) {
+  .liquid-glass {
+    /* Reduce blur on mobile for performance */
+    backdrop-filter: blur(10px) saturate(150%);
+    -webkit-backdrop-filter: blur(10px) saturate(150%);
+  }
+  
+  .glass-card {
+    /* Smaller padding on mobile */
+    padding: 1rem;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .liquid-glass,
+  .glass-card,
+  .glass-button,
+  .glass-input,
+  .glass-modal,
+  .glass-nav {
+    background: white !important;
+    backdrop-filter: none !important;
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+  }
+}
