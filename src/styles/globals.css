@@ -60,7 +60,7 @@
   
   /* Animated gradient utility - proper Tailwind layer */
   .animated-gradient {
-    background-size: 300% 100%;
+    background-size: 600% 100%;
     animation: gradientShift 6s ease-in-out infinite;
   }
   

@@ -14,6 +14,7 @@ export interface Job {
   created_at: string;
   started_at?: string;
   completed_at?: string;
+  next_retry_at?: string;
   retry_count: number;
   max_retries: number;
   timeout_seconds: number;
@@ -23,9 +24,13 @@ export interface Job {
   error_message?: string;
   error_type?: string;
   success: boolean;
+  start_time?: number;
+  end_time?: number;
   duration_seconds?: number;
   content_size_bytes?: number;
   images_downloaded: number;
+  archive_path?: string;
+  archive_size_bytes?: number;
   batch_id?: number;
   converter_config?: Record<string, any>;
   processing_options?: Record<string, any>;
@@ -82,6 +87,7 @@ export interface Batch {
   failed_jobs: number;
   skipped_jobs: number;
   success_rate: number;
+  summary_data?: Record<string, any>;
   batch_config?: Record<string, any>;
 }
 
@@ -118,10 +124,54 @@ export interface HealthCheck {
   monitoring: Record<string, any>;
 }
 
+export interface MetricsResponse {
+  timestamp: string;
+  system_metrics: Record<string, any>;
+  application_metrics: Record<string, any>;
+  database_metrics: Record<string, any>;
+}
+
+export interface ContentResult {
+  id: number;
+  job_id: number;
+  title?: string;
+  meta_description?: string;
+  published_date?: string;
+  author?: string;
+  tags?: string[];
+  categories?: string[];
+  og_title?: string;
+  og_description?: string;
+  og_image?: string;
+  twitter_card?: string;
+  word_count?: number;
+  image_count?: number;
+  link_count?: number;
+  processing_time_seconds?: number;
+  created_at: string;
+  updated_at: string;
+  extra_metadata?: Record<string, any>;
+  conversion_stats?: Record<string, any>;
+}
+
+export interface JobLog {
+  id: number;
+  job_id: number;
+  level: string; // INFO, WARN, ERROR, DEBUG
+  message: string;
+  timestamp: string;
+  component?: string; // html_processor, image_downloader, etc.
+  operation?: string; // fetch, process, save, etc.
+  context_data?: Record<string, any>;
+  exception_type?: string;
+  exception_traceback?: string;
+}
+
 export interface APIError {
   detail: string;
   error_code?: string;
   timestamp: string;
+  validation_errors?: Record<string, string[]>;
 }
 
 class APIClient {
@@ -166,7 +216,18 @@ class APIClient {
             timestamp: new Date().toISOString(),
           };
         }
-        throw new Error(errorData.detail || 'Request failed');
+        
+        // Create enhanced error with validation details
+        const errorMessage = errorData.detail || 'Request failed';
+        const error = new Error(errorMessage);
+        
+        // Attach additional error information
+        (error as any).errorCode = errorData.error_code;
+        (error as any).timestamp = errorData.timestamp;
+        (error as any).validationErrors = errorData.validation_errors;
+        (error as any).statusCode = response.status;
+        
+        throw error;
       }
 
       // Handle 204 No Content responses
@@ -272,9 +333,70 @@ class APIClient {
     });
   }
 
-  // Health check
+  // Health check and monitoring
   async getHealth(): Promise<HealthCheck> {
     return this.request<HealthCheck>('/health');
+  }
+
+  async getMetrics(): Promise<MetricsResponse> {
+    return this.request<MetricsResponse>('/health/metrics');
+  }
+
+  async getLiveness(): Promise<{status: string}> {
+    return this.request<{status: string}>('/health/live');
+  }
+
+  async getReadiness(): Promise<{status: string}> {
+    return this.request<{status: string}>('/health/ready');
+  }
+
+  async getPrometheusMetrics(): Promise<string> {
+    const url = `${this.baseURL}/health/prometheus`;
+    const headers: HeadersInit = {};
+    
+    if (this.apiKey) {
+      headers['Authorization'] = `Bearer ${this.apiKey}`;
+    }
+    
+    const response = await fetch(url, { headers });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    return response.text();
+  }
+
+  // Content results (if backend implements these endpoints)
+  async getJobResults(jobId: number): Promise<ContentResult[]> {
+    return this.request<ContentResult[]>(`/jobs/${jobId}/results`);
+  }
+
+  async getJobResult(jobId: number, resultId: number): Promise<ContentResult> {
+    return this.request<ContentResult>(`/jobs/${jobId}/results/${resultId}`);
+  }
+
+  // Job logs (if backend implements these endpoints)
+  async getJobLogs(
+    jobId: number,
+    params?: {
+      level?: string;
+      component?: string;
+      limit?: number;
+      offset?: number;
+    }
+  ): Promise<JobLog[]> {
+    const searchParams = new URLSearchParams();
+    
+    if (params?.level) searchParams.append('level', params.level);
+    if (params?.component) searchParams.append('component', params.component);
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+    if (params?.offset) searchParams.append('offset', params.offset.toString());
+
+    const query = searchParams.toString();
+    const endpoint = `/jobs/${jobId}/logs${query ? `?${query}` : ''}`;
+    
+    return this.request<JobLog[]>(endpoint);
   }
 
   // Utility methods
@@ -398,4 +520,115 @@ export function getRelativeTime(dateString: string): string {
   if (hours > 0) return `${hours}h ago`;
   if (minutes > 0) return `${minutes}m ago`;
   return `${seconds}s ago`;
+}
+
+// Enhanced error handling utilities
+export function isAPIError(error: any): error is Error & {
+  errorCode?: string;
+  timestamp?: string;
+  validationErrors?: Record<string, string[]>;
+  statusCode?: number;
+} {
+  return error instanceof Error && 'statusCode' in error;
+}
+
+export function getValidationErrorMessage(error: any): string | null {
+  if (isAPIError(error) && error.validationErrors) {
+    const messages: string[] = [];
+    for (const [field, errors] of Object.entries(error.validationErrors)) {
+      messages.push(`${field}: ${errors.join(', ')}`);
+    }
+    return messages.join('; ');
+  }
+  return null;
+}
+
+// Content result utilities
+export function getContentSummary(result: ContentResult): string {
+  const parts: string[] = [];
+  
+  if (result.word_count) {
+    parts.push(`${result.word_count} words`);
+  }
+  
+  if (result.image_count) {
+    parts.push(`${result.image_count} images`);
+  }
+  
+  if (result.link_count) {
+    parts.push(`${result.link_count} links`);
+  }
+  
+  return parts.join(', ') || 'No content statistics';
+}
+
+// Job logs utilities
+export const JOB_LOG_LEVELS = {
+  DEBUG: 'DEBUG',
+  INFO: 'INFO',
+  WARN: 'WARN',
+  ERROR: 'ERROR',
+} as const;
+
+export const JOB_LOG_LEVEL_COLORS: Record<string, string> = {
+  DEBUG: '#6b7280', // gray-500
+  INFO: '#3b82f6',  // blue-500
+  WARN: '#f59e0b',  // amber-500
+  ERROR: '#ef4444', // red-500
+};
+
+export function formatLogLevel(level: string): string {
+  return JOB_LOG_LEVELS[level.toUpperCase() as keyof typeof JOB_LOG_LEVELS] || level;
+}
+
+// Health check utilities
+export function getHealthStatus(health: HealthCheck): {
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  issues: string[];
+} {
+  const issues: string[] = [];
+  
+  if (health.database?.status !== 'healthy') {
+    issues.push('Database connectivity issues');
+  }
+  
+  if (health.cache?.status === 'error') {
+    issues.push('Cache service unavailable');
+  }
+  
+  if (health.monitoring?.status !== 'healthy') {
+    issues.push('Monitoring service issues');
+  }
+  
+  let status: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
+  
+  if (health.status === 'unhealthy') {
+    status = 'unhealthy';
+  } else if (health.status === 'degraded' || issues.length > 0) {
+    status = 'degraded';
+  }
+  
+  return { status, issues };
+}
+
+// Advanced job utilities
+export function getJobEfficiency(job: Job): number {
+  if (!job.duration_seconds || !job.content_size_bytes) {
+    return 0;
+  }
+  
+  // Calculate bytes per second (efficiency metric)
+  return job.content_size_bytes / job.duration_seconds;
+}
+
+export function isJobRetryable(job: Job): boolean {
+  return job.status === 'failed' && job.retry_count < job.max_retries;
+}
+
+export function getJobNextRetryTime(job: Job): Date | null {
+  if (!job.next_retry_at) {
+    return null;
+  }
+  
+  return new Date(job.next_retry_at);
 }

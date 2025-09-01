@@ -1,5 +1,6 @@
 ---
 import MainLayout from '../components/layout/MainLayout.astro';
+import JobItem from '../components/JobItem.astro';
 ---
 
 <MainLayout title="CSFrace Scrape - WordPress to Shopify Converter">
@@ -118,215 +119,50 @@ import MainLayout from '../components/layout/MainLayout.astro';
         </div>
       </div>
       
-      <!-- Right Column: Real-time Processing -->
+      <!-- Right Column: Real-time Processing & Recent History -->
       <div class="glass-card p-6 lg:sticky lg:top-8 lg:flex lg:flex-col lg:h-[calc(100vh-8rem)]">
         <div class="text-center mb-8 lg:flex-shrink-0">
-          <h2 class="text-3xl font-bold text-white mb-4">Real-time Processing</h2>
+          <h2 class="text-4xl md:text-6xl font-bold text-white mb-4">Real-time <span class="bg-gradient-to-r from-blue-400 via-purple-500 via-blue-400 to-purple-500 bg-clip-text text-transparent animated-gradient">Processing</span> & Recent <span class="bg-gradient-to-r from-blue-400 via-purple-500 via-blue-400 to-purple-500 bg-clip-text text-transparent animated-gradient">History</span></h2>
           <p class="text-white/70">Monitor your conversion jobs with live updates</p>
         </div>
         
         <div class="lg:flex lg:flex-col lg:flex-1 lg:min-h-0">
           <!-- Job List Container with scrolling -->
-          <div class="lg:flex-1 lg:overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent pr-2 lg:min-h-0">
-          <!-- Job Item 1 -->
-          <div class="p-4 rounded-lg border-l-4 border-green-500 bg-white/5">
-            <div class="flex items-center space-x-3 mb-4">
-              <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-              <div>
-                <h4 class="text-white font-medium">Blog Post: "Getting Started with Shopify"</h4>
-                <p class="text-white/60 text-sm">wordpress.example.com/getting-started</p>
-              </div>
+          <div id="jobs-container" class="lg:flex-1 lg:overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent pr-2 lg:min-h-0">
+            <!-- Loading State -->
+            <div id="jobs-loading" class="p-6 text-center">
+              <div class="animate-spin rounded-full w-8 h-8 border-2 border-blue-400/30 border-t-blue-400 mx-auto mb-3"></div>
+              <p class="text-white/60 text-sm">Loading recent jobs...</p>
             </div>
-            <div class="flex items-center justify-between">
-              <div class="glass-status text-green-400 px-3 py-1 rounded-full">
-                <span class="text-xs font-medium">Completed</span>
+            
+            <!-- Jobs will be dynamically inserted here -->
+            <div id="jobs-list" class="space-y-4 hidden"></div>
+            
+            <!-- Empty State -->
+            <div id="jobs-empty" class="p-8 text-center hidden">
+              <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-yellow-500/10 flex items-center justify-center">
+                <svg class="w-8 h-8 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
               </div>
-              <div class="flex items-center space-x-3 ml-auto">
-                <a href="/jobs/job-123" class="glass-button px-3 py-1 text-xs text-white/90 hover:text-white flex items-center space-x-1 transition-all duration-200">
-                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  <span>View Job</span>
-                </a>
-                <button class="glass-button px-3 py-1 text-xs text-white/90 hover:text-white flex items-center space-x-1 transition-all duration-200">
-                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                  </svg>
-                  <span>Download ZIP</span>
-                </button>
-              </div>
+              <h3 class="text-yellow-400 font-medium mb-2">No conversion jobs yet</h3>
+              <p class="text-white/60 text-sm">Start your first WordPress to Shopify conversion using the form on the left!</p>
             </div>
-          </div>
-          
-          <!-- Job Item 2 -->
-          <div class="p-4 rounded-lg border-l-4 border-blue-500 bg-white/5">
-            <div class="flex items-center space-x-3 mb-4">
-              <div class="animate-spin rounded-full w-3 h-3 border-2 border-blue-400/30 border-t-blue-400"></div>
-              <div>
-                <h4 class="text-white font-medium">Product Page: "Premium Widget"</h4>
-                <p class="text-white/60 text-sm">wordpress.example.com/premium-widget</p>
+            
+            <!-- Error State -->
+            <div id="jobs-error" class="p-8 text-center hidden">
+              <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/10 flex items-center justify-center">
+                <svg class="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
               </div>
+              <h3 class="text-red-400 font-medium mb-2">Failed to load jobs</h3>
+              <p class="text-white/60 text-sm mb-4">Unable to connect to the conversion service. Please try again.</p>
+              <button id="retry-load-jobs" class="glass-button px-4 py-2 text-sm text-red-400/80 hover:text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-all duration-200 rounded-lg">
+                Retry
+              </button>
             </div>
-            <!-- Progress Bar -->
-            <div class="mb-4 ml-6">
-              <div class="w-full bg-white/10 rounded-full h-2 overflow-hidden">
-                <div class="bg-gradient-to-r from-blue-400 to-blue-600 h-2 rounded-full transition-all duration-1000" style="width: 65%"></div>
-              </div>
-              <p class="text-white/50 text-xs mt-1">Converting images and content...</p>
-            </div>
-            <div class="flex items-center justify-between">
-              <div class="glass-status text-blue-400 px-3 py-1 rounded-full">
-                <span class="text-xs font-medium">Processing</span>
-              </div>
-              <div class="flex items-center space-x-3 ml-auto">
-                <a href="/jobs/job-456" class="glass-button px-3 py-1 text-xs text-white/90 hover:text-white flex items-center space-x-1 transition-all duration-200">
-                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  <span>View Job</span>
-                </a>
-                <button disabled class="glass-button px-3 py-1 text-xs text-white/40 flex items-center space-x-1 cursor-not-allowed opacity-50">
-                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                  </svg>
-                  <span>Download ZIP</span>
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Job Item 3 -->
-          <div class="p-4 rounded-lg border-l-4 border-gray-500 bg-white/5">
-            <div class="flex items-center space-x-3 mb-4">
-              <div class="w-3 h-3 bg-gray-400 rounded-full"></div>
-              <div>
-                <h4 class="text-white font-medium">Category: "Electronics Collection"</h4>
-                <p class="text-white/60 text-sm">wordpress.example.com/electronics</p>
-              </div>
-            </div>
-            <div class="flex items-center justify-between">
-              <div class="glass-status text-gray-400 px-3 py-1 rounded-full">
-                <span class="text-xs font-medium">Queued</span>
-              </div>
-              <div class="flex items-center space-x-3 ml-auto">
-                <a href="/jobs/job-789" class="glass-button px-3 py-1 text-xs text-white/90 hover:text-white flex items-center space-x-1 transition-all duration-200">
-                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  <span>View Job</span>
-                </a>
-                <button disabled class="glass-button px-3 py-1 text-xs text-white/40 flex items-center space-x-1 cursor-not-allowed opacity-50">
-                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                  </svg>
-                  <span>Download ZIP</span>
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Job Item 4 - Failed -->
-          <div class="p-4 rounded-lg border-l-4 border-red-500 bg-white/5">
-            <div class="flex items-center space-x-3 mb-4">
-              <div class="w-3 h-3 bg-red-400 rounded-full"></div>
-              <div>
-                <h4 class="text-white font-medium">Landing Page: "Black Friday Sale"</h4>
-                <p class="text-white/60 text-sm">wordpress.example.com/black-friday-2024</p>
-              </div>
-            </div>
-            <!-- Error Message -->
-            <div class="mb-4 ml-6">
-              <div class="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-                <p class="text-red-400 text-xs font-medium mb-1">Conversion Failed</p>
-                <p class="text-red-300/80 text-xs">Unable to access content. The page may be password protected or no longer available.</p>
-              </div>
-            </div>
-            <div class="flex items-center justify-between">
-              <div class="glass-status text-red-400 px-3 py-1 rounded-full">
-                <span class="text-xs font-medium">Failed</span>
-              </div>
-              <div class="flex items-center space-x-3 ml-auto">
-                <a href="/jobs/job-101" class="glass-button px-3 py-1 text-xs text-white/90 hover:text-white flex items-center space-x-1 transition-all duration-200">
-                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  <span>View Job</span>
-                </a>
-                <button id="retry-job-101" class="glass-button px-3 py-1 text-xs text-red-400/80 hover:text-red-400 flex items-center space-x-1 transition-all duration-200">
-                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  <span>Retry Job</span>
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Job Item 5 - Completed -->
-          <div class="p-4 rounded-lg border-l-4 border-green-500 bg-white/5">
-            <div class="flex items-center space-x-3 mb-4">
-              <div class="w-3 h-3 bg-green-400 rounded-full"></div>
-              <div>
-                <h4 class="text-white font-medium">Product Guide: "WordPress Migration"</h4>
-                <p class="text-white/60 text-sm">wordpress.example.com/migration-guide</p>
-              </div>
-            </div>
-            <div class="flex items-center justify-between">
-              <div class="glass-status text-green-400 px-3 py-1 rounded-full">
-                <span class="text-xs font-medium">Completed</span>
-              </div>
-              <div class="flex items-center space-x-3 ml-auto">
-                <a href="/jobs/job-202" class="glass-button px-3 py-1 text-xs text-white/90 hover:text-white flex items-center space-x-1 transition-all duration-200">
-                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  <span>View Job</span>
-                </a>
-                <button class="glass-button px-3 py-1 text-xs text-white/90 hover:text-white flex items-center space-x-1 transition-all duration-200">
-                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                  </svg>
-                  <span>Download ZIP</span>
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Job Item 6 - Queued -->
-          <div class="p-4 rounded-lg border-l-4 border-gray-500 bg-white/5">
-            <div class="flex items-center space-x-3 mb-4">
-              <div class="w-3 h-3 bg-gray-400 rounded-full"></div>
-              <div>
-                <h4 class="text-white font-medium">Tutorial: "Advanced SEO Tips"</h4>
-                <p class="text-white/60 text-sm">wordpress.example.com/seo-tutorial</p>
-              </div>
-            </div>
-            <div class="flex items-center justify-between">
-              <div class="glass-status text-gray-400 px-3 py-1 rounded-full">
-                <span class="text-xs font-medium">Queued</span>
-              </div>
-              <div class="flex items-center space-x-3 ml-auto">
-                <a href="/jobs/job-303" class="glass-button px-3 py-1 text-xs text-white/90 hover:text-white flex items-center space-x-1 transition-all duration-200">
-                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  <span>View Job</span>
-                </a>
-                <button disabled class="glass-button px-3 py-1 text-xs text-white/40 flex items-center space-x-1 cursor-not-allowed opacity-50">
-                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                  </svg>
-                  <span>Download ZIP</span>
-                </button>
-              </div>
-            </div>
-          </div>
+            
           </div>
           
           <!-- View All Jobs Button -->
@@ -347,24 +183,291 @@ import MainLayout from '../components/layout/MainLayout.astro';
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     // Time-based greeting (defaulting to user's local timezone, can be changed in settings later)
-    const updateGreeting = () => {
-      const now = new Date();
-      const hour = now.getHours();
-      
-      let timeOfDay;
-      if (hour >= 5 && hour < 12) {
-        timeOfDay = 'this morning';
-      } else if (hour >= 12 && hour < 17) {
-        timeOfDay = 'this afternoon';  
-      } else if (hour >= 17 && hour < 21) {
-        timeOfDay = 'this evening';
-      } else {
-        timeOfDay = 'tonight';
+    // Timezone utilities
+    const getTimezoneFromSettings = () => {
+      try {
+        const settings = JSON.parse(localStorage.getItem('csfrace-settings') || '{}');
+        return settings.timezone || 'auto';
+      } catch {
+        return 'auto';
       }
+    };
+
+    const getUserTimezone = () => {
+      const settingsTimezone = getTimezoneFromSettings();
+      if (settingsTimezone === 'auto') {
+        return Intl.DateTimeFormat().resolvedOptions().timeZone;
+      }
+      return settingsTimezone;
+    };
+
+    const getTimeInTimezone = (timezone) => {
+      const now = new Date();
+      if (timezone === 'auto') {
+        return now;
+      }
+      
+      try {
+        // Create a new Date object in the specified timezone
+        const formatter = new Intl.DateTimeFormat('en-US', {
+          timeZone: timezone,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        });
+        
+        const parts = formatter.formatToParts(now);
+        const dateStr = `${parts.find(p => p.type === 'year').value}-${parts.find(p => p.type === 'month').value}-${parts.find(p => p.type === 'day').value}T${parts.find(p => p.type === 'hour').value}:${parts.find(p => p.type === 'minute').value}:${parts.find(p => p.type === 'second').value}`;
+        
+        return new Date(dateStr);
+      } catch (error) {
+        console.warn('Failed to get time in timezone:', timezone, error);
+        return now;
+      }
+    };
+
+    const getLocationFromTimezone = (timezone) => {
+      if (timezone === 'auto') {
+        timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      }
+      
+      const locations = {
+        'America/New_York': 'New York',
+        'America/Chicago': 'Chicago', 
+        'America/Denver': 'Denver',
+        'America/Los_Angeles': 'Los Angeles',
+        'America/Anchorage': 'Alaska',
+        'Pacific/Honolulu': 'Hawaii',
+        'Europe/London': 'London',
+        'Europe/Paris': 'Paris',
+        'Europe/Berlin': 'Berlin',
+        'Europe/Rome': 'Rome',
+        'Europe/Madrid': 'Madrid',
+        'Europe/Amsterdam': 'Amsterdam',
+        'Asia/Tokyo': 'Tokyo',
+        'Asia/Shanghai': 'Shanghai',
+        'Asia/Hong_Kong': 'Hong Kong',
+        'Asia/Singapore': 'Singapore',
+        'Asia/Dubai': 'Dubai',
+        'Asia/Kolkata': 'India',
+        'Australia/Sydney': 'Sydney',
+        'Australia/Melbourne': 'Melbourne',
+        'Australia/Perth': 'Perth',
+        'UTC': 'UTC',
+        'America/Sao_Paulo': 'São Paulo',
+        'Africa/Cairo': 'Cairo',
+        'Africa/Johannesburg': 'Johannesburg'
+      };
+      
+      return locations[timezone] || timezone.split('/')[1]?.replace('_', ' ') || 'your location';
+    };
+
+    const updateGreeting = () => {
+      const userTimezone = getUserTimezone();
+      const now = getTimeInTimezone(userTimezone);
+      const hour = now.getHours();
+      const location = getLocationFromTimezone(userTimezone);
+      
+      // Fun and friendly greeting arrays for different times of day
+      const greetings = {
+        earlyMorning: [ // 5-8 AM - 18 total (9 text + 9 emoji)
+          // Text-only messages
+          "What a beautiful morning for some WordPress conversion!",
+          "Starting the day strong with content transformation!",
+          "First light brings first conversions! What shall we build?",
+          "Morning motivation is high! Let's tackle some sites together!",
+          "The early hours are perfect for productivity! Ready to begin?",
+          "A new day means new possibilities for amazing conversions!",
+          "Morning clarity meets WordPress complexity! Let's solve it!",
+          "Beginning the day with purpose and conversion power!",
+          "Daybreak productivity session! What's first on our list?",
+          // Emoji-integrated messages
+          "🌅 and shine! Ready to convert some content?",
+          "Early 🐦 gets the worm! What are we scraping today?",
+          "Good morning, ☀️! Let's make some magic happen!",
+          "Morning, 🏆! Time to tackle those WordPress sites!",
+          "Hello there, early riser! What's on the 🗓️ agenda?",
+          "Wakey wakey! ⏰ for some WordPress wizardry!",
+          "Morning ⚡ activated! Let's convert something amazing!",
+          "🌄 of a new day! What sites shall we transform?",
+          "Fresh start, fresh conversions! Ready to 🎳?"
+        ],
+        lateMorning: [ // 8-12 PM - 18 total
+          // Text-only messages
+          "Mid-morning momentum building! What conversions await us?",
+          "The morning workflow is in full swing! Ready to dive in?",
+          "Peak morning hours for maximum conversion efficiency!",
+          "Late morning brilliance! Time for some serious WordPress work!",
+          "Morning caffeine meets conversion excellence! Let's go!",
+          "Pre-noon productivity burst! Which sites need our attention?",
+          "Morning routine complete, conversion mode activated!",
+          "Late morning focus session! Ready for transformation magic?",
+          "The morning sweet spot for WordPress wizardry begins now!",
+          // Emoji-integrated messages
+          "Good morning! Ready to turn WordPress into Shopify 🥇?",
+          "Morning! ☕ in hand? Let's get converting!",
+          "Hey there! Perfect ⏰ to start some content conversion!",
+          "Good morning! What WordPress 💎 shall we discover?",
+          "Morning 🎯 mode! Let's make some e-commerce magic happen!",
+          "🔧 ready? Time for some morning WordPress magic!",
+          "Morning productivity 📈! What are we converting today?",
+          "🎨 morning session! Let's transform some content!",
+          "Morning ⚡-up complete! Ready for conversion action?"
+        ],
+        midday: [ // 12-1 PM - 18 total
+          // Text-only messages
+          "Midday energy surge! Perfect time for WordPress transformation!",
+          "Noon approach means peak performance! Ready to convert?",
+          "The midday rush begins with serious conversion power!",
+          "High noon productivity! Which sites shall we tackle first?",
+          "Lunchtime planning meets conversion execution! Let's begin!",
+          "Midday clarity brings focused WordPress solutions!",
+          "Noon-time efficiency mode! Ready for rapid transformations?",
+          "The lunch hour advantage! Time for strategic conversions!",
+          "Midday momentum at its peak! What needs converting today?",
+          // Emoji-integrated messages
+          "Good afternoon! 🍕 break conversion session?",
+          "Hey! Perfect timing for a quick content 🔄!",
+          "Afternoon! Let's squeeze in some scraping before 🥪!",
+          "Good afternoon! Ready for some midday WordPress 🪄?",
+          "Hello! Time for a productive 🥗-hour conversion!",
+          "Midday munchies? How about some content conversion 🌮?",
+          "🍜 and scraping? Let's make it a productive lunch!",
+          "🥙-sized conversions during your lunch break?",
+          "⛽ up and convert! What's on the 🍽️ today?"
+        ],
+        afternoon: [ // 1-5 PM - 18 total
+          // Text-only messages
+          "Post-lunch productivity boost! Time for serious WordPress work!",
+          "Afternoon excellence begins now! Ready for transformations?",
+          "The afternoon stride is here! Which conversions call to us?",
+          "Mid-afternoon mastery session! Let's build something incredible!",
+          "Afternoon determination meets WordPress innovation! Let's go!",
+          "The post-meal energy surge! Perfect for conversion challenges!",
+          "Afternoon expertise hour! Ready to tackle complex sites?",
+          "Late afternoon ambition! Time for premium conversions!",
+          "The afternoon advantage! Let's maximize our conversion potential!",
+          // Emoji-integrated messages
+          "Good afternoon! Let's ⚡ through some conversions!",
+          "Afternoon! The perfect ⏰ to transform some content!",
+          "Hey there! Ready for an afternoon of WordPress ✨?",
+          "Good afternoon! What 🌐 are we converting today?",
+          "Afternoon 📊 time! Let's convert something amazing!",
+          "📈 performance hours! Time for some serious conversions!",
+          "Afternoon 🔥! Let's turn up the conversion intensity!",
+          "💪 through the afternoon with epic transformations!",
+          "Afternoon 🚀 sequence! Ready for content liftoff?"
+        ],
+        evening: [ // 5-9 PM - 18 total
+          // Text-only messages
+          "Evening workflow optimization! Ready for refined conversions?",
+          "The day's final push begins! Time for quality transformations!",
+          "Evening expertise meets WordPress challenges! Let's excel!",
+          "Sunset productivity session! Ready for elegant conversions?",
+          "End-of-day momentum building! Which projects need attention?",
+          "Evening refinement hour! Time for polished transformations!",
+          "The twilight conversion session begins! Ready to create?",
+          "Evening dedication meets conversion perfection! Let's begin!",
+          "Day's end brings focused energy! What shall we accomplish?",
+          // Emoji-integrated messages
+          "Good evening! 🌀 down with some content conversion?",
+          "Evening! Perfect time to 🎁 up the day with some scraping!",
+          "Hey there! Evening conversion 📅 coming up?",
+          "Good evening! Let's finish 💪 with some WordPress magic!",
+          "🌆! Time to convert those last few pieces of content!",
+          "Evening 😌 with a side of content transformation?",
+          "✨ hour conversions! Let's make something beautiful!",
+          "Evening 🪄 time! What WordPress spells shall we cast?",
+          "Evening 🎭! Time for the conversion show!"
+        ],
+        night: [ // 9 PM-12 AM - 18 total
+          // Text-only messages
+          "The night shift mentality kicks in! Ready for deep work?",
+          "After-hours excellence begins! Time for focused conversions!",
+          "Night mode productivity! Perfect for complex WordPress tasks!",
+          "The evening dedication session! Ready for detailed work?",
+          "Night owl energy activated! Which sites need our expertise?",
+          "Late evening mastery hour! Time for precision conversions!",
+          "The quiet hours bring clear thinking! Ready to transform?",
+          "Night productivity peak! Perfect for challenging conversions!",
+          "Evening solitude meets WordPress complexity! Let's solve it!",
+          // Emoji-integrated messages
+          "Good evening! Settling in for some 🌙 productivity?",
+          "Evening winds down, but the conversions keep 🚶!",
+          "Hey night 🦉! Ready for some after-dinner WordPress magic?",
+          "⭐ time for conversion! What are we transforming tonight?",
+          "Evening session activated! Let's make some content ✨!",
+          "🌙 shift begins! Time for some stellar conversions!",
+          "Evening 🔥! Let's keep the conversion momentum going!",
+          "Night mode engaged! Ready for 🎯 conversions?",
+          "⭐ conversion session! What's twinkling tonight?"
+        ],
+        lateNight: [ // 12 AM-5 AM - 18 total
+          // Text-only messages
+          "The midnight marathon begins! Ready for deep conversion work?",
+          "Late night dedication meets WordPress mastery! Let's excel!",
+          "The witching hour brings conversion inspiration! Ready to create?",
+          "Midnight focus session! Perfect for complex transformations!",
+          "The late night advantage! Time for undisturbed WordPress work!",
+          "After midnight excellence! Ready for premium conversions?",
+          "The small hours bring big opportunities! Let's seize them!",
+          "Midnight persistence meets conversion artistry! Time to build!",
+          "The late night grind pays off! Which sites need attention?",
+          // Emoji-integrated messages
+          "🔥 the midnight oil? Let's convert something awesome!",
+          "Late night productivity session? We're here to 🆘!",
+          "Night 🦉 at work! What are we converting in the moonlight?",
+          "Working late? Let's make it count with some epic 🔄!",
+          "Hey night ⚔️! Ready for some after-hours WordPress magic?",
+          "🌛 conversion crew! What sites are we tackling?",
+          "3️⃣ AM and still going strong! Let's transform some content!",
+          "🔮 hour productivity! Time for some magical conversions!",
+          "🌛 to 🌅 grind! Let's make these hours count!"
+        ]
+      };
+      
+      let timeOfDay, greetingArray;
+      if (hour >= 5 && hour < 8) {
+        timeOfDay = 'early morning';
+        greetingArray = greetings.earlyMorning;
+      } else if (hour >= 8 && hour < 12) {
+        timeOfDay = 'late morning';
+        greetingArray = greetings.lateMorning;
+      } else if (hour >= 12 && hour < 13) {
+        timeOfDay = 'midday';
+        greetingArray = greetings.midday;
+      } else if (hour >= 13 && hour < 17) {
+        timeOfDay = 'afternoon';
+        greetingArray = greetings.afternoon;
+      } else if (hour >= 17 && hour < 21) {
+        timeOfDay = 'evening';
+        greetingArray = greetings.evening;
+      } else if (hour >= 21 && hour < 24) {
+        timeOfDay = 'night';
+        greetingArray = greetings.night;
+      } else {
+        // hour >= 0 && hour < 5 (midnight to 5 AM)
+        timeOfDay = 'late night';
+        greetingArray = greetings.lateNight;
+      }
+      
+      // Select a random greeting from the appropriate time period
+      const randomIndex = Math.floor(Math.random() * greetingArray.length);
+      const greeting = greetingArray[randomIndex];
       
       const greetingElement = document.getElementById('greeting');
       if (greetingElement) {
-        greetingElement.textContent = `What are we working on ${timeOfDay}?`;
+        greetingElement.textContent = greeting;
+        
+        // Add location info if not auto-detected
+        const settingsTimezone = getTimezoneFromSettings();
+        if (settingsTimezone !== 'auto') {
+          greetingElement.innerHTML = `${greeting} <span class="text-white/60 text-sm font-normal">• ${location} time</span>`;
+        }
       }
     };
     
@@ -545,12 +648,319 @@ import MainLayout from '../components/layout/MainLayout.astro';
       }
     }
     
-    // Initialize greeting
+    // Initialize greeting once on page load
     updateGreeting();
     
-    // Update greeting every minute
-    setInterval(updateGreeting, 60000);
+    // Job loading and management functionality
+    const loadJobs = async () => {
+      const loadingEl = document.getElementById('jobs-loading');
+      const listEl = document.getElementById('jobs-list');
+      const emptyEl = document.getElementById('jobs-empty');
+      const errorEl = document.getElementById('jobs-error');
+      
+      // Show loading state
+      loadingEl?.classList.remove('hidden');
+      listEl?.classList.add('hidden');
+      emptyEl?.classList.add('hidden');
+      errorEl?.classList.add('hidden');
+      
+      try {
+        // Try to fetch jobs from backend API
+        const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000/api';
+        const response = await fetch(`${apiUrl}/jobs?page=1&page_size=10`);
+        
+        if (!response.ok) {
+          // Check if it's a 404 (API endpoint not implemented yet) vs real server error
+          if (response.status === 404) {
+            // API endpoint doesn't exist yet, treat as empty state (no jobs exist)
+            loadingEl?.classList.add('hidden');
+            emptyEl?.classList.remove('hidden');
+            return;
+          } else {
+            // Real server error (500, 503, etc.)
+            throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+          }
+        }
+        
+        const data = await response.json();
+        const jobs = data.jobs || [];
+        
+        // Hide loading state
+        loadingEl?.classList.add('hidden');
+        
+        if (jobs.length === 0) {
+          // Successfully connected to API, but no jobs exist - show empty state (yellow)
+          emptyEl?.classList.remove('hidden');
+        } else {
+          // Show jobs list
+          listEl?.classList.remove('hidden');
+          renderJobs(jobs);
+        }
+        
+      } catch (error) {
+        console.error('Failed to load jobs:', error);
+        
+        // Hide loading state
+        loadingEl?.classList.add('hidden');
+        
+        // If it's a connection error (backend not running), show empty state for development
+        // In production this would be a real error
+        if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
+          // Connection error - backend not running, show empty state for now
+          emptyEl?.classList.remove('hidden');
+        } else {
+          // Real server error - show error state (red)
+          errorEl?.classList.remove('hidden');
+        }
+      }
+    };
     
+    const renderJobs = (jobs) => {
+      const listEl = document.getElementById('jobs-list');
+      if (!listEl) return;
+      
+      // Clear existing content
+      listEl.innerHTML = '';
+      
+      jobs.forEach(job => {
+        const jobEl = createJobElement(job);
+        listEl.appendChild(jobEl);
+      });
+    };
+    
+    const createJobElement = (job) => {
+      // Job status configuration
+      const statusConfig = {
+        pending: {
+          borderColor: 'border-gray-500',
+          indicatorClass: 'w-3 h-3 bg-gray-400 rounded-full',
+          statusPillClass: 'glass-status text-gray-400 px-3 py-1 rounded-full',
+          statusText: 'Queued',
+          showDownload: false,
+          showRetry: false
+        },
+        running: {
+          borderColor: 'border-blue-500',
+          indicatorClass: 'animate-spin rounded-full w-3 h-3 border-2 border-blue-400/30 border-t-blue-400',
+          statusPillClass: 'glass-status text-blue-400 px-3 py-1 rounded-full',
+          statusText: 'Processing',
+          showDownload: false,
+          showRetry: false
+        },
+        completed: {
+          borderColor: 'border-green-500',
+          indicatorClass: 'w-3 h-3 bg-green-400 rounded-full animate-pulse',
+          statusPillClass: 'glass-status text-green-400 px-3 py-1 rounded-full',
+          statusText: 'Completed',
+          showDownload: true,
+          showRetry: false
+        },
+        failed: {
+          borderColor: 'border-red-500',
+          indicatorClass: 'w-3 h-3 bg-red-400 rounded-full',
+          statusPillClass: 'glass-status text-red-400 px-3 py-1 rounded-full',
+          statusText: 'Failed',
+          showDownload: false,
+          showRetry: true
+        },
+        cancelled: {
+          borderColor: 'border-orange-500',
+          indicatorClass: 'w-3 h-3 bg-orange-400 rounded-full',
+          statusPillClass: 'glass-status text-orange-400 px-3 py-1 rounded-full',
+          statusText: 'Cancelled',
+          showDownload: false,
+          showRetry: true
+        }
+      };
+      
+      const config = statusConfig[job.status] || statusConfig.pending;
+      
+      // Create job element
+      const jobDiv = document.createElement('div');
+      jobDiv.className = `p-4 rounded-lg border-l-4 ${config.borderColor} bg-white/5`;
+      jobDiv.setAttribute('data-job-id', job.id);
+      jobDiv.setAttribute('data-status', job.status);
+      
+      // Format job title
+      const title = job.title || formatJobTitle(job.url);
+      
+      jobDiv.innerHTML = `
+        <div class="flex items-center space-x-3 mb-4">
+          <div class="${config.indicatorClass}"></div>
+          <div>
+            <h4 class="text-white font-medium">${title}</h4>
+            <p class="text-white/60 text-sm">${job.url}</p>
+          </div>
+        </div>
+        
+        ${job.status === 'running' && job.progress !== undefined ? `
+        <div class="mb-4 ml-6">
+          <div class="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-400 to-blue-600 h-2 rounded-full transition-all duration-1000" style="width: ${job.progress}%"></div>
+          </div>
+          <p class="text-white/50 text-xs mt-1">${getProgressMessage(job)}</p>
+        </div>
+        ` : ''}
+        
+        ${job.status === 'failed' && job.error_message ? `
+        <div class="mb-4 ml-6">
+          <div class="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+            <p class="text-red-400 text-xs font-medium mb-1">${job.error_type || 'Conversion Failed'}</p>
+            <p class="text-red-300/80 text-xs">${job.error_message}</p>
+          </div>
+        </div>
+        ` : ''}
+        
+        <div class="flex items-center justify-between">
+          <div class="${config.statusPillClass}">
+            <span class="text-xs font-medium">${config.statusText}</span>
+          </div>
+          <div class="flex items-center space-x-3 ml-auto">
+            <a href="/jobs/${job.id}" class="glass-button px-3 py-1 text-xs text-white/90 hover:text-white flex items-center space-x-1 transition-all duration-200">
+              <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <span>View Job</span>
+            </a>
+            
+            ${config.showDownload ? `
+            <button class="glass-button px-3 py-1 text-xs text-white/90 hover:text-white flex items-center space-x-1 transition-all duration-200" data-download-job="${job.id}">
+              <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+              </svg>
+              <span>Download ZIP</span>
+            </button>
+            ` : ''}
+            
+            ${config.showRetry ? `
+            <button class="glass-button px-3 py-1 text-xs ${job.status === 'failed' ? 'text-red-400/80 hover:text-red-400' : 'text-orange-400/80 hover:text-orange-400'} flex items-center space-x-1 transition-all duration-200" data-retry-job="${job.id}">
+              <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span>Retry Job</span>
+            </button>
+            ` : ''}
+            
+            ${!config.showDownload && job.status !== 'running' ? `
+            <button disabled class="glass-button px-3 py-1 text-xs text-white/40 flex items-center space-x-1 cursor-not-allowed opacity-50">
+              <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+              </svg>
+              <span>Download ZIP</span>
+            </button>
+            ` : ''}
+          </div>
+        </div>
+      `;
+      
+      return jobDiv;
+    };
+    
+    // Utility functions for job formatting
+    const formatJobTitle = (url) => {
+      try {
+        const urlObj = new URL(url);
+        const pathname = urlObj.pathname;
+        const segments = pathname.split('/').filter(Boolean);
+        
+        if (segments.length === 0) {
+          return urlObj.hostname;
+        }
+        
+        const lastSegment = segments[segments.length - 1];
+        return lastSegment
+          .replace(/[-_]/g, ' ')
+          .replace(/\b\w/g, l => l.toUpperCase());
+      } catch {
+        return url;
+      }
+    };
+    
+    const getProgressMessage = (job) => {
+      if (job.progress === undefined) return 'Processing...';
+      
+      if (job.progress < 25) return 'Fetching content...';
+      if (job.progress < 50) return 'Processing images...';
+      if (job.progress < 75) return 'Converting content...';
+      return 'Finalizing conversion...';
+    };
+    
+    // Handle retry button clicks
+    const handleRetryJob = async (jobId) => {
+      try {
+        const response = await fetch(`/api/jobs/${jobId}/retry`, {
+          method: 'POST',
+        });
+        
+        if (response.ok) {
+          // Reload jobs to show updated status
+          loadJobs();
+        } else {
+          console.error('Failed to retry job:', response.status);
+        }
+      } catch (error) {
+        console.error('Failed to retry job:', error);
+      }
+    };
+    
+    // Event delegation for job actions
+    document.addEventListener('click', (e) => {
+      const retryBtn = e.target.closest('[data-retry-job]');
+      const downloadBtn = e.target.closest('[data-download-job]');
+      
+      if (retryBtn) {
+        const jobId = retryBtn.getAttribute('data-retry-job');
+        handleRetryJob(jobId);
+      }
+      
+      if (downloadBtn) {
+        const jobId = downloadBtn.getAttribute('data-download-job');
+        // Handle download logic here
+        window.location.href = `/api/jobs/${jobId}/download`;
+      }
+    });
+    
+    // Retry loading jobs if error state button is clicked
+    document.getElementById('retry-load-jobs')?.addEventListener('click', loadJobs);
+    
+    // Initialize job loading
+    loadJobs();
+    
+    // Real-time updates - poll for job status changes every 5 seconds
+    let updateInterval;
+    const startRealTimeUpdates = () => {
+      updateInterval = setInterval(() => {
+        const hasRunningJobs = document.querySelectorAll('[data-status="running"], [data-status="pending"]').length > 0;
+        
+        // Only poll if there are active jobs or if we're showing jobs
+        if (hasRunningJobs || !document.getElementById('jobs-empty')?.classList.contains('hidden')) {
+          loadJobs();
+        }
+      }, 5000); // Poll every 5 seconds
+    };
+    
+    const stopRealTimeUpdates = () => {
+      if (updateInterval) {
+        clearInterval(updateInterval);
+        updateInterval = null;
+      }
+    };
+    
+    // Start real-time updates
+    startRealTimeUpdates();
+    
+    // Stop updates when page is hidden to save resources
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        stopRealTimeUpdates();
+      } else {
+        startRealTimeUpdates();
+      }
+    });
+    
+    // Stop updates when leaving the page
+    window.addEventListener('beforeunload', stopRealTimeUpdates);
     
     // Add click handlers for interactive elements
     const interactiveElements = document.querySelectorAll('.liquid-glass-interactive');

@@ -1,0 +1,149 @@
+---
+export interface Props {
+  job: {
+    id: number;
+    title: string;
+    url: string;
+    status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+    progress?: number;
+    error_message?: string;
+    error_type?: string;
+    created_at: string;
+    started_at?: string;
+    completed_at?: string;
+  };
+}
+
+const { job } = Astro.props;
+
+// Job status configuration
+const statusConfig = {
+  pending: {
+    borderColor: 'border-gray-500',
+    indicatorClass: 'w-3 h-3 bg-gray-400 rounded-full',
+    statusPillClass: 'glass-status text-gray-400 px-3 py-1 rounded-full',
+    statusText: 'Queued',
+    showDownload: false,
+    showRetry: false
+  },
+  running: {
+    borderColor: 'border-blue-500',
+    indicatorClass: 'animate-spin rounded-full w-3 h-3 border-2 border-blue-400/30 border-t-blue-400',
+    statusPillClass: 'glass-status text-blue-400 px-3 py-1 rounded-full',
+    statusText: 'Processing',
+    showDownload: false,
+    showRetry: false
+  },
+  completed: {
+    borderColor: 'border-green-500',
+    indicatorClass: 'w-3 h-3 bg-green-400 rounded-full animate-pulse',
+    statusPillClass: 'glass-status text-green-400 px-3 py-1 rounded-full',
+    statusText: 'Completed',
+    showDownload: true,
+    showRetry: false
+  },
+  failed: {
+    borderColor: 'border-red-500',
+    indicatorClass: 'w-3 h-3 bg-red-400 rounded-full',
+    statusPillClass: 'glass-status text-red-400 px-3 py-1 rounded-full',
+    statusText: 'Failed',
+    showDownload: false,
+    showRetry: true
+  },
+  cancelled: {
+    borderColor: 'border-orange-500',
+    indicatorClass: 'w-3 h-3 bg-orange-400 rounded-full',
+    statusPillClass: 'glass-status text-orange-400 px-3 py-1 rounded-full',
+    statusText: 'Cancelled',
+    showDownload: false,
+    showRetry: true
+  }
+};
+
+const config = statusConfig[job.status];
+---
+
+<div class={`p-4 rounded-lg border-l-4 ${config.borderColor} bg-white/5`}>
+  <div class="flex items-center space-x-3 mb-4">
+    <div class={config.indicatorClass}></div>
+    <div>
+      <h4 class="text-white font-medium">{job.title}</h4>
+      <p class="text-white/60 text-sm">{job.url}</p>
+    </div>
+  </div>
+  
+  <!-- Progress Bar (only for running jobs) -->
+  {job.status === 'running' && job.progress !== undefined && (
+    <div class="mb-4 ml-6">
+      <div class="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+        <div 
+          class="bg-gradient-to-r from-blue-400 to-blue-600 h-2 rounded-full transition-all duration-1000" 
+          style={`width: ${job.progress}%`}
+        ></div>
+      </div>
+      <p class="text-white/50 text-xs mt-1">Converting images and content...</p>
+    </div>
+  )}
+  
+  <!-- Error Message (only for failed jobs) -->
+  {job.status === 'failed' && job.error_message && (
+    <div class="mb-4 ml-6">
+      <div class="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+        <p class="text-red-400 text-xs font-medium mb-1">{job.error_type || 'Conversion Failed'}</p>
+        <p class="text-red-300/80 text-xs">{job.error_message}</p>
+      </div>
+    </div>
+  )}
+  
+  <div class="flex items-center justify-between">
+    <div class={config.statusPillClass}>
+      <span class="text-xs font-medium">{config.statusText}</span>
+    </div>
+    <div class="flex items-center space-x-3 ml-auto">
+      <!-- View Job Button -->
+      <a 
+        href={`/jobs/${job.id}`} 
+        class="glass-button px-3 py-1 text-xs text-white/90 hover:text-white flex items-center space-x-1 transition-all duration-200"
+      >
+        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+        <span>View Job</span>
+      </a>
+      
+      <!-- Download Button (only for completed jobs) -->
+      {config.showDownload && (
+        <button class="glass-button px-3 py-1 text-xs text-white/90 hover:text-white flex items-center space-x-1 transition-all duration-200">
+          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+          </svg>
+          <span>Download ZIP</span>
+        </button>
+      )}
+      
+      <!-- Retry Button (only for failed/cancelled jobs) -->
+      {config.showRetry && (
+        <button 
+          class={`glass-button px-3 py-1 text-xs ${job.status === 'failed' ? 'text-red-400/80 hover:text-red-400' : 'text-orange-400/80 hover:text-orange-400'} flex items-center space-x-1 transition-all duration-200`}
+          data-retry-job={job.id}
+        >
+          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span>Retry Job</span>
+        </button>
+      )}
+      
+      <!-- Disabled Download Button (for non-completed jobs) -->
+      {!config.showDownload && job.status !== 'running' && (
+        <button disabled class="glass-button px-3 py-1 text-xs text-white/40 flex items-center space-x-1 cursor-not-allowed opacity-50">
+          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+          </svg>
+          <span>Download ZIP</span>
+        </button>
+      )}
+    </div>
+  </div>
+</div>

@@ -73,3 +73,35 @@ Thumbs.db
 # Local development
 .local/
 .vercel/
+
+# Debug files and test output
+*.debug.png
+*.debug.jpg
+*.debug.jpeg
+*.debug.gif
+*.debug.webp
+debug_screenshots/
+test-output/
+test-results/
+playwright-report/
+coverage/
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Performance profiling
+profile.stats
+*.prof
+*.cprof
+
+# Development artifacts
+*.tmp
+*.temp
+.cache/
+cache/
+
+# CI/CD artifacts
+.github/artifacts/
+ci-output/
