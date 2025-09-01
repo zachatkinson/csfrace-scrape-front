@@ -3,13 +3,13 @@
  * Main entry point for all CSS including Tailwind and Liquid Glass
  */
 
+/* Import our Liquid Glass system FIRST */
+@import './liquid-glass.css';
+
 /* Tailwind CSS Base Imports */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Import our Liquid Glass system */
-@import './liquid-glass.css';
 
 /* Base styles for the application */
 @layer base {
@@ -21,6 +21,7 @@
     @apply antialiased;
     font-feature-settings: 'cv11', 'ss01';
     font-variation-settings: 'opsz' 32;
+    color: #f2f2f7; /* Apple's off-white for primary text */
   }
   
   /* SVG Base Styles - Ensure proper sizing */
@@ -57,6 +58,45 @@
     text-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
   }
   
+  /* Animated gradient utility - proper Tailwind layer */
+  .animated-gradient {
+    background-size: 300% 100%;
+    animation: gradientShift 6s ease-in-out infinite;
+  }
+  
+  /* Keyframes for gradient animation */
+  @keyframes gradientShift {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+  
+  /* Content width constraints for consistent layout */
+  .container-constrained {
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
+  }
+  
+  /* Ensure content respects container boundaries without forcing full width */
+  .container * {
+    box-sizing: border-box;
+  }
+  
+  /* Debug helper - remove this after testing */
+  .container-constrained {
+    /* Uncomment the line below to see the container boundaries */
+    /* border: 2px solid red !important; */
+  }
+  
   /* Ensure proper flex behavior */
   .flex-center {
     @apply flex items-center justify-center;
@@ -67,3 +107,5 @@
     @apply flex-shrink-0 flex items-center justify-center;
   }
 }
+
+/* End of CSS */

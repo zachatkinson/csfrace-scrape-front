@@ -3,163 +3,340 @@ import MainLayout from '../components/layout/MainLayout.astro';
 ---
 
 <MainLayout title="CSFrace Scrape - WordPress to Shopify Converter">
-  <!-- Hero Section with Liquid Glass -->
+  <!-- Main Content Section -->
   <section class="text-center py-16">
-    <div class="glass-card max-w-4xl mx-auto p-8 mb-12">
-      <h1 class="text-4xl md:text-6xl font-bold text-white mb-6">
-        WordPress to <span class="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Shopify</span>
-      </h1>
-      <p class="text-xl text-white/80 mb-8 max-w-2xl mx-auto">
-        Transform your WordPress content into Shopify-ready format with our ultra-modern, 
-        AI-powered conversion tool featuring Apple's Liquid Glass design system.
-      </p>
+    <!-- Desktop Grid Layout -->
+    <div class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-8 lg:gap-12 lg:items-start">
       
-      <!-- URL Input Demo -->
-      <div class="max-w-2xl mx-auto mb-8">
-        <div class="liquid-glass p-6 rounded-glass-lg">
-          <div class="space-y-4">
-            <div class="text-left">
-              <label class="block text-sm font-medium text-white/80 mb-2">
-                WordPress URL
-              </label>
-              <div class="glass-input flex items-center">
-                <svg class="w-5 h-5 text-white/60 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                </svg>
-                <input 
-                  type="url" 
-                  placeholder="https://your-wordpress-site.com/post-url"
-                  class="flex-1 bg-transparent border-none outline-none text-white placeholder:text-white/50 px-4 py-3"
-                />
+      <!-- Left Column: Upload Interface -->
+      <div class="glass-card p-8 lg:h-fit">
+        <!-- Content Container -->
+        <div id="content-container" class="space-y-8">
+          <div class="w-full max-w-2xl mx-auto mb-8">
+            <h1 class="text-4xl md:text-6xl font-bold text-apple-white mb-6">
+              WordPress to <span class="bg-gradient-to-r from-blue-400 via-purple-500 via-blue-400 to-purple-500 bg-clip-text text-transparent animated-gradient">Shopify</span>
+            </h1>
+            <p class="text-xl text-apple-white-80 mb-8 max-w-2xl mx-auto">
+              Transform your WordPress content into Shopify-ready format with our ultra-modern, 
+              AI-powered conversion tool featuring Apple's Liquid Glass design system.
+            </p>
+            
+            <!-- Dynamic Time-Based Greeting -->
+            <h2 id="greeting" class="text-2xl font-semibold text-white mb-6">
+              What are we working on today?
+            </h2>
+            
+            <!-- Apple-Style Segmented Control - Always Visible -->
+            <div class="space-y-6">
+              <div class="flex justify-center">
+                <div class="liquid-glass-segmented-control p-1 inline-flex rounded-full bg-black/24 backdrop-blur-md border border-white/20">
+                  <button id="bulk-upload-btn" class="segmented-option active px-6 py-3 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                    </svg>
+                    Bulk Upload
+                  </button>
+                  <button id="single-post-btn" class="segmented-option px-6 py-3 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Single Post
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Mode Description -->
+              <div class="text-center max-w-md mx-auto">
+                <p id="mode-description" class="text-white/70 text-sm">
+                  Upload CSV or TXT files containing multiple WordPress URLs
+                </p>
               </div>
             </div>
             
-            <div class="flex gap-4">
-              <button class="glass-button liquid-glass-interactive flex-1 px-6 py-3 text-white font-medium bg-gradient-to-r from-blue-500/80 to-purple-600/80 hover:from-blue-600/90 hover:to-purple-700/90 transition-all duration-glass">
+            <!-- Single Post Interface -->
+            <div id="single-post-interface" class="space-y-4 mt-6 min-h-[200px] sm:min-h-[240px] md:min-h-[280px] lg:min-h-[300px] hidden">
+              
+              <div class="text-left">
+                <label for="wordpress-url" class="block text-sm font-medium text-white/80 mb-2 cursor-pointer">
+                  WordPress URL
+                </label>
+                <div class="flex items-center gap-3">
+                  <svg class="w-5 h-5 text-white/50 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                  <input 
+                    id="wordpress-url"
+                    type="url" 
+                    placeholder="https://your-wordpress-site.com/post-url"
+                    class="glass-input flex-1"
+                  />
+                </div>
+              </div>
+              
+              <button id="convert-now-btn" class="glass-button liquid-glass-interactive w-full px-6 py-3 text-white font-medium bg-gradient-to-r from-blue-500/80 to-purple-600/80 hover:from-blue-600/90 hover:to-purple-700/90 transition-all duration-glass flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed" disabled>
                 <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 Convert Now
               </button>
+            </div>
+            
+            <!-- Bulk Upload Interface (Hidden by default) -->
+            <div id="bulk-upload-interface" class="space-y-4 mt-6 min-h-[200px] sm:min-h-[240px] md:min-h-[280px] lg:min-h-[300px]">
               
-              <button class="glass-button liquid-glass-interactive px-6 py-3 text-white/90 hover:text-white hover:bg-white/10 transition-all duration-glass">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
+              <div class="text-left">
+                <label class="block text-sm font-medium text-white/80 mb-2">
+                  Upload CSV or TXT File
+                </label>
+                
+                <!-- Drag and Drop Zone -->
+                <div id="drop-zone" class="relative border-2 border-dashed border-white/30 rounded-xl p-8 text-center hover:border-white/50 transition-colors cursor-pointer bg-black/20 backdrop-blur-sm">
+                  <input type="file" id="file-input" accept=".csv,.txt" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                  
+                  <svg class="w-12 h-12 mx-auto mb-4 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  
+                  <p class="text-white/80 font-medium mb-2">Drop your file here or click to browse</p>
+                  <p class="text-white/50 text-sm">Supports CSV and TXT files with one URL per line</p>
+                  
+                  <!-- File name display -->
+                  <div id="file-name" class="hidden mt-4 p-3 bg-white/10 rounded-lg">
+                    <p class="text-white/90 text-sm font-medium"></p>
+                  </div>
+                </div>
+              </div>
+              
+              <button id="bulk-convert-btn" class="glass-button liquid-glass-interactive w-full px-6 py-3 text-white font-medium bg-gradient-to-r from-blue-500/80 to-purple-600/80 hover:from-blue-600/90 hover:to-purple-700/90 transition-all duration-glass flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
+                Convert All
               </button>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </section>
-  
-  <!-- Features Grid -->
-  <section class="py-16">
-    <div class="text-center mb-12">
-      <h2 class="text-3xl font-bold text-white mb-4">Powered by Liquid Glass</h2>
-      <p class="text-white/70 max-w-2xl mx-auto">Experience the future of web interfaces with Apple's latest design system</p>
-    </div>
-    
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <!-- Feature Card 1 -->
-      <div class="glass-card p-6 liquid-glass-interactive">
-        <div class="w-12 h-12 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-lg flex items-center justify-center mb-4">
-          <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-        </div>
-        <h3 class="text-lg font-semibold text-white mb-2">Lightning Fast</h3>
-        <p class="text-white/70 text-sm">Convert WordPress content in seconds with our optimized processing engine</p>
-      </div>
       
-      <!-- Feature Card 2 -->
-      <div class="glass-card p-6 liquid-glass-interactive">
-        <div class="w-12 h-12 bg-gradient-to-r from-purple-400 to-pink-500 rounded-lg flex items-center justify-center mb-4">
-          <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+      <!-- Right Column: Real-time Processing -->
+      <div class="glass-card p-6 lg:sticky lg:top-8 lg:flex lg:flex-col lg:h-[calc(100vh-8rem)]">
+        <div class="text-center mb-8 lg:flex-shrink-0">
+          <h2 class="text-3xl font-bold text-white mb-4">Real-time Processing</h2>
+          <p class="text-white/70">Monitor your conversion jobs with live updates</p>
         </div>
-        <h3 class="text-lg font-semibold text-white mb-2">100% Accurate</h3>
-        <p class="text-white/70 text-sm">Preserves formatting, images, and metadata with perfect fidelity</p>
-      </div>
-      
-      <!-- Feature Card 3 -->
-      <div class="glass-card p-6 liquid-glass-interactive">
-        <div class="w-12 h-12 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-lg flex items-center justify-center mb-4">
-          <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-          </svg>
-        </div>
-        <h3 class="text-lg font-semibold text-white mb-2">Beautiful UI</h3>
-        <p class="text-white/70 text-sm">Crafted with Apple's Liquid Glass design system for premium experience</p>
-      </div>
-    </div>
-  </section>
-  
-  <!-- Status Dashboard Demo -->
-  <section class="py-16">
-    <div class="text-center mb-12">
-      <h2 class="text-3xl font-bold text-white mb-4">Real-time Processing</h2>
-      <p class="text-white/70">Monitor your conversion jobs with live updates</p>
-    </div>
-    
-    <div class="max-w-4xl mx-auto">
-      <div class="glass-card p-6">
-        <div class="space-y-4">
+        
+        <div class="lg:flex lg:flex-col lg:flex-1 lg:min-h-0">
+          <!-- Job List Container with scrolling -->
+          <div class="lg:flex-1 lg:overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent pr-2 lg:min-h-0">
           <!-- Job Item 1 -->
-          <div class="liquid-glass p-4 rounded-lg border-l-4 border-green-500">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center space-x-3">
-                <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                <div>
-                  <h4 class="text-white font-medium">Blog Post: "Getting Started with Shopify"</h4>
-                  <p class="text-white/60 text-sm">wordpress.example.com/getting-started</p>
-                </div>
+          <div class="p-4 rounded-lg border-l-4 border-green-500 bg-white/5">
+            <div class="flex items-center space-x-3 mb-4">
+              <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+              <div>
+                <h4 class="text-white font-medium">Blog Post: "Getting Started with Shopify"</h4>
+                <p class="text-white/60 text-sm">wordpress.example.com/getting-started</p>
               </div>
+            </div>
+            <div class="flex items-center justify-between">
               <div class="glass-status text-green-400 px-3 py-1 rounded-full">
                 <span class="text-xs font-medium">Completed</span>
+              </div>
+              <div class="flex items-center space-x-3 ml-auto">
+                <a href="/jobs/job-123" class="glass-button px-3 py-1 text-xs text-white/90 hover:text-white flex items-center space-x-1 transition-all duration-200">
+                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  <span>View Job</span>
+                </a>
+                <button class="glass-button px-3 py-1 text-xs text-white/90 hover:text-white flex items-center space-x-1 transition-all duration-200">
+                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                  </svg>
+                  <span>Download ZIP</span>
+                </button>
               </div>
             </div>
           </div>
           
           <!-- Job Item 2 -->
-          <div class="liquid-glass p-4 rounded-lg border-l-4 border-blue-500">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center space-x-3">
-                <div class="animate-spin rounded-full w-3 h-3 border-2 border-blue-400/30 border-t-blue-400"></div>
-                <div>
-                  <h4 class="text-white font-medium">Product Page: "Premium Widget"</h4>
-                  <p class="text-white/60 text-sm">wordpress.example.com/premium-widget</p>
-                </div>
-              </div>
-              <div class="glass-status text-blue-400 px-3 py-1 rounded-full">
-                <span class="text-xs font-medium">Processing</span>
+          <div class="p-4 rounded-lg border-l-4 border-blue-500 bg-white/5">
+            <div class="flex items-center space-x-3 mb-4">
+              <div class="animate-spin rounded-full w-3 h-3 border-2 border-blue-400/30 border-t-blue-400"></div>
+              <div>
+                <h4 class="text-white font-medium">Product Page: "Premium Widget"</h4>
+                <p class="text-white/60 text-sm">wordpress.example.com/premium-widget</p>
               </div>
             </div>
             <!-- Progress Bar -->
-            <div class="mt-3 ml-6">
+            <div class="mb-4 ml-6">
               <div class="w-full bg-white/10 rounded-full h-2 overflow-hidden">
                 <div class="bg-gradient-to-r from-blue-400 to-blue-600 h-2 rounded-full transition-all duration-1000" style="width: 65%"></div>
               </div>
               <p class="text-white/50 text-xs mt-1">Converting images and content...</p>
             </div>
+            <div class="flex items-center justify-between">
+              <div class="glass-status text-blue-400 px-3 py-1 rounded-full">
+                <span class="text-xs font-medium">Processing</span>
+              </div>
+              <div class="flex items-center space-x-3 ml-auto">
+                <a href="/jobs/job-456" class="glass-button px-3 py-1 text-xs text-white/90 hover:text-white flex items-center space-x-1 transition-all duration-200">
+                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  <span>View Job</span>
+                </a>
+                <button disabled class="glass-button px-3 py-1 text-xs text-white/40 flex items-center space-x-1 cursor-not-allowed opacity-50">
+                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                  </svg>
+                  <span>Download ZIP</span>
+                </button>
+              </div>
+            </div>
           </div>
           
           <!-- Job Item 3 -->
-          <div class="liquid-glass p-4 rounded-lg border-l-4 border-gray-500">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center space-x-3">
-                <div class="w-3 h-3 bg-gray-400 rounded-full"></div>
-                <div>
-                  <h4 class="text-white font-medium">Category: "Electronics Collection"</h4>
-                  <p class="text-white/60 text-sm">wordpress.example.com/electronics</p>
-                </div>
+          <div class="p-4 rounded-lg border-l-4 border-gray-500 bg-white/5">
+            <div class="flex items-center space-x-3 mb-4">
+              <div class="w-3 h-3 bg-gray-400 rounded-full"></div>
+              <div>
+                <h4 class="text-white font-medium">Category: "Electronics Collection"</h4>
+                <p class="text-white/60 text-sm">wordpress.example.com/electronics</p>
               </div>
+            </div>
+            <div class="flex items-center justify-between">
               <div class="glass-status text-gray-400 px-3 py-1 rounded-full">
                 <span class="text-xs font-medium">Queued</span>
               </div>
+              <div class="flex items-center space-x-3 ml-auto">
+                <a href="/jobs/job-789" class="glass-button px-3 py-1 text-xs text-white/90 hover:text-white flex items-center space-x-1 transition-all duration-200">
+                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  <span>View Job</span>
+                </a>
+                <button disabled class="glass-button px-3 py-1 text-xs text-white/40 flex items-center space-x-1 cursor-not-allowed opacity-50">
+                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                  </svg>
+                  <span>Download ZIP</span>
+                </button>
+              </div>
             </div>
+          </div>
+          
+          <!-- Job Item 4 - Failed -->
+          <div class="p-4 rounded-lg border-l-4 border-red-500 bg-white/5">
+            <div class="flex items-center space-x-3 mb-4">
+              <div class="w-3 h-3 bg-red-400 rounded-full"></div>
+              <div>
+                <h4 class="text-white font-medium">Landing Page: "Black Friday Sale"</h4>
+                <p class="text-white/60 text-sm">wordpress.example.com/black-friday-2024</p>
+              </div>
+            </div>
+            <!-- Error Message -->
+            <div class="mb-4 ml-6">
+              <div class="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                <p class="text-red-400 text-xs font-medium mb-1">Conversion Failed</p>
+                <p class="text-red-300/80 text-xs">Unable to access content. The page may be password protected or no longer available.</p>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="glass-status text-red-400 px-3 py-1 rounded-full">
+                <span class="text-xs font-medium">Failed</span>
+              </div>
+              <div class="flex items-center space-x-3 ml-auto">
+                <a href="/jobs/job-101" class="glass-button px-3 py-1 text-xs text-white/90 hover:text-white flex items-center space-x-1 transition-all duration-200">
+                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  <span>View Job</span>
+                </a>
+                <button id="retry-job-101" class="glass-button px-3 py-1 text-xs text-red-400/80 hover:text-red-400 flex items-center space-x-1 transition-all duration-200">
+                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span>Retry Job</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Job Item 5 - Completed -->
+          <div class="p-4 rounded-lg border-l-4 border-green-500 bg-white/5">
+            <div class="flex items-center space-x-3 mb-4">
+              <div class="w-3 h-3 bg-green-400 rounded-full"></div>
+              <div>
+                <h4 class="text-white font-medium">Product Guide: "WordPress Migration"</h4>
+                <p class="text-white/60 text-sm">wordpress.example.com/migration-guide</p>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="glass-status text-green-400 px-3 py-1 rounded-full">
+                <span class="text-xs font-medium">Completed</span>
+              </div>
+              <div class="flex items-center space-x-3 ml-auto">
+                <a href="/jobs/job-202" class="glass-button px-3 py-1 text-xs text-white/90 hover:text-white flex items-center space-x-1 transition-all duration-200">
+                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  <span>View Job</span>
+                </a>
+                <button class="glass-button px-3 py-1 text-xs text-white/90 hover:text-white flex items-center space-x-1 transition-all duration-200">
+                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                  </svg>
+                  <span>Download ZIP</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Job Item 6 - Queued -->
+          <div class="p-4 rounded-lg border-l-4 border-gray-500 bg-white/5">
+            <div class="flex items-center space-x-3 mb-4">
+              <div class="w-3 h-3 bg-gray-400 rounded-full"></div>
+              <div>
+                <h4 class="text-white font-medium">Tutorial: "Advanced SEO Tips"</h4>
+                <p class="text-white/60 text-sm">wordpress.example.com/seo-tutorial</p>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="glass-status text-gray-400 px-3 py-1 rounded-full">
+                <span class="text-xs font-medium">Queued</span>
+              </div>
+              <div class="flex items-center space-x-3 ml-auto">
+                <a href="/jobs/job-303" class="glass-button px-3 py-1 text-xs text-white/90 hover:text-white flex items-center space-x-1 transition-all duration-200">
+                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  <span>View Job</span>
+                </a>
+                <button disabled class="glass-button px-3 py-1 text-xs text-white/40 flex items-center space-x-1 cursor-not-allowed opacity-50">
+                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                  </svg>
+                  <span>Download ZIP</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          </div>
+          
+          <!-- View All Jobs Button -->
+          <div class="border-t border-white/10 pt-4 mt-6 lg:flex-shrink-0 lg:mt-4">
+            <a href="/dashboard" class="glass-button liquid-glass-interactive w-full px-4 py-3 text-white/90 hover:text-white font-medium bg-white/5 hover:bg-white/10 transition-all duration-200 flex items-center justify-center space-x-2">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+              <span>View All Jobs</span>
+            </a>
           </div>
         </div>
       </div>
@@ -168,8 +345,213 @@ import MainLayout from '../components/layout/MainLayout.astro';
 </MainLayout>
 
 <script>
-  // Add some interactive functionality
   document.addEventListener('DOMContentLoaded', () => {
+    // Time-based greeting (defaulting to user's local timezone, can be changed in settings later)
+    const updateGreeting = () => {
+      const now = new Date();
+      const hour = now.getHours();
+      
+      let timeOfDay;
+      if (hour >= 5 && hour < 12) {
+        timeOfDay = 'this morning';
+      } else if (hour >= 12 && hour < 17) {
+        timeOfDay = 'this afternoon';  
+      } else if (hour >= 17 && hour < 21) {
+        timeOfDay = 'this evening';
+      } else {
+        timeOfDay = 'tonight';
+      }
+      
+      const greetingElement = document.getElementById('greeting');
+      if (greetingElement) {
+        greetingElement.textContent = `What are we working on ${timeOfDay}?`;
+      }
+    };
+    
+    // Segmented control and interface switching logic
+    const singlePostInterface = document.getElementById('single-post-interface');
+    const bulkUploadInterface = document.getElementById('bulk-upload-interface');
+    const modeDescription = document.getElementById('mode-description');
+    
+    const singlePostBtn = document.getElementById('single-post-btn');
+    const bulkUploadBtn = document.getElementById('bulk-upload-btn');
+    
+    // Get the segmented control container for animation control
+    const segmentedControl = document.querySelector('.liquid-glass-segmented-control');
+    
+    // Segmented control state management with animation
+    const updateActiveSegment = (activeBtn, inactiveBtn, isSingleActive = false) => {
+      // Update button states
+      activeBtn?.classList.add('active');
+      inactiveBtn?.classList.remove('active');
+      
+      // Update control container state for sliding animation
+      if (segmentedControl) {
+        if (isSingleActive) {
+          segmentedControl.classList.add('single-active');
+        } else {
+          segmentedControl.classList.remove('single-active');
+        }
+        
+        // Add pulse animation on selection change
+        segmentedControl.classList.add('selection-changed');
+        setTimeout(() => {
+          segmentedControl.classList.remove('selection-changed');
+        }, 400);
+      }
+    };
+    
+    // Show single post interface - Move indicator to right
+    if (singlePostBtn) {
+      singlePostBtn.addEventListener('click', () => {
+        updateActiveSegment(singlePostBtn, bulkUploadBtn, true); // true = single is active (move to right)
+        if (modeDescription) {
+          modeDescription.textContent = 'Convert individual WordPress posts by entering their URL';
+        }
+        
+        
+        // Switch interfaces
+        bulkUploadInterface?.classList.add('hidden');
+        singlePostInterface?.classList.remove('hidden');
+      });
+    }
+    
+    // Show bulk upload interface - Keep indicator on left (default)
+    if (bulkUploadBtn) {
+      bulkUploadBtn.addEventListener('click', () => {
+        updateActiveSegment(bulkUploadBtn, singlePostBtn, false); // false = bulk is active (stay on left)
+        if (modeDescription) {
+          modeDescription.textContent = 'Upload CSV or TXT files containing multiple WordPress URLs';
+        }
+        
+        
+        // Switch interfaces
+        singlePostInterface?.classList.add('hidden');
+        bulkUploadInterface?.classList.remove('hidden');
+      });
+    }
+    
+    // URL validation for Convert Now button
+    const urlInput = document.getElementById('wordpress-url');
+    const convertNowBtn = document.getElementById('convert-now-btn');
+    
+    const validateURL = (url) => {
+      try {
+        const urlObj = new URL(url);
+        // Check if it's a valid HTTP/HTTPS URL
+        return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
+      } catch {
+        return false;
+      }
+    };
+    
+    if (urlInput && convertNowBtn) {
+      urlInput.addEventListener('input', (e) => {
+        const url = e.target.value.trim();
+        const isValid = url.length > 0 && validateURL(url);
+        
+        convertNowBtn.disabled = !isValid;
+        
+        // Update input styling based on validity
+        if (url.length > 0) {
+          if (isValid) {
+            urlInput.style.borderColor = 'rgba(34, 197, 94, 0.8)'; // Green for valid
+          } else {
+            urlInput.style.borderColor = 'rgba(239, 68, 68, 0.8)'; // Red for invalid
+          }
+        } else {
+          urlInput.style.borderColor = ''; // Reset to default
+        }
+      });
+      
+      // Also check on paste
+      urlInput.addEventListener('paste', (e) => {
+        setTimeout(() => {
+          urlInput.dispatchEvent(new Event('input'));
+        }, 10);
+      });
+    }
+    
+    // Drag and drop functionality
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const fileName = document.getElementById('file-name');
+    const bulkConvertBtn = document.getElementById('bulk-convert-btn');
+    
+    if (dropZone && fileInput) {
+      // Prevent default drag behaviors
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
+      });
+      
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      
+      // Highlight drop zone when dragging over
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, highlight, false);
+      });
+      
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, unhighlight, false);
+      });
+      
+      function highlight() {
+        dropZone.classList.add('border-white/70', 'bg-black/30');
+      }
+      
+      function unhighlight() {
+        dropZone.classList.remove('border-white/70', 'bg-black/30');
+      }
+      
+      // Handle dropped files
+      dropZone.addEventListener('drop', handleDrop, false);
+      fileInput.addEventListener('change', handleFileSelect, false);
+      
+      function handleDrop(e) {
+        const files = e.dataTransfer.files;
+        handleFiles(files);
+      }
+      
+      function handleFileSelect(e) {
+        const files = e.target.files;
+        handleFiles(files);
+      }
+      
+      function handleFiles(files) {
+        if (files.length > 0) {
+          const file = files[0];
+          if (file.type === 'text/csv' || file.type === 'text/plain' || file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
+            // Show file name
+            if (fileName) {
+              fileName.classList.remove('hidden');
+              const fileNameText = fileName.querySelector('p');
+              if (fileNameText) {
+                fileNameText.textContent = `📄 ${file.name}`;
+              }
+            }
+            
+            // Enable convert button
+            if (bulkConvertBtn) {
+              bulkConvertBtn.disabled = false;
+            }
+          } else {
+            alert('Please upload a CSV or TXT file.');
+          }
+        }
+      }
+    }
+    
+    // Initialize greeting
+    updateGreeting();
+    
+    // Update greeting every minute
+    setInterval(updateGreeting, 60000);
+    
+    
     // Add click handlers for interactive elements
     const interactiveElements = document.querySelectorAll('.liquid-glass-interactive');
     
@@ -182,6 +564,60 @@ import MainLayout from '../components/layout/MainLayout.astro';
         }, 100);
       });
     });
+    
+    // Handle retry job functionality
+    const retryButton = document.getElementById('retry-job-101');
+    if (retryButton) {
+      retryButton.addEventListener('click', async (e) => {
+        e.preventDefault();
+        
+        // Add loading state
+        const originalContent = retryButton.innerHTML;
+        retryButton.innerHTML = `
+          <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span>Retrying...</span>
+        `;
+        retryButton.disabled = true;
+        
+        try {
+          // Simulate API call (in real implementation, use API client)
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          
+          // Update UI to show job is now pending/processing
+          const jobElement = retryButton.closest('.p-4');
+          const statusIndicator = jobElement.querySelector('.w-3.h-3');
+          const statusPill = jobElement.querySelector('.glass-status');
+          const errorMessage = jobElement.querySelector('.bg-red-500\\/10');
+          
+          // Update status indicator
+          statusIndicator.className = 'animate-spin rounded-full w-3 h-3 border-2 border-blue-400/30 border-t-blue-400';
+          
+          // Update status pill
+          statusPill.className = 'glass-status text-blue-400 px-3 py-1 rounded-full';
+          statusPill.querySelector('span').textContent = 'Processing';
+          
+          // Remove error message
+          if (errorMessage) {
+            errorMessage.remove();
+          }
+          
+          // Update border color
+          jobElement.className = jobElement.className.replace('border-red-500', 'border-blue-500');
+          
+          // Hide retry button and show download button
+          retryButton.style.display = 'none';
+          
+          console.log('Job retry initiated successfully');
+        } catch (error) {
+          console.error('Failed to retry job:', error);
+          // Reset button state on error
+          retryButton.innerHTML = originalContent;
+          retryButton.disabled = false;
+        }
+      });
+    }
     
     // Simulate progress update
     const progressBar = document.querySelector('[style*="width: 65%"]');

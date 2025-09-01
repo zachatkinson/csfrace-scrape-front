@@ -43,81 +43,85 @@ const { title, description = "WordPress to Shopify content converter with ultra-
       /* Liquid Glass optimized body styles */
       body {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        background: linear-gradient(135deg, 
-          #667eea 0%, 
-          #764ba2 25%, 
-          #f093fb 50%, 
-          #f5576c 75%, 
-          #4facfe 100%
-        );
-        background-size: 400% 400%;
-        animation: gradientShift 15s ease infinite;
+        background: url('/scrape_bg.jpg') center center/cover no-repeat fixed;
         min-height: 100vh;
+        position: relative;
       }
       
-      @keyframes gradientShift {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
+      /* Add moderate overlay for glass contrast - middle ground */
+      body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.58);
+        pointer-events: none;
+        z-index: -1;
       }
       
-      /* Accessibility: Reduce motion */
-      @media (prefers-reduced-motion: reduce) {
-        body {
-          animation: none;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-      }
-      
-      /* High contrast mode adjustments */
+      /* Accessibility: High contrast mode adjustments */
       @media (prefers-contrast: high) {
         body {
           background: #000;
+        }
+        body::before {
+          background: rgba(0, 0, 0, 0.5);
         }
       }
     </style>
   </head>
   
   <body class="h-full overflow-x-hidden">
-    <!-- Liquid Glass Navigation -->
-    <nav class="glass-nav fixed top-0 left-0 right-0 z-50 px-6 py-4">
-      <div class="max-w-7xl mx-auto flex items-center justify-between">
-        <!-- Logo/Brand -->
-        <div class="flex items-center space-x-3">
-          <div class="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
-            <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
+    <!-- Header Component -->
+    <header class="fixed top-0 left-0 right-0 z-50">
+      <nav class="bg-black py-4">
+        <div class="max-w-7xl mx-auto px-8 flex items-center justify-between">
+          <!-- Logo/Brand -->
+          <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
+              <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <span class="text-white font-semibold text-lg">CSFrace Scrape</span>
           </div>
-          <span class="text-white font-semibold text-lg">CSFrace Scrape</span>
-        </div>
-        
-        <!-- Navigation Links -->
-        <div class="hidden md:flex items-center space-x-6">
-          <a href="/" class="text-white/80 hover:text-white transition-colors">Dashboard</a>
-          <a href="/jobs" class="text-white/80 hover:text-white transition-colors">Jobs</a>
-          <a href="/settings" class="text-white/80 hover:text-white transition-colors">Settings</a>
-        </div>
-        
-        <!-- User Actions -->
-        <div class="flex items-center space-x-3">
-          <!-- Status Indicator -->
-          <div class="glass-status text-green-400 px-3 py-1 rounded-full">
-            <div class="flex items-center space-x-2">
-              <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span class="text-xs">Connected</span>
+          
+          <!-- Navigation Links -->
+          <div class="hidden md:flex items-center space-x-6">
+            <a href="/" class="text-white/80 hover:text-white transition-colors">Dashboard</a>
+            <a href="/jobs" class="text-white/80 hover:text-white transition-colors">Jobs</a>
+            <a href="/settings" class="text-white/80 hover:text-white transition-colors">Settings</a>
+          </div>
+          
+          <!-- User Actions -->
+          <div class="flex items-center space-x-3">
+            <!-- Status Indicator -->
+            <div class="glass-status text-green-400 px-3 py-1 rounded-full">
+              <div class="flex items-center space-x-2">
+                <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span class="text-xs">Connected</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+    </header>
     
-    <!-- Main Content Area -->
-    <main class="pt-20 pb-8 px-6 min-h-screen">
-      <div class="max-w-7xl mx-auto">
+    <!-- Main Content Area with proper semantic structure -->
+    <main class="pt-20 pb-8 min-h-screen">
+        <div class="max-w-7xl mx-auto px-8">
         <slot />
       </div>
     </main>
+    
+    <!-- Footer (if needed) -->
+    <footer class="py-8">
+      <div class="max-w-7xl mx-auto px-8 text-center text-white/60">
+        <!-- Footer content would go here -->
+      </div>
+    </footer>
     
     <!-- Background Effects for Enhanced Glass Rendering -->
     <div class="fixed inset-0 pointer-events-none z-[-1]">
