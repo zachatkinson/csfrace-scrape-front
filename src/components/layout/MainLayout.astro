@@ -470,7 +470,7 @@ const { title, description = "WordPress to Shopify content converter with ultra-
 
         async checkHealth() {
           try {
-            const response = await fetch(`${this.apiUrl}/health`, {
+            const response = await fetch(`${this.apiUrl}/health/`, {
               method: 'GET',
               headers: { 'Content-Type': 'application/json' },
               timeout: 10000
@@ -776,7 +776,14 @@ const { title, description = "WordPress to Shopify content converter with ultra-
         };
         
         // Event listeners
-        settingsToggle?.addEventListener('click', openSettings);
+        settingsToggle?.addEventListener('click', () => {
+          // Toggle settings panel - close if open, open if closed
+          if (isSettingsOpen) {
+            closeSettings();
+          } else {
+            openSettings();
+          }
+        });
         settingsClose?.addEventListener('click', closeSettings);
         cancelSettings?.addEventListener('click', closeSettings);
         

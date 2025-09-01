@@ -31,7 +31,7 @@ class JobAPI {
 
   constructor() {
     // Use environment variables or fallback to defaults
-    this.baseUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000/api';
+    this.baseUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
     this.apiKey = import.meta.env.PUBLIC_API_KEY;
   }
 

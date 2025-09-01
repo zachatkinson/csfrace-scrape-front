@@ -31,8 +31,8 @@ import MainLayout from '../components/layout/MainLayout.astro';
               <span class="text-white/70 text-sm">Connected</span>
             </div>
             <div class="text-right">
-              <div class="text-white font-semibold" id="total-jobs">24 Jobs</div>
-              <div class="text-white/70 text-sm" id="active-jobs">3 Active</div>
+              <div class="text-white font-semibold" id="total-jobs">0 Jobs</div>
+              <div class="text-white/70 text-sm" id="active-jobs">0 Active</div>
             </div>
           </div>
         </div>
@@ -92,7 +92,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
         <div class="border-t border-white/10 pt-6 mt-6">
           <div class="flex items-center justify-between">
             <div class="text-white/70 text-sm">
-              Showing <span id="showing-count">1-10</span> of <span id="total-count">24</span> jobs
+              Showing <span id="showing-count">0</span> of <span id="total-count">0</span> jobs
             </div>
             <div class="flex items-center space-x-2">
               <button id="prev-page" class="glass-button px-3 py-2 text-white/90 hover:text-white disabled:opacity-50" disabled>Previous</button>
@@ -479,6 +479,21 @@ import MainLayout from '../components/layout/MainLayout.astro';
       
       totalJobsEl.textContent = `${total} Job${total !== 1 ? 's' : ''}`;
       activeJobsEl.textContent = `${active} Active`;
+      
+      // Update pagination counts
+      const showingCountEl = document.getElementById('showing-count');
+      const totalCountEl = document.getElementById('total-count');
+      
+      if (showingCountEl && totalCountEl) {
+        if (total === 0) {
+          showingCountEl.textContent = '0';
+        } else {
+          const startIndex = ((currentPage - 1) * jobsPerPage) + 1;
+          const endIndex = Math.min(currentPage * jobsPerPage, total);
+          showingCountEl.textContent = `${startIndex}-${endIndex}`;
+        }
+        totalCountEl.textContent = total.toString();
+      }
     };
     
     // Filtering and sorting (client-side for now, but can be moved to server-side)

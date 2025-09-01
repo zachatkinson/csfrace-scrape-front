@@ -157,7 +157,14 @@ import JobItem from '../components/JobItem.astro';
                 </svg>
               </div>
               <h3 class="text-red-400 font-medium mb-2">Failed to load jobs</h3>
-              <p class="text-white/60 text-sm mb-4">Unable to connect to the conversion service. Please try again.</p>
+              <p id="error-message" class="text-white/60 text-sm mb-2">Unable to connect to the conversion service.</p>
+              <div id="error-details" class="glass-panel p-3 rounded-lg bg-red-500/5 border border-red-500/20 text-left max-w-md mx-auto mb-4 hidden">
+                <p class="text-xs font-mono text-red-400/80 mb-2" id="error-technical"></p>
+                <div class="text-xs text-white/50 space-y-1">
+                  <p class="font-medium mb-1">Troubleshooting steps:</p>
+                  <ul id="error-steps" class="list-disc list-inside space-y-0.5 pl-2"></ul>
+                </div>
+              </div>
               <button id="retry-load-jobs" class="glass-button px-4 py-2 text-sm text-red-400/80 hover:text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-all duration-200 rounded-lg">
                 Retry
               </button>
@@ -666,8 +673,8 @@ import JobItem from '../components/JobItem.astro';
       
       try {
         // Try to fetch jobs from backend API
-        const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000/api';
-        const response = await fetch(`${apiUrl}/jobs?page=1&page_size=10`);
+        const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
+        const response = await fetch(`${apiUrl}/jobs/?page=1&page_size=10`);
         
         if (!response.ok) {
           // Check if it's a 404 (API endpoint not implemented yet) vs real server error
@@ -1025,6 +1032,150 @@ import JobItem from '../components/JobItem.astro';
           // Reset button state on error
           retryButton.innerHTML = originalContent;
           retryButton.disabled = false;
+        }
+      });
+    }
+    
+    // Convert Now Button Click Handler
+    if (convertNowBtn && urlInput) {
+      convertNowBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        
+        const url = urlInput.value.trim();
+        if (!url) {
+          alert('Please enter a WordPress URL');
+          return;
+        }
+        
+        // Add loading state
+        const originalContent = convertNowBtn.innerHTML;
+        convertNowBtn.innerHTML = `
+          <svg class="w-5 h-5 mr-2 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Converting...
+        `;
+        convertNowBtn.disabled = true;
+        
+        try {
+          // Call backend API for individual job creation
+          const response = await fetch(`${apiUrl}/jobs/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              url: url
+            })
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+          }
+          
+          const jobData = await response.json();
+          console.log('Job created successfully:', jobData);
+          
+          // Clear input and show success
+          urlInput.value = '';
+          alert(`Job created successfully! Job ID: ${jobData.id}`);
+          
+          // Refresh jobs display
+          await loadJobs();
+          
+        } catch (error) {
+          console.error('Failed to create job:', error);
+          alert(`Failed to create job: ${error.message}`);
+        } finally {
+          // Reset button state
+          convertNowBtn.innerHTML = originalContent;
+          convertNowBtn.disabled = false;
+        }
+      });
+    }
+    
+    // Convert All Button Click Handler (Bulk Processing)
+    if (bulkConvertBtn && fileInput) {
+      bulkConvertBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        
+        const file = fileInput.files?.[0];
+        if (!file) {
+          alert('Please select a file containing URLs');
+          return;
+        }
+        
+        // Read file content
+        try {
+          const fileContent = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = reject;
+            reader.readAsText(file);
+          });
+          
+          // Parse URLs from file content
+          const urls = fileContent
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line && line.startsWith('http'));
+          
+          if (urls.length === 0) {
+            alert('No valid URLs found in the file');
+            return;
+          }
+          
+          // Add loading state
+          const originalContent = bulkConvertBtn.innerHTML;
+          bulkConvertBtn.innerHTML = `
+            <svg class="w-5 h-5 mr-2 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Processing ${urls.length} URLs...
+          `;
+          bulkConvertBtn.disabled = true;
+          
+          // Call backend API for batch processing
+          const response = await fetch(`${apiUrl}/batches/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              name: `Batch-${new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-')}`,
+              description: `Bulk conversion of ${urls.length} URLs`,
+              urls: urls
+            })
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+          }
+          
+          const batchData = await response.json();
+          console.log('Batch created successfully:', batchData);
+          
+          // Clear file input and show success
+          fileInput.value = '';
+          const fileName = document.getElementById('file-name');
+          if (fileName) {
+            fileName.textContent = 'No file selected';
+          }
+          
+          alert(`Batch processing started successfully! Batch ID: ${batchData.id} (${urls.length} URLs)`);
+          
+          // Refresh jobs display
+          await loadJobs();
+          
+        } catch (error) {
+          console.error('Failed to process batch:', error);
+          alert(`Failed to process batch: ${error.message}`);
+        } finally {
+          // Reset button state
+          bulkConvertBtn.innerHTML = originalContent;
+          bulkConvertBtn.disabled = false;
         }
       });
     }
