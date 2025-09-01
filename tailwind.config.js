@@ -2,6 +2,17 @@
 export default {
   content: ['./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}'],
   theme: {
+    container: {
+      center: true,
+      padding: '1rem',
+      screens: {
+        sm: '640px',
+        md: '768px', 
+        lg: '1024px',
+        xl: '1200px',
+        '2xl': '1200px',
+      },
+    },
     extend: {
       // Liquid Glass Color Palette (Apple-inspired)
       colors: {
@@ -15,6 +26,12 @@ export default {
           'border-dark': 'rgba(255, 255, 255, 0.1)',
           'adaptive': 'color-mix(in srgb, transparent 90%, currentColor 10%)',
         },
+        
+        // Apple-inspired text colors for better readability
+        'apple-white': '#f2f2f7',        // Apple's off-white primary text
+        'apple-white-80': '#c7c7cc',     // Apple's secondary text (80% opacity)
+        'apple-white-60': '#8e8e93',     // Apple's tertiary text (60% opacity)
+        'apple-white-40': '#636366',     // Apple's quaternary text (40% opacity)
         
         // Contextual Colors for Content Hierarchy
         primary: {

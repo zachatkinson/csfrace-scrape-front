@@ -11,7 +11,7 @@ export default defineConfig({
       include: ['**/react/*', '**/components/**/*'],
     }),
     tailwind({
-      applyBaseStyles: false, // We'll apply our own Liquid Glass styles
+      applyBaseStyles: true, // Need this for Tailwind utilities to work
       config: {
         path: './tailwind.config.js',
       },

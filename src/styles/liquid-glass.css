@@ -316,6 +316,198 @@ input.glass-input:disabled {
   background: rgba(255, 255, 255, 0.05) !important;
 }
 
+/* Glass Select Dropdown - matching glass-input styles */
+select.glass-input {
+  /* Reset and base setup */
+  all: unset;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  position: relative;
+  
+  /* Apple-recommended padding: 13px vertical, 16px horizontal */
+  padding: 13px 16px !important;
+  padding-right: 40px !important; /* Space for dropdown arrow */
+  min-height: 44px !important; /* Apple's minimum touch target */
+  
+  /* Dark transparent background matching inputs */
+  background: rgba(0, 0, 0, 0.4) !important;
+  
+  /* Glass effect for depth */
+  backdrop-filter: blur(12px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(150%) !important;
+  
+  /* Subtle border to define the select area */
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
+  
+  /* Layered shadows for depth and inner definition */
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+  
+  /* Typography per Apple HIG */
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-size: 16px !important;
+  font-weight: 400 !important;
+  line-height: 1.4 !important;
+  letter-spacing: -0.022em !important;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif !important;
+  
+  /* Interaction */
+  cursor: pointer !important;
+  
+  /* Custom dropdown arrow */
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='rgba(255,255,255,0.7)' d='M6 8.825c-.2 0-.4-.1-.5-.2l-3.3-3.3c-.3-.3-.3-.8 0-1.1.3-.3.8-.3 1.1 0L6 7.025l2.7-2.7c.3-.3.8-.3 1.1 0 .3.3.3.8 0 1.1l-3.3 3.3c-.1.1-.3.2-.5.2z'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 16px center !important;
+  background-size: 12px 12px !important;
+  
+  /* Remove default appearance */
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  
+  /* Smooth transitions */
+  transition: all 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+}
+
+/* Select Hover State */
+select.glass-input:hover:not(:focus) {
+  background: rgba(0, 0, 0, 0.35) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 
+    0 6px 20px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Select Focus State */
+select.glass-input:focus {
+  background: rgba(0, 0, 0, 0.35) !important;
+  border-color: rgba(0, 122, 255, 0.8) !important;
+  outline: none !important;
+  box-shadow: 
+    0 0 0 3px rgba(0, 122, 255, 0.3),
+    0 4px 20px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Select Options styling */
+select.glass-input option {
+  background: rgba(0, 0, 0, 0.9) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  padding: 8px 16px !important;
+}
+
+/* Glass Checkbox - Custom Apple-style checkbox */
+.glass-checkbox {
+  /* Hide default checkbox */
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  
+  /* Size and positioning */
+  width: 20px !important;
+  height: 20px !important;
+  margin: 0 !important;
+  margin-right: 12px !important;
+  flex-shrink: 0 !important;
+  
+  /* Glass effect matching inputs */
+  background: rgba(0, 0, 0, 0.4) !important;
+  backdrop-filter: blur(12px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(150%) !important;
+  
+  /* Border and shape */
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 6px !important;
+  
+  /* Shadows for depth */
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2) !important;
+  
+  /* Cursor */
+  cursor: pointer !important;
+  
+  /* Smooth transitions */
+  transition: all 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+  
+  /* Position for checkmark */
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Checkbox Hover State */
+.glass-checkbox:hover:not(:checked) {
+  background: rgba(0, 0, 0, 0.35) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Checkbox Checked State */
+.glass-checkbox:checked {
+  background: rgba(0, 122, 255, 0.8) !important;
+  border-color: rgba(0, 122, 255, 1) !important;
+  box-shadow: 
+    0 0 0 3px rgba(0, 122, 255, 0.2),
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Checkmark icon */
+.glass-checkbox:checked::after {
+  content: '✓' !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  color: white !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+}
+
+/* Checkbox Focus State */
+.glass-checkbox:focus {
+  outline: none !important;
+  box-shadow: 
+    0 0 0 3px rgba(0, 122, 255, 0.3),
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Checkbox Labels - ensure they work with glass checkboxes */
+.glass-checkbox + label {
+  cursor: pointer !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-size: 16px !important;
+  font-weight: 400 !important;
+  line-height: 1.4 !important;
+  letter-spacing: -0.022em !important;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Checkbox container styling */
+.checkbox-container {
+  display: flex !important;
+  align-items: center !important;
+  margin-bottom: 12px !important;
+}
+
 /* Apple-Style Segmented Control with Pill Shape and Authentic Selection */
 .liquid-glass-segmented-control {
   position: relative;
@@ -529,4 +721,87 @@ input.glass-input:disabled {
     border: 1px solid #ccc !important;
     box-shadow: none !important;
   }
+}
+/* Dashboard-Specific Styles */
+
+/* Dashboard Filter Buttons */
+.filter-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: all 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.filter-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.8);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.filter-btn.active {
+  background: rgba(59, 130, 246, 0.8);
+  color: white;
+  border-color: rgba(59, 130, 246, 0.8);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+/* Job Item Cards */
+.job-item {
+  transition: all 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.job-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.job-item.selected {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+/* Status-specific styling */
+.job-item.completed {
+  border-left-color: rgb(34, 197, 94) !important;
+}
+
+.job-item.processing {
+  border-left-color: rgb(59, 130, 246) !important;
+}
+
+.job-item.failed {
+  border-left-color: rgb(239, 68, 68) !important;
+}
+
+.job-item.queued {
+  border-left-color: rgb(156, 163, 175) !important;
+}
+
+.job-item.cancelled {
+  border-left-color: rgb(251, 191, 36) !important;
+}
+
+/* Enhanced Progress Bars */
+.progress-bar {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transform: translateX(-100%);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }

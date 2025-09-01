@@ -90,9 +90,8 @@ const { title, description = "WordPress to Shopify content converter with ultra-
           
           <!-- Navigation Links -->
           <div class="hidden md:flex items-center space-x-6">
-            <a href="/" class="text-white/80 hover:text-white transition-colors">Dashboard</a>
-            <a href="/jobs" class="text-white/80 hover:text-white transition-colors">Jobs</a>
-            <a href="/settings" class="text-white/80 hover:text-white transition-colors">Settings</a>
+            <a href="/" class="text-white/80 hover:text-white transition-colors">Converter</a>
+            <a href="/dashboard" class="text-white/80 hover:text-white transition-colors">Jobs</a>
           </div>
           
           <!-- User Actions -->
@@ -104,9 +103,244 @@ const { title, description = "WordPress to Shopify content converter with ultra-
                 <span class="text-xs">Connected</span>
               </div>
             </div>
+            
+            <!-- Settings Button -->
+            <button 
+              id="settings-toggle" 
+              class="glass-button p-2 text-white/80 hover:text-white transition-all duration-200 relative"
+              aria-label="Open Settings"
+            >
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
           </div>
         </div>
       </nav>
+      
+      <!-- Settings Panel -->
+      <div 
+        id="settings-panel" 
+        class="fixed -top-20 left-0 right-0 z-40 transform -translate-y-full transition-transform duration-300 ease-out pointer-events-none"
+      >
+        <div class="max-w-4xl mx-auto px-8 py-6">
+          <div class="glass-card p-6">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-2xl font-bold text-white">Settings</h2>
+              <button 
+                id="settings-close" 
+                class="glass-button p-2 text-white/80 hover:text-white"
+                aria-label="Close Settings"
+              >
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <!-- API Configuration -->
+              <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+                  <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                  </svg>
+                  API Configuration
+                </h3>
+                
+                <div>
+                  <label class="block text-white/70 text-sm mb-2">Backend URL</label>
+                  <input 
+                    id="api-url" 
+                    type="url" 
+                    class="glass-input w-full px-3 py-2" 
+                    placeholder="http://localhost:8000"
+                    value="http://localhost:8000"
+                  />
+                </div>
+                
+                <div>
+                  <label class="block text-white/70 text-sm mb-2">Request Timeout (seconds)</label>
+                  <input 
+                    id="api-timeout" 
+                    type="number" 
+                    class="glass-input w-full px-3 py-2" 
+                    min="5" max="300" 
+                    value="30"
+                  />
+                </div>
+                
+                <div>
+                  <label class="block text-white/70 text-sm mb-2">Auto-refresh Interval (seconds)</label>
+                  <input 
+                    id="refresh-interval" 
+                    type="number" 
+                    class="glass-input w-full px-3 py-2" 
+                    min="5" max="300" 
+                    value="10"
+                  />
+                </div>
+              </div>
+              
+              <!-- Job Defaults -->
+              <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+                  <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                  Job Defaults
+                </h3>
+                
+                <div>
+                  <label class="block text-white/70 text-sm mb-2">Default Priority</label>
+                  <select id="default-priority" class="glass-input w-full px-3 py-2">
+                    <option value="low">Low</option>
+                    <option value="normal" selected>Normal</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label class="block text-white/70 text-sm mb-2">Max Retries</label>
+                  <input 
+                    id="max-retries" 
+                    type="number" 
+                    class="glass-input w-full px-3 py-2" 
+                    min="0" max="10" 
+                    value="3"
+                  />
+                </div>
+                
+                <div>
+                  <label class="block text-white/70 text-sm mb-2">Job Timeout (seconds)</label>
+                  <input 
+                    id="job-timeout" 
+                    type="number" 
+                    class="glass-input w-full px-3 py-2" 
+                    min="10" max="3600" 
+                    value="30"
+                  />
+                </div>
+              </div>
+              
+              <!-- Display Options -->
+              <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+                  <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                  Display Options
+                </h3>
+                
+                <div class="checkbox-container">
+                  <input 
+                    id="dark-mode" 
+                    type="checkbox" 
+                    class="glass-checkbox" 
+                    checked
+                  />
+                  <label for="dark-mode" class="text-white/70">Dark Mode</label>
+                </div>
+                
+                <div class="checkbox-container">
+                  <input 
+                    id="show-job-ids" 
+                    type="checkbox" 
+                    class="glass-checkbox" 
+                    checked
+                  />
+                  <label for="show-job-ids" class="text-white/70">Show Job IDs</label>
+                </div>
+                
+                <div class="checkbox-container">
+                  <input 
+                    id="compact-mode" 
+                    type="checkbox" 
+                    class="glass-checkbox"
+                  />
+                  <label for="compact-mode" class="text-white/70">Compact Mode</label>
+                </div>
+                
+                <div>
+                  <label class="block text-white/70 text-sm mb-2">Jobs Per Page</label>
+                  <select id="jobs-per-page" class="glass-input w-full px-3 py-2">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                  </select>
+                </div>
+              </div>
+              
+              <!-- Notifications -->
+              <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+                  <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5-5 5-5h-5V7a3 3 0 00-3-3H7a3 3 0 00-3 3v5a3 3 0 003 3h5v5z" />
+                  </svg>
+                  Notifications
+                </h3>
+                
+                <div class="checkbox-container">
+                  <input 
+                    id="completion-alerts" 
+                    type="checkbox" 
+                    class="glass-checkbox" 
+                    checked
+                  />
+                  <label for="completion-alerts" class="text-white/70">Job Completion Alerts</label>
+                </div>
+                
+                <div class="checkbox-container">
+                  <input 
+                    id="error-notifications" 
+                    type="checkbox" 
+                    class="glass-checkbox" 
+                    checked
+                  />
+                  <label for="error-notifications" class="text-white/70">Error Notifications</label>
+                </div>
+                
+                <div class="checkbox-container">
+                  <input 
+                    id="browser-notifications" 
+                    type="checkbox" 
+                    class="glass-checkbox"
+                  />
+                  <label for="browser-notifications" class="text-white/70">Browser Notifications</label>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex items-center justify-between pt-6 border-t border-white/10 mt-8">
+              <button 
+                id="reset-settings" 
+                class="glass-button px-4 py-2 text-red-400/80 hover:text-red-400"
+              >
+                Reset to Defaults
+              </button>
+              
+              <div class="flex space-x-3">
+                <button 
+                  id="cancel-settings" 
+                  class="glass-button px-4 py-2 text-white/80 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button 
+                  id="save-settings" 
+                  class="glass-button px-6 py-2 bg-blue-600/20 border-blue-500/30 text-blue-400 hover:bg-blue-600/30"
+                >
+                  Save Settings
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </header>
     
     <!-- Main Content Area with proper semantic structure -->
@@ -132,5 +366,224 @@ const { title, description = "WordPress to Shopify content converter with ultra-
     </div>
     
     <!-- Liquid Glass styles imported in frontmatter -->
+    
+    <!-- Settings Panel JavaScript -->
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const settingsToggle = document.getElementById('settings-toggle');
+        const settingsClose = document.getElementById('settings-close');
+        const cancelSettings = document.getElementById('cancel-settings');
+        const settingsPanel = document.getElementById('settings-panel');
+        const saveSettings = document.getElementById('save-settings');
+        const resetSettings = document.getElementById('reset-settings');
+        
+        // Settings state
+        let isSettingsOpen = false;
+        
+        // Open settings panel
+        const openSettings = () => {
+          settingsPanel.classList.remove('-translate-y-full', 'pointer-events-none', '-top-20');
+          settingsPanel.classList.add('translate-y-0', 'pointer-events-auto', 'top-20');
+          isSettingsOpen = true;
+          
+          // Load current settings
+          loadSettings();
+          
+          // Add escape key handler
+          document.addEventListener('keydown', handleEscapeKey);
+        };
+        
+        // Close settings panel
+        const closeSettings = () => {
+          settingsPanel.classList.remove('translate-y-0', 'pointer-events-auto', 'top-20');
+          settingsPanel.classList.add('-translate-y-full', 'pointer-events-none', '-top-20');
+          isSettingsOpen = false;
+          
+          // Remove escape key handler
+          document.removeEventListener('keydown', handleEscapeKey);
+        };
+        
+        // Handle escape key
+        const handleEscapeKey = (e) => {
+          if (e.key === 'Escape' && isSettingsOpen) {
+            closeSettings();
+          }
+        };
+        
+        // Load settings from localStorage
+        const loadSettings = () => {
+          const settings = getStoredSettings();
+          
+          // API Configuration
+          document.getElementById('api-url').value = settings.apiUrl;
+          document.getElementById('api-timeout').value = settings.apiTimeout;
+          document.getElementById('refresh-interval').value = settings.refreshInterval;
+          
+          // Job Defaults
+          document.getElementById('default-priority').value = settings.defaultPriority;
+          document.getElementById('max-retries').value = settings.maxRetries;
+          document.getElementById('job-timeout').value = settings.jobTimeout;
+          
+          // Display Options
+          document.getElementById('dark-mode').checked = settings.darkMode;
+          document.getElementById('show-job-ids').checked = settings.showJobIds;
+          document.getElementById('compact-mode').checked = settings.compactMode;
+          document.getElementById('jobs-per-page').value = settings.jobsPerPage;
+          
+          // Notifications
+          document.getElementById('completion-alerts').checked = settings.completionAlerts;
+          document.getElementById('error-notifications').checked = settings.errorNotifications;
+          document.getElementById('browser-notifications').checked = settings.browserNotifications;
+        };
+        
+        // Save settings to localStorage
+        const saveSettingsToStorage = () => {
+          const settings = {
+            // API Configuration
+            apiUrl: document.getElementById('api-url').value,
+            apiTimeout: parseInt(document.getElementById('api-timeout').value),
+            refreshInterval: parseInt(document.getElementById('refresh-interval').value),
+            
+            // Job Defaults
+            defaultPriority: document.getElementById('default-priority').value,
+            maxRetries: parseInt(document.getElementById('max-retries').value),
+            jobTimeout: parseInt(document.getElementById('job-timeout').value),
+            
+            // Display Options
+            darkMode: document.getElementById('dark-mode').checked,
+            showJobIds: document.getElementById('show-job-ids').checked,
+            compactMode: document.getElementById('compact-mode').checked,
+            jobsPerPage: parseInt(document.getElementById('jobs-per-page').value),
+            
+            // Notifications
+            completionAlerts: document.getElementById('completion-alerts').checked,
+            errorNotifications: document.getElementById('error-notifications').checked,
+            browserNotifications: document.getElementById('browser-notifications').checked
+          };
+          
+          localStorage.setItem('csfrace-settings', JSON.stringify(settings));
+          return settings;
+        };
+        
+        // Get stored settings with defaults
+        const getStoredSettings = () => {
+          const defaults = {
+            // API Configuration
+            apiUrl: 'http://localhost:8000',
+            apiTimeout: 30,
+            refreshInterval: 10,
+            
+            // Job Defaults
+            defaultPriority: 'normal',
+            maxRetries: 3,
+            jobTimeout: 30,
+            
+            // Display Options
+            darkMode: true,
+            showJobIds: true,
+            compactMode: false,
+            jobsPerPage: 10,
+            
+            // Notifications
+            completionAlerts: true,
+            errorNotifications: true,
+            browserNotifications: false
+          };
+          
+          try {
+            const stored = localStorage.getItem('csfrace-settings');
+            return stored ? { ...defaults, ...JSON.parse(stored) } : defaults;
+          } catch {
+            return defaults;
+          }
+        };
+        
+        // Reset to defaults
+        const resetToDefaults = () => {
+          if (confirm('Reset all settings to defaults? This cannot be undone.')) {
+            localStorage.removeItem('csfrace-settings');
+            loadSettings();
+            
+            // Show confirmation
+            const button = document.getElementById('reset-settings');
+            const originalText = button.textContent;
+            button.textContent = 'Reset Complete!';
+            button.style.color = '#10b981';
+            
+            setTimeout(() => {
+              button.textContent = originalText;
+              button.style.color = '';
+            }, 2000);
+          }
+        };
+        
+        // Apply settings (for immediate effects)
+        const applySettings = (settings) => {
+          // Apply theme changes
+          document.body.classList.toggle('compact-mode', settings.compactMode);
+          
+          // Update API client if available
+          if (window.apiClient) {
+            window.apiClient.setBaseURL(settings.apiUrl);
+          }
+          
+          // Dispatch settings change event
+          window.dispatchEvent(new CustomEvent('settingsChanged', { detail: settings }));
+        };
+        
+        // Event listeners
+        settingsToggle?.addEventListener('click', openSettings);
+        settingsClose?.addEventListener('click', closeSettings);
+        cancelSettings?.addEventListener('click', closeSettings);
+        
+        saveSettings?.addEventListener('click', () => {
+          const settings = saveSettingsToStorage();
+          applySettings(settings);
+          
+          // Show success feedback
+          const button = document.getElementById('save-settings');
+          const originalText = button.textContent;
+          button.textContent = 'Settings Saved!';
+          button.style.backgroundColor = 'rgba(16, 185, 129, 0.2)';
+          
+          setTimeout(() => {
+            button.textContent = originalText;
+            button.style.backgroundColor = '';
+            closeSettings();
+          }, 1500);
+        });
+        
+        resetSettings?.addEventListener('click', resetToDefaults);
+        
+        // Close on backdrop click
+        settingsPanel?.addEventListener('click', (e) => {
+          if (e.target === settingsPanel) {
+            closeSettings();
+          }
+        });
+        
+        // Request notification permission if browser notifications are enabled
+        document.getElementById('browser-notifications')?.addEventListener('change', (e) => {
+          if (e.target.checked) {
+            if ('Notification' in window && Notification.permission === 'default') {
+              Notification.requestPermission().then(permission => {
+                if (permission !== 'granted') {
+                  e.target.checked = false;
+                  alert('Browser notifications require permission to be granted.');
+                }
+              });
+            }
+          }
+        });
+        
+        // Initialize settings on page load
+        const initialSettings = getStoredSettings();
+        applySettings(initialSettings);
+        
+        // Make settings globally available
+        window.getAppSettings = getStoredSettings;
+        window.saveAppSettings = saveSettingsToStorage;
+      });
+    </script>
   </body>
 </html>
