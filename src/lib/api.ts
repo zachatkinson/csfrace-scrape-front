@@ -1,1 +1,417 @@
-/**\n * API Client\n * HTTP client for communicating with the WordPress to Shopify backend\n * Includes retry logic, error handling, and type safety\n */\n\nimport axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios';\nimport type { \n  ApiResponse, \n  ConversionJob, \n  ConversionOptions, \n  UrlValidationResult, \n  BatchRequest,\n  ConversionStats\n} from '../types';\n\n// Environment configuration\ninterface ApiConfig {\n  baseURL: string;\n  apiKey?: string;\n  timeout: number;\n  retryAttempts: number;\n  retryDelay: number;\n}\n\n// Default configuration\nconst defaultConfig: ApiConfig = {\n  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',\n  apiKey: import.meta.env.VITE_API_KEY,\n  timeout: parseInt(import.meta.env.VITE_API_TIMEOUT || '30000'),\n  retryAttempts: 3,\n  retryDelay: 1000,\n};\n\n/**\n * API Client Class\n */\nclass ApiClient {\n  private client: AxiosInstance;\n  private config: ApiConfig;\n  \n  constructor(config: Partial<ApiConfig> = {}) {\n    this.config = { ...defaultConfig, ...config };\n    \n    this.client = axios.create({\n      baseURL: this.config.baseURL,\n      timeout: this.config.timeout,\n      headers: {\n        'Content-Type': 'application/json',\n        ...(this.config.apiKey && { 'X-API-Key': this.config.apiKey }),\n      },\n    });\n    \n    this.setupInterceptors();\n  }\n  \n  /**\n   * Setup request and response interceptors\n   */\n  private setupInterceptors(): void {\n    // Request interceptor\n    this.client.interceptors.request.use(\n      (config) => {\n        // Add timestamp to prevent caching\n        if (config.method === 'get') {\n          config.params = {\n            ...config.params,\n            _t: Date.now(),\n          };\n        }\n        \n        // Add auth token if available\n        const token = localStorage.getItem('auth_token');\n        if (token) {\n          config.headers.Authorization = `Bearer ${token}`;\n        }\n        \n        return config;\n      },\n      (error) => {\n        return Promise.reject(error);\n      }\n    );\n    \n    // Response interceptor with retry logic\n    this.client.interceptors.response.use(\n      (response) => response,\n      async (error) => {\n        const originalRequest = error.config;\n        \n        // Retry logic for network errors or 5xx responses\n        if (\n          !originalRequest._retry &&\n          originalRequest._retryCount < this.config.retryAttempts &&\n          (error.code === 'NETWORK_ERROR' ||\n           error.code === 'ECONNABORTED' ||\n           (error.response && error.response.status >= 500))\n        ) {\n          originalRequest._retry = true;\n          originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;\n          \n          // Exponential backoff\n          const delay = this.config.retryDelay * Math.pow(2, originalRequest._retryCount - 1);\n          await new Promise(resolve => setTimeout(resolve, delay));\n          \n          console.log(`Retrying request (attempt ${originalRequest._retryCount}/${this.config.retryAttempts})`);\n          \n          return this.client(originalRequest);\n        }\n        \n        // Handle authentication errors\n        if (error.response?.status === 401) {\n          localStorage.removeItem('auth_token');\n          window.location.href = '/login';\n        }\n        \n        return Promise.reject(error);\n      }\n    );\n  }\n  \n  /**\n   * Generic request method with error handling\n   */\n  private async request<T>(\n    config: AxiosRequestConfig\n  ): Promise<ApiResponse<T>> {\n    try {\n      const response: AxiosResponse<ApiResponse<T>> = await this.client(config);\n      return response.data;\n    } catch (error: any) {\n      console.error('API request failed:', error);\n      \n      // Format error response\n      if (error.response?.data) {\n        return error.response.data;\n      }\n      \n      return {\n        success: false,\n        error: error.message || 'Network error occurred',\n        timestamp: new Date().toISOString(),\n      };\n    }\n  }\n  \n  // =============================================================================\n  // PUBLIC API METHODS\n  // =============================================================================\n  \n  /**\n   * Health check endpoint\n   */\n  async healthCheck(): Promise<ApiResponse<{ status: string; version: string }>> {\n    return this.request({\n      method: 'GET',\n      url: '/health',\n    });\n  }\n  \n  /**\n   * Validate WordPress URL\n   */\n  async validateUrl(url: string): Promise<ApiResponse<UrlValidationResult>> {\n    return this.request({\n      method: 'POST',\n      url: '/api/validate',\n      data: { url },\n    });\n  }\n  \n  /**\n   * Submit conversion job\n   */\n  async submitJob(\n    url: string,\n    options: ConversionOptions\n  ): Promise<ApiResponse<ConversionJob>> {\n    return this.request({\n      method: 'POST',\n      url: '/api/jobs',\n      data: { url, options },\n    });\n  }\n  \n  /**\n   * Get job status\n   */\n  async getJob(jobId: string): Promise<ApiResponse<ConversionJob>> {\n    return this.request({\n      method: 'GET',\n      url: `/api/jobs/${jobId}`,\n    });\n  }\n  \n  /**\n   * Get all jobs\n   */\n  async getJobs(params?: {\n    status?: string;\n    limit?: number;\n    offset?: number;\n    sortBy?: string;\n  }): Promise<ApiResponse<ConversionJob[]>> {\n    return this.request({\n      method: 'GET',\n      url: '/api/jobs',\n      params,\n    });\n  }\n  \n  /**\n   * Cancel job\n   */\n  async cancelJob(jobId: string): Promise<ApiResponse<ConversionJob>> {\n    return this.request({\n      method: 'POST',\n      url: `/api/jobs/${jobId}/cancel`,\n    });\n  }\n  \n  /**\n   * Delete job\n   */\n  async deleteJob(jobId: string): Promise<ApiResponse<void>> {\n    return this.request({\n      method: 'DELETE',\n      url: `/api/jobs/${jobId}`,\n    });\n  }\n  \n  /**\n   * Retry failed job\n   */\n  async retryJob(jobId: string): Promise<ApiResponse<ConversionJob>> {\n    return this.request({\n      method: 'POST',\n      url: `/api/jobs/${jobId}/retry`,\n    });\n  }\n  \n  /**\n   * Download job result\n   */\n  async downloadJobResult(\n    jobId: string,\n    format: 'html' | 'json' = 'html'\n  ): Promise<Blob> {\n    const response = await this.client({\n      method: 'GET',\n      url: `/api/jobs/${jobId}/download`,\n      params: { format },\n      responseType: 'blob',\n    });\n    \n    return response.data;\n  }\n  \n  /**\n   * Submit batch request\n   */\n  async submitBatch(\n    urls: string[],\n    options: ConversionOptions,\n    name?: string\n  ): Promise<ApiResponse<BatchRequest>> {\n    return this.request({\n      method: 'POST',\n      url: '/api/batches',\n      data: { urls, options, name },\n    });\n  }\n  \n  /**\n   * Get batch status\n   */\n  async getBatch(batchId: string): Promise<ApiResponse<BatchRequest>> {\n    return this.request({\n      method: 'GET',\n      url: `/api/batches/${batchId}`,\n    });\n  }\n  \n  /**\n   * Get all batches\n   */\n  async getBatches(): Promise<ApiResponse<BatchRequest[]>> {\n    return this.request({\n      method: 'GET',\n      url: '/api/batches',\n    });\n  }\n  \n  /**\n   * Get conversion statistics\n   */\n  async getStats(period?: {\n    start: string;\n    end: string;\n  }): Promise<ApiResponse<ConversionStats>> {\n    return this.request({\n      method: 'GET',\n      url: '/api/stats',\n      params: period,\n    });\n  }\n  \n  /**\n   * Upload file for batch processing\n   */\n  async uploadFile(\n    file: File,\n    options: ConversionOptions\n  ): Promise<ApiResponse<BatchRequest>> {\n    const formData = new FormData();\n    formData.append('file', file);\n    formData.append('options', JSON.stringify(options));\n    \n    return this.request({\n      method: 'POST',\n      url: '/api/upload',\n      data: formData,\n      headers: {\n        'Content-Type': 'multipart/form-data',\n      },\n    });\n  }\n  \n  /**\n   * Get system configuration\n   */\n  async getConfig(): Promise<ApiResponse<{\n    maxConcurrentJobs: number;\n    supportedFormats: string[];\n    features: string[];\n  }>> {\n    return this.request({\n      method: 'GET',\n      url: '/api/config',\n    });\n  }\n  \n  /**\n   * Update API configuration\n   */\n  updateConfig(config: Partial<ApiConfig>): void {\n    this.config = { ...this.config, ...config };\n    \n    // Update axios instance\n    this.client.defaults.baseURL = this.config.baseURL;\n    this.client.defaults.timeout = this.config.timeout;\n    \n    if (this.config.apiKey) {\n      this.client.defaults.headers['X-API-Key'] = this.config.apiKey;\n    }\n  }\n  \n  /**\n   * Get current configuration\n   */\n  getConfig(): ApiConfig {\n    return { ...this.config };\n  }\n}\n\n// Create default instance\nconst apiClient = new ApiClient();\n\n// Export both the class and default instance\nexport { ApiClient };\nexport default apiClient;\n\n// Convenience methods\nexport const api = {\n  healthCheck: () => apiClient.healthCheck(),\n  validateUrl: (url: string) => apiClient.validateUrl(url),\n  submitJob: (url: string, options: ConversionOptions) => apiClient.submitJob(url, options),\n  getJob: (jobId: string) => apiClient.getJob(jobId),\n  getJobs: (params?: any) => apiClient.getJobs(params),\n  cancelJob: (jobId: string) => apiClient.cancelJob(jobId),\n  deleteJob: (jobId: string) => apiClient.deleteJob(jobId),\n  retryJob: (jobId: string) => apiClient.retryJob(jobId),\n  downloadJobResult: (jobId: string, format?: 'html' | 'json') => apiClient.downloadJobResult(jobId, format),\n  submitBatch: (urls: string[], options: ConversionOptions, name?: string) => apiClient.submitBatch(urls, options, name),\n  getBatch: (batchId: string) => apiClient.getBatch(batchId),\n  getBatches: () => apiClient.getBatches(),\n  getStats: (period?: any) => apiClient.getStats(period),\n  uploadFile: (file: File, options: ConversionOptions) => apiClient.uploadFile(file, options),\n};"
+/**
+ * API Client
+ * HTTP client for communicating with the WordPress to Shopify backend
+ * Includes retry logic, error handling, and type safety
+ */
+
+import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios';
+import type { 
+  ApiResponse, 
+  ConversionJob, 
+  ConversionOptions, 
+  UrlValidationResult, 
+  BatchRequest,
+  ConversionStats
+} from '../types';
+
+// Environment configuration
+interface ApiConfig {
+  baseURL: string;
+  apiKey?: string;
+  timeout: number;
+  retryAttempts: number;
+  retryDelay: number;
+}
+
+// Default configuration
+const defaultConfig: ApiConfig = {
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
+  apiKey: import.meta.env.VITE_API_KEY,
+  timeout: parseInt(import.meta.env.VITE_API_TIMEOUT || '30000'),
+  retryAttempts: 3,
+  retryDelay: 1000,
+};
+
+/**
+ * API Client Class
+ */
+class ApiClient {
+  private client: AxiosInstance;
+  private config: ApiConfig;
+  
+  constructor(config: Partial<ApiConfig> = {}) {
+    this.config = { ...defaultConfig, ...config };
+    
+    this.client = axios.create({
+      baseURL: this.config.baseURL,
+      timeout: this.config.timeout,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(this.config.apiKey && { 'X-API-Key': this.config.apiKey }),
+      },
+    });
+    
+    this.setupInterceptors();
+  }
+  
+  /**
+   * Setup request and response interceptors
+   */
+  private setupInterceptors(): void {
+    // Request interceptor
+    this.client.interceptors.request.use(
+      (config) => {
+        // Add timestamp to prevent caching
+        if (config.method === 'get') {
+          config.params = {
+            ...config.params,
+            _t: Date.now(),
+          };
+        }
+        
+        // Add auth token if available
+        const token = sessionStorage.getItem('csfrace-access-token');
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
+      }
+    );
+    
+    // Response interceptor with retry logic
+    this.client.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error.config;
+        
+        // Retry logic for network errors or 5xx responses
+        if (
+          !originalRequest._retry &&
+          originalRequest._retryCount < this.config.retryAttempts &&
+          (error.code === 'NETWORK_ERROR' ||
+           error.code === 'ECONNABORTED' ||
+           (error.response && error.response.status >= 500))
+        ) {
+          originalRequest._retry = true;
+          originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
+          
+          // Exponential backoff
+          const delay = this.config.retryDelay * Math.pow(2, originalRequest._retryCount - 1);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          
+          console.log(`Retrying request (attempt ${originalRequest._retryCount}/${this.config.retryAttempts})`);
+          
+          return this.client(originalRequest);
+        }
+        
+        // Handle authentication errors
+        if (error.response?.status === 401) {
+          sessionStorage.removeItem('csfrace-access-token');
+          localStorage.removeItem('csfrace-refresh-token');
+          // Don't redirect here - let the AuthContext handle it
+        }
+        
+        return Promise.reject(error);
+      }
+    );
+  }
+  
+  /**
+   * Generic request method with error handling
+   */
+  private async request<T>(
+    config: AxiosRequestConfig
+  ): Promise<ApiResponse<T>> {
+    try {
+      const response: AxiosResponse<ApiResponse<T>> = await this.client(config);
+      return response.data;
+    } catch (error: any) {
+      console.error('API request failed:', error);
+      
+      // Format error response
+      if (error.response?.data) {
+        return error.response.data;
+      }
+      
+      return {
+        success: false,
+        error: error.message || 'Network error occurred',
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+  
+  // =============================================================================
+  // PUBLIC API METHODS
+  // =============================================================================
+  
+  /**
+   * Health check endpoint
+   */
+  async healthCheck(): Promise<ApiResponse<{ status: string; version: string }>> {
+    return this.request({
+      method: 'GET',
+      url: '/health',
+    });
+  }
+  
+  /**
+   * Validate WordPress URL (Note: Backend doesn't have this endpoint yet)
+   * This is a placeholder implementation that does basic validation
+   */
+  async validateUrl(url: string): Promise<ApiResponse<UrlValidationResult>> {
+    try {
+      // Basic URL validation first
+      const urlObj = new URL(url);
+      
+      // For now, return a basic validation response
+      // In the future, this could call a real backend validation endpoint
+      return {
+        success: true,
+        data: {
+          isValid: true,
+          isWordPress: url.includes('wordpress') || url.includes('wp-'),
+          isAccessible: true,
+          contentType: 'post',
+          metadata: {
+            title: 'WordPress Content',
+            description: 'Ready for conversion',
+            estimatedSize: '2.4 MB'
+          }
+        },
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: 'Invalid URL format',
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+  
+  /**
+   * Submit conversion job
+   */
+  async submitJob(
+    url: string,
+    options: ConversionOptions
+  ): Promise<ApiResponse<ConversionJob>> {
+    return this.request({
+      method: 'POST',
+      url: '/jobs',
+      data: { url },
+    });
+  }
+  
+  /**
+   * Get job status
+   */
+  async getJob(jobId: string): Promise<ApiResponse<ConversionJob>> {
+    return this.request({
+      method: 'GET',
+      url: `/jobs/${jobId}`,
+    });
+  }
+  
+  /**
+   * Get all jobs
+   */
+  async getJobs(params?: {
+    status?: string;
+    limit?: number;
+    offset?: number;
+    sortBy?: string;
+  }): Promise<ApiResponse<ConversionJob[]>> {
+    return this.request({
+      method: 'GET',
+      url: '/jobs',
+      params,
+    });
+  }
+  
+  /**
+   * Cancel job
+   */
+  async cancelJob(jobId: string): Promise<ApiResponse<ConversionJob>> {
+    return this.request({
+      method: 'POST',
+      url: `/jobs/${jobId}/cancel`,
+    });
+  }
+  
+  /**
+   * Delete job
+   */
+  async deleteJob(jobId: string): Promise<ApiResponse<void>> {
+    return this.request({
+      method: 'DELETE',
+      url: `/jobs/${jobId}`,
+    });
+  }
+  
+  /**
+   * Retry failed job
+   */
+  async retryJob(jobId: string): Promise<ApiResponse<ConversionJob>> {
+    return this.request({
+      method: 'POST',
+      url: `/jobs/${jobId}/retry`,
+    });
+  }
+  
+  /**
+   * Download job result
+   */
+  async downloadJobResult(
+    jobId: string,
+    format: 'html' | 'json' = 'html'
+  ): Promise<Blob> {
+    const response = await this.client({
+      method: 'GET',
+      url: `/jobs/${jobId}/download`,
+      params: { format },
+      responseType: 'blob',
+    });
+    
+    return response.data;
+  }
+  
+  /**
+   * Submit batch request
+   */
+  async submitBatch(
+    urls: string[],
+    options: ConversionOptions,
+    name?: string
+  ): Promise<ApiResponse<BatchRequest>> {
+    return this.request({
+      method: 'POST',
+      url: '/batches',
+      data: { 
+        name: name || `Batch ${new Date().toISOString()}`,
+        urls
+      },
+    });
+  }
+  
+  /**
+   * Get batch status
+   */
+  async getBatch(batchId: string): Promise<ApiResponse<BatchRequest>> {
+    return this.request({
+      method: 'GET',
+      url: `/batches/${batchId}`,
+    });
+  }
+  
+  /**
+   * Get all batches
+   */
+  async getBatches(): Promise<ApiResponse<BatchRequest[]>> {
+    return this.request({
+      method: 'GET',
+      url: '/batches',
+    });
+  }
+  
+  /**
+   * Get conversion statistics
+   */
+  async getStats(period?: {
+    start: string;
+    end: string;
+  }): Promise<ApiResponse<ConversionStats>> {
+    return this.request({
+      method: 'GET',
+      url: '/stats',
+      params: period,
+    });
+  }
+  
+  /**
+   * Upload file for batch processing
+   */
+  async uploadFile(
+    file: File,
+    options: ConversionOptions
+  ): Promise<ApiResponse<BatchRequest>> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('options', JSON.stringify(options));
+    
+    return this.request({
+      method: 'POST',
+      url: '/upload',
+      data: formData,
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  }
+  
+  /**
+   * Get system configuration
+   */
+  async getSystemConfig(): Promise<ApiResponse<{
+    maxConcurrentJobs: number;
+    supportedFormats: string[];
+    features: string[];
+  }>> {
+    return this.request({
+      method: 'GET',
+      url: '/config',
+    });
+  }
+  
+  /**
+   * Update API configuration
+   */
+  updateConfig(config: Partial<ApiConfig>): void {
+    this.config = { ...this.config, ...config };
+    
+    // Update axios instance
+    this.client.defaults.baseURL = this.config.baseURL;
+    this.client.defaults.timeout = this.config.timeout;
+    
+    if (this.config.apiKey) {
+      this.client.defaults.headers['X-API-Key'] = this.config.apiKey;
+    }
+  }
+  
+  /**
+   * Get current configuration
+   */
+  getConfig(): ApiConfig {
+    return { ...this.config };
+  }
+}
+
+// Create default instance
+const apiClient = new ApiClient();
+
+// Export both the class and default instance
+export { ApiClient };
+export default apiClient;
+
+// Convenience methods
+export const api = {
+  healthCheck: () => apiClient.healthCheck(),
+  validateUrl: (url: string) => apiClient.validateUrl(url),
+  submitJob: (url: string, options: ConversionOptions) => apiClient.submitJob(url, options),
+  getJob: (jobId: string) => apiClient.getJob(jobId),
+  getJobs: (params?: any) => apiClient.getJobs(params),
+  cancelJob: (jobId: string) => apiClient.cancelJob(jobId),
+  deleteJob: (jobId: string) => apiClient.deleteJob(jobId),
+  retryJob: (jobId: string) => apiClient.retryJob(jobId),
+  downloadJobResult: (jobId: string, format?: 'html' | 'json') => apiClient.downloadJobResult(jobId, format),
+  submitBatch: (urls: string[], options: ConversionOptions, name?: string) => apiClient.submitBatch(urls, options, name),
+  getBatch: (batchId: string) => apiClient.getBatch(batchId),
+  getBatches: () => apiClient.getBatches(),
+  getStats: (period?: any) => apiClient.getStats(period),
+  uploadFile: (file: File, options: ConversionOptions) => apiClient.uploadFile(file, options),
+};

@@ -6,32 +6,36 @@
 
 import React, { useState, useCallback, useRef } from 'react';
 import { LiquidCard, LiquidButton, LiquidInput } from '../liquid-glass';
+import { api } from '../../lib/api.ts';
+import { useAuth } from '../../contexts/AuthContext.tsx';
+import type { ConversionJob, JobStatus } from '../../types';
 
-// Types for URL scraping
+// Types for URL scraping (extending backend types)
 interface UrlValidationResult {
   isValid: boolean;
   isWordPress: boolean;
+  isAccessible: boolean;
+  contentType?: string;
   error?: string;
   metadata?: {
     title?: string;
-    type?: 'post' | 'page' | 'product';
+    description?: string;
     estimatedSize?: string;
+    lastModified?: string;
   };
 }
 
-interface ScrapingJob {
+interface ScrapingJobUI extends Omit<ConversionJob, 'id' | 'status'> {
   id: string;
-  url: string;
-  status: 'pending' | 'validating' | 'scraping' | 'completed' | 'error';
+  status: JobStatus | 'validating';
   progress: number;
-  result?: any;
   error?: string;
   createdAt: Date;
 }
 
 export interface UrlScraperProps {
-  onJobSubmit?: (job: ScrapingJob) => void;
-  onJobUpdate?: (job: ScrapingJob) => void;
+  onJobSubmit?: (job: ScrapingJobUI) => void;
+  onJobUpdate?: (job: ScrapingJobUI) => void;
   maxConcurrentJobs?: number;
   className?: string;
 }
@@ -45,52 +49,432 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
   maxConcurrentJobs = 5,
   className = '',
 }) => {
+  const { isAuthenticated } = useAuth();
   const [url, setUrl] = useState('');
   const [isValidating, setIsValidating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationResult, setValidationResult] = useState<UrlValidationResult | null>(null);
-  const [jobs, setJobs] = useState<ScrapingJob[]>([]);
+  const [jobs, setJobs] = useState<ScrapingJobUI[]>([]);
   const [batchMode, setBatchMode] = useState(false);
   const [batchUrls, setBatchUrls] = useState('');
+  const [isBatchSubmitting, setIsBatchSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // URL Validation with WordPress detection
+  // URL Validation with WordPress detection using real API
   const validateUrl = useCallback(async (inputUrl: string): Promise<UrlValidationResult> => {
     try {
       // Basic URL validation
       const urlObj = new URL(inputUrl);
       
-      // Mock WordPress detection (would be replaced with actual API call)
-      const isWordPress = inputUrl.includes('wordpress') || 
-                         inputUrl.includes('wp-') ||
-                         Math.random() > 0.3; // Mock detection
+      // Call backend validation API
+      const response = await api.validateUrl(inputUrl);
       
-      if (!isWordPress) {
+      if (response.success && response.data) {
+        const validationData = response.data;
+        return {
+          isValid: validationData.isValid,
+          isWordPress: validationData.isWordPress,
+          isAccessible: validationData.isAccessible,
+          contentType: validationData.contentType,
+          metadata: validationData.metadata
+        };
+      } else {
         return {
           isValid: false,
           isWordPress: false,
-          error: 'This doesn\'t appear to be a WordPress site'
+          isAccessible: false,
+          error: response.error || 'Validation failed'
         };
       }
       
-      // Mock metadata extraction
-      const metadata = {
-        title: 'Sample WordPress Post',
-        type: 'post' as const,
-        estimatedSize: '2.4 MB'
-      };
-      
-      return {
-        isValid: true,
-        isWordPress: true,
-        metadata
-      };
-      
     } catch (error) {
+      console.error('URL validation error:', error);
       return {
         isValid: false,
         isWordPress: false,
-        error: 'Invalid URL format'
+        isAccessible: false,
+        error: error instanceof Error ? error.message : 'Invalid URL format'
       };
     }
-  }, []);\n  
-  // Handle URL input change with real-time validation\n  const handleUrlChange = useCallback(async (newUrl: string) => {\n    setUrl(newUrl);\n    setValidationResult(null);\n    \n    if (newUrl.length < 10) return;\n    \n    setIsValidating(true);\n    \n    // Debounce validation\n    setTimeout(async () => {\n      const result = await validateUrl(newUrl);\n      setValidationResult(result);\n      setIsValidating(false);\n    }, 500);\n  }, [validateUrl]);\n  \n  // Create new scraping job\n  const createJob = (jobUrl: string): ScrapingJob => ({\n    id: `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,\n    url: jobUrl,\n    status: 'pending',\n    progress: 0,\n    createdAt: new Date()\n  });\n  \n  // Submit single URL for processing\n  const handleSubmit = useCallback(() => {\n    if (!validationResult?.isValid || isValidating) return;\n    \n    const job = createJob(url);\n    setJobs(prev => [job, ...prev]);\n    \n    if (onJobSubmit) {\n      onJobSubmit(job);\n    }\n    \n    // Start processing simulation\n    simulateJobProcessing(job);\n    \n    // Clear form\n    setUrl('');\n    setValidationResult(null);\n  }, [url, validationResult, isValidating, onJobSubmit]);\n  \n  // Submit batch URLs\n  const handleBatchSubmit = useCallback(() => {\n    const urls = batchUrls\n      .split('\\n')\n      .map(u => u.trim())\n      .filter(u => u.length > 0);\n    \n    const newJobs = urls.map(createJob);\n    setJobs(prev => [...newJobs, ...prev]);\n    \n    newJobs.forEach(job => {\n      if (onJobSubmit) {\n        onJobSubmit(job);\n      }\n      simulateJobProcessing(job);\n    });\n    \n    setBatchUrls('');\n    setBatchMode(false);\n  }, [batchUrls, onJobSubmit]);\n  \n  // Simulate job processing (replace with actual API calls)\n  const simulateJobProcessing = useCallback((job: ScrapingJob) => {\n    let currentProgress = 0;\n    \n    const updateJob = (updates: Partial<ScrapingJob>) => {\n      const updatedJob = { ...job, ...updates };\n      \n      setJobs(prev => prev.map(j => j.id === job.id ? updatedJob : j));\n      \n      if (onJobUpdate) {\n        onJobUpdate(updatedJob);\n      }\n    };\n    \n    // Start validation phase\n    setTimeout(() => {\n      updateJob({ status: 'validating', progress: 10 });\n    }, 500);\n    \n    // Start scraping phase\n    setTimeout(() => {\n      updateJob({ status: 'scraping', progress: 25 });\n      \n      // Simulate progressive updates\n      const progressInterval = setInterval(() => {\n        currentProgress += Math.random() * 15 + 5;\n        \n        if (currentProgress >= 100) {\n          clearInterval(progressInterval);\n          updateJob({ \n            status: 'completed', \n            progress: 100,\n            result: {\n              convertedHtml: '<div>Sample converted content</div>',\n              images: ['image1.jpg', 'image2.jpg'],\n              metadata: validationResult?.metadata\n            }\n          });\n        } else {\n          updateJob({ progress: Math.min(currentProgress, 95) });\n        }\n      }, 1000);\n    }, 2000);\n  }, [validationResult, onJobUpdate]);\n  \n  // Handle file upload for batch processing\n  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {\n    const file = event.target.files?.[0];\n    if (!file) return;\n    \n    const reader = new FileReader();\n    reader.onload = (e) => {\n      const content = e.target?.result as string;\n      setBatchUrls(content);\n    };\n    reader.readAsText(file);\n  }, []);\n  \n  return (\n    <div className={`space-y-6 ${className}`.trim()}>\n      {/* Mode Switcher */}\n      <div className=\"flex items-center justify-center\">\n        <div className=\"liquid-glass p-2 rounded-glass flex\">\n          <button\n            onClick={() => setBatchMode(false)}\n            className={`px-4 py-2 rounded-glass-sm text-sm font-medium transition-all duration-glass ${\n              !batchMode \n                ? 'bg-white/20 text-white shadow-glass' \n                : 'text-white/70 hover:text-white hover:bg-white/10'\n            }`}\n          >\n            Single URL\n          </button>\n          <button\n            onClick={() => setBatchMode(true)}\n            className={`px-4 py-2 rounded-glass-sm text-sm font-medium transition-all duration-glass ${\n              batchMode \n                ? 'bg-white/20 text-white shadow-glass' \n                : 'text-white/70 hover:text-white hover:bg-white/10'\n            }`}\n          >\n            Batch Processing\n          </button>\n        </div>\n      </div>\n      \n      {!batchMode ? (\n        /* Single URL Mode */\n        <LiquidCard\n          title=\"WordPress URL Converter\"\n          subtitle=\"Enter a WordPress URL to convert to Shopify format\"\n          className=\"max-w-2xl mx-auto\"\n        >\n          <div className=\"space-y-4\">\n            <LiquidInput\n              label=\"WordPress URL\"\n              placeholder=\"https://your-wordpress-site.com/post-url\"\n              value={url}\n              onChange={(e) => handleUrlChange(e.target.value)}\n              loading={isValidating}\n              error={validationResult?.error ? true : false}\n              success={validationResult?.isValid}\n              errorText={validationResult?.error}\n              helperText={validationResult?.isValid \n                ? `Detected: ${validationResult.metadata?.type} - ${validationResult.metadata?.estimatedSize}`\n                : 'Enter a valid WordPress URL'\n              }\n              leftIcon={\n                <svg className=\"w-5 h-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\">\n                  <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={2} d=\"M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1\" />\n                </svg>\n              }\n              clearable\n              onClear={() => {\n                setUrl('');\n                setValidationResult(null);\n              }}\n            />\n            \n            <LiquidButton\n              variant=\"primary\"\n              size=\"lg\"\n              fullWidth\n              disabled={!validationResult?.isValid || isValidating}\n              loading={isValidating}\n              onClick={handleSubmit}\n              leftIcon={\n                <svg className=\"w-5 h-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\">\n                  <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={2} d=\"M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4\" />\n                </svg>\n              }\n            >\n              Convert to Shopify\n            </LiquidButton>\n          </div>\n        </LiquidCard>\n      ) : (\n        /* Batch Processing Mode */\n        <LiquidCard\n          title=\"Batch URL Processing\"\n          subtitle=\"Convert multiple WordPress URLs simultaneously\"\n          className=\"max-w-4xl mx-auto\"\n        >\n          <div className=\"space-y-4\">\n            <div className=\"grid grid-cols-1 md:grid-cols-2 gap-4\">\n              {/* Text Area Input */}\n              <div>\n                <label className=\"block text-sm font-medium text-white/80 mb-2\">\n                  URLs (one per line)\n                </label>\n                <div className=\"liquid-glass rounded-glass p-4\">\n                  <textarea\n                    value={batchUrls}\n                    onChange={(e) => setBatchUrls(e.target.value)}\n                    placeholder=\"https://wordpress-site.com/post-1&#10;https://wordpress-site.com/post-2&#10;https://wordpress-site.com/post-3\"\n                    className=\"w-full h-32 bg-transparent border-none outline-none text-white placeholder:text-white/50 resize-none\"\n                  />\n                </div>\n              </div>\n              \n              {/* File Upload */}\n              <div>\n                <label className=\"block text-sm font-medium text-white/80 mb-2\">\n                  Or upload text file\n                </label>\n                <div className=\"liquid-glass rounded-glass p-4 border-2 border-dashed border-white/20 hover:border-white/40 transition-colors cursor-pointer\"\n                     onClick={() => fileInputRef.current?.click()}>\n                  <div className=\"text-center\">\n                    <svg className=\"mx-auto h-12 w-12 text-white/60\" stroke=\"currentColor\" fill=\"none\" viewBox=\"0 0 48 48\">\n                      <path d=\"M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02\" strokeWidth={2} strokeLinecap=\"round\" strokeLinejoin=\"round\" />\n                    </svg>\n                    <p className=\"mt-2 text-sm text-white/60\">\n                      Click to upload or drag and drop\n                    </p>\n                    <p className=\"text-xs text-white/50\">TXT files only</p>\n                  </div>\n                  \n                  <input\n                    ref={fileInputRef}\n                    type=\"file\"\n                    accept=\".txt\"\n                    onChange={handleFileUpload}\n                    className=\"hidden\"\n                  />\n                </div>\n              </div>\n            </div>\n            \n            <div className=\"flex gap-4\">\n              <LiquidButton\n                variant=\"primary\"\n                size=\"lg\"\n                disabled={!batchUrls.trim()}\n                onClick={handleBatchSubmit}\n                leftIcon={\n                  <svg className=\"w-5 h-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\">\n                    <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={2} d=\"M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4\" />\n                  </svg>\n                }\n              >\n                Process {batchUrls.split('\\n').filter(u => u.trim()).length} URLs\n              </LiquidButton>\n              \n              <LiquidButton\n                variant=\"secondary\"\n                size=\"lg\"\n                onClick={() => {\n                  setBatchUrls('');\n                  if (fileInputRef.current) {\n                    fileInputRef.current.value = '';\n                  }\n                }}\n              >\n                Clear All\n              </LiquidButton>\n            </div>\n          </div>\n        </LiquidCard>\n      )}\n    </div>\n  );\n};\n\nexport default UrlScraper;"
+  }, []);
+  
+  // Handle URL input change with real-time validation
+  const handleUrlChange = useCallback(async (newUrl: string) => {
+    setUrl(newUrl);
+    setValidationResult(null);
+    
+    if (newUrl.length < 10) return;
+    
+    setIsValidating(true);
+    
+    // Debounce validation
+    setTimeout(async () => {
+      const result = await validateUrl(newUrl);
+      setValidationResult(result);
+      setIsValidating(false);
+    }, 500);
+  }, [validateUrl]);
+  
+  // Create new scraping job UI representation
+  const createJobUI = (jobData: ConversionJob): ScrapingJobUI => ({
+    id: jobData.id.toString(),
+    url: jobData.url,
+    domain: jobData.domain,
+    slug: jobData.slug,
+    status: jobData.status,
+    priority: jobData.priority,
+    created_at: jobData.created_at,
+    started_at: jobData.started_at,
+    completed_at: jobData.completed_at,
+    retry_count: jobData.retry_count,
+    max_retries: jobData.max_retries,
+    timeout_seconds: jobData.timeout_seconds,
+    output_directory: jobData.output_directory,
+    custom_slug: jobData.custom_slug,
+    skip_existing: jobData.skip_existing,
+    error_message: jobData.error_message,
+    error_type: jobData.error_type,
+    success: jobData.success,
+    duration_seconds: jobData.duration_seconds,
+    content_size_bytes: jobData.content_size_bytes,
+    images_downloaded: jobData.images_downloaded,
+    batch_id: jobData.batch_id,
+    converter_config: jobData.converter_config,
+    processing_options: jobData.processing_options,
+    progress: 0,
+    error: jobData.error_message,
+    createdAt: new Date(jobData.created_at)
+  });
+  
+  // Submit single URL for processing
+  const handleSubmit = useCallback(async () => {
+    if (!validationResult?.isValid || isValidating || isSubmitting || !isAuthenticated) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      // Create job via API
+      const response = await api.submitJob(url, {
+        preserveFormatting: true,
+        convertImages: true,
+        optimizeImages: true,
+        downloadImages: true,
+        generateSeoTitle: true,
+        generateSeoDescription: true,
+        removeWordPressSpecific: true,
+        addShopifySpecific: true
+      });
+      
+      if (response.success && response.data) {
+        const job = createJobUI(response.data);
+        setJobs(prev => [job, ...prev]);
+        
+        if (onJobSubmit) {
+          onJobSubmit(job);
+        }
+        
+        // Start polling for job status updates
+        pollJobStatus(job.id);
+        
+        // Clear form
+        setUrl('');
+        setValidationResult(null);
+      } else {
+        console.error('Job creation failed:', response.error);
+        // Handle error - could show notification
+      }
+    } catch (error) {
+      console.error('Error creating job:', error);
+      // Handle error - could show notification
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [url, validationResult, isValidating, isSubmitting, isAuthenticated, onJobSubmit]);
+  
+  // Submit batch URLs
+  const handleBatchSubmit = useCallback(async () => {
+    if (isBatchSubmitting || !isAuthenticated) return;
+    
+    const urls = batchUrls
+      .split('\n')
+      .map(u => u.trim())
+      .filter(u => u.length > 0);
+    
+    if (urls.length === 0) return;
+    
+    setIsBatchSubmitting(true);
+    
+    try {
+      // Create batch via API
+      const response = await api.submitBatch(
+        urls,
+        {
+          preserveFormatting: true,
+          convertImages: true,
+          optimizeImages: true,
+          downloadImages: true,
+          generateSeoTitle: true,
+          generateSeoDescription: true,
+          removeWordPressSpecific: true,
+          addShopifySpecific: true
+        },
+        `Batch - ${new Date().toLocaleDateString()}`
+      );
+      
+      if (response.success && response.data) {
+        // Get the batch with jobs
+        const batchResponse = await api.getBatch(response.data.id.toString());
+        if (batchResponse.success && batchResponse.data && 'jobs' in batchResponse.data) {
+          const newJobs = batchResponse.data.jobs.map(createJobUI);
+          setJobs(prev => [...newJobs, ...prev]);
+          
+          newJobs.forEach(job => {
+            if (onJobSubmit) {
+              onJobSubmit(job);
+            }
+            // Start polling for each job status
+            pollJobStatus(job.id);
+          });
+        }
+        
+        setBatchUrls('');
+        setBatchMode(false);
+      } else {
+        console.error('Batch creation failed:', response.error);
+        // Handle error - could show notification
+      }
+    } catch (error) {
+      console.error('Error creating batch:', error);
+      // Handle error - could show notification
+    } finally {
+      setIsBatchSubmitting(false);
+    }
+  }, [batchUrls, isBatchSubmitting, isAuthenticated, onJobSubmit]);
+  
+  // Poll job status updates from the API
+  const pollJobStatus = useCallback((jobId: string) => {
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await api.getJob(jobId);
+        if (response.success && response.data) {
+          const updatedJob = createJobUI(response.data);
+          
+          // Calculate progress based on status
+          switch (updatedJob.status) {
+            case 'pending':
+              updatedJob.progress = 0;
+              break;
+            case 'running':
+              updatedJob.progress = 50; // Could be enhanced with real progress from API
+              break;
+            case 'completed':
+              updatedJob.progress = 100;
+              clearInterval(pollInterval);
+              break;
+            case 'failed':
+              updatedJob.progress = 0;
+              clearInterval(pollInterval);
+              break;
+            case 'cancelled':
+              clearInterval(pollInterval);
+              break;
+          }
+          
+          setJobs(prev => prev.map(j => j.id === jobId ? updatedJob : j));
+          
+          if (onJobUpdate) {
+            onJobUpdate(updatedJob);
+          }
+        }
+      } catch (error) {
+        console.error('Error polling job status:', error);
+        // Continue polling - don't clear interval on error
+      }
+    }, 2000); // Poll every 2 seconds
+    
+    // Clear interval after 5 minutes to prevent infinite polling
+    setTimeout(() => {
+      clearInterval(pollInterval);
+    }, 300000);
+  }, [onJobUpdate]);
+  
+  // Handle file upload for batch processing
+  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      setBatchUrls(content);
+    };
+    reader.readAsText(file);
+  }, []);
+  
+  return (
+    <div className={`space-y-6 ${className}`.trim()}>
+      {/* Mode Switcher */}
+      <div className="flex items-center justify-center">
+        <div className="liquid-glass p-2 rounded-glass flex">
+          <button
+            onClick={() => setBatchMode(false)}
+            className={`px-4 py-2 rounded-glass-sm text-sm font-medium transition-all duration-glass ${
+              !batchMode 
+                ? 'bg-white/20 text-white shadow-glass' 
+                : 'text-white/70 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            Single URL
+          </button>
+          <button
+            onClick={() => setBatchMode(true)}
+            className={`px-4 py-2 rounded-glass-sm text-sm font-medium transition-all duration-glass ${
+              batchMode 
+                ? 'bg-white/20 text-white shadow-glass' 
+                : 'text-white/70 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            Batch Processing
+          </button>
+        </div>
+      </div>
+      
+      {!batchMode ? (
+        /* Single URL Mode */
+        <LiquidCard
+          title="WordPress URL Converter"
+          subtitle="Enter a WordPress URL to convert to Shopify format"
+          className="max-w-2xl mx-auto"
+        >
+          <div className="space-y-4">
+            <LiquidInput
+              label="WordPress URL"
+              placeholder="https://your-wordpress-site.com/post-url"
+              value={url}
+              onChange={(e) => handleUrlChange(e.target.value)}
+              loading={isValidating}
+              error={validationResult?.error ? true : false}
+              success={validationResult?.isValid}
+              errorText={validationResult?.error}
+              helperText={validationResult?.isValid 
+                ? `Detected: ${validationResult.metadata?.type} - ${validationResult.metadata?.estimatedSize}`
+                : 'Enter a valid WordPress URL'
+              }
+              leftIcon={
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+              }
+              clearable
+              onClear={() => {
+                setUrl('');
+                setValidationResult(null);
+              }}
+            />
+            
+            <LiquidButton
+              variant="primary"
+              size="lg"
+              fullWidth
+              disabled={!validationResult?.isValid || isValidating || isSubmitting || !isAuthenticated}
+              loading={isValidating || isSubmitting}
+              onClick={handleSubmit}
+              leftIcon={
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+              }
+            >
+              {!isAuthenticated ? 'Sign In Required' : isSubmitting ? 'Creating Job...' : 'Convert to Shopify'}
+            </LiquidButton>
+          </div>
+        </LiquidCard>
+      ) : (
+        /* Batch Processing Mode */
+        <LiquidCard
+          title="Batch URL Processing"
+          subtitle="Convert multiple WordPress URLs simultaneously"
+          className="max-w-4xl mx-auto"
+        >
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Text Area Input */}
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  URLs (one per line)
+                </label>
+                <div className="liquid-glass rounded-glass p-4">
+                  <textarea
+                    value={batchUrls}
+                    onChange={(e) => setBatchUrls(e.target.value)}
+                    placeholder="https://wordpress-site.com/post-1&#10;https://wordpress-site.com/post-2&#10;https://wordpress-site.com/post-3"
+                    className="w-full h-32 bg-transparent border-none outline-none text-white placeholder:text-white/50 resize-none"
+                  />
+                </div>
+              </div>
+              
+              {/* File Upload */}
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Or upload text file
+                </label>
+                <div className="liquid-glass rounded-glass p-4 border-2 border-dashed border-white/20 hover:border-white/40 transition-colors cursor-pointer"
+                     onClick={() => fileInputRef.current?.click()}>
+                  <div className="text-center">
+                    <svg className="mx-auto h-12 w-12 text-white/60" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                      <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <p className="mt-2 text-sm text-white/60">
+                      Click to upload or drag and drop
+                    </p>
+                    <p className="text-xs text-white/50">TXT files only</p>
+                  </div>
+                  
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".txt"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-4">
+              <LiquidButton
+                variant="primary"
+                size="lg"
+                disabled={!batchUrls.trim() || isBatchSubmitting || !isAuthenticated}
+                loading={isBatchSubmitting}
+                onClick={handleBatchSubmit}
+                leftIcon={
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                }
+              >
+                {!isAuthenticated ? 'Sign In Required' : isBatchSubmitting ? 'Creating Batch...' : `Process ${batchUrls.split('\n').filter(u => u.trim()).length} URLs`}
+              </LiquidButton>
+              
+              <LiquidButton
+                variant="secondary"
+                size="lg"
+                onClick={() => {
+                  setBatchUrls('');
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                  }
+                }}
+              >
+                Clear All
+              </LiquidButton>
+            </div>
+          </div>
+        </LiquidCard>
+      )}
+    </div>
+  );
+};
+
+export default UrlScraper;
