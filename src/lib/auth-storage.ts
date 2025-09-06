@@ -5,6 +5,7 @@
 
 import { AUTH_STORAGE_KEYS } from '../types/auth.ts';
 import type { User, AuthTokens } from '../types/auth.ts';
+import { SecureStorage, SecurityUtils } from '../utils/security.ts';
 
 class AuthStorage {
   private readonly isClient = typeof window !== 'undefined';
@@ -17,13 +18,19 @@ class AuthStorage {
     const expiresAt = Date.now() + (tokens.expires_in * 1000);
     const tokensWithExpiry = { ...tokens, expires_at: expiresAt };
 
-    // Store access token in sessionStorage for security (cleared on tab close)
-    sessionStorage.setItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN, tokens.access_token);
+    // Store access token in encrypted sessionStorage for security (cleared on tab close)
+    SecureStorage.setItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN, tokens.access_token, { 
+      encrypt: true, 
+      expirationMinutes: tokens.expires_in / 60 
+    });
     sessionStorage.setItem(AUTH_STORAGE_KEYS.EXPIRES_AT, expiresAt.toString());
 
-    // Store refresh token in localStorage if available (persistent across sessions)
+    // Store refresh token in encrypted localStorage if available (persistent across sessions)
     if (tokens.refresh_token) {
-      localStorage.setItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN, tokens.refresh_token);
+      SecureStorage.setItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN, tokens.refresh_token, { 
+        encrypt: true,
+        expirationMinutes: 24 * 60 // 24 hours
+      });
     }
 
     // Dispatch storage event for cross-tab synchronization
@@ -32,12 +39,12 @@ class AuthStorage {
 
   getAccessToken(): string | null {
     if (!this.isClient) return null;
-    return sessionStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
+    return SecureStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
   }
 
   getRefreshToken(): string | null {
     if (!this.isClient) return null;
-    return localStorage.getItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
+    return SecureStorage.getItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
   }
 
   getTokenExpiry(): number | null {
@@ -49,9 +56,9 @@ class AuthStorage {
   clearTokens(): void {
     if (!this.isClient) return;
 
-    sessionStorage.removeItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
+    SecureStorage.removeItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
     sessionStorage.removeItem(AUTH_STORAGE_KEYS.EXPIRES_AT);
-    localStorage.removeItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
+    SecureStorage.removeItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
 
     this.dispatchStorageEvent('tokens_cleared', null);
   }

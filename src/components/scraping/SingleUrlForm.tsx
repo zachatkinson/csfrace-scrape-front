@@ -7,6 +7,7 @@
 import React from 'react';
 import { LiquidCard, LiquidButton, LiquidInput } from '../liquid-glass';
 import type { UrlValidationResult } from '../../services/UrlValidationService.ts';
+import { SecurityUtils } from '../../utils/security.ts';
 
 export interface SingleUrlFormProps {
   url: string;
@@ -87,7 +88,12 @@ export const SingleUrlForm: React.FC<SingleUrlFormProps> = ({
           label="WordPress URL"
           placeholder="https://your-wordpress-site.com/post-url"
           value={url}
-          onChange={(e) => onUrlChange(e.target.value)}
+          onChange={(e) => {
+            const sanitizedValue = SecurityUtils.sanitizeText(e.target.value);
+            if (SecurityUtils.validateInput(sanitizedValue, 2000)) {
+              onUrlChange(sanitizedValue);
+            }
+          }}
           loading={isValidating}
           error={validationStatus === 'error'}
           success={validationStatus === 'success'}

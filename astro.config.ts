@@ -19,11 +19,58 @@ export default defineConfig({
     port: 3000,
     host: true
   },
+  // Security configuration
+  experimental: {
+    csp: {
+      algorithm: 'SHA-256',
+      directives: {
+        'default-src': ["'self'"],
+        'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net"],
+        'style-src': ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
+        'font-src': ["'self'", "https://fonts.gstatic.com"],
+        'img-src': ["'self'", "data:", "https:", "blob:"],
+        'connect-src': ["'self'", "ws:", "wss:", "https://api.github.com"],
+        'frame-src': ["'none'"],
+        'object-src': ["'none'"],
+        'base-uri': ["'self'"],
+        'form-action': ["'self'"],
+        'frame-ancestors': ["'none'"],
+        'upgrade-insecure-requests': []
+      }
+    }
+  },
   // Vite configuration for Liquid Glass optimization
   vite: {
     plugins: [tailwindcss()],
     optimizeDeps: {
-      include: ['react', 'react-dom'],
+      include: ['react', 'react-dom', 'dompurify', 'crypto-js'],
+    },
+    build: {
+      // Bundle optimization
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // Vendor chunk for third-party libraries
+            vendor: ['react', 'react-dom'],
+            // Security utilities chunk
+            security: ['dompurify', 'crypto-js'],
+            // UI libraries chunk
+            ui: ['@headlessui/react', '@heroicons/react'],
+          },
+        },
+      },
+      // Enable source maps in development only
+      sourcemap: !process.env.NODE_ENV || process.env.NODE_ENV === 'development',
+      // Minification
+      minify: 'terser',
+      terserOptions: {
+        compress: {
+          drop_console: process.env.NODE_ENV === 'production',
+          drop_debugger: true,
+        },
+      },
+      // Chunk size warnings
+      chunkSizeWarningLimit: 1000,
     },
     css: {
       postcss: {
