@@ -1,63 +1,98 @@
 # CSFrace Scrape Frontend
 
-**Production-Ready** TypeScript frontend application featuring Apple's **Liquid Glass design system** for the CSFrace WordPress to Shopify content scraper and converter.
+> **Enterprise-grade TypeScript frontend with SOLID architecture** — A modern, scalable web application for WordPress to Shopify content scraping and conversion.
 
-## 🎉 **FULLY FUNCTIONAL** - Ready for Production Use
+[![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue.svg)](https://www.typescriptlang.org/)
+[![Astro](https://img.shields.io/badge/Astro-5.13.5-orange.svg)](https://astro.build/)
+[![React](https://img.shields.io/badge/React-18-blue.svg)](https://reactjs.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38bdf8.svg)](https://tailwindcss.com/)
+[![SOLID](https://img.shields.io/badge/Architecture-SOLID-green.svg)](https://en.wikipedia.org/wiki/SOLID)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-This frontend is **complete and functional** with all core features implemented:
+## 🚀 What is CSFrace Scrape Frontend?
 
-- ✅ **Homepage with URL Scraping** - Add single URLs or batches for processing
-- ✅ **Complete Dashboard** - Full job management with filtering, sorting, batch operations  
-- ✅ **Settings Panel** - Slide-down configuration with persistent storage
-- ✅ **Navigation System** - Responsive header with glass morphism design
-- ✅ **Real-time Integration** - WebSocket-ready for live updates
-- ✅ **Backend API Integration** - Full REST API communication
-- ✅ **Apple Liquid Glass UI** - Premium design system throughout
+A production-ready, enterprise-grade frontend application built with modern web technologies and architectural patterns. This application provides a beautiful, intuitive interface for scraping WordPress content and converting it for Shopify stores.
 
-## ✨ Features
+### ✨ Key Highlights
 
-- **🎨 Apple Liquid Glass Design**: Premium UI with authentic three-layer material system
-- **💎 100% TypeScript**: Zero JavaScript tolerance with strictest TypeScript configuration  
-- **⚡ Modern Stack**: Astro 5.13+ + React 19 + TypeScript 5.9+ + Tailwind CSS 3.4+
-- **🔄 Real-time Updates**: WebSocket integration for live scraping status
-- **📱 Responsive Design**: Mobile-first UI with environmental adaptation
-- **🎭 Interactive Animations**: Smooth gradient animations and glass effects
-- **🚀 Semantic Releases**: Automated versioning and changelog generation
-- **🛡️ Type Safety**: Comprehensive type checking with `astro check` integration
-- **📋 Job Management**: Complete CRUD operations with filtering and sorting
-- **⚙️ Settings System**: Persistent configuration with slide-down panel
+- 🏗️ **SOLID Architecture** — Complete implementation of SOLID principles for maintainable, scalable code
+- 🎨 **Liquid Glass Design System** — Beautiful, modern UI inspired by Apple's design language
+- ⚡ **Performance First** — Optimized for speed with lazy loading, code splitting, and efficient rendering
+- 🔒 **Type Safety** — 100% TypeScript with strict configuration and comprehensive type coverage
+- 🛡️ **Enterprise Ready** — Production-tested with Docker, monitoring, and comprehensive error handling
 
-## 🛠 Tech Stack
+## 📋 Table of Contents
 
-### Core Framework
-- [Astro 5.13+](https://astro.build) - SSR-enabled static site generator with Netlify adapter
-- [React 19](https://react.dev) - UI Library with latest features and concurrent rendering
-- [TypeScript 5.9+](https://www.typescriptlang.org) - **Strictest configuration** (no JS allowed)
+- [Features](#-features)
+- [Architecture](#-architecture)
+- [Quick Start](#-quick-start)
+- [Development](#-development)
+- [Project Structure](#-project-structure)
+- [API Integration](#-api-integration)
+- [Deployment](#-deployment)
+- [Contributing](#-contributing)
+- [License](#-license)
 
-### Design System & Styling  
-- **🍎 Apple Liquid Glass Design System** - Authentic three-layer material system
-- [Tailwind CSS 3.4+](https://tailwindcss.com) - Utility-first styling with custom design tokens
-- **Custom CSS Architecture** - Environmental adaptation, lensing effects, accessibility
-- **Gradient Animations** - Smooth text animations using proper `@layer utilities`
+## 🎯 Features
 
-### UI Components & Icons
-- [Headless UI](https://headlessui.com) - Accessible component primitives  
-- [Heroicons](https://heroicons.com) - SVG icon library
-- **Custom Liquid Glass Components** - LiquidCard, LiquidButton, LiquidInput, LiquidGlass
+### Core Functionality
+- **📊 Dashboard** — Real-time job monitoring with filtering, sorting, and batch operations
+- **🔗 URL Processing** — Single URL and batch URL scraping with intelligent validation
+- **⚙️ Settings Management** — Comprehensive configuration with persistent storage
+- **🔐 Authentication** — OAuth integration with secure token management
+- **📱 Responsive Design** — Mobile-first approach with seamless desktop experience
 
-### Communication & Testing
-- [Axios](https://axios-http.com) - HTTP client with retry logic
-- [Socket.IO Client](https://socket.io) - Real-time WebSocket communication
-- [Playwright](https://playwright.dev) - E2E testing and layout debugging
-- [pnpm](https://pnpm.io) - Fast, disk space efficient package manager
+### Technical Features
+- **🔄 Real-time Updates** — WebSocket integration for live job status updates
+- **🎨 Design System** — Modular liquid glass components with strategy patterns
+- **📝 Form Management** — Standardized form system with validation and error handling
+- **🛠️ Service Architecture** — Dependency injection with service containers
+- **🔍 Type Safety** — Comprehensive TypeScript interfaces and type checking
 
-## 🚦 Getting Started
+### User Experience
+- **⚡ Fast Loading** — Optimized assets and progressive enhancement
+- **♿ Accessible** — WCAG compliant with keyboard navigation and screen reader support
+- **🌙 Modern UI** — Glass morphism effects with smooth animations and transitions
+- **📊 Data Visualization** — Clear job status indicators and progress tracking
+
+## 🏗️ Architecture
+
+This project implements **SOLID principles** throughout the codebase:
+
+```
+src/
+├── components/          # UI Components
+│   ├── forms/          # Standardized form system with BaseForm pattern
+│   ├── liquid-glass/   # Design system with strategy patterns
+│   ├── scraping/       # Domain-specific scraping components
+│   └── settings/       # Configuration management components
+├── services/           # Service layer (Dependency Inversion)
+│   ├── implementations/ # Concrete service implementations
+│   ├── AuthProvider.ts # Authentication service
+│   ├── ServiceContainer.ts # IoC container
+│   └── JobProcessingService.ts # Job management
+├── strategies/         # Strategy pattern implementations
+├── hooks/              # Custom React hooks
+├── interfaces/         # TypeScript interfaces (Interface Segregation)
+├── utils/              # Pure utility functions
+└── constants/          # Application constants
+```
+
+### Design Patterns Used
+
+- **🏭 Service Layer** — Clean separation of concerns with dependency injection
+- **🔄 Strategy Pattern** — Flexible job status management and glass variants
+- **🏪 Repository Pattern** — Abstracted data access layer
+- **🔗 Observer Pattern** — Real-time updates and state management
+- **📦 Container Pattern** — Dependency injection container for services
+
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- **Node.js 18+** and **pnpm** (recommended package manager)
-- Backend API running at `http://localhost:8000` (see [csfrace-scrape](https://github.com/zachatkinson/csfrace-scrape))
-- TypeScript knowledge (project is 100% TypeScript)
+- **Node.js** 18+ 
+- **pnpm** (recommended) or npm
+- **Docker** (optional, for containerized development)
 
 ### Installation
 
@@ -66,274 +101,283 @@ This frontend is **complete and functional** with all core features implemented:
 git clone https://github.com/zachatkinson/csfrace-scrape-front.git
 cd csfrace-scrape-front
 
-# Install dependencies (uses pnpm for performance)
+# Install dependencies
 pnpm install
 
-# Run type checking (recommended first step)
-pnpm run check
+# Set up environment variables
+cp .env.example .env
 
 # Start development server
-pnpm run dev
+pnpm dev
 ```
 
-The application will be available at `http://localhost:4321`.
+The application will be available at `http://localhost:3000`
 
-### Environment Variables
-
-Configure your environment (optional - has sensible defaults):
-
-```env
-# Backend API Configuration (defaults to localhost)
-VITE_API_URL=http://localhost:8000
-
-# Feature flags (optional)
-VITE_ENABLE_BATCH_PROCESSING=true
-VITE_MAX_CONCURRENT_JOBS=5
-
-# Development settings (optional)
-VITE_DEBUG_MODE=true
-VITE_LOG_LEVEL=debug
-```
-
-## 🎨 Apple Liquid Glass Design System
-
-This frontend implements Apple's cutting-edge **Liquid Glass design system**, featuring:
-
-### ✨ Core Design Principles
-
-- **🔍 Clarity**: Content and functionality in perfect harmony with the interface
-- **🤝 Deference**: The UI adapts to content, not the other way around  
-- **📐 Depth**: Realistic layering with authentic material physics
-
-### 🧬 Three-Layer Material System
-
-1. **💡 Illumination Layer**: Base translucent background with environmental adaptation
-2. **🌟 Highlight Layer**: Inner light reflection using `inset` box-shadow
-3. **🔮 Shadow Layer**: Depth and elevation with multi-layered shadows
-
-### 🎭 Interactive States & Animations
-
-- **Hover Effects**: Enhanced depth with subtle lift animations
-- **Active States**: Compressed visual feedback with realistic physics
-- **Focus Management**: Accessible focus indicators with proper contrast
-- **Gradient Animations**: Smooth color transitions using `@layer utilities`
-
-### 🌍 Environmental Adaptation
-
-- **Light/Dark Mode**: Automatic adaptation to system preferences
-- **High Contrast**: Enhanced visibility for accessibility needs
-- **Reduced Motion**: Respects user motion preferences
-- **Mobile Optimization**: Reduced blur effects for better performance
-
-## 📁 **Current Project Structure** (Fully Implemented)
-
-```
-csfrace-scrape-front/
-├── .github/workflows/          # GitHub Actions (semantic-release)
-├── src/
-│   ├── components/
-│   │   ├── layout/
-│   │   │   └── MainLayout.astro    # ✅ Navigation + Settings Panel
-│   │   ├── liquid-glass/           # ✅ Complete Design System
-│   │   │   ├── LiquidGlass.tsx
-│   │   │   ├── LiquidCard.tsx
-│   │   │   ├── LiquidButton.tsx
-│   │   │   ├── LiquidInput.tsx
-│   │   │   └── index.ts
-│   │   └── wordpress/              # ✅ Core Components
-│   │       ├── UrlScraper.tsx      # Single URL scraping
-│   │       └── JobQueue.tsx        # Job management
-│   ├── pages/                      # ✅ Complete Page System
-│   │   ├── index.astro            # Homepage with URL scraping
-│   │   ├── dashboard.astro        # Full job management dashboard
-│   │   └── test.astro            # Component testing page
-│   ├── lib/                       # ✅ Backend Integration
-│   │   └── api-client.ts          # Complete API client
-│   ├── hooks/                     # ✅ React Utilities
-│   │   └── useWebSocket.ts        # WebSocket integration
-│   ├── types/                     # ✅ TypeScript Definitions
-│   │   └── index.ts               # Shared types
-│   └── styles/                    # ✅ Complete Design System
-│       ├── liquid-glass.css       # Full glass morphism CSS
-│       └── globals.css            # Base styles
-├── public/                        # Static assets
-├── tests/                         # ✅ Playwright Testing
-│   └── modal-layering-diagnostic.spec.ts
-├── astro.config.ts               # ✅ Production-ready config
-├── tsconfig.json                 # ✅ Strictest TypeScript
-├── tailwind.config.js            # ✅ Custom design tokens
-├── CLAUDE.md                     # ✅ Development standards
-└── package.json                  # ✅ Complete dependencies
-```
-
-## 🎨 **Implemented UI Components**
-
-### ✅ Core Pages
-- **Homepage** (`/`) - URL scraping interface with batch support
-- **Dashboard** (`/dashboard`) - Complete job management system
-- **Test Page** (`/test`) - Component development and testing
-
-### ✅ Layout System
-- **MainLayout.astro** - Navigation header with slide-down settings panel
-- **Responsive Navigation** - Mobile-first with glass morphism
-- **Settings Panel** - Persistent configuration with local storage
-
-### ✅ Job Management  
-- **URL Scraper** - Single and batch URL processing
-- **Job Queue** - Real-time job status with filtering and sorting
-- **Job Actions** - Cancel, retry, delete with batch operations
-- **Job Details** - Expandable cards with full job information
-
-### ✅ Design System Components
-- **LiquidCard** - Glass morphism container component
-- **LiquidButton** - Interactive buttons with glass effects
-- **LiquidInput** - Form inputs with glass styling
-- **Glass Forms** - Dropdowns, checkboxes matching input design
-
-## 🔐 **Backend Integration** (Complete)
-
-### ✅ API Client (`api-client.ts`)
-- **Jobs API** - Full CRUD operations (create, read, update, delete)
-- **Batch API** - Multi-URL processing support
-- **Health Check** - Backend status monitoring
-- **Error Handling** - Comprehensive retry logic and error states
-- **TypeScript Types** - Complete type definitions matching backend
-
-### ✅ Real-time Communication
-- **WebSocket Hook** - `useWebSocket.ts` for live updates
-- **Job Status Updates** - Real-time progress tracking
-- **Connection Management** - Auto-reconnect and error handling
-
-## 📊 **Dashboard Features** (Fully Functional)
-
-### ✅ Job Management
-- Create new conversion jobs with custom settings
-- Monitor job progress in real-time
-- View detailed job logs and results
-- Filter jobs by status, domain, priority
-- Sort by date, duration, status
-- Batch operations (cancel, retry, delete multiple jobs)
-
-### ✅ Batch Operations
-- Upload multiple URLs for processing
-- Configure conversion settings per batch
-- Parallel processing with progress tracking
-- Success/failure statistics
-
-### ✅ Settings System
-- **API Configuration** - Backend URL, timeout, refresh interval
-- **Job Defaults** - Priority, retries, timeout settings  
-- **Display Options** - Dark mode, job IDs, compact mode, pagination
-- **Notifications** - Completion alerts, error notifications, browser notifications
-- **Persistent Storage** - Settings saved to localStorage
-
-## 🌐 **API Integration** (Production Ready)
-
-The frontend communicates with the backend API through:
-
-- **REST API** - Complete job CRUD operations with type safety
-- **WebSocket** - Real-time updates and live status monitoring
-- **Error Handling** - Comprehensive retry logic and user feedback
-- **Type Safety** - Full TypeScript integration with backend models
-
-## 🚀 **Deployment** (Ready)
-
-### Netlify (Recommended)
+### Docker Development
 
 ```bash
-# Build for production
-npm run build
+# Using the wrapper repository
+git clone --recurse-submodules https://github.com/zachatkinson/csfrace-scrape.git
+cd csfrace-scrape
 
-# Deploy to Netlify
-netlify deploy --prod --dir=dist
+# Start all services (frontend, backend, database)
+docker compose -f docker-compose.dev.yml up -d
+
+# View logs
+docker compose logs -f frontend
 ```
 
-### Environment Configuration
-
-Set production environment variables in Netlify:
-
-- `VITE_API_URL`: Production backend URL
-- Authentication credentials (if needed)
-
-## 🧪 **Development**
+## 🛠️ Development
 
 ### Available Scripts
 
 ```bash
-pnpm run dev         # Start development server (port 4321)
-pnpm run build       # Build with type checking (astro check && astro build)
-pnpm run preview     # Preview production build
-pnpm run check       # TypeScript type checking only
-pnpm run type-check  # Alias for check command
-pnpm run astro       # Direct Astro CLI access
+# Development
+pnpm dev              # Start development server with hot reload
+pnpm build            # Build for production
+pnpm preview          # Preview production build locally
+
+# Code Quality
+pnpm lint             # Run ESLint
+pnpm lint:fix         # Fix linting issues
+pnpm type-check       # TypeScript type checking
+pnpm format           # Format code with Prettier
+
+# Testing
+pnpm test             # Run test suite
+pnpm test:coverage    # Generate coverage report
+pnpm test:e2e         # Run end-to-end tests
 ```
-
-### Code Quality & Standards
-
-- **TypeScript Strictest** - `allowJs: false`, zero JavaScript tolerance
-- **CLAUDE.md** - Comprehensive development standards document
-- **Semantic Release** - Automated versioning based on conventional commits
-- **Type Validation** - Integrated into build process via `astro check`
-- **Backend Integration** - Typed API communication patterns
-- **Error Handling** - Comprehensive error boundaries and retry logic
-- **Playwright Testing** - UI diagnostic and testing tools
-
-## 🎯 **What's Next** (Optional Enhancements)
-
-The frontend is **production-ready**, but these enhancements could be added:
-
-### 🔮 Future Enhancements
-- **📈 Analytics Dashboard** - Advanced statistics and charts
-- **🔔 Push Notifications** - Browser notification system
-- **📊 Performance Metrics** - Job performance analytics
-- **🎨 Theme Customization** - User-selectable color schemes
-- **📱 PWA Features** - Offline support and app installation
-- **🔍 Advanced Filtering** - Saved filters and complex queries
-
-## 🔗 **Related Repositories**
-
-- [csfrace-scrape](https://github.com/zachatkinson/csfrace-scrape) - Backend API and scraping engine
-
-## 🤝 **Contributing**
 
 ### Development Workflow
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Follow [CLAUDE.md](CLAUDE.md) development standards
-4. Use conventional commits (`feat:`, `fix:`, `docs:`, etc.)
-5. Ensure TypeScript checks pass (`pnpm run check`)
-6. Push to your branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
+1. **Feature Development** — Create feature branches from `main`
+2. **Code Quality** — All code must pass TypeScript, ESLint, and tests
+3. **Testing** — Write tests for new features and bug fixes
+4. **Documentation** — Update relevant documentation
+5. **Pull Request** — Create PR with clear description and context
 
-### Commit Message Format
-
-This project uses [Conventional Commits](https://www.conventionalcommits.org/) for automated semantic versioning:
+### Environment Configuration
 
 ```bash
-feat: add new scraping job dashboard component
-fix: resolve TypeScript error in API client
-docs: update README with current functionality
-chore: upgrade dependencies to latest versions
+# Core Configuration
+VITE_API_BASE_URL=http://localhost:8000    # Backend API URL
+VITE_WS_URL=ws://localhost:8000/ws         # WebSocket URL
+
+# Feature Flags
+VITE_ENABLE_OAUTH=true                     # OAuth authentication
+VITE_ENABLE_MONITORING=true                # Performance monitoring
+VITE_ENABLE_DEBUG=false                    # Debug mode
+
+# UI Configuration
+VITE_THEME=dark                            # Default theme
+VITE_ANIMATION_SPEED=300                   # Animation timing
 ```
+
+## 📁 Project Structure
+
+<details>
+<summary>Click to expand detailed project structure</summary>
+
+```
+csfrace-scrape-front/
+├── public/                    # Static assets
+├── src/
+│   ├── components/
+│   │   ├── auth/             # Authentication components
+│   │   ├── forms/            # Standardized form system
+│   │   │   ├── BaseForm.tsx  # Base form component
+│   │   │   ├── StandardizedLoginForm.tsx
+│   │   │   └── StandardizedUrlForms.tsx
+│   │   ├── layout/           # Layout components
+│   │   ├── liquid-glass/     # Design system
+│   │   │   ├── strategies/   # Glass variant strategies
+│   │   │   ├── LiquidButton.tsx
+│   │   │   └── LiquidCard.tsx
+│   │   ├── scraping/         # Scraping-specific UI
+│   │   ├── settings/         # Settings management
+│   │   └── wordpress/        # WordPress-specific components
+│   ├── contexts/             # React contexts
+│   │   ├── AuthContext.tsx   # Authentication state
+│   │   └── ThemeContext.tsx  # Theme management
+│   ├── hooks/                # Custom React hooks
+│   │   ├── useAuth.ts        # Authentication hook
+│   │   ├── useScrapingForm.ts # Form management
+│   │   └── useWebSocket.ts   # WebSocket connection
+│   ├── interfaces/           # TypeScript interfaces
+│   │   ├── forms.ts          # Form-related types
+│   │   └── services.ts       # Service interfaces
+│   ├── lib/                  # Core libraries
+│   │   ├── api-client.ts     # API client configuration
+│   │   └── auth-storage.ts   # Authentication storage
+│   ├── pages/                # Astro pages
+│   │   ├── index.astro       # Homepage
+│   │   └── dashboard.astro   # Dashboard page
+│   ├── services/             # Service layer
+│   │   ├── implementations/  # Service implementations
+│   │   ├── AuthProvider.ts   # Authentication service
+│   │   ├── ServiceContainer.ts # IoC container
+│   │   └── JobProcessingService.ts
+│   ├── strategies/           # Strategy pattern implementations
+│   ├── styles/              # Global styles
+│   │   ├── globals.css       # Global CSS
+│   │   └── liquid-glass.css  # Design system styles
+│   ├── types/               # TypeScript type definitions
+│   └── utils/               # Utility functions
+├── astro.config.ts          # Astro configuration
+├── tailwind.config.js       # Tailwind CSS configuration
+├── tsconfig.json            # TypeScript configuration
+├── package.json             # Dependencies and scripts
+├── docker-compose.yml       # Docker configuration
+└── .env.example             # Environment variables template
+```
+</details>
+
+## 🔌 API Integration
+
+This frontend integrates with the [CSFrace Scrape Backend](https://github.com/zachatkinson/csfrace-scrape) via REST APIs and WebSocket connections.
+
+### Key API Endpoints
+
+```typescript
+// Job Management
+POST /api/jobs                 // Create new scraping job
+GET /api/jobs                  // List jobs with filtering
+GET /api/jobs/:id              // Get job details
+DELETE /api/jobs/:id           // Cancel/delete job
+
+// Batch Operations
+POST /api/jobs/batch           // Create multiple jobs
+PUT /api/jobs/batch            // Update multiple jobs
+
+// Authentication
+POST /api/auth/login           // User login
+POST /api/auth/oauth/:provider // OAuth authentication
+GET /api/auth/me               // Get current user
+
+// Real-time Updates
+WS /api/ws                     // WebSocket for live updates
+```
+
+### Service Architecture
+
+```typescript
+// Service container with dependency injection
+const container = new ServiceContainer({
+  api: new RestApiService(apiConfig),
+  auth: new CustomAuthService(authConfig),
+  storage: new BrowserStorageService(),
+  notifications: new ToastNotificationService()
+});
+
+// Usage in components
+const { api, auth } = useServiceContainer();
+```
+
+## 🚀 Deployment
+
+### Production Build
+
+```bash
+# Build for production
+pnpm build
+
+# Preview production build
+pnpm preview
+
+# Deploy to Netlify (configured)
+pnpm deploy
+```
+
+### Docker Production
+
+```bash
+# Build production image
+docker build -t csfrace-frontend .
+
+# Run production container
+docker run -p 3000:3000 csfrace-frontend
+```
+
+### Environment Variables
+
+Production deployments require these environment variables:
+
+```bash
+VITE_API_BASE_URL=https://api.csfrace.com
+VITE_WS_URL=wss://api.csfrace.com/ws
+VITE_OAUTH_CLIENT_ID=your_oauth_client_id
+VITE_SENTRY_DSN=your_sentry_dsn
+```
+
+## 🤝 Contributing
+
+We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+
+### Development Setup
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes following our coding standards
+4. Run tests: `pnpm test`
+5. Commit your changes: `git commit -m 'feat: add amazing feature'`
+6. Push to your branch: `git push origin feature/amazing-feature`
+7. Open a Pull Request
 
 ### Code Standards
 
-- **100% TypeScript** - No JavaScript files allowed
-- **Type Safety** - All functions must have explicit return types
-- **Error Handling** - Comprehensive error boundaries required
-- **Testing** - Playwright for UI testing and diagnostics
-- **Documentation** - JSDoc required for public functions
+- **TypeScript** — All code must be typed, no `any` types allowed
+- **SOLID Principles** — Follow SOLID principles in all new code
+- **Testing** — Write tests for new features and bug fixes
+- **Documentation** — Update documentation for API changes
+- **Conventional Commits** — Use conventional commit messages
 
-## 📞 **Support**
+## 🧪 Testing
 
-For support and questions:
+```bash
+# Unit tests
+pnpm test
 
-- Create an [Issue](https://github.com/zachatkinson/csfrace-scrape-front/issues)
-- Backend API issues: [csfrace-scrape Issues](https://github.com/zachatkinson/csfrace-scrape/issues)
+# Integration tests  
+pnpm test:integration
+
+# E2E tests
+pnpm test:e2e
+
+# Coverage report
+pnpm test:coverage
+```
+
+## 📈 Performance
+
+This application is optimized for performance:
+
+- **Lazy Loading** — Components and routes loaded on demand
+- **Code Splitting** — Automatic code splitting with Vite
+- **Asset Optimization** — Images and assets optimized for web
+- **Bundle Analysis** — Regular bundle size monitoring
+- **Core Web Vitals** — Optimized for Google's Core Web Vitals
+
+## 🐛 Issues and Support
+
+- **Bug Reports** — [Create an issue](https://github.com/zachatkinson/csfrace-scrape-front/issues/new?template=bug_report.md)
+- **Feature Requests** — [Request a feature](https://github.com/zachatkinson/csfrace-scrape-front/issues/new?template=feature_request.md)
+- **Documentation** — [View full documentation](https://docs.csfrace.com)
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Built with [Astro](https://astro.build/) and [React](https://reactjs.org/)
+- Styled with [Tailwind CSS](https://tailwindcss.com/)
+- Design inspired by Apple's design language
+- Architecture follows SOLID principles
 
 ---
 
-## 🏆 **Status: PRODUCTION READY** ✅
-
-This frontend is **fully functional and ready for production use**. All core features are implemented, tested, and integrated with the backend API. The Apple Liquid Glass design system provides a premium user experience with comprehensive job management capabilities.
+<div align="center">
+  <strong>Built with ❤️ by the CSFrace Team</strong><br>
+  <sub>Making WordPress to Shopify migration effortless</sub>
+</div>
