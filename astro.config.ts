@@ -12,9 +12,7 @@ export default defineConfig({
     }),
     tailwind({
       applyBaseStyles: true, // Need this for Tailwind utilities to work
-      config: {
-        path: './tailwind.config.js',
-      },
+      configFile: './tailwind.config.js',
     }),
   ],
   output: 'server',

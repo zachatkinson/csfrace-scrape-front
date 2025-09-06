@@ -3,16 +3,16 @@
  * Restricts access to authenticated users only
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext.tsx';
 import { AuthModal } from './AuthModal.tsx';
 
 export interface ProtectedRouteProps {
   children: React.ReactNode;
-  fallback?: React.ReactNode;
-  redirectTo?: string;
-  requireRoles?: string[];
-  requirePermissions?: string[];
+  fallback?: React.ReactNode | undefined;
+  redirectTo?: string | undefined;
+  requireRoles?: string[] | undefined;
+  requirePermissions?: string[] | undefined;
   className?: string;
 }
 

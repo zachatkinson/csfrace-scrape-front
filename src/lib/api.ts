@@ -166,7 +166,7 @@ class ApiClient {
   async validateUrl(url: string): Promise<ApiResponse<UrlValidationResult>> {
     try {
       // Basic URL validation first
-      const urlObj = new URL(url);
+      new URL(url);
       
       // For now, return a basic validation response
       // In the future, this could call a real backend validation endpoint
@@ -199,7 +199,7 @@ class ApiClient {
    */
   async submitJob(
     url: string,
-    options: ConversionOptions
+    _options: ConversionOptions
   ): Promise<ApiResponse<ConversionJob>> {
     return this.request({
       method: 'POST',
@@ -286,7 +286,7 @@ class ApiClient {
    */
   async submitBatch(
     urls: string[],
-    options: ConversionOptions,
+    _options: ConversionOptions,
     name?: string
   ): Promise<ApiResponse<BatchRequest>> {
     return this.request({

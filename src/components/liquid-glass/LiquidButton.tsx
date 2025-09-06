@@ -6,7 +6,6 @@
 
 import React, { forwardRef } from 'react';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
-import { LiquidGlass } from './LiquidGlass';
 
 export interface LiquidButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'size'> {
   children: ReactNode;
@@ -134,13 +133,9 @@ export const LiquidButton = forwardRef<HTMLButtonElement, LiquidButtonProps>(({
   `.trim();
   
   return (
-    <LiquidGlass
-      as="button"
+    <button
       ref={ref}
-      variant="button"
-      interactive
-      loading={loading}
-      className={buttonClasses}
+      className={`liquid-glass glass-button liquid-glass-interactive ${loading ? 'glass-loading' : ''} ${buttonClasses}`.trim()}
       onClick={handleClick}
       disabled={disabled || loading}
       {...props}
@@ -169,7 +164,7 @@ export const LiquidButton = forwardRef<HTMLButtonElement, LiquidButtonProps>(({
           {rightIcon}
         </span>
       )}
-    </LiquidGlass>
+    </button>
   );
 });
 

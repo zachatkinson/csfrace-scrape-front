@@ -1,6 +1,6 @@
 ---
 import MainLayout from '../components/layout/MainLayout.astro';
-import JobItem from '../components/JobItem.astro';
+import _JobItem from '../components/JobItem.astro'; // Will be used for jobs list
 ---
 
 <MainLayout title="CSFrace Scrape - WordPress to Shopify Converter">
@@ -894,7 +894,9 @@ import JobItem from '../components/JobItem.astro';
     };
     
     // Handle retry button clicks
-    const handleRetryJob = async (jobId) => {
+    const handleRetryJob = async (jobId: string | null) => {
+      if (!jobId) return;
+      
       try {
         const response = await fetch(`/api/jobs/${jobId}/retry`, {
           method: 'POST',
@@ -913,8 +915,10 @@ import JobItem from '../components/JobItem.astro';
     
     // Event delegation for job actions
     document.addEventListener('click', (e) => {
-      const retryBtn = e.target.closest('[data-retry-job]');
-      const downloadBtn = e.target.closest('[data-download-job]');
+      if (!e.target) return;
+      
+      const retryBtn = (e.target as Element).closest('[data-retry-job]');
+      const downloadBtn = (e.target as Element).closest('[data-download-job]');
       
       if (retryBtn) {
         const jobId = retryBtn.getAttribute('data-retry-job');
@@ -935,7 +939,7 @@ import JobItem from '../components/JobItem.astro';
     loadJobs();
     
     // Real-time updates - poll for job status changes every 5 seconds
-    let updateInterval;
+    let updateInterval: NodeJS.Timeout | null;
     const startRealTimeUpdates = () => {
       updateInterval = setInterval(() => {
         const hasRunningJobs = document.querySelectorAll('[data-status="running"], [data-status="pending"]').length > 0;
@@ -973,11 +977,11 @@ import JobItem from '../components/JobItem.astro';
     const interactiveElements = document.querySelectorAll('.liquid-glass-interactive');
     
     interactiveElements.forEach(element => {
-      element.addEventListener('click', (e) => {
+      element.addEventListener('click', (_e) => {
         // Add haptic feedback simulation
-        element.style.transform = 'scale(0.98)';
+        (element as HTMLElement).style.transform = 'scale(0.98)';
         setTimeout(() => {
-          element.style.transform = '';
+          (element as HTMLElement).style.transform = '';
         }, 100);
       });
     });
@@ -996,42 +1000,51 @@ import JobItem from '../components/JobItem.astro';
           </svg>
           <span>Retrying...</span>
         `;
-        retryButton.disabled = true;
+        (retryButton as HTMLButtonElement).disabled = true;
         
         try {
           // Simulate API call (in real implementation, use API client)
           await new Promise(resolve => setTimeout(resolve, 1500));
           
           // Update UI to show job is now pending/processing
-          const jobElement = retryButton.closest('.p-4');
-          const statusIndicator = jobElement.querySelector('.w-3.h-3');
-          const statusPill = jobElement.querySelector('.glass-status');
-          const errorMessage = jobElement.querySelector('.bg-red-500\\/10');
-          
-          // Update status indicator
-          statusIndicator.className = 'animate-spin rounded-full w-3 h-3 border-2 border-blue-400/30 border-t-blue-400';
-          
-          // Update status pill
-          statusPill.className = 'glass-status text-blue-400 px-3 py-1 rounded-full';
-          statusPill.querySelector('span').textContent = 'Processing';
-          
-          // Remove error message
-          if (errorMessage) {
-            errorMessage.remove();
+          const jobElement = retryButton.closest('.p-4') as HTMLElement;
+          if (jobElement) {
+            const statusIndicator = jobElement.querySelector('.w-3.h-3') as HTMLElement;
+            const statusPill = jobElement.querySelector('.glass-status') as HTMLElement;
+            const errorMessage = jobElement.querySelector('.bg-red-500\\/10');
+            
+            // Update status indicator
+            if (statusIndicator) {
+              statusIndicator.className = 'animate-spin rounded-full w-3 h-3 border-2 border-blue-400/30 border-t-blue-400';
+            }
+            
+            // Update status pill
+            if (statusPill) {
+              statusPill.className = 'glass-status text-blue-400 px-3 py-1 rounded-full';
+              const statusText = statusPill.querySelector('span') as HTMLElement;
+              if (statusText) {
+                statusText.textContent = 'Processing';
+              }
+            }
+            
+            // Remove error message
+            if (errorMessage) {
+              errorMessage.remove();
+            }
+            
+            // Update border color
+            jobElement.className = jobElement.className.replace('border-red-500', 'border-blue-500');
           }
           
-          // Update border color
-          jobElement.className = jobElement.className.replace('border-red-500', 'border-blue-500');
-          
           // Hide retry button and show download button
-          retryButton.style.display = 'none';
+          (retryButton as HTMLElement).style.display = 'none';
           
           console.log('Job retry initiated successfully');
         } catch (error) {
           console.error('Failed to retry job:', error);
           // Reset button state on error
           retryButton.innerHTML = originalContent;
-          retryButton.disabled = false;
+          (retryButton as HTMLButtonElement).disabled = false;
         }
       });
     }
@@ -1041,7 +1054,8 @@ import JobItem from '../components/JobItem.astro';
       convertNowBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         
-        const url = urlInput.value.trim();
+        const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
+        const url = (urlInput as HTMLInputElement).value.trim();
         if (!url) {
           alert('Please enter a WordPress URL');
           return;
@@ -1055,7 +1069,7 @@ import JobItem from '../components/JobItem.astro';
           </svg>
           Converting...
         `;
-        convertNowBtn.disabled = true;
+        (convertNowBtn as HTMLButtonElement).disabled = true;
         
         try {
           // Call backend API for individual job creation
@@ -1078,7 +1092,7 @@ import JobItem from '../components/JobItem.astro';
           console.log('Job created successfully:', jobData);
           
           // Clear input and show success
-          urlInput.value = '';
+          (urlInput as HTMLInputElement).value = '';
           alert(`Job created successfully! Job ID: ${jobData.id}`);
           
           // Refresh jobs display
@@ -1086,11 +1100,12 @@ import JobItem from '../components/JobItem.astro';
           
         } catch (error) {
           console.error('Failed to create job:', error);
-          alert(`Failed to create job: ${error.message}`);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+          alert(`Failed to create job: ${errorMessage}`);
         } finally {
           // Reset button state
           convertNowBtn.innerHTML = originalContent;
-          convertNowBtn.disabled = false;
+          (convertNowBtn as HTMLButtonElement).disabled = false;
         }
       });
     }
@@ -1100,7 +1115,8 @@ import JobItem from '../components/JobItem.astro';
       bulkConvertBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         
-        const file = fileInput.files?.[0];
+        const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
+        const file = (fileInput as HTMLInputElement).files?.[0];
         if (!file) {
           alert('Please select a file containing URLs');
           return;
@@ -1108,9 +1124,15 @@ import JobItem from '../components/JobItem.astro';
         
         // Read file content
         try {
-          const fileContent = await new Promise((resolve, reject) => {
+          const fileContent = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
-            reader.onload = (e) => resolve(e.target.result);
+            reader.onload = (e) => {
+              if (e.target && e.target.result) {
+                resolve(e.target.result as string);
+              } else {
+                reject(new Error('Failed to read file'));
+              }
+            };
             reader.onerror = reject;
             reader.readAsText(file);
           });
@@ -1118,8 +1140,8 @@ import JobItem from '../components/JobItem.astro';
           // Parse URLs from file content
           const urls = fileContent
             .split('\n')
-            .map(line => line.trim())
-            .filter(line => line && line.startsWith('http'));
+            .map((line: string) => line.trim())
+            .filter((line: string) => line && line.startsWith('http'));
           
           if (urls.length === 0) {
             alert('No valid URLs found in the file');
@@ -1127,14 +1149,13 @@ import JobItem from '../components/JobItem.astro';
           }
           
           // Add loading state
-          const originalContent = bulkConvertBtn.innerHTML;
           bulkConvertBtn.innerHTML = `
             <svg class="w-5 h-5 mr-2 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
             Processing ${urls.length} URLs...
           `;
-          bulkConvertBtn.disabled = true;
+          (bulkConvertBtn as HTMLButtonElement).disabled = true;
           
           // Call backend API for batch processing
           const response = await fetch(`${apiUrl}/batches/`, {
@@ -1158,7 +1179,7 @@ import JobItem from '../components/JobItem.astro';
           console.log('Batch created successfully:', batchData);
           
           // Clear file input and show success
-          fileInput.value = '';
+          (fileInput as HTMLInputElement).value = '';
           const fileName = document.getElementById('file-name');
           if (fileName) {
             fileName.textContent = 'No file selected';
@@ -1171,24 +1192,28 @@ import JobItem from '../components/JobItem.astro';
           
         } catch (error) {
           console.error('Failed to process batch:', error);
-          alert(`Failed to process batch: ${error.message}`);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+          alert(`Failed to process batch: ${errorMessage}`);
         } finally {
           // Reset button state
-          bulkConvertBtn.innerHTML = originalContent;
-          bulkConvertBtn.disabled = false;
+          bulkConvertBtn.innerHTML = 'Convert All URLs';
+          (bulkConvertBtn as HTMLButtonElement).disabled = false;
         }
       });
     }
     
     // Simulate progress update
-    const progressBar = document.querySelector('[style*="width: 65%"]');
+    const progressBar = document.querySelector('[style*="width: 65%"]') as HTMLElement;
     if (progressBar) {
       let progress = 65;
       const updateProgress = () => {
         progress += Math.random() * 5;
         if (progress >= 100) {
           progressBar.style.width = '100%';
-          progressBar.parentElement?.nextElementSibling?.querySelector('.text-white\/50')?.setText('Conversion complete!');
+          const statusElement = progressBar.parentElement?.nextElementSibling?.querySelector('.text-white\/50') as HTMLElement;
+          if (statusElement) {
+            statusElement.textContent = 'Conversion complete!';
+          }
         } else {
           progressBar.style.width = `${Math.min(progress, 100)}%`;
           setTimeout(updateProgress, 2000 + Math.random() * 3000);

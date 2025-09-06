@@ -12,25 +12,23 @@ import React, {
   useRef 
 } from 'react';
 
-import { authAPI, isWebAuthnSupported, formatWebAuthnError, generateOAuthState } from '../lib/auth-api.ts';
+import { authAPI, isWebAuthnSupported, generateOAuthState } from '../lib/auth-api.ts';
 import { authStorage, SECURITY_CONFIG } from '../lib/auth-storage.ts';
 
 import type {
   AuthState,
   AuthContextValue,
   AuthAction,
-  User,
   AuthTokens,
   LoginCredentials,
   RegisterData,
   PasswordChangeData,
   PasswordResetRequest,
   PasswordResetConfirm,
-  OAuthProvider,
-  WebAuthnCredential,
   UserProfile,
-  AuthEventType,
 } from '../types/auth.ts';
+
+import { AuthEventType } from '../types/auth.ts';
 
 // Initial state
 const initialState: AuthState = {
@@ -136,7 +134,7 @@ interface AuthProviderProps {
 // Auth provider component
 export function AuthProvider({ children }: AuthProviderProps) {
   const [state, dispatch] = useReducer(authReducer, initialState);
-  const refreshTimeoutRef = useRef<number>();
+  const refreshTimeoutRef = useRef<number | undefined>(undefined);
   const storageCleanupRef = useRef<(() => void) | null>(null);
 
   // Initialize auth state from storage
@@ -305,6 +303,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [state.webauthnSupported, state.isAuthenticated]);
 
+  // Event dispatching for external listeners
+  const dispatchAuthEvent = useCallback((type: AuthEventType, payload: any) => {
+    const event = new CustomEvent('auth_event', {
+      detail: { type, payload, timestamp: Date.now() }
+    });
+    window.dispatchEvent(event);
+  }, []);
+
   // Authentication actions
   const login = useCallback(async (credentials: LoginCredentials) => {
     dispatch({ type: 'AUTH_LOADING', payload: true });
@@ -316,8 +322,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         access_token: response.access_token,
         token_type: response.token_type,
         expires_in: response.expires_in,
-        refresh_token: response.refresh_token,
         expires_at: Date.now() + (response.expires_in * 1000),
+        ...(response.refresh_token != null && { refresh_token: response.refresh_token }),
       };
 
       // Store authentication data
@@ -341,7 +347,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setupTokenRefresh(tokens.expires_at);
 
       // Dispatch login event
-      dispatchAuthEvent('LOGIN', { user: response.user });
+      dispatchAuthEvent(AuthEventType.LOGIN, { user: response.user });
 
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Login failed';
@@ -354,7 +360,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     dispatch({ type: 'AUTH_LOADING', payload: true });
     
     try {
-      const user = await authAPI.register(data);
+      await authAPI.register(data);
       
       dispatch({ type: 'AUTH_LOADING', payload: false });
       
@@ -386,7 +392,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       dispatch({ type: 'AUTH_LOGOUT' });
 
       // Dispatch logout event
-      dispatchAuthEvent('LOGOUT', null);
+      dispatchAuthEvent(AuthEventType.LOGOUT, null);
 
     } catch (error) {
       console.error('Logout error:', error);
@@ -422,7 +428,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setupTokenRefresh(tokens.expires_at);
 
       // Dispatch token refresh event
-      dispatchAuthEvent('TOKEN_REFRESH', { tokens });
+      dispatchAuthEvent(AuthEventType.TOKEN_REFRESH, { tokens });
 
     } catch (error) {
       console.error('Token refresh failed:', error);
@@ -476,10 +482,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     dispatch({ type: 'AUTH_LOADING', payload: true });
     
     try {
-      const response = await authAPI.initiateOAuthLogin({
-        provider: provider as OAuthProvider,
-        redirect_uri: redirectUri
-      });
+      const request = {
+        provider: provider,
+        ...(redirectUri != null && { redirect_uri: redirectUri })
+      };
+      const response = await authAPI.initiateOAuthLogin(request);
       
       // Store state for security validation
       const state = generateOAuthState();
@@ -515,8 +522,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         access_token: response.access_token,
         token_type: response.token_type,
         expires_in: response.expires_in,
-        refresh_token: response.refresh_token,
         expires_at: Date.now() + (response.expires_in * 1000),
+        ...(response.refresh_token != null && { refresh_token: response.refresh_token }),
       };
 
       // Store authentication data
@@ -540,9 +547,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setupTokenRefresh(tokens.expires_at);
 
       // Dispatch login event
-      dispatchAuthEvent('LOGIN', { user: response.user, provider });
-
-      return response.user;
+      dispatchAuthEvent(AuthEventType.LOGIN, { user: response.user, provider });
 
     } catch (error) {
       const message = error instanceof Error ? error.message : 'OAuth callback failed';
@@ -552,7 +557,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [loadOAuthProviders, loadWebAuthnCredentials, setupTokenRefresh, dispatchAuthEvent]);
 
   // WebAuthn authentication (placeholder for next phase)
-  const registerPasskey = useCallback(async (name?: string) => {
+  const registerPasskey = useCallback(async (_name?: string) => {
     // Will implement in WebAuthn phase
     throw new Error('Passkey registration not yet implemented');
   }, []);
@@ -562,7 +567,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     throw new Error('Passkey authentication not yet implemented');
   }, []);
 
-  const deletePasskey = useCallback(async (credentialId: string) => {
+  const deletePasskey = useCallback(async (_credentialId: string) => {
     // Will implement in WebAuthn phase
     throw new Error('Passkey deletion not yet implemented');
   }, []);
@@ -582,7 +587,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       dispatch({ type: 'AUTH_UPDATE_USER', payload: updatedUser });
       
       // Dispatch user update event
-      dispatchAuthEvent('USER_UPDATED', { user: updatedUser });
+      dispatchAuthEvent(AuthEventType.USER_UPDATED, { user: updatedUser });
 
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Profile update failed';
@@ -620,13 +625,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return true;
   }, [state.isAuthenticated, logout]);
 
-  // Event dispatching for external listeners
-  const dispatchAuthEvent = useCallback((type: AuthEventType, payload: any) => {
-    const event = new CustomEvent('auth_event', {
-      detail: { type, payload, timestamp: Date.now() }
-    });
-    window.dispatchEvent(event);
-  }, []);
 
   // Context value
   const contextValue: AuthContextValue = {

@@ -137,10 +137,10 @@ class AuthStorage {
     if (accessToken && expiresAt) {
       tokens = {
         access_token: accessToken,
-        refresh_token: refreshToken || undefined,
         token_type: 'bearer',
         expires_in: Math.max(0, Math.floor((expiresAt - Date.now()) / 1000)),
         expires_at: expiresAt,
+        ...(refreshToken != null && { refresh_token: refreshToken }),
       };
     }
 

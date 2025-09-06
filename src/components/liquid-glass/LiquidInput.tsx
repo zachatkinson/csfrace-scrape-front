@@ -12,7 +12,7 @@ export interface LiquidInputProps extends Omit<InputHTMLAttributes<HTMLInputElem
   // Label and help text
   label?: string;
   helperText?: string;
-  errorText?: string;
+  errorText?: string | undefined;
   
   // Visual variants
   size?: 'sm' | 'md' | 'lg';

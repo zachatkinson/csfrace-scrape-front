@@ -571,6 +571,7 @@ const { title, description = "WordPress to Shopify content converter with ultra-
         
         // Open auth panel
         const openAuth = () => {
+          if (!authPanel) return;
           authPanel.classList.remove('translate-y-full', 'pointer-events-none', '-bottom-20');
           authPanel.classList.add('translate-y-0', 'pointer-events-auto', 'bottom-0');
           isAuthOpen = true;
@@ -581,6 +582,7 @@ const { title, description = "WordPress to Shopify content converter with ultra-
         
         // Close auth panel
         const closeAuth = () => {
+          if (!authPanel) return;
           authPanel.classList.remove('translate-y-0', 'pointer-events-auto', 'bottom-0');
           authPanel.classList.add('translate-y-full', 'pointer-events-none', '-bottom-20');
           isAuthOpen = false;
@@ -590,7 +592,7 @@ const { title, description = "WordPress to Shopify content converter with ultra-
         };
         
         // Handle escape key
-        const handleEscapeKey = (e) => {
+        const handleEscapeKey = (e: KeyboardEvent) => {
           if (e.key === 'Escape' && isAuthOpen) {
             closeAuth();
           }
@@ -629,111 +631,205 @@ const { title, description = "WordPress to Shopify content converter with ultra-
     <script>
       // Health Status Service
       class HealthStatusService {
+        apiUrl: string;
+        pollInterval: number;
+        pollTimer: NodeJS.Timeout | null;
+        isPolling: boolean;
+        cachedStatus: HealthStatus[];
+
         constructor() {
           this.apiUrl = 'http://localhost:8000';
           this.pollInterval = 30000; // 30 seconds
           this.pollTimer = null;
           this.isPolling = false;
+          this.cachedStatus = [];
         }
 
         async checkHealth() {
+          const now = new Date();
           try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            
+            const startTime = Date.now();
             const response = await fetch(`${this.apiUrl}/health/`, {
               method: 'GET',
               headers: { 'Content-Type': 'application/json' },
-              timeout: 10000
+              signal: controller.signal
             });
+            const responseTime = Date.now() - startTime;
+            
+            clearTimeout(timeoutId);
 
             if (response.ok) {
               const healthData = await response.json();
+              
+              // Update cache with proper HealthStatus objects
+              this.cachedStatus = [
+                {
+                  service: 'backend',
+                  status: 'up',
+                  responseTime: responseTime,
+                  lastChecked: now
+                },
+                {
+                  service: 'database',
+                  status: healthData.database?.status === 'up' ? 'up' : 'down',
+                  lastChecked: now,
+                  error: healthData.database?.status !== 'up' ? 'Database connection failed' : undefined
+                },
+                {
+                  service: 'cache',
+                  status: healthData.cache?.status === 'up' ? 'up' : healthData.cache?.status === 'not_configured' ? 'down' : 'error',
+                  lastChecked: now,
+                  error: healthData.cache?.status === 'error' ? 'Cache connection failed' : undefined
+                }
+              ];
+              
               this.updateStatusIndicators({
                 backend: { status: 'online', connected: true },
                 database: healthData.database,
                 cache: healthData.cache
               });
+              
+              return this.cachedStatus;
             } else {
               // Backend is running but returning error status
+              this.cachedStatus = [
+                {
+                  service: 'backend',
+                  status: 'error',
+                  responseTime: responseTime,
+                  lastChecked: now,
+                  error: `HTTP ${response.status}: ${response.statusText}`
+                },
+                {
+                  service: 'database',
+                  status: 'error',
+                  lastChecked: now,
+                  error: 'Unable to check database status'
+                },
+                {
+                  service: 'cache',
+                  status: 'error',
+                  lastChecked: now,
+                  error: 'Unable to check cache status'
+                }
+              ];
+              
               this.updateStatusIndicators({
                 backend: { status: 'error', connected: false },
                 database: { status: 'unknown', connected: false },
                 cache: { status: 'unknown' }
               });
+              
+              return this.cachedStatus;
             }
           } catch (error) {
             // Backend is not reachable
+            const now = new Date();
+            this.cachedStatus = [
+              {
+                service: 'backend',
+                status: 'down',
+                lastChecked: now,
+                error: error.message || 'Backend unreachable'
+              },
+              {
+                service: 'database',
+                status: 'down',
+                lastChecked: now,
+                error: 'Unable to check database status - backend offline'
+              },
+              {
+                service: 'cache',
+                status: 'down',
+                lastChecked: now,
+                error: 'Unable to check cache status - backend offline'
+              }
+            ];
+            
             this.updateStatusIndicators({
               backend: { status: 'offline', connected: false },
               database: { status: 'unknown', connected: false },
               cache: { status: 'unknown' }
             });
+            
+            return this.cachedStatus;
           }
         }
 
-        updateStatusIndicators(services) {
+        updateStatusIndicators(services: any) {
           // Update Backend API status
           const backendEl = document.getElementById('backend-status');
           if (backendEl) {
-            const indicator = backendEl.querySelector('.w-3');
-            const statusText = backendEl.querySelector('.text-xs');
+            const indicator = backendEl.querySelector('.w-3') as HTMLElement;
+            const statusText = backendEl.querySelector('.text-xs') as HTMLElement;
             
-            if (services.backend.status === 'online') {
-              indicator.className = 'w-3 h-3 bg-green-400 rounded-full animate-pulse';
-              statusText.textContent = 'ONLINE';
-              statusText.className = 'text-green-400 text-xs font-mono';
-            } else if (services.backend.status === 'error') {
-              indicator.className = 'w-3 h-3 bg-yellow-400 rounded-full animate-pulse';
-              statusText.textContent = 'ERROR';
-              statusText.className = 'text-yellow-400 text-xs font-mono';
-            } else {
-              indicator.className = 'w-3 h-3 bg-red-400 rounded-full';
-              statusText.textContent = 'OFFLINE';
-              statusText.className = 'text-red-400 text-xs font-mono';
+            if (indicator && statusText) {
+              if (services.backend.status === 'online') {
+                indicator.className = 'w-3 h-3 bg-green-400 rounded-full animate-pulse';
+                statusText.textContent = 'ONLINE';
+                statusText.className = 'text-green-400 text-xs font-mono';
+              } else if (services.backend.status === 'error') {
+                indicator.className = 'w-3 h-3 bg-yellow-400 rounded-full animate-pulse';
+                statusText.textContent = 'ERROR';
+                statusText.className = 'text-yellow-400 text-xs font-mono';
+              } else {
+                indicator.className = 'w-3 h-3 bg-red-400 rounded-full';
+                statusText.textContent = 'OFFLINE';
+                statusText.className = 'text-red-400 text-xs font-mono';
+              }
             }
           }
 
           // Update Database status
           const databaseEl = document.getElementById('database-status');
           if (databaseEl && services.database) {
-            const indicator = databaseEl.querySelector('.w-3');
-            const statusText = databaseEl.querySelector('.text-xs');
+            const indicator = databaseEl.querySelector('.w-3') as HTMLElement;
+            const statusText = databaseEl.querySelector('.text-xs') as HTMLElement;
             
-            if (services.database.status === 'healthy' && services.database.connected) {
-              indicator.className = 'w-3 h-3 bg-green-400 rounded-full animate-pulse';
-              statusText.textContent = 'ONLINE';
-              statusText.className = 'text-green-400 text-xs font-mono';
-            } else if (services.database.status === 'unhealthy') {
-              indicator.className = 'w-3 h-3 bg-red-400 rounded-full';
-              statusText.textContent = 'OFFLINE';
-              statusText.className = 'text-red-400 text-xs font-mono';
-            } else {
-              indicator.className = 'w-3 h-3 bg-yellow-400 rounded-full animate-pulse';
-              statusText.textContent = 'UNKNOWN';
-              statusText.className = 'text-yellow-400 text-xs font-mono';
+            if (indicator && statusText) {
+              if (services.database.status === 'healthy' && services.database.connected) {
+                indicator.className = 'w-3 h-3 bg-green-400 rounded-full animate-pulse';
+                statusText.textContent = 'ONLINE';
+                statusText.className = 'text-green-400 text-xs font-mono';
+              } else if (services.database.status === 'unhealthy') {
+                indicator.className = 'w-3 h-3 bg-red-400 rounded-full';
+                statusText.textContent = 'OFFLINE';
+                statusText.className = 'text-red-400 text-xs font-mono';
+              } else {
+                indicator.className = 'w-3 h-3 bg-yellow-400 rounded-full animate-pulse';
+                statusText.textContent = 'UNKNOWN';
+                statusText.className = 'text-yellow-400 text-xs font-mono';
+              }
             }
           }
 
           // Update Queue/Cache status (Redis)
           const queueEl = document.getElementById('queue-status');
           if (queueEl && services.cache) {
-            const indicator = queueEl.querySelector('.w-3');
-            const statusText = queueEl.querySelector('.text-xs');
+            const indicator = queueEl.querySelector('.w-3') as HTMLElement;
+            const statusText = queueEl.querySelector('.text-xs') as HTMLElement;
             
-            if (services.cache.status === 'healthy') {
-              indicator.className = 'w-3 h-3 bg-green-400 rounded-full animate-pulse';
-              statusText.textContent = 'ONLINE';
-              statusText.className = 'text-green-400 text-xs font-mono';
-            } else if (services.cache.status === 'error') {
-              indicator.className = 'w-3 h-3 bg-red-400 rounded-full';
-              statusText.textContent = 'ERROR';
-              statusText.className = 'text-red-400 text-xs font-mono';
-            } else if (services.cache.status === 'not_configured') {
-              indicator.className = 'w-3 h-3 bg-gray-400 rounded-full';
-              statusText.textContent = 'DISABLED';
-              statusText.className = 'text-gray-400 text-xs font-mono';
-            } else {
-              indicator.className = 'w-3 h-3 bg-yellow-400 rounded-full animate-pulse';
-              statusText.textContent = 'UNKNOWN';
-              statusText.className = 'text-yellow-400 text-xs font-mono';
+            if (indicator && statusText) {
+              if (services.cache.status === 'healthy') {
+                indicator.className = 'w-3 h-3 bg-green-400 rounded-full animate-pulse';
+                statusText.textContent = 'ONLINE';
+                statusText.className = 'text-green-400 text-xs font-mono';
+              } else if (services.cache.status === 'error') {
+                indicator.className = 'w-3 h-3 bg-red-400 rounded-full';
+                statusText.textContent = 'ERROR';
+                statusText.className = 'text-red-400 text-xs font-mono';
+              } else if (services.cache.status === 'not_configured') {
+                indicator.className = 'w-3 h-3 bg-gray-400 rounded-full';
+                statusText.textContent = 'DISABLED';
+                statusText.className = 'text-gray-400 text-xs font-mono';
+              } else {
+                indicator.className = 'w-3 h-3 bg-yellow-400 rounded-full animate-pulse';
+                statusText.textContent = 'UNKNOWN';
+                statusText.className = 'text-yellow-400 text-xs font-mono';
+              }
             }
           }
         }
@@ -759,11 +855,21 @@ const { title, description = "WordPress to Shopify content converter with ultra-
           this.isPolling = false;
         }
 
-        updateApiUrl(newUrl) {
+        updateApiUrl(newUrl: string) {
           this.apiUrl = newUrl;
           if (this.isPolling) {
             this.checkHealth(); // Check immediately with new URL
           }
+        }
+
+        async checkStatus() {
+          // Always perform fresh check and return Promise<HealthStatus[]>
+          return await this.checkHealth();
+        }
+
+        getLatestStatus() {
+          // Return cached status synchronously as HealthStatus[]
+          return this.cachedStatus;
         }
       }
 
@@ -786,6 +892,7 @@ const { title, description = "WordPress to Shopify content converter with ultra-
         
         // Open settings panel
         const openSettings = () => {
+          if (!settingsPanel) return;
           settingsPanel.classList.remove('-translate-y-full', 'pointer-events-none', '-top-20');
           settingsPanel.classList.add('translate-y-0', 'pointer-events-auto', 'top-20');
           isSettingsOpen = true;
@@ -799,6 +906,7 @@ const { title, description = "WordPress to Shopify content converter with ultra-
         
         // Close settings panel
         const closeSettings = () => {
+          if (!settingsPanel) return;
           settingsPanel.classList.remove('translate-y-0', 'pointer-events-auto', 'top-20');
           settingsPanel.classList.add('-translate-y-full', 'pointer-events-none', '-top-20');
           isSettingsOpen = false;
@@ -808,7 +916,7 @@ const { title, description = "WordPress to Shopify content converter with ultra-
         };
         
         // Handle escape key
-        const handleEscapeKey = (e) => {
+        const handleEscapeKey = (e: KeyboardEvent) => {
           if (e.key === 'Escape' && isSettingsOpen) {
             closeSettings();
           }
@@ -819,43 +927,67 @@ const { title, description = "WordPress to Shopify content converter with ultra-
           const settings = getStoredSettings();
           
           // API Configuration
-          document.getElementById('api-url').value = settings.apiUrl;
-          document.getElementById('api-timeout').value = settings.apiTimeout;
-          document.getElementById('refresh-interval').value = settings.refreshInterval;
+          const apiUrlEl = document.getElementById('api-url') as HTMLInputElement;
+          if (apiUrlEl) apiUrlEl.value = settings.apiUrl;
+          
+          const apiTimeoutEl = document.getElementById('api-timeout') as HTMLInputElement;
+          if (apiTimeoutEl) apiTimeoutEl.value = settings.apiTimeout;
+          
+          const refreshIntervalEl = document.getElementById('refresh-interval') as HTMLInputElement;
+          if (refreshIntervalEl) refreshIntervalEl.value = settings.refreshInterval;
           
           // Job Defaults
-          document.getElementById('default-priority').value = settings.defaultPriority;
-          document.getElementById('max-retries').value = settings.maxRetries;
-          document.getElementById('job-timeout').value = settings.jobTimeout;
+          const defaultPriorityEl = document.getElementById('default-priority') as HTMLSelectElement;
+          if (defaultPriorityEl) defaultPriorityEl.value = settings.defaultPriority;
+          
+          const maxRetriesEl = document.getElementById('max-retries') as HTMLInputElement;
+          if (maxRetriesEl) maxRetriesEl.value = settings.maxRetries;
+          
+          const jobTimeoutEl = document.getElementById('job-timeout') as HTMLInputElement;
+          if (jobTimeoutEl) jobTimeoutEl.value = settings.jobTimeout;
           
           // Display Options
-          document.getElementById('dark-mode').checked = settings.darkMode;
-          document.getElementById('show-job-ids').checked = settings.showJobIds;
-          document.getElementById('compact-mode').checked = settings.compactMode;
-          document.getElementById('jobs-per-page').value = settings.jobsPerPage;
-          document.getElementById('timezone').value = settings.timezone;
+          const darkModeEl = document.getElementById('dark-mode') as HTMLInputElement;
+          if (darkModeEl) darkModeEl.checked = settings.darkMode;
+          
+          const showJobIdsEl = document.getElementById('show-job-ids') as HTMLInputElement;
+          if (showJobIdsEl) showJobIdsEl.checked = settings.showJobIds;
+          
+          const compactModeEl = document.getElementById('compact-mode') as HTMLInputElement;
+          if (compactModeEl) compactModeEl.checked = settings.compactMode;
+          
+          const jobsPerPageEl = document.getElementById('jobs-per-page') as HTMLSelectElement;
+          if (jobsPerPageEl) jobsPerPageEl.value = settings.jobsPerPage;
+          
+          const timezoneEl = document.getElementById('timezone') as HTMLSelectElement;
+          if (timezoneEl) timezoneEl.value = settings.timezone;
           
           // Notifications
-          document.getElementById('completion-alerts').checked = settings.completionAlerts;
-          document.getElementById('error-notifications').checked = settings.errorNotifications;
-          document.getElementById('browser-notifications').checked = settings.browserNotifications;
+          const completionAlertsEl = document.getElementById('completion-alerts') as HTMLInputElement;
+          if (completionAlertsEl) completionAlertsEl.checked = settings.completionAlerts;
+          
+          const errorNotificationsEl = document.getElementById('error-notifications') as HTMLInputElement;
+          if (errorNotificationsEl) errorNotificationsEl.checked = settings.errorNotifications;
+          
+          const browserNotificationsEl = document.getElementById('browser-notifications') as HTMLInputElement;
+          if (browserNotificationsEl) browserNotificationsEl.checked = settings.browserNotifications;
         };
         
         // Save settings to localStorage
         const saveSettingsToStorage = () => {
           const settings = {
             // API Configuration
-            apiUrl: document.getElementById('api-url').value,
-            apiTimeout: parseInt(document.getElementById('api-timeout').value),
-            refreshInterval: parseInt(document.getElementById('refresh-interval').value),
+            apiUrl: (document.getElementById('api-url') as HTMLInputElement)?.value || '',
+            apiTimeout: parseInt((document.getElementById('api-timeout') as HTMLInputElement)?.value || '30000'),
+            refreshInterval: parseInt((document.getElementById('refresh-interval') as HTMLInputElement)?.value || '5000'),
             
             // Job Defaults
-            defaultPriority: document.getElementById('default-priority').value,
-            maxRetries: parseInt(document.getElementById('max-retries').value),
-            jobTimeout: parseInt(document.getElementById('job-timeout').value),
+            defaultPriority: (document.getElementById('default-priority') as HTMLSelectElement)?.value || 'normal',
+            maxRetries: parseInt((document.getElementById('max-retries') as HTMLInputElement)?.value || '3'),
+            jobTimeout: parseInt((document.getElementById('job-timeout') as HTMLInputElement)?.value || '300000'),
             
             // Display Options
-            darkMode: document.getElementById('dark-mode').checked,
+            darkMode: (document.getElementById('dark-mode') as HTMLInputElement)?.checked || false,
             showJobIds: (document.getElementById('show-job-ids') as HTMLInputElement)?.checked || false,
             compactMode: (document.getElementById('compact-mode') as HTMLInputElement)?.checked || false,
             jobsPerPage: parseInt((document.getElementById('jobs-per-page') as HTMLSelectElement)?.value || '10'),

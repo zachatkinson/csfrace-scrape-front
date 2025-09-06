@@ -46,7 +46,7 @@ export interface UrlScraperProps {
 export const UrlScraper: React.FC<UrlScraperProps> = ({
   onJobSubmit,
   onJobUpdate,
-  maxConcurrentJobs = 5,
+  maxConcurrentJobs: _maxConcurrentJobs = 5,
   className = '',
 }) => {
   const { isAuthenticated } = useAuth();
@@ -54,7 +54,7 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
   const [isValidating, setIsValidating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationResult, setValidationResult] = useState<UrlValidationResult | null>(null);
-  const [jobs, setJobs] = useState<ScrapingJobUI[]>([]);
+  const [_jobs, setJobs] = useState<ScrapingJobUI[]>([]);
   const [batchMode, setBatchMode] = useState(false);
   const [batchUrls, setBatchUrls] = useState('');
   const [isBatchSubmitting, setIsBatchSubmitting] = useState(false);
@@ -64,20 +64,28 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
   const validateUrl = useCallback(async (inputUrl: string): Promise<UrlValidationResult> => {
     try {
       // Basic URL validation
-      const urlObj = new URL(inputUrl);
+      new URL(inputUrl);
       
       // Call backend validation API
       const response = await api.validateUrl(inputUrl);
       
       if (response.success && response.data) {
         const validationData = response.data;
-        return {
+        const result: UrlValidationResult = {
           isValid: validationData.isValid,
           isWordPress: validationData.isWordPress,
           isAccessible: validationData.isAccessible,
-          contentType: validationData.contentType,
-          metadata: validationData.metadata
         };
+        
+        if (validationData.contentType != null) {
+          result.contentType = validationData.contentType;
+        }
+        
+        if (validationData.metadata != null) {
+          result.metadata = validationData.metadata;
+        }
+        
+        return result;
       } else {
         return {
           isValid: false,
@@ -117,33 +125,10 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
   
   // Create new scraping job UI representation
   const createJobUI = (jobData: ConversionJob): ScrapingJobUI => ({
+    ...jobData,
     id: jobData.id.toString(),
-    url: jobData.url,
-    domain: jobData.domain,
-    slug: jobData.slug,
     status: jobData.status,
-    priority: jobData.priority,
-    created_at: jobData.created_at,
-    started_at: jobData.started_at,
-    completed_at: jobData.completed_at,
-    retry_count: jobData.retry_count,
-    max_retries: jobData.max_retries,
-    timeout_seconds: jobData.timeout_seconds,
-    output_directory: jobData.output_directory,
-    custom_slug: jobData.custom_slug,
-    skip_existing: jobData.skip_existing,
-    error_message: jobData.error_message,
-    error_type: jobData.error_type,
-    success: jobData.success,
-    duration_seconds: jobData.duration_seconds,
-    content_size_bytes: jobData.content_size_bytes,
-    images_downloaded: jobData.images_downloaded,
-    batch_id: jobData.batch_id,
-    converter_config: jobData.converter_config,
-    processing_options: jobData.processing_options,
-    progress: 0,
-    error: jobData.error_message,
-    createdAt: new Date(jobData.created_at)
+    progress: jobData.progress || 0
   });
   
   // Submit single URL for processing
@@ -264,14 +249,14 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
             case 'pending':
               updatedJob.progress = 0;
               break;
-            case 'running':
+            case 'scraping':
               updatedJob.progress = 50; // Could be enhanced with real progress from API
               break;
             case 'completed':
               updatedJob.progress = 100;
               clearInterval(pollInterval);
               break;
-            case 'failed':
+            case 'error':
               updatedJob.progress = 0;
               clearInterval(pollInterval);
               break;
@@ -354,10 +339,10 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
               onChange={(e) => handleUrlChange(e.target.value)}
               loading={isValidating}
               error={validationResult?.error ? true : false}
-              success={validationResult?.isValid}
+              {...(validationResult?.isValid != null && { success: validationResult.isValid })}
               errorText={validationResult?.error}
               helperText={validationResult?.isValid 
-                ? `Detected: ${validationResult.metadata?.type} - ${validationResult.metadata?.estimatedSize}`
+                ? `Detected: ${validationResult.contentType} - ${validationResult.metadata?.estimatedSize}`
                 : 'Enter a valid WordPress URL'
               }
               leftIcon={

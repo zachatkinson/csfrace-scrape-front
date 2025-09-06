@@ -1,1 +1,281 @@
-/**\n * Shared TypeScript Definitions\n * Type definitions for WordPress to Shopify conversion system\n */\n\n// Job Status Types\nexport type JobStatus = 'pending' | 'validating' | 'scraping' | 'completed' | 'error' | 'cancelled';\n\n// Content Types\nexport type ContentType = 'post' | 'page' | 'product' | 'category' | 'tag';\n\n// API Response Types\nexport interface ApiResponse<T = any> {\n  success: boolean;\n  data?: T;\n  error?: string;\n  message?: string;\n  timestamp: string;\n}\n\n// WordPress Content Structure\nexport interface WordPressContent {\n  id: string;\n  title: string;\n  content: string;\n  excerpt?: string;\n  slug: string;\n  type: ContentType;\n  status: 'publish' | 'draft' | 'private';\n  author: {\n    id: string;\n    name: string;\n    email?: string;\n  };\n  publishedAt: string;\n  modifiedAt: string;\n  featuredImage?: {\n    url: string;\n    alt?: string;\n    caption?: string;\n  };\n  categories: string[];\n  tags: string[];\n  metadata: Record<string, any>;\n}\n\n// Shopify Content Structure\nexport interface ShopifyContent {\n  handle: string;\n  title: string;\n  bodyHtml: string;\n  excerpt?: string;\n  vendor?: string;\n  productType?: string;\n  tags: string[];\n  images: {\n    src: string;\n    alt?: string;\n    position: number;\n  }[];\n  variants?: {\n    title: string;\n    price: string;\n    sku?: string;\n    inventoryQuantity?: number;\n  }[];\n  seo: {\n    title?: string;\n    description?: string;\n  };\n  publishedAt?: string;\n}\n\n// Conversion Job\nexport interface ConversionJob {\n  id: string;\n  url: string;\n  status: JobStatus;\n  progress: number;\n  \n  // Input data\n  wordpressContent?: WordPressContent;\n  \n  // Output data\n  shopifyContent?: ShopifyContent;\n  convertedHtml?: string;\n  extractedImages?: string[];\n  \n  // Metadata\n  metadata: {\n    title?: string;\n    type?: ContentType;\n    wordCount?: number;\n    imageCount?: number;\n    estimatedSize?: string;\n    processingTime?: number;\n  };\n  \n  // Status information\n  error?: string;\n  warnings?: string[];\n  createdAt: Date;\n  startedAt?: Date;\n  completedAt?: Date;\n  estimatedTimeRemaining?: number;\n  \n  // Configuration\n  options: ConversionOptions;\n}\n\n// Conversion Configuration\nexport interface ConversionOptions {\n  // Content processing\n  preserveFormatting: boolean;\n  convertImages: boolean;\n  optimizeImages: boolean;\n  downloadImages: boolean;\n  \n  // Shopify-specific\n  productType?: string;\n  vendor?: string;\n  tags?: string[];\n  \n  // SEO\n  generateSeoTitle: boolean;\n  generateSeoDescription: boolean;\n  \n  // Advanced\n  customCss?: string;\n  removeWordPressSpecific: boolean;\n  addShopifySpecific: boolean;\n}\n\n// URL Validation\nexport interface UrlValidationResult {\n  isValid: boolean;\n  isWordPress: boolean;\n  isAccessible: boolean;\n  contentType?: ContentType;\n  error?: string;\n  metadata?: {\n    title?: string;\n    description?: string;\n    estimatedSize?: string;\n    lastModified?: string;\n  };\n}\n\n// Batch Processing\nexport interface BatchRequest {\n  id: string;\n  name: string;\n  urls: string[];\n  options: ConversionOptions;\n  createdAt: Date;\n  status: 'pending' | 'processing' | 'completed' | 'error';\n  jobs: ConversionJob[];\n  progress: {\n    total: number;\n    completed: number;\n    failed: number;\n  };\n}\n\n// WebSocket Events\nexport interface WebSocketEvent {\n  type: 'job_update' | 'job_complete' | 'job_error' | 'connection_status' | 'batch_update';\n  payload: {\n    jobId?: string;\n    batchId?: string;\n    data?: any;\n    timestamp: string;\n  };\n}\n\n// Statistics\nexport interface ConversionStats {\n  totalJobs: number;\n  completedJobs: number;\n  failedJobs: number;\n  successRate: number;\n  averageProcessingTime: number;\n  totalContentConverted: number;\n  totalImagesProcessed: number;\n  period: {\n    start: string;\n    end: string;\n  };\n}\n\n// User Interface States\nexport interface UiState {\n  isLoading: boolean;\n  isConnected: boolean;\n  theme: 'light' | 'dark' | 'auto';\n  notifications: Notification[];\n  activeModal?: string;\n  sidebarCollapsed: boolean;\n}\n\nexport interface Notification {\n  id: string;\n  type: 'info' | 'success' | 'warning' | 'error';\n  title: string;\n  message: string;\n  action?: {\n    label: string;\n    handler: () => void;\n  };\n  duration?: number;\n  createdAt: Date;\n}\n\n// API Client Configuration\nexport interface ApiConfig {\n  baseUrl: string;\n  apiKey?: string;\n  timeout: number;\n  retries: number;\n  webSocketUrl?: string;\n}\n\n// Component Props Extensions\nexport interface LiquidGlassBaseProps {\n  className?: string;\n  interactive?: boolean;\n  adaptive?: boolean;\n  lensing?: boolean;\n  loading?: boolean;\n  variant?: string;\n}\n\n// Form Validation\nexport interface ValidationRule {\n  required?: boolean;\n  minLength?: number;\n  maxLength?: number;\n  pattern?: RegExp;\n  custom?: (value: any) => string | null;\n}\n\nexport interface FormField {\n  name: string;\n  label: string;\n  type: 'text' | 'url' | 'email' | 'password' | 'textarea' | 'select' | 'checkbox' | 'radio';\n  value: any;\n  error?: string;\n  validation?: ValidationRule;\n  options?: { label: string; value: any }[];\n  placeholder?: string;\n  disabled?: boolean;\n}\n\n// Export utility types\nexport type Prettify<T> = {\n  [K in keyof T]: T[K];\n} & {};\n\nexport type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;\n\nexport type RequireAtLeastOne<T, Keys extends keyof T = keyof T> = Pick<T, Exclude<keyof T, Keys>> & {\n  [K in Keys]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<Keys, K>>>;\n}[Keys];\n\n// Environment Variables\nexport interface EnvironmentConfig {\n  apiBaseUrl: string;\n  wsBaseUrl: string;\n  apiKey?: string;\n  apiTimeout: number;\n  enableBatchProcessing: boolean;\n  maxConcurrentJobs: number;\n  enableRealTimeUpdates: boolean;\n  debugMode: boolean;\n  logLevel: 'debug' | 'info' | 'warn' | 'error';\n}\n\n// Export all types as a namespace for easy importing\nexport * from './api';\nexport * from './wordpress';\nexport * from './shopify';\n\n// Default export for convenience\nexport default {\n  JobStatus,\n  ContentType,\n  ConversionJob,\n  ConversionOptions,\n  UrlValidationResult,\n  BatchRequest,\n  WebSocketEvent,\n  ConversionStats,\n  UiState,\n  Notification,\n};"
+/**
+ * Shared TypeScript Definitions
+ * Type definitions for WordPress to Shopify conversion system
+ */
+
+// Job Status Types
+export type JobStatus = 'pending' | 'validating' | 'scraping' | 'completed' | 'error' | 'cancelled';
+
+// Content Types
+export type ContentType = 'post' | 'page' | 'product' | 'category' | 'tag';
+
+// API Response Types
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+  timestamp: string;
+}
+
+// WordPress Content Structure
+export interface WordPressContent {
+  id: string;
+  title: string;
+  content: string;
+  excerpt?: string;
+  slug: string;
+  type: ContentType;
+  status: 'publish' | 'draft' | 'private';
+  author: {
+    id: string;
+    name: string;
+    email?: string;
+  };
+  publishedAt: string;
+  modifiedAt: string;
+  featuredImage?: {
+    url: string;
+    alt?: string;
+    caption?: string;
+  };
+  categories: string[];
+  tags: string[];
+  metadata: Record<string, any>;
+}
+
+// Shopify Content Structure
+export interface ShopifyContent {
+  handle: string;
+  title: string;
+  bodyHtml: string;
+  excerpt?: string;
+  vendor?: string;
+  productType?: string;
+  tags: string[];
+  images: {
+    src: string;
+    alt?: string;
+    position: number;
+  }[];
+  variants?: {
+    title: string;
+    price: string;
+    sku?: string;
+    inventoryQuantity?: number;
+  }[];
+  seo: {
+    title?: string;
+    description?: string;
+  };
+  publishedAt?: string;
+}
+
+// Conversion Job
+export interface ConversionJob {
+  id: string;
+  url: string;
+  status: JobStatus;
+  progress: number;
+  
+  // Input data
+  wordpressContent?: WordPressContent;
+  
+  // Output data
+  shopifyContent?: ShopifyContent;
+  convertedHtml?: string;
+  extractedImages?: string[];
+  
+  // Metadata
+  metadata: {
+    title?: string;
+    type?: ContentType;
+    wordCount?: number;
+    imageCount?: number;
+    estimatedSize?: string;
+    processingTime?: number;
+  };
+  
+  // Status information
+  error?: string;
+  warnings?: string[];
+  createdAt: Date;
+  startedAt?: Date;
+  completedAt?: Date;
+  estimatedTimeRemaining?: number;
+  
+  // Configuration
+  options: ConversionOptions;
+}
+
+// Conversion Configuration
+export interface ConversionOptions {
+  // Content processing
+  preserveFormatting: boolean;
+  convertImages: boolean;
+  optimizeImages: boolean;
+  downloadImages: boolean;
+  
+  // Shopify-specific
+  productType?: string;
+  vendor?: string;
+  tags?: string[];
+  
+  // SEO
+  generateSeoTitle: boolean;
+  generateSeoDescription: boolean;
+  
+  // Advanced
+  customCss?: string;
+  removeWordPressSpecific: boolean;
+  addShopifySpecific: boolean;
+}
+
+// URL Validation
+export interface UrlValidationResult {
+  isValid: boolean;
+  isWordPress: boolean;
+  isAccessible: boolean;
+  contentType?: ContentType;
+  error?: string;
+  metadata?: {
+    title?: string;
+    description?: string;
+    estimatedSize?: string;
+    lastModified?: string;
+  };
+}
+
+// Batch Processing
+export interface BatchRequest {
+  id: string;
+  name: string;
+  urls: string[];
+  options: ConversionOptions;
+  createdAt: Date;
+  status: 'pending' | 'processing' | 'completed' | 'error';
+  jobs: ConversionJob[];
+  progress: {
+    total: number;
+    completed: number;
+    failed: number;
+  };
+}
+
+// WebSocket Events
+export interface WebSocketEvent {
+  type: 'job_update' | 'job_complete' | 'job_error' | 'connection_status' | 'batch_update';
+  payload: {
+    jobId?: string;
+    batchId?: string;
+    data?: any;
+    timestamp: string;
+  };
+}
+
+// Statistics
+export interface ConversionStats {
+  totalJobs: number;
+  completedJobs: number;
+  failedJobs: number;
+  successRate: number;
+  averageProcessingTime: number;
+  totalContentConverted: number;
+  totalImagesProcessed: number;
+  period: {
+    start: string;
+    end: string;
+  };
+}
+
+// User Interface States
+export interface UiState {
+  isLoading: boolean;
+  isConnected: boolean;
+  theme: 'light' | 'dark' | 'auto';
+  notifications: Notification[];
+  activeModal?: string;
+  sidebarCollapsed: boolean;
+}
+
+export interface Notification {
+  id: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  title: string;
+  message: string;
+  action?: {
+    label: string;
+    handler: () => void;
+  };
+  duration?: number;
+  createdAt: Date;
+}
+
+// API Client Configuration
+export interface ApiConfig {
+  baseUrl: string;
+  apiKey?: string;
+  timeout: number;
+  retries: number;
+  webSocketUrl?: string;
+}
+
+// Component Props Extensions
+export interface LiquidGlassBaseProps {
+  className?: string;
+  interactive?: boolean;
+  adaptive?: boolean;
+  lensing?: boolean;
+  loading?: boolean;
+  variant?: string;
+}
+
+// Form Validation
+export interface ValidationRule {
+  required?: boolean;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: RegExp;
+  custom?: (value: any) => string | null;
+}
+
+export interface FormField {
+  name: string;
+  label: string;
+  type: 'text' | 'url' | 'email' | 'password' | 'textarea' | 'select' | 'checkbox' | 'radio';
+  value: any;
+  error?: string;
+  validation?: ValidationRule;
+  options?: { label: string; value: any }[];
+  placeholder?: string;
+  disabled?: boolean;
+}
+
+// Export utility types
+export type Prettify<T> = {
+  [K in keyof T]: T[K];
+} & {};
+
+export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+
+export type RequireAtLeastOne<T, Keys extends keyof T = keyof T> = Pick<T, Exclude<keyof T, Keys>> & {
+  [K in Keys]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<Keys, K>>>;
+}[Keys];
+
+// Environment Variables
+export interface EnvironmentConfig {
+  apiBaseUrl: string;
+  wsBaseUrl: string;
+  apiKey?: string;
+  apiTimeout: number;
+  enableBatchProcessing: boolean;
+  maxConcurrentJobs: number;
+  enableRealTimeUpdates: boolean;
+  debugMode: boolean;
+  logLevel: 'debug' | 'info' | 'warn' | 'error';
+}
+
+// Note: Additional type exports would go here when those modules exist
+// export * from './api';
+// export * from './wordpress';
+// export * from './shopify';

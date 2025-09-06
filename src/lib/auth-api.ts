@@ -6,7 +6,6 @@
 import { apiClient } from './api-client.ts';
 import type {
   User,
-  AuthTokens,
   LoginCredentials,
   RegisterData,
   PasswordChangeData,
@@ -288,7 +287,11 @@ export function isWebAuthnSupported(): boolean {
 export function generateOAuthState(): string {
   const array = new Uint32Array(1);
   crypto.getRandomValues(array);
-  return array[0].toString(36);
+  const value = array[0];
+  if (value == null) {
+    throw new Error('Failed to generate random value');
+  }
+  return value.toString(36);
 }
 
 export function generateCodeVerifier(): string {
@@ -342,7 +345,11 @@ export function shouldRefreshToken(expiresAt: number, bufferMinutes: number = 5)
 
 export function parseJWTPayload(token: string): any {
   try {
-    const base64Url = token.split('.')[1];
+    const parts = token.split('.');
+    const base64Url = parts[1];
+    if (!base64Url) {
+      return null;
+    }
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
     const jsonPayload = decodeURIComponent(
       atob(base64)

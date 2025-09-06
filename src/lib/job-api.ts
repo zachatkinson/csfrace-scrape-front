@@ -43,7 +43,7 @@ class JobAPI {
     };
 
     if (this.apiKey) {
-      headers['Authorization'] = `Bearer ${this.apiKey}`;
+      (headers as Record<string, string>)['Authorization'] = `Bearer ${this.apiKey}`;
     }
 
     try {
@@ -190,6 +190,9 @@ export function formatJobTitle(job: Job): string {
     
     // Get the last segment and format it nicely
     const lastSegment = segments[segments.length - 1];
+    if (!lastSegment) {
+      return url.hostname;
+    }
     return lastSegment
       .replace(/[-_]/g, ' ')
       .replace(/\b\w/g, l => l.toUpperCase());

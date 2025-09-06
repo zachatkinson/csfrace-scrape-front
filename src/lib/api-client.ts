@@ -179,8 +179,10 @@ class APIClient {
   private apiKey?: string;
 
   constructor(baseURL?: string, apiKey?: string) {
-    this.baseURL = baseURL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
-    this.apiKey = apiKey;
+    this.baseURL = baseURL ?? (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:8000';
+    if (apiKey != null) {
+      this.apiKey = apiKey;
+    }
   }
 
   private async request<T>(
@@ -195,7 +197,7 @@ class APIClient {
     };
 
     if (this.apiKey) {
-      headers['Authorization'] = `Bearer ${this.apiKey}`;
+      (headers as Record<string, string>)['Authorization'] = `Bearer ${this.apiKey}`;
     }
 
     const config: RequestInit = {
@@ -355,7 +357,7 @@ class APIClient {
     const headers: HeadersInit = {};
     
     if (this.apiKey) {
-      headers['Authorization'] = `Bearer ${this.apiKey}`;
+      (headers as Record<string, string>)['Authorization'] = `Bearer ${this.apiKey}`;
     }
     
     const response = await fetch(url, { headers });

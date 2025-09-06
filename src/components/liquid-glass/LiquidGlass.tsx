@@ -5,7 +5,7 @@
  */
 
 import React, { forwardRef } from 'react';
-import type { HTMLAttributes, ReactNode } from 'react';
+import type { HTMLAttributes, ReactNode, ElementType, CSSProperties } from 'react';
 
 // TypeScript interfaces for Liquid Glass properties
 export interface LiquidGlassProps extends HTMLAttributes<HTMLDivElement> {
@@ -30,7 +30,7 @@ export interface LiquidGlassProps extends HTMLAttributes<HTMLDivElement> {
   highContrast?: boolean;
   
   // Custom styling
-  as?: keyof JSX.IntrinsicElements;
+  as?: ElementType;
   className?: string;
 }
 
@@ -121,8 +121,8 @@ export const LiquidGlass = forwardRef<HTMLDivElement, LiquidGlassProps>(({
   };
   
   // Custom CSS properties for dynamic theming
-  const getCustomProperties = (): React.CSSProperties => {
-    const styles: React.CSSProperties = {};
+  const getCustomProperties = (): CSSProperties & Record<string, string> => {
+    const styles: CSSProperties & Record<string, string> = {};
     
     // Dynamic blur adjustment
     if (blur === 'subtle') {

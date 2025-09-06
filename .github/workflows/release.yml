@@ -1,15 +1,8 @@
-name: Release
+name: Release & Integration
 
 on:
   push:
-    branches:
-      - main
-      - master
-      - next
-      - beta
-      - alpha
-      - "[0-9]+.x"
-      - "[0-9]+.[0-9]+.x"
+    branches: [main, master, next, beta, alpha, "[0-9]+.x", "[0-9]+.[0-9]+.x"]
 
 permissions:
   contents: write
@@ -17,10 +10,16 @@ permissions:
   pull-requests: write
   id-token: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  release:
-    name: Release
+  # Quality gates first - fail fast
+  quality-checks:
+    name: Quality Checks
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,14 +36,96 @@ jobs:
       - name: Install dependencies
         run: npm clean-install
 
-      - name: Build
-        run: npm run build
+      - name: Lint code
+        run: npm run lint
 
-      - name: Verify the integrity of provenance attestations and registry signatures for installed dependencies
+      - name: Type check
+        run: npm run type-check
+
+      - name: Run tests
+        run: npm run test
+
+      - name: Security audit
         run: npm audit signatures
 
+  # Build and release
+  build-and-release:
+    name: Build & Release
+    runs-on: ubuntu-latest
+    needs: quality-checks
+    timeout-minutes: 15
+    outputs:
+      release-published: ${{ steps.release.outputs.new-release-published }}
+      release-version: ${{ steps.release.outputs.new-release-version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm clean-install
+
+      - name: Build application
+        run: npm run build
+
       - name: Release
+        id: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release
+
+  # Trigger umbrella repo update only on successful release
+  trigger-umbrella-update:
+    name: Update Umbrella Repository
+    runs-on: ubuntu-latest
+    needs: build-and-release
+    if: needs.build-and-release.outputs.release-published == 'true'
+    timeout-minutes: 5
+    steps:
+      - name: Format commit message
+        id: format-commit
+        run: |
+          # Get first line of commit message (title only)
+          COMMIT_TITLE=$(echo '${{ github.event.head_commit.message }}' | head -n1 | tr -d '\n\r')
+          # Limit to 80 characters and remove problematic characters
+          CLEAN_TITLE=$(echo "$COMMIT_TITLE" | cut -c1-80 | sed 's/[[:cntrl:]]//g')
+          echo "title=$CLEAN_TITLE" >> $GITHUB_OUTPUT
+          echo "short_sha=${GITHUB_SHA:0:7}" >> $GITHUB_OUTPUT
+
+      - name: Trigger umbrella repo submodule update
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.UMBRELLA_REPO_TOKEN }}
+          repository: zachatkinson/csfrace-scrape
+          event-type: frontend-updated
+          client-payload: |
+            {
+              "repository": "${{ github.repository }}",
+              "ref": "${{ github.ref }}",
+              "sha": "${{ github.sha }}",
+              "short_sha": "${{ steps.format-commit.outputs.short_sha }}",
+              "actor": "${{ github.actor }}",
+              "workflow": "${{ github.workflow }}",
+              "timestamp": "${{ github.event.head_commit.timestamp }}",
+              "message": "${{ steps.format-commit.outputs.title }}",
+              "url": "${{ github.event.head_commit.url }}",
+              "release_version": "${{ needs.build-and-release.outputs.release-version }}"
+            }
+
+      - name: Log successful integration
+        run: |
+          echo "🚀 Frontend release v${{ needs.build-and-release.outputs.release-version }} published"
+          echo "📡 Triggered umbrella repo integration update"
+          echo "Repository: ${{ github.repository }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Release: v${{ needs.build-and-release.outputs.release-version }}"
+          echo "Commit: ${{ github.sha }}"
