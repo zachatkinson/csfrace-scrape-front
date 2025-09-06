@@ -533,6 +533,9 @@ declare global {
 }
 
 window.toggleErrorDetails = (button: HTMLElement) => {
+  // Prevent multiple clicks during animation
+  if (button.dataset.animating === 'true') return;
+  
   // Find the error container that contains this button
   const errorContainer = button.closest('.flex.items-start.space-x-3')?.parentElement;
   if (!errorContainer) return;
@@ -541,10 +544,14 @@ window.toggleErrorDetails = (button: HTMLElement) => {
   const detailsContent = errorContainer.querySelector('.error-details') as HTMLElement;
   if (!detailsContent) return;
   
+  // Mark as animating to prevent race conditions
+  button.dataset.animating = 'true';
+  
   const isExpanded = !detailsContent.classList.contains('hidden');
   
   if (isExpanded) {
-    // Collapse: animate to closed state
+    // Collapse: simple slide up animation
+    detailsContent.style.transition = 'all 0.3s ease-out';
     detailsContent.style.maxHeight = '0px';
     detailsContent.style.opacity = '0';
     detailsContent.style.paddingTop = '0px';
@@ -554,47 +561,54 @@ window.toggleErrorDetails = (button: HTMLElement) => {
     // Hide after animation completes
     setTimeout(() => {
       detailsContent.classList.add('hidden');
+      detailsContent.style.transition = '';
+      button.dataset.animating = 'false';
     }, 300);
   } else {
-    // Expand: show and animate to open state
+    // Expand: simple slide down animation
     detailsContent.classList.remove('hidden');
+    detailsContent.style.display = 'block';
     
-    // Reset any inline styles that might interfere
-    detailsContent.style.maxHeight = '';
-    detailsContent.style.opacity = '';
-    detailsContent.style.paddingTop = '';
-    detailsContent.style.paddingBottom = '';
-    detailsContent.style.marginTop = '';
+    // Get natural height first by temporarily showing it
+    detailsContent.style.visibility = 'hidden';
+    detailsContent.style.height = 'auto';
+    detailsContent.style.maxHeight = 'none';
+    detailsContent.style.opacity = '1';
+    detailsContent.style.padding = '1rem';
+    detailsContent.style.margin = '1rem 0 0 0';
     
-    // Let the element render with its natural height
+    const scrollHeight = detailsContent.scrollHeight;
+    console.log('Expanding details, scrollHeight:', scrollHeight);
+    
+    // Reset to collapsed state for animation
+    detailsContent.style.visibility = 'visible';
+    detailsContent.style.transition = 'all 0.3s ease-out';
+    detailsContent.style.maxHeight = '0px';
+    detailsContent.style.opacity = '0';
+    detailsContent.style.padding = '0';
+    detailsContent.style.margin = '0';
+    
+    // Force a reflow to ensure the collapsed state is applied
+    detailsContent.offsetHeight;
+    
+    // Trigger reflow and animate to expanded state
     requestAnimationFrame(() => {
-      const scrollHeight = detailsContent.scrollHeight;
+      detailsContent.style.maxHeight = scrollHeight + 'px';
+      detailsContent.style.opacity = '1';
+      detailsContent.style.padding = '1rem';
+      detailsContent.style.margin = '1rem 0 0 0';
       
-      // Start from collapsed state
-      detailsContent.style.maxHeight = '0px';
-      detailsContent.style.opacity = '0';
-      detailsContent.style.paddingTop = '0px';
-      detailsContent.style.paddingBottom = '0px';
-      detailsContent.style.marginTop = '0px';
+      console.log('Animation started, target height:', scrollHeight + 'px');
       
-      // Force a reflow
-      detailsContent.offsetHeight;
-      
-      // Animate to expanded state
-      requestAnimationFrame(() => {
-        detailsContent.style.maxHeight = scrollHeight + 'px';
-        detailsContent.style.opacity = '1';
-        detailsContent.style.paddingTop = '1rem';
-        detailsContent.style.paddingBottom = '1rem';
-        detailsContent.style.marginTop = '1rem';
-        
-        // After animation, allow natural height
-        setTimeout(() => {
-          if (!detailsContent.classList.contains('hidden')) {
-            detailsContent.style.maxHeight = 'none';
-          }
-        }, 300);
-      });
+      // Clean up after animation
+      setTimeout(() => {
+        if (!detailsContent.classList.contains('hidden')) {
+          detailsContent.style.maxHeight = 'none';
+          detailsContent.style.transition = '';
+          console.log('Animation completed, cleaned up styles');
+        }
+        button.dataset.animating = 'false';
+      }, 350);
     });
   }
 };

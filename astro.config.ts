@@ -19,25 +19,9 @@ export default defineConfig({
     port: 3000,
     host: true
   },
-  // Security configuration
+  // Security configuration - simplified CSP for now
   experimental: {
-    csp: {
-      algorithm: 'SHA-256',
-      directives: {
-        'default-src': ["'self'"],
-        'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net"],
-        'style-src': ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
-        'font-src': ["'self'", "https://fonts.gstatic.com"],
-        'img-src': ["'self'", "data:", "https:", "blob:"],
-        'connect-src': ["'self'", "ws:", "wss:", "https://api.github.com"],
-        'frame-src': ["'none'"],
-        'object-src': ["'none'"],
-        'base-uri': ["'self'"],
-        'form-action': ["'self'"],
-        'frame-ancestors': ["'none'"],
-        'upgrade-insecure-requests': []
-      }
-    }
+    csp: true
   },
   // Vite configuration for Liquid Glass optimization
   vite: {
