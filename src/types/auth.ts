@@ -139,6 +139,118 @@ export interface AuthState {
   userCredentials: WebAuthnCredential[];
 }
 
+// SOLID: Interface Segregation Principle - Focused, purpose-specific interfaces
+// No more monolithic AuthContextValue with 24 methods!
+
+/**
+ * Basic Authentication Interface
+ * For components that only need login/logout functionality
+ */
+export interface BasicAuthContext {
+  // Core authentication state
+  user: User | null;
+  tokens: AuthTokens | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  isInitialized: boolean;
+  error: string | null;
+  
+  // Basic authentication methods
+  login: (credentials: LoginCredentials) => Promise<void>;
+  register: (data: RegisterData) => Promise<void>;
+  logout: () => Promise<void>;
+  refreshToken: () => Promise<void>;
+  
+  // Core utilities
+  clearError: () => void;
+  checkAuthStatus: () => Promise<boolean>;
+}
+
+/**
+ * Password Management Interface
+ * For components that handle password operations
+ */
+export interface PasswordAuthContext {
+  // Password-specific methods
+  changePassword: (data: PasswordChangeData) => Promise<void>;
+  requestPasswordReset: (data: PasswordResetRequest) => Promise<void>;
+  confirmPasswordReset: (data: PasswordResetConfirm) => Promise<void>;
+  
+  // Minimal required state
+  isLoading: boolean;
+  error: string | null;
+  clearError: () => void;
+}
+
+/**
+ * OAuth Interface
+ * For components that handle OAuth authentication
+ */
+export interface OAuthContext {
+  // OAuth state
+  oauthProviders: OAuthProvider[];
+  isLoading: boolean;
+  error: string | null;
+  
+  // OAuth methods
+  loginWithOAuth: (provider: string, redirectUri?: string) => Promise<void>;
+  handleOAuthCallback: (code: string, state: string, provider: string) => Promise<void>;
+  
+  // Utilities
+  clearError: () => void;
+}
+
+/**
+ * WebAuthn/Passkey Interface
+ * For components that handle passkey authentication
+ */
+export interface WebAuthnContext {
+  // WebAuthn state
+  webauthnSupported: boolean;
+  userCredentials: WebAuthnCredential[];
+  isLoading: boolean;
+  error: string | null;
+  
+  // WebAuthn methods
+  registerPasskey: (name?: string) => Promise<void>;
+  authenticateWithPasskey: () => Promise<void>;
+  deletePasskey: (credentialId: string) => Promise<void>;
+  refreshPasskeys: () => Promise<void>;
+  
+  // Utilities
+  clearError: () => void;
+}
+
+/**
+ * User Profile Management Interface
+ * For components that manage user profiles
+ */
+export interface UserProfileContext {
+  // User state
+  user: User | null;
+  isLoading: boolean;
+  error: string | null;
+  
+  // Profile methods
+  updateProfile: (profile: Partial<UserProfile>) => Promise<void>;
+  refreshUser: () => Promise<void>;
+  
+  // Utilities
+  clearError: () => void;
+}
+
+/**
+ * Complete Authentication Context (Legacy)
+ * @deprecated Use focused interfaces instead: BasicAuthContext, OAuthContext, etc.
+ * This interface will be removed in a future version.
+ * 
+ * Components should depend only on the interfaces they actually need:
+ * - BasicAuthContext for login/logout
+ * - PasswordAuthContext for password management
+ * - OAuthContext for OAuth flows
+ * - WebAuthnContext for passkey authentication
+ * - UserProfileContext for profile management
+ */
 export interface AuthContextValue extends AuthState {
   // Basic Authentication
   login: (credentials: LoginCredentials) => Promise<void>;
@@ -170,6 +282,31 @@ export interface AuthContextValue extends AuthState {
   checkAuthStatus: () => Promise<boolean>;
 }
 
+/**
+ * Composite Authentication Context
+ * For components that need multiple authentication features
+ * Use this sparingly - prefer focused interfaces when possible
+ */
+export interface CompositeAuthContext extends 
+  BasicAuthContext,
+  PasswordAuthContext,
+  OAuthContext,
+  WebAuthnContext,
+  UserProfileContext {}
+
+/**
+ * Auth Context Provider Configuration
+ * Defines which features should be enabled in the auth provider
+ */
+export interface AuthContextConfig {
+  enablePasswordAuth?: boolean;
+  enableOAuth?: boolean;
+  enableWebAuthn?: boolean;
+  enableUserProfiles?: boolean;
+  oauthProviders?: string[];
+  webauthnRpId?: string;
+}
+
 export interface AuthError extends Error {
   code?: string;
   field?: string;
@@ -178,7 +315,7 @@ export interface AuthError extends Error {
   validationErrors?: Record<string, string[]>;
 }
 
-export interface AuthResponse<T = any> {
+export interface AuthResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: AuthError;
@@ -206,7 +343,7 @@ export enum AuthEventType {
 
 export interface AuthEvent {
   type: AuthEventType;
-  payload?: any;
+  payload?: unknown;
   timestamp: number;
 }
 

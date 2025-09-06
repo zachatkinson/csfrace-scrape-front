@@ -154,7 +154,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
     const deleteSelectedBtn = document.getElementById('delete-selected-btn');
     const totalJobsEl = document.getElementById('total-jobs');
     const activeJobsEl = document.getElementById('active-jobs');
-    const connectionIndicator = document.getElementById('connection-indicator');
+    document.getElementById('connection-indicator'); // Connection indicator element
     
     // Map backend statuses to UI statuses
     const mapStatus = (backendStatus) => {
@@ -231,17 +231,32 @@ import MainLayout from '../components/layout/MainLayout.astro';
       const indicator = document.getElementById('connection-indicator');
       const statusText = indicator.nextElementSibling;
       
+      // Use original colored dot design
+      indicator.innerHTML = '';
+      
       switch (status) {
         case 'connected':
-          indicator.className = 'w-3 h-3 bg-green-400 rounded-full animate-pulse';
+          indicator.innerHTML = `
+            <svg class="w-4 h-4 text-green-400 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+            </svg>
+          `;
           statusText.textContent = 'Connected';
           break;
         case 'disconnected':
-          indicator.className = 'w-3 h-3 bg-red-400 rounded-full';
+          indicator.innerHTML = `
+            <svg class="w-4 h-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+            </svg>
+          `;
           statusText.textContent = 'Disconnected';
           break;
         case 'reconnecting':
-          indicator.className = 'w-3 h-3 bg-yellow-400 rounded-full animate-pulse';
+          indicator.innerHTML = `
+            <svg class="w-4 h-4 text-yellow-400 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+            </svg>
+          `;
           statusText.textContent = 'Reconnecting...';
           break;
       }
@@ -259,22 +274,37 @@ import MainLayout from '../components/layout/MainLayout.astro';
       `;
     };
     
-    // Show error state
-    const showError = (message = 'Failed to load jobs') => {
-      jobsContainer.innerHTML = `
-        <div class="text-center py-12">
-          <div class="w-16 h-16 mx-auto mb-4 bg-red-500/10 rounded-full flex items-center justify-center">
-            <svg class="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
+    // Show enhanced error state
+    const showError = async (error: unknown) => {
+      try {
+        // Import enhanced error handling
+        const { analyzeError, generateErrorHTML } = await import('../utils/error-handling.ts');
+        
+        const errorDetails = analyzeError(error);
+        const errorHTML = generateErrorHTML(errorDetails, 'jobs-container');
+        
+        jobsContainer.innerHTML = errorHTML;
+        
+      } catch (importError) {
+        console.error('Failed to load enhanced error handling:', importError);
+        
+        // Fallback to basic error display - use wifi icon instead of triangle warning
+        const message = typeof error === 'string' ? error : 'Failed to load jobs';
+        jobsContainer.innerHTML = `
+          <div class="text-center py-12">
+            <div class="w-16 h-16 mx-auto mb-4 bg-orange-500/10 rounded-full flex items-center justify-center">
+              <svg class="w-8 h-8 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+              </svg>
+            </div>
+            <h3 class="text-orange-400 font-medium mb-2">Connection Issue</h3>
+            <p class="text-white/60 text-sm mb-4">${message}</p>
+            <button onclick="loadJobs()" class="glass-button px-4 py-2 text-white/90 hover:text-white">
+              Try Again
+            </button>
           </div>
-          <h3 class="text-white font-medium mb-2">Connection Error</h3>
-          <p class="text-white/60 text-sm mb-4">${message}</p>
-          <button onclick="loadJobs()" class="glass-button px-4 py-2 text-white/90 hover:text-white">
-            Try Again
-          </button>
-        </div>
-      `;
+        `;
+      }
     };
     
     // Load jobs from API
@@ -296,7 +326,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       } catch (error) {
         console.error('Failed to load jobs:', error);
         updateConnectionStatus('disconnected');
-        showError(error.message);
+        showError(error);
       }
     };
     
@@ -763,7 +793,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
     
     const retryJob = async (jobId) => {
       try {
-        const updatedJob = await apiClient.retryJob(jobId);
+        await apiClient.retryJob(jobId);
         await loadJobs(); // Refresh the list
         alert('Job retry initiated successfully');
       } catch (error) {
@@ -774,7 +804,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
     
     const cancelJob = async (jobId) => {
       try {
-        const updatedJob = await apiClient.cancelJob(jobId);
+        await apiClient.cancelJob(jobId);
         await loadJobs(); // Refresh the list
         alert('Job cancelled successfully');
       } catch (error) {
@@ -827,6 +857,6 @@ import MainLayout from '../components/layout/MainLayout.astro';
     await loadJobs();
     
     // Set up auto-refresh
-    setInterval(autoRefresh, 10000);
+    setInterval(autoRefresh, window.CSFRACE_TIMING.JOB.JOB_STATUS_CHECK_INTERVAL * 5); // Less frequent refresh for dashboard
   });
 </script>

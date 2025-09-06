@@ -10,7 +10,7 @@ export type JobStatus = 'pending' | 'validating' | 'scraping' | 'completed' | 'e
 export type ContentType = 'post' | 'page' | 'product' | 'category' | 'tag';
 
 // API Response Types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -41,7 +41,7 @@ export interface WordPressContent {
   };
   categories: string[];
   tags: string[];
-  metadata: Record<string, any>;
+  metadata: Record<string, string | number | boolean | null>;
 }
 
 // Shopify Content Structure
@@ -168,7 +168,7 @@ export interface WebSocketEvent {
   payload: {
     jobId?: string;
     batchId?: string;
-    data?: any;
+    data?: ConversionJob | BatchRequest | Record<string, unknown>;
     timestamp: string;
   };
 }
@@ -236,17 +236,19 @@ export interface ValidationRule {
   minLength?: number;
   maxLength?: number;
   pattern?: RegExp;
-  custom?: (value: any) => string | null;
+  custom?: (value: unknown) => string | null;
 }
+
+type FormValue = string | number | boolean | string[];
 
 export interface FormField {
   name: string;
   label: string;
   type: 'text' | 'url' | 'email' | 'password' | 'textarea' | 'select' | 'checkbox' | 'radio';
-  value: any;
+  value: FormValue;
   error?: string;
   validation?: ValidationRule;
-  options?: { label: string; value: any }[];
+  options?: { label: string; value: FormValue }[];
   placeholder?: string;
   disabled?: boolean;
 }

@@ -1,25 +1,27 @@
 /**
  * Authentication Context
- * Provides global authentication state and actions using React Context
+ * Simplified Context using Service-Oriented Architecture
+ * Replaces the monolithic 704-line God Component with focused services
  */
 
 import React, { 
   createContext, 
   useContext, 
-  useReducer, 
+  useState, 
   useEffect, 
-  useCallback, 
-  useRef 
+  useCallback 
 } from 'react';
 
-import { authAPI, isWebAuthnSupported, generateOAuthState } from '../lib/auth-api.ts';
-import { authStorage, SECURITY_CONFIG } from '../lib/auth-storage.ts';
+import { AuthProvider as AuthProviderService, type AuthProviderEvents, type AuthState } from '../services/AuthProvider.ts';
+import { isWebAuthnSupported } from '../lib/auth-api.ts';
 
 import type {
-  AuthState,
   AuthContextValue,
-  AuthAction,
-  AuthTokens,
+  BasicAuthContext,
+  PasswordAuthContext,
+  OAuthContext,
+  WebAuthnContext,
+  UserProfileContext,
   LoginCredentials,
   RegisterData,
   PasswordChangeData,
@@ -30,98 +32,26 @@ import type {
 
 import { AuthEventType } from '../types/auth.ts';
 
-// Initial state
-const initialState: AuthState = {
+// Enhanced auth state for React Context (includes legacy fields for compatibility)
+interface ReactAuthState extends AuthState {
+  isInitialized: boolean;
+  oauthProviders: Array<{ name: string; displayName: string }>;
+  webauthnSupported: boolean;
+  userCredentials: Array<{ id: string; name: string }>;
+}
+
+// Initial state with enhanced fields for compatibility
+const initialReactState: ReactAuthState = {
   user: null,
   tokens: null,
   isAuthenticated: false,
   isLoading: true,
-  isInitialized: false,
   error: null,
+  isInitialized: false,
   oauthProviders: [],
   webauthnSupported: false,
   userCredentials: [],
 };
-
-// Auth reducer
-function authReducer(state: AuthState, action: AuthAction): AuthState {
-  switch (action.type) {
-    case 'AUTH_INIT':
-      return {
-        ...state,
-        isLoading: false,
-        isInitialized: true,
-        webauthnSupported: isWebAuthnSupported(),
-      };
-
-    case 'AUTH_LOADING':
-      return {
-        ...state,
-        isLoading: action.payload,
-        error: action.payload ? state.error : null,
-      };
-
-    case 'AUTH_SUCCESS':
-      return {
-        ...state,
-        user: action.payload.user,
-        tokens: action.payload.tokens,
-        isAuthenticated: true,
-        isLoading: false,
-        error: null,
-      };
-
-    case 'AUTH_ERROR':
-      return {
-        ...state,
-        error: action.payload,
-        isLoading: false,
-      };
-
-    case 'AUTH_LOGOUT':
-      return {
-        ...state,
-        user: null,
-        tokens: null,
-        isAuthenticated: false,
-        error: null,
-        userCredentials: [],
-      };
-
-    case 'AUTH_CLEAR_ERROR':
-      return {
-        ...state,
-        error: null,
-      };
-
-    case 'AUTH_UPDATE_USER':
-      return {
-        ...state,
-        user: action.payload,
-      };
-
-    case 'AUTH_UPDATE_TOKENS':
-      return {
-        ...state,
-        tokens: action.payload,
-      };
-
-    case 'AUTH_SET_OAUTH_PROVIDERS':
-      return {
-        ...state,
-        oauthProviders: action.payload,
-      };
-
-    case 'AUTH_SET_WEBAUTHN_CREDENTIALS':
-      return {
-        ...state,
-        userCredentials: action.payload,
-      };
-
-    default:
-      return state;
-  }
-}
 
 // Create context
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -131,17 +61,41 @@ interface AuthProviderProps {
   children: React.ReactNode;
 }
 
-// Auth provider component
+// Auth provider component - Now uses service composition instead of monolithic implementation
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [state, dispatch] = useReducer(authReducer, initialState);
-  const refreshTimeoutRef = useRef<number | undefined>(undefined);
-  const storageCleanupRef = useRef<(() => void) | null>(null);
+  const [state, setState] = useState<ReactAuthState>(initialReactState);
+  const [authService, setAuthService] = useState<AuthProviderService | null>(null);
 
-  // Initialize auth state from storage
+  // Initialize auth service and set up event handlers
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Check for OAuth callback in URL parameters
+        // Create auth service with event handlers
+        const service = new AuthProviderService(createAuthProviderEvents());
+        setAuthService(service);
+        
+        // Initialize state from service
+        const authState = service.getAuthState();
+        setState({
+          ...authState,
+          isInitialized: true,
+          webauthnSupported: isWebAuthnSupported(),
+          oauthProviders: [],
+          userCredentials: [],
+        });
+
+        // Load OAuth providers
+        try {
+          const providers = await service.getAvailableOAuthProviders();
+          setState(prev => ({
+            ...prev,
+            oauthProviders: providers.map(p => ({ name: p.id, displayName: p.name })),
+          }));
+        } catch (error) {
+          console.error('Failed to load OAuth providers:', error);
+        }
+
+        // Handle OAuth callback if present in URL
         const urlParams = new URLSearchParams(window.location.search);
         const isOAuthCallback = urlParams.get('oauth_callback');
         
@@ -149,161 +103,78 @@ export function AuthProvider({ children }: AuthProviderProps) {
           const provider = urlParams.get('provider');
           const code = urlParams.get('code');
           const state = urlParams.get('state');
+          const error = urlParams.get('error');
           
           if (provider && code && state) {
             try {
-              await handleOAuthCallback(code, state, provider);
+              await service.handleOAuthCallback(provider, code, state, error);
               // Clean up URL parameters
               window.history.replaceState({}, '', window.location.pathname);
-            } catch (error) {
-              console.error('OAuth callback handling failed:', error);
+            } catch (callbackError) {
+              console.error('OAuth callback handling failed:', callbackError);
             }
           }
         }
-
-        const stored = authStorage.getAuthState();
-        
-        if (stored.isAuthenticated && stored.user && stored.tokens) {
-          // Set API token
-          authAPI.setAuthToken(stored.tokens.access_token);
-          
-          // Dispatch success action
-          dispatch({
-            type: 'AUTH_SUCCESS',
-            payload: {
-              user: stored.user,
-              tokens: stored.tokens,
-            },
-          });
-
-          // Load OAuth providers and WebAuthn credentials
-          await Promise.all([
-            loadOAuthProviders(),
-            loadWebAuthnCredentials(),
-          ]);
-
-          // Set up token refresh if needed
-          if (authStorage.shouldRefreshToken()) {
-            await refreshToken();
-          } else {
-            setupTokenRefresh(stored.tokens.expires_at);
-          }
-        } else {
-          // Load OAuth providers even when not authenticated for login UI
-          await loadOAuthProviders();
-        }
       } catch (error) {
         console.error('Failed to initialize auth:', error);
-        await logout();
-      } finally {
-        dispatch({ type: 'AUTH_INIT' });
+        setState(prev => ({
+          ...prev,
+          isLoading: false,
+          isInitialized: true,
+          error: error instanceof Error ? error.message : 'Authentication initialization failed',
+        }));
       }
     };
 
     initializeAuth();
 
-    // Set up storage change listener for cross-tab sync
-    storageCleanupRef.current = authStorage.onStorageChange((event) => {
-      handleStorageChange(event);
-    });
-
-    // Set up OAuth message listener for popup-based flow
-    const handleOAuthMessage = async (event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return;
-      
-      if (event.data?.type === 'oauth_callback') {
-        try {
-          await handleOAuthCallback(event.data.code, event.data.state, event.data.provider);
-        } catch (error) {
-          console.error('OAuth popup callback failed:', error);
-          dispatch({ type: 'AUTH_ERROR', payload: error instanceof Error ? error.message : 'OAuth authentication failed' });
-        }
-      } else if (event.data?.type === 'oauth_error') {
-        dispatch({ type: 'AUTH_ERROR', payload: event.data.error || 'OAuth authentication failed' });
-      }
-    };
-
-    window.addEventListener('message', handleOAuthMessage);
-
     // Cleanup on unmount
     return () => {
-      if (refreshTimeoutRef.current) {
-        clearTimeout(refreshTimeoutRef.current);
+      if (authService) {
+        authService.destroy();
       }
-      if (storageCleanupRef.current) {
-        storageCleanupRef.current();
-      }
-      window.removeEventListener('message', handleOAuthMessage);
     };
   }, []);
 
-  // Handle storage changes from other tabs
-  const handleStorageChange = useCallback((event: { type: string; data: any }) => {
-    switch (event.type) {
-      case 'auth_cleared':
-      case 'tokens_cleared':
-        dispatch({ type: 'AUTH_LOGOUT' });
-        authAPI.clearAuthToken();
-        break;
-      case 'user_updated':
-        if (event.data) {
-          dispatch({ type: 'AUTH_UPDATE_USER', payload: event.data });
-        }
-        break;
-      case 'tokens_updated':
-        if (event.data) {
-          dispatch({ type: 'AUTH_UPDATE_TOKENS', payload: event.data });
-          authAPI.setAuthToken(event.data.access_token);
-          setupTokenRefresh(event.data.expires_at);
-        }
-        break;
-    }
+  // Create auth provider event handlers
+  const createAuthProviderEvents = useCallback((): Partial<AuthProviderEvents> => {
+    return {
+      onAuthStateChanged: (authState) => {
+        setState(prev => ({
+          ...authState,
+          isInitialized: prev.isInitialized,
+          oauthProviders: prev.oauthProviders,
+          webauthnSupported: prev.webauthnSupported,
+          userCredentials: prev.userCredentials,
+        }));
+      },
+      onLoginSuccess: (user) => {
+        // Dispatch custom event for external listeners
+        dispatchAuthEvent(AuthEventType.LOGIN, { user });
+      },
+      onLoginError: (error) => {
+        console.error('Login error:', error);
+      },
+      onLogoutComplete: () => {
+        // Dispatch custom event for external listeners
+        dispatchAuthEvent(AuthEventType.LOGOUT, null);
+      },
+      onTokenRefreshFailed: () => {
+        console.error('Token refresh failed');
+      },
+      onOAuthStart: (provider) => {
+        console.log(`Starting OAuth flow for ${provider}`);
+      },
+      onOAuthSuccess: (provider, user) => {
+        dispatchAuthEvent(AuthEventType.LOGIN, { user, provider });
+      },
+      onOAuthError: (provider, error) => {
+        console.error(`OAuth ${provider} error:`, error);
+      },
+    };
   }, []);
 
-  // Setup automatic token refresh
-  const setupTokenRefresh = useCallback((expiresAt: number) => {
-    if (refreshTimeoutRef.current) {
-      clearTimeout(refreshTimeoutRef.current);
-    }
-
-    const refreshTime = expiresAt - SECURITY_CONFIG.TOKEN_REFRESH_BUFFER_MINUTES * 60 * 1000;
-    const delay = Math.max(0, refreshTime - Date.now());
-
-    if (delay > 0) {
-      refreshTimeoutRef.current = window.setTimeout(async () => {
-        try {
-          await refreshToken();
-        } catch (error) {
-          console.error('Automatic token refresh failed:', error);
-          await logout();
-        }
-      }, delay);
-    }
-  }, []);
-
-  // Load OAuth providers
-  const loadOAuthProviders = useCallback(async () => {
-    try {
-      const providers = await authAPI.getOAuthProviders();
-      dispatch({ type: 'AUTH_SET_OAUTH_PROVIDERS', payload: providers });
-    } catch (error) {
-      console.error('Failed to load OAuth providers:', error);
-    }
-  }, []);
-
-  // Load WebAuthn credentials
-  const loadWebAuthnCredentials = useCallback(async () => {
-    if (!state.webauthnSupported || !state.isAuthenticated) return;
-
-    try {
-      const credentials = await authAPI.getPasskeySummary();
-      dispatch({ type: 'AUTH_SET_WEBAUTHN_CREDENTIALS', payload: credentials });
-    } catch (error) {
-      console.error('Failed to load WebAuthn credentials:', error);
-    }
-  }, [state.webauthnSupported, state.isAuthenticated]);
-
-  // Event dispatching for external listeners
+  // Event dispatching for external listeners (maintains compatibility)
   const dispatchAuthEvent = useCallback((type: AuthEventType, payload: any) => {
     const event = new CustomEvent('auth_event', {
       detail: { type, payload, timestamp: Date.now() }
@@ -311,319 +182,94 @@ export function AuthProvider({ children }: AuthProviderProps) {
     window.dispatchEvent(event);
   }, []);
 
-  // Authentication actions
+  // Service-oriented action wrappers
   const login = useCallback(async (credentials: LoginCredentials) => {
-    dispatch({ type: 'AUTH_LOADING', payload: true });
-    
-    try {
-      const response = await authAPI.login(credentials);
-      
-      const tokens: AuthTokens = {
-        access_token: response.access_token,
-        token_type: response.token_type,
-        expires_in: response.expires_in,
-        expires_at: Date.now() + (response.expires_in * 1000),
-        ...(response.refresh_token != null && { refresh_token: response.refresh_token }),
-      };
-
-      // Store authentication data
-      authStorage.setTokens(tokens);
-      authStorage.setUser(response.user);
-      authAPI.setAuthToken(tokens.access_token);
-
-      // Update state
-      dispatch({
-        type: 'AUTH_SUCCESS',
-        payload: { user: response.user, tokens },
-      });
-
-      // Load additional data
-      await Promise.all([
-        loadOAuthProviders(),
-        loadWebAuthnCredentials(),
-      ]);
-
-      // Setup token refresh
-      setupTokenRefresh(tokens.expires_at);
-
-      // Dispatch login event
-      dispatchAuthEvent(AuthEventType.LOGIN, { user: response.user });
-
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Login failed';
-      dispatch({ type: 'AUTH_ERROR', payload: message });
-      throw error;
-    }
-  }, [loadOAuthProviders, loadWebAuthnCredentials, setupTokenRefresh]);
+    if (!authService) throw new Error('Auth service not initialized');
+    return authService.login(credentials);
+  }, [authService]);
 
   const register = useCallback(async (data: RegisterData) => {
-    dispatch({ type: 'AUTH_LOADING', payload: true });
-    
-    try {
-      await authAPI.register(data);
-      
-      dispatch({ type: 'AUTH_LOADING', payload: false });
-      
-      // Auto-login after successful registration
-      await login({ 
-        email: data.email, 
-        password: data.password 
-      });
-
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Registration failed';
-      dispatch({ type: 'AUTH_ERROR', payload: message });
-      throw error;
-    }
-  }, [login]);
+    if (!authService) throw new Error('Auth service not initialized');
+    return authService.register(data);
+  }, [authService]);
 
   const logout = useCallback(async () => {
-    try {
-      // Clear timeouts
-      if (refreshTimeoutRef.current) {
-        clearTimeout(refreshTimeoutRef.current);
-      }
-
-      // Clear storage
-      authStorage.clearAllAuthData();
-      authAPI.clearAuthToken();
-
-      // Update state
-      dispatch({ type: 'AUTH_LOGOUT' });
-
-      // Dispatch logout event
-      dispatchAuthEvent(AuthEventType.LOGOUT, null);
-
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  }, []);
+    if (!authService) throw new Error('Auth service not initialized');
+    return authService.logout();
+  }, [authService]);
 
   const refreshToken = useCallback(async () => {
-    const refreshToken = authStorage.getRefreshToken();
-    if (!refreshToken) {
-      await logout();
-      return;
-    }
+    if (!authService) throw new Error('Auth service not initialized');
+    // This will be handled automatically by TokenManager
+    return Promise.resolve();
+  }, [authService]);
 
-    try {
-      const response = await authAPI.refreshToken(refreshToken);
-      
-      const tokens: AuthTokens = {
-        access_token: response.access_token,
-        token_type: response.token_type,
-        expires_in: response.expires_in,
-        refresh_token: response.refresh_token || refreshToken,
-        expires_at: Date.now() + (response.expires_in * 1000),
-      };
-
-      // Update storage and API client
-      authStorage.setTokens(tokens);
-      authAPI.setAuthToken(tokens.access_token);
-
-      // Update state
-      dispatch({ type: 'AUTH_UPDATE_TOKENS', payload: tokens });
-
-      // Setup next refresh
-      setupTokenRefresh(tokens.expires_at);
-
-      // Dispatch token refresh event
-      dispatchAuthEvent(AuthEventType.TOKEN_REFRESH, { tokens });
-
-    } catch (error) {
-      console.error('Token refresh failed:', error);
-      await logout();
-      throw error;
-    }
-  }, [logout, setupTokenRefresh]);
-
-  // Password management
+  // Password management - service-oriented wrappers
   const changePassword = useCallback(async (data: PasswordChangeData) => {
-    dispatch({ type: 'AUTH_LOADING', payload: true });
-    
-    try {
-      await authAPI.changePassword(data);
-      dispatch({ type: 'AUTH_LOADING', payload: false });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Password change failed';
-      dispatch({ type: 'AUTH_ERROR', payload: message });
-      throw error;
-    }
-  }, []);
+    if (!authService) throw new Error('Auth service not initialized');
+    return authService.changePassword(data);
+  }, [authService]);
 
   const requestPasswordReset = useCallback(async (data: PasswordResetRequest) => {
-    dispatch({ type: 'AUTH_LOADING', payload: true });
-    
-    try {
-      await authAPI.requestPasswordReset(data);
-      dispatch({ type: 'AUTH_LOADING', payload: false });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Password reset request failed';
-      dispatch({ type: 'AUTH_ERROR', payload: message });
-      throw error;
-    }
-  }, []);
+    if (!authService) throw new Error('Auth service not initialized');
+    return authService.requestPasswordReset(data);
+  }, [authService]);
 
   const confirmPasswordReset = useCallback(async (data: PasswordResetConfirm) => {
-    dispatch({ type: 'AUTH_LOADING', payload: true });
-    
-    try {
-      await authAPI.confirmPasswordReset(data);
-      dispatch({ type: 'AUTH_LOADING', payload: false });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Password reset failed';
-      dispatch({ type: 'AUTH_ERROR', payload: message });
-      throw error;
-    }
-  }, []);
+    if (!authService) throw new Error('Auth service not initialized');
+    return authService.confirmPasswordReset(data);
+  }, [authService]);
 
-  // OAuth authentication
+  // OAuth authentication - service-oriented wrappers
   const loginWithOAuth = useCallback(async (provider: string, redirectUri?: string) => {
-    dispatch({ type: 'AUTH_LOADING', payload: true });
-    
-    try {
-      const request = {
-        provider: provider,
-        ...(redirectUri != null && { redirect_uri: redirectUri })
-      };
-      const response = await authAPI.initiateOAuthLogin(request);
-      
-      // Store state for security validation
-      const state = generateOAuthState();
-      authStorage.setOAuthState(state, provider);
-      
-      // Redirect to OAuth provider
-      window.location.href = response.authorization_url;
-      
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'OAuth login failed';
-      dispatch({ type: 'AUTH_ERROR', payload: message });
-      throw error;
-    }
-  }, []);
+    if (!authService) throw new Error('Auth service not initialized');
+    // For backward compatibility, we support redirectUri but use popup by default
+    return authService.startOAuthFlow(provider, !redirectUri);
+  }, [authService]);
 
   const handleOAuthCallback = useCallback(async (code: string, state: string, provider: string) => {
-    dispatch({ type: 'AUTH_LOADING', payload: true });
-    
-    try {
-      // Validate state parameter
-      const storedState = authStorage.getOAuthState();
-      if (!storedState || storedState.state !== state || storedState.provider !== provider) {
-        throw new Error('Invalid OAuth state parameter');
-      }
-      
-      // Clear stored state
-      authStorage.clearOAuthState();
-      
-      // Handle OAuth callback
-      const response = await authAPI.handleOAuthCallback(provider, code, state);
-      
-      const tokens: AuthTokens = {
-        access_token: response.access_token,
-        token_type: response.token_type,
-        expires_in: response.expires_in,
-        expires_at: Date.now() + (response.expires_in * 1000),
-        ...(response.refresh_token != null && { refresh_token: response.refresh_token }),
-      };
+    if (!authService) throw new Error('Auth service not initialized');
+    return authService.handleOAuthCallback(provider, code, state);
+  }, [authService]);
 
-      // Store authentication data
-      authStorage.setTokens(tokens);
-      authStorage.setUser(response.user);
-      authAPI.setAuthToken(tokens.access_token);
-
-      // Update state
-      dispatch({
-        type: 'AUTH_SUCCESS',
-        payload: { user: response.user, tokens },
-      });
-
-      // Load additional data
-      await Promise.all([
-        loadOAuthProviders(),
-        loadWebAuthnCredentials(),
-      ]);
-
-      // Setup token refresh
-      setupTokenRefresh(tokens.expires_at);
-
-      // Dispatch login event
-      dispatchAuthEvent(AuthEventType.LOGIN, { user: response.user, provider });
-
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'OAuth callback failed';
-      dispatch({ type: 'AUTH_ERROR', payload: message });
-      throw error;
-    }
-  }, [loadOAuthProviders, loadWebAuthnCredentials, setupTokenRefresh, dispatchAuthEvent]);
-
-  // WebAuthn authentication (placeholder for next phase)
+  // WebAuthn authentication (placeholders maintained for compatibility)
   const registerPasskey = useCallback(async (_name?: string) => {
-    // Will implement in WebAuthn phase
     throw new Error('Passkey registration not yet implemented');
   }, []);
 
   const authenticateWithPasskey = useCallback(async () => {
-    // Will implement in WebAuthn phase
     throw new Error('Passkey authentication not yet implemented');
   }, []);
 
   const deletePasskey = useCallback(async (_credentialId: string) => {
-    // Will implement in WebAuthn phase
     throw new Error('Passkey deletion not yet implemented');
   }, []);
 
   const refreshPasskeys = useCallback(async () => {
-    await loadWebAuthnCredentials();
-  }, [loadWebAuthnCredentials]);
-
-  // User management
-  const updateProfile = useCallback(async (profile: Partial<UserProfile>) => {
-    dispatch({ type: 'AUTH_LOADING', payload: true });
-    
-    try {
-      const updatedUser = await authAPI.updateProfile(profile);
-      
-      authStorage.setUser(updatedUser);
-      dispatch({ type: 'AUTH_UPDATE_USER', payload: updatedUser });
-      
-      // Dispatch user update event
-      dispatchAuthEvent(AuthEventType.USER_UPDATED, { user: updatedUser });
-
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Profile update failed';
-      dispatch({ type: 'AUTH_ERROR', payload: message });
-      throw error;
-    }
+    // Load WebAuthn credentials when implemented
+    setState(prev => ({ ...prev, userCredentials: [] }));
   }, []);
 
+  // User management - service-oriented wrappers
+  const updateProfile = useCallback(async (profile: Partial<UserProfile>) => {
+    if (!authService) throw new Error('Auth service not initialized');
+    return authService.updateProfile(profile);
+  }, [authService]);
+
   const refreshUser = useCallback(async () => {
-    if (!state.isAuthenticated) return;
+    if (!authService) throw new Error('Auth service not initialized');
+    return authService.refreshProfile();
+  }, [authService]);
 
-    try {
-      const user = await authAPI.getCurrentUser();
-      authStorage.setUser(user);
-      dispatch({ type: 'AUTH_UPDATE_USER', payload: user });
-    } catch (error) {
-      console.error('Failed to refresh user:', error);
-    }
-  }, [state.isAuthenticated]);
-
-  // Utilities
+  // Utilities - service-oriented wrappers
   const clearError = useCallback(() => {
-    dispatch({ type: 'AUTH_CLEAR_ERROR' });
+    setState(prev => ({ ...prev, error: null }));
   }, []);
 
   const checkAuthStatus = useCallback(async (): Promise<boolean> => {
-    if (!state.isAuthenticated) return false;
-    
-    const isValid = authStorage.isTokenValid();
-    if (!isValid) {
-      await logout();
-      return false;
-    }
-
-    return true;
-  }, [state.isAuthenticated, logout]);
+    if (!authService) return false;
+    return authService.isAuthenticated();
+  }, [authService]);
 
 
   // Context value
@@ -688,4 +334,209 @@ export function useAuthError() {
   }, [error, clearError]);
 
   return { error, clearError };
+}
+
+// SOLID: Interface Segregation Principle - Focused Authentication Hooks
+// Components should only depend on the authentication features they actually need!
+
+/**
+ * Basic Authentication Hook
+ * For components that only need login/logout functionality
+ * Perfect for: Login forms, logout buttons, auth guards
+ */
+export function useBasicAuth(): BasicAuthContext {
+  const context = useAuth();
+  
+  // Return only the basic auth interface - no OAuth, WebAuthn, etc.
+  return {
+    user: context.user,
+    tokens: context.tokens,
+    isAuthenticated: context.isAuthenticated,
+    isLoading: context.isLoading,
+    isInitialized: context.isInitialized,
+    error: context.error,
+    login: context.login,
+    register: context.register,
+    logout: context.logout,
+    refreshToken: context.refreshToken,
+    clearError: context.clearError,
+    checkAuthStatus: context.checkAuthStatus,
+  };
+}
+
+/**
+ * Password Management Hook
+ * For components that handle password operations
+ * Perfect for: Password change forms, reset password flows
+ */
+export function usePasswordAuth(): PasswordAuthContext {
+  const context = useAuth();
+  
+  return {
+    isLoading: context.isLoading,
+    error: context.error,
+    changePassword: context.changePassword,
+    requestPasswordReset: context.requestPasswordReset,
+    confirmPasswordReset: context.confirmPasswordReset,
+    clearError: context.clearError,
+  };
+}
+
+/**
+ * OAuth Authentication Hook
+ * For components that handle OAuth flows
+ * Perfect for: OAuth login buttons, provider selection
+ */
+export function useOAuth(): OAuthContext {
+  const context = useAuth();
+  
+  return {
+    oauthProviders: context.oauthProviders,
+    isLoading: context.isLoading,
+    error: context.error,
+    loginWithOAuth: context.loginWithOAuth,
+    handleOAuthCallback: context.handleOAuthCallback,
+    clearError: context.clearError,
+  };
+}
+
+/**
+ * WebAuthn/Passkey Authentication Hook
+ * For components that handle passkey authentication
+ * Perfect for: Passkey registration, biometric auth
+ */
+export function useWebAuthn(): WebAuthnContext {
+  const context = useAuth();
+  
+  return {
+    webauthnSupported: context.webauthnSupported,
+    userCredentials: context.userCredentials,
+    isLoading: context.isLoading,
+    error: context.error,
+    registerPasskey: context.registerPasskey,
+    authenticateWithPasskey: context.authenticateWithPasskey,
+    deletePasskey: context.deletePasskey,
+    refreshPasskeys: context.refreshPasskeys,
+    clearError: context.clearError,
+  };
+}
+
+/**
+ * User Profile Management Hook
+ * For components that manage user profiles
+ * Perfect for: Profile forms, user settings, account management
+ */
+export function useUserProfile(): UserProfileContext {
+  const context = useAuth();
+  
+  return {
+    user: context.user,
+    isLoading: context.isLoading,
+    error: context.error,
+    updateProfile: context.updateProfile,
+    refreshUser: context.refreshUser,
+    clearError: context.clearError,
+  };
+}
+
+/**
+ * Enhanced focused auth hook with multiple concerns
+ * Use this when a component genuinely needs multiple auth features
+ * Example: A comprehensive account settings page that handles everything
+ * 
+ * @param features - Array of auth features needed by the component
+ * @returns Focused context with only requested features
+ */
+export function useFocusedAuth<T extends Array<'basic' | 'password' | 'oauth' | 'webauthn' | 'profile'>>(
+  features: T
+): Pick<AuthContextValue, 
+  T extends readonly ('basic')[] ? keyof BasicAuthContext :
+  T extends readonly ('password')[] ? keyof PasswordAuthContext :
+  T extends readonly ('oauth')[] ? keyof OAuthContext :
+  T extends readonly ('webauthn')[] ? keyof WebAuthnContext :
+  T extends readonly ('profile')[] ? keyof UserProfileContext :
+  keyof AuthContextValue
+> {
+  const context = useAuth();
+  const result: any = {};
+  
+  for (const feature of features) {
+    switch (feature) {
+      case 'basic':
+        Object.assign(result, {
+          user: context.user,
+          tokens: context.tokens,
+          isAuthenticated: context.isAuthenticated,
+          isLoading: context.isLoading,
+          isInitialized: context.isInitialized,
+          error: context.error,
+          login: context.login,
+          register: context.register,
+          logout: context.logout,
+          refreshToken: context.refreshToken,
+          clearError: context.clearError,
+          checkAuthStatus: context.checkAuthStatus,
+        });
+        break;
+      case 'password':
+        Object.assign(result, {
+          changePassword: context.changePassword,
+          requestPasswordReset: context.requestPasswordReset,
+          confirmPasswordReset: context.confirmPasswordReset,
+        });
+        break;
+      case 'oauth':
+        Object.assign(result, {
+          oauthProviders: context.oauthProviders,
+          loginWithOAuth: context.loginWithOAuth,
+          handleOAuthCallback: context.handleOAuthCallback,
+        });
+        break;
+      case 'webauthn':
+        Object.assign(result, {
+          webauthnSupported: context.webauthnSupported,
+          userCredentials: context.userCredentials,
+          registerPasskey: context.registerPasskey,
+          authenticateWithPasskey: context.authenticateWithPasskey,
+          deletePasskey: context.deletePasskey,
+          refreshPasskeys: context.refreshPasskeys,
+        });
+        break;
+      case 'profile':
+        Object.assign(result, {
+          updateProfile: context.updateProfile,
+          refreshUser: context.refreshUser,
+        });
+        break;
+    }
+  }
+  
+  // Ensure common utilities are always available
+  if (!result.isLoading) result.isLoading = context.isLoading;
+  if (!result.error) result.error = context.error;
+  if (!result.clearError) result.clearError = context.clearError;
+  
+  return result;
+}
+
+/**
+ * Migration Helper Hook
+ * @deprecated Use focused hooks instead: useBasicAuth, useOAuth, etc.
+ * This hook helps identify which focused hook(s) a component should use.
+ */
+export function useLegacyAuth(): AuthContextValue & {
+  _migrationHint: {
+    suggestedHook: string;
+    reason: string;
+  };
+} {
+  const context = useAuth();
+  
+  return {
+    ...context,
+    _migrationHint: {
+      suggestedHook: 'useBasicAuth, useOAuth, usePasswordAuth, useWebAuthn, or useUserProfile',
+      reason: 'Use focused hooks to follow Interface Segregation Principle',
+    },
+  };
 }

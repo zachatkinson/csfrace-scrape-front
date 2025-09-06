@@ -1,18 +1,20 @@
 /**
- * LiquidGlass Component
- * Core base component implementing Apple's official three-layer Liquid Glass system
- * Based on WWDC 2025 specifications with authentic material physics
+ * LiquidGlass Component - Refactored with Strategy Pattern
+ * Implements SOLID principles with extensible glass variants
+ * Fixes Open/Closed Principle violation through Strategy Pattern
  */
 
 import React, { forwardRef } from 'react';
-import type { HTMLAttributes, ReactNode, ElementType, CSSProperties } from 'react';
+import type { HTMLAttributes, ReactNode, ElementType } from 'react';
+import { getGlassVariantConfig } from './strategies/GlassVariantRegistry.ts';
+import type { GlassVariantProps } from './strategies/GlassVariantStrategy.ts';
 
 // TypeScript interfaces for Liquid Glass properties
 export interface LiquidGlassProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
   
-  // Glass Material Properties
-  variant?: 'default' | 'card' | 'button' | 'input' | 'modal' | 'nav' | 'status';
+  // Glass Material Properties - now extensible through strategy pattern
+  variant?: string; // No longer limited to hardcoded variants!
   
   // Interactive Behavior
   interactive?: boolean;
@@ -35,7 +37,8 @@ export interface LiquidGlassProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 /**
- * Core LiquidGlass component with authentic Apple material implementation
+ * Core LiquidGlass component - now using Strategy Pattern
+ * Open for extension, closed for modification
  */
 export const LiquidGlass = forwardRef<HTMLDivElement, LiquidGlassProps>(({
   children,
@@ -52,93 +55,31 @@ export const LiquidGlass = forwardRef<HTMLDivElement, LiquidGlassProps>(({
   ...props
 }, ref) => {
   
-  // Generate CSS classes based on props
-  const getGlassClasses = (): string => {
-    const classes = ['liquid-glass'];
-    
-    // Variant-specific classes
-    switch (variant) {
-      case 'card':
-        classes.push('glass-card');
-        break;
-      case 'button':
-        classes.push('glass-button');
-        break;
-      case 'input':
-        classes.push('glass-input');
-        break;
-      case 'modal':
-        classes.push('glass-modal');
-        break;
-      case 'nav':
-        classes.push('glass-nav');
-        break;
-      case 'status':
-        classes.push('glass-status');
-        break;
-    }
-    
-    // Interactive behavior
-    if (interactive) {
-      classes.push('liquid-glass-interactive');
-    }
-    
-    // Apple's Deference Principle - content-adaptive glass
-    if (adaptive) {
-      classes.push('liquid-glass-adaptive');
-    }
-    
-    // Physical lensing effects
-    if (lensing) {
-      classes.push('liquid-glass-lens');
-    }
-    
-    // Loading state with shimmer
-    if (loading) {
-      classes.push('glass-loading');
-    }
-    
-    // Blur intensity
-    switch (blur) {
-      case 'subtle':
-        classes.push('backdrop-blur-glass-subtle');
-        break;
-      case 'strong':
-        classes.push('backdrop-blur-glass-strong');
-        break;
-    }
-    
-    // Accessibility considerations
-    if (reducedMotion) {
-      classes.push('motion-reduce');
-    }
-    
-    if (highContrast) {
-      classes.push('contrast-more');
-    }
-    
-    return classes.join(' ');
+  // Prepare props for strategy pattern
+  const glassVariantProps: GlassVariantProps = {
+    interactive,
+    adaptive,
+    lensing,
+    loading,
+    blur,
+    reducedMotion,
+    highContrast,
   };
   
-  // Custom CSS properties for dynamic theming
-  const getCustomProperties = (): CSSProperties & Record<string, string> => {
-    const styles: CSSProperties & Record<string, string> = {};
-    
-    // Dynamic blur adjustment
-    if (blur === 'subtle') {
-      styles['--glass-blur'] = '10px';
-    } else if (blur === 'strong') {
-      styles['--glass-blur'] = '40px';
-    }
-    
-    return styles;
-  };
+  // Get configuration from strategy pattern - extensible without modification!
+  const variantConfig = getGlassVariantConfig(variant, glassVariantProps);
+  
+  // Combine all classes from strategy
+  const allClasses = [
+    ...variantConfig.classes,
+    className,
+  ].filter(Boolean).join(' ');
   
   return (
     <Component
       ref={ref}
-      className={`${getGlassClasses()} ${className}`.trim()}
-      style={getCustomProperties()}
+      className={allClasses}
+      style={variantConfig.customProperties}
       {...props}
     >
       {children}

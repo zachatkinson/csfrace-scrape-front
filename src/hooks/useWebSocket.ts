@@ -7,6 +7,11 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import type { WebSocketEvent, ConversionJob } from '../types';
 
+type WebSocketSendData = 
+  | string 
+  | { type: string; payload?: Record<string, unknown> }
+  | { action: string; data?: unknown };
+
 interface UseWebSocketOptions {
   url: string;
   reconnectAttempts?: number;
@@ -21,7 +26,7 @@ interface UseWebSocketReturn {
   isConnected: boolean;
   connectionState: 'connecting' | 'connected' | 'disconnected' | 'error';
   lastMessage: WebSocketEvent | null;
-  send: (data: any) => void;
+  send: (data: WebSocketSendData) => void;
   reconnect: () => void;
   disconnect: () => void;
 }
@@ -43,8 +48,8 @@ export const useWebSocket = ({
   const [reconnectCount, setReconnectCount] = useState(0);
   
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isManualClose = useRef(false);
   
   // Clean up function
@@ -78,7 +83,7 @@ export const useWebSocket = ({
       wsRef.current = new WebSocket(url);
       
       wsRef.current.onopen = () => {
-        console.log('WebSocket connected');
+        console.warn('WebSocket connected');
         setConnectionState('connected');
         setReconnectCount(0);
         
@@ -120,11 +125,11 @@ export const useWebSocket = ({
               break;
               
             case 'connection_status':
-              console.log('Connection status:', message.payload.data);
+              console.warn('Connection status:', message.payload.data);
               break;
               
             default:
-              console.log('Unknown message type:', message.type);
+              console.warn('Unknown message type:', message.type);
           }
         } catch (error) {
           console.error('Failed to parse WebSocket message:', error);
@@ -132,7 +137,7 @@ export const useWebSocket = ({
       };
       
       wsRef.current.onclose = (event) => {
-        console.log('WebSocket disconnected:', event.code, event.reason);
+        console.warn('WebSocket disconnected:', event.code, event.reason);
         
         if (pingIntervalRef.current) {
           clearInterval(pingIntervalRef.current);
@@ -147,7 +152,7 @@ export const useWebSocket = ({
           setConnectionState('connecting');
           const delay = reconnectInterval * Math.pow(1.5, reconnectCount);
           
-          console.log(`Attempting to reconnect in ${delay}ms (attempt ${reconnectCount + 1}/${reconnectAttempts})`);
+          console.warn(`Attempting to reconnect in ${delay}ms (attempt ${reconnectCount + 1}/${reconnectAttempts})`);
           
           reconnectTimeoutRef.current = setTimeout(() => {
             setReconnectCount(prev => prev + 1);
@@ -170,7 +175,7 @@ export const useWebSocket = ({
   }, [url, reconnectCount, reconnectAttempts, reconnectInterval, onJobUpdate, onJobComplete, onJobError, onConnectionChange, cleanup]);
   
   // Send message through WebSocket
-  const send = useCallback((data: any) => {
+  const send = useCallback((data: WebSocketSendData) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(data));
     } else {
@@ -214,7 +219,7 @@ export const useWebSocket = ({
       if (document.visibilityState === 'visible') {
         // Page became visible, reconnect if needed
         if (connectionState === 'disconnected' && !isManualClose.current) {
-          console.log('Page became visible, attempting to reconnect...');
+          console.warn('Page became visible, attempting to reconnect...');
           reconnect();
         }
       }
@@ -230,14 +235,14 @@ export const useWebSocket = ({
   // Handle online/offline events
   useEffect(() => {
     const handleOnline = () => {
-      console.log('Browser came online, attempting to reconnect...');
+      console.warn('Browser came online, attempting to reconnect...');
       if (!isManualClose.current) {
         reconnect();
       }
     };
     
     const handleOffline = () => {
-      console.log('Browser went offline');
+      console.warn('Browser went offline');
       setConnectionState('error');
     };
     

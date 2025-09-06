@@ -27,6 +27,10 @@ export default [
         ...globals.browser,
         ...globals.node,
         ...globals.es2021,
+        // Additional DOM/Browser types that ESLint might not recognize
+        RequestInit: 'readonly',
+        HeadersInit: 'readonly',
+        EventListener: 'readonly',
       },
     },
     plugins: {
@@ -96,6 +100,14 @@ export default [
     rules: {
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       'no-debugger': 'error',
+    },
+  },
+
+  // Test files configuration - allow console statements
+  {
+    files: ['**/*.spec.ts', '**/*.test.ts', '**/*.spec.js', '**/*.test.js', 'tests/**/*'],
+    rules: {
+      'no-console': 'off',
     },
   },
 

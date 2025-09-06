@@ -4,8 +4,9 @@
  */
 
 import React, { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext.tsx';
+import { useBasicAuth } from '../../contexts/AuthContext.tsx';
 import { AuthModal } from './AuthModal.tsx';
+import type { UserProfile } from '../../types/auth.ts';
 
 export interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -24,12 +25,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requirePermissions = [],
   className = '',
 }) => {
+  // SOLID: Interface Segregation - Only need authentication state, not OAuth/WebAuthn methods!
   const { 
     isAuthenticated, 
     isLoading, 
     isInitialized, 
     user 
-  } = useAuth();
+  } = useBasicAuth();
   
   const [showAuthModal, setShowAuthModal] = useState(false);
 
@@ -111,7 +113,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
             </div>
             <h3 className="text-xl font-semibold text-white mb-2">Access Denied</h3>
             <p className="text-white/60 mb-4">
-              You don't have the required permissions to access this page.
+              You don&apos;t have the required permissions to access this page.
             </p>
             <p className="text-white/40 text-sm">
               Required roles: {requireRoles.join(', ')}
@@ -140,7 +142,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
             </div>
             <h3 className="text-xl font-semibold text-white mb-2">Insufficient Permissions</h3>
             <p className="text-white/60 mb-4">
-              You don't have the required permissions to access this page.
+              You don&apos;t have the required permissions to access this page.
             </p>
             <p className="text-white/40 text-sm">
               Required permissions: {requirePermissions.join(', ')}
@@ -162,11 +164,12 @@ export function useRouteProtection(
 ): {
   isAuthorized: boolean;
   isLoading: boolean;
-  user: any;
+  user: UserProfile | null;
   missingRoles: string[];
   missingPermissions: string[];
 } {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  // SOLID: Interface Segregation - Only need authentication state!
+  const { isAuthenticated, isLoading, user } = useBasicAuth();
 
   if (isLoading || !isAuthenticated || !user) {
     return {

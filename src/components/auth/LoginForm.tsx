@@ -5,7 +5,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { LiquidCard, LiquidInput, LiquidButton } from '../liquid-glass';
-import { useAuth } from '../../contexts/AuthContext.tsx';
+import { useBasicAuth } from '../../contexts/AuthContext.tsx';
 import type { LoginCredentials } from '../../types/auth.ts';
 
 export interface LoginFormProps {
@@ -21,7 +21,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   onForgotPassword,
   className = '',
 }) => {
-  const { login, isLoading, error, clearError } = useAuth();
+  // SOLID: Interface Segregation - Only depend on basic authentication features!
+  const { login, isLoading, error, clearError } = useBasicAuth();
   
   const [credentials, setCredentials] = useState<LoginCredentials>({
     email: '',
@@ -226,7 +227,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           {onSwitchToRegister && (
             <div className="text-center pt-4">
               <p className="text-white/60 text-sm">
-                Don't have an account?{' '}
+                Don&apos;t have an account?{' '}
                 <button
                   type="button"
                   onClick={onSwitchToRegister}

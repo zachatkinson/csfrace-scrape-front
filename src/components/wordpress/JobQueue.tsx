@@ -1,14 +1,14 @@
 /**
  * JobQueue Component
  * Real-time job monitoring dashboard with Liquid Glass material
+ * SOLID: Open/Closed Principle - Uses Strategy Pattern for job statuses
  * Implements Apple's clarity and depth principles with live updates
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
 import { LiquidCard, LiquidButton } from '../liquid-glass';
-
-// Job status types
-type JobStatus = 'pending' | 'validating' | 'scraping' | 'completed' | 'error' | 'cancelled';
+import { JobStatusManager } from '../../strategies/JobStatusStrategy.tsx';
+import type { JobStatus } from '../../strategies/JobStatusStrategy.tsx';
 
 // Job interface
 interface Job {
@@ -83,7 +83,7 @@ export const JobQueue: React.FC<JobQueueProps> = ({
     return sorted.slice(0, maxVisibleJobs);
   }, [jobs, filter, sortBy, maxVisibleJobs]);
   
-  // Get status statistics
+  // Get status statistics using Strategy Pattern
   const statusStats = useMemo(() => {
     const stats = {
       total: jobs.length,
@@ -94,88 +94,16 @@ export const JobQueue: React.FC<JobQueueProps> = ({
     };
     
     jobs.forEach(job => {
-      switch (job.status) {
-        case 'pending':
-          stats.pending++;
-          break;
-        case 'validating':
-        case 'scraping':
-          stats.processing++;
-          break;
-        case 'completed':
-          stats.completed++;
-          break;
-        case 'error':
-          stats.error++;
-          break;
-      }
+      const statusInfo = JobStatusManager.getStats(job.status);
+      stats[statusInfo.category]++;
     });
     
     return stats;
   }, [jobs]);
   
-  // Get status display properties
+  // Get status display properties using Strategy Pattern
   const getStatusDisplay = (status: JobStatus) => {
-    const statusMap = {
-      'pending': {
-        label: 'Queued',
-        color: 'text-gray-400',
-        bgColor: 'bg-gray-500/20',
-        icon: (
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        ),
-      },
-      'validating': {
-        label: 'Validating',
-        color: 'text-blue-400',
-        bgColor: 'bg-blue-500/20',
-        icon: (
-          <div className="animate-spin rounded-full w-4 h-4 border-2 border-blue-400/30 border-t-blue-400"></div>
-        ),
-      },
-      'scraping': {
-        label: 'Converting',
-        color: 'text-purple-400',
-        bgColor: 'bg-purple-500/20',
-        icon: (
-          <div className="animate-spin rounded-full w-4 h-4 border-2 border-purple-400/30 border-t-purple-400"></div>
-        ),
-      },
-      'completed': {
-        label: 'Completed',
-        color: 'text-green-400',
-        bgColor: 'bg-green-500/20',
-        icon: (
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-        ),
-      },
-      'error': {
-        label: 'Failed',
-        color: 'text-red-400',
-        bgColor: 'bg-red-500/20',
-        icon: (
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        ),
-      },
-      'cancelled': {
-        label: 'Cancelled',
-        color: 'text-orange-400',
-        bgColor: 'bg-orange-500/20',
-        icon: (
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636" />
-          </svg>
-        ),
-      },
-    };
-    
-    return statusMap[status];
+    return JobStatusManager.getDisplay(status);
   };
   
   // Format duration
@@ -256,7 +184,7 @@ export const JobQueue: React.FC<JobQueueProps> = ({
               <span className="text-sm text-white/70">Filter:</span>
               <select
                 value={filter}
-                onChange={(e) => setFilter(e.target.value as any)}
+                onChange={(e) => setFilter(e.target.value as 'all' | JobStatus)}
                 className="liquid-glass px-3 py-1 rounded-glass text-sm text-white bg-transparent border border-white/20 focus:border-blue-500/50"
               >
                 <option value="all">All Jobs</option>
@@ -272,7 +200,7 @@ export const JobQueue: React.FC<JobQueueProps> = ({
               <span className="text-sm text-white/70">Sort:</span>
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
+                onChange={(e) => setSortBy(e.target.value as 'newest' | 'oldest' | 'progress')}
                 className="liquid-glass px-3 py-1 rounded-glass text-sm text-white bg-transparent border border-white/20 focus:border-blue-500/50"
               >
                 <option value="newest">Newest First</option>
@@ -362,8 +290,8 @@ export const JobQueue: React.FC<JobQueueProps> = ({
                           <p className="text-sm text-white/60 truncate">{job.url}</p>
                         </div>
                         
-                        {/* Progress Bar */}
-                        {(job.status === 'validating' || job.status === 'scraping') && (
+                        {/* Progress Bar - Strategy Pattern determines visibility */}
+                        {JobStatusManager.shouldShowProgress(job.status) && (
                           <div className="mb-3">
                             <div className="flex items-center justify-between text-xs text-white/70 mb-1">
                               <span>Progress: {job.progress}%</span>
@@ -409,55 +337,78 @@ export const JobQueue: React.FC<JobQueueProps> = ({
                           {statusDisplay.label}
                         </div>
                         
-                        {/* Action Buttons */}
+                        {/* Action Buttons - Strategy Pattern determines available actions */}
                         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                          {job.status === 'completed' && onJobDownload && (
-                            <button
-                              onClick={() => onJobDownload(job.id)}
-                              className="p-2 text-white/60 hover:text-white transition-colors"
-                              title="Download Result"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-4-4m4 4l4-4m-6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                            </button>
-                          )}
-                          
-                          {job.status === 'error' && onJobRetry && (
-                            <button
-                              onClick={() => onJobRetry(job.id)}
-                              className="p-2 text-white/60 hover:text-white transition-colors"
-                              title="Retry Job"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                              </svg>
-                            </button>
-                          )}
-                          
-                          {(job.status === 'pending' || job.status === 'validating' || job.status === 'scraping') && onJobCancel && (
-                            <button
-                              onClick={() => onJobCancel(job.id)}
-                              className="p-2 text-white/60 hover:text-red-400 transition-colors"
-                              title="Cancel Job"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          )}
-                          
-                          {onJobDelete && (
-                            <button
-                              onClick={() => onJobDelete(job.id)}
-                              className="p-2 text-white/60 hover:text-red-400 transition-colors"
-                              title="Delete Job"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
-                          )}
+                          {(() => {
+                            const behavior = JobStatusManager.getBehavior(job.status);
+                            const actions = [];
+                            
+                            // Download button
+                            if (behavior.canDownload && onJobDownload) {
+                              actions.push(
+                                <button
+                                  key="download"
+                                  onClick={() => onJobDownload(job.id)}
+                                  className="p-2 text-white/60 hover:text-white transition-colors"
+                                  title="Download Result"
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-4-4m4 4l4-4m-6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                </button>
+                              );
+                            }
+                            
+                            // Retry button
+                            if (behavior.canRetry && onJobRetry) {
+                              actions.push(
+                                <button
+                                  key="retry"
+                                  onClick={() => onJobRetry(job.id)}
+                                  className="p-2 text-white/60 hover:text-white transition-colors"
+                                  title="Retry Job"
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                  </svg>
+                                </button>
+                              );
+                            }
+                            
+                            // Cancel button
+                            if (behavior.canCancel && onJobCancel) {
+                              actions.push(
+                                <button
+                                  key="cancel"
+                                  onClick={() => onJobCancel(job.id)}
+                                  className="p-2 text-white/60 hover:text-red-400 transition-colors"
+                                  title="Cancel Job"
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              );
+                            }
+                            
+                            // Delete button
+                            if (behavior.canDelete && onJobDelete) {
+                              actions.push(
+                                <button
+                                  key="delete"
+                                  onClick={() => onJobDelete(job.id)}
+                                  className="p-2 text-white/60 hover:text-red-400 transition-colors"
+                                  title="Delete Job"
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              );
+                            }
+                            
+                            return actions;
+                          })()}
                         </div>
                       </div>
                     </div>

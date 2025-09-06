@@ -6,6 +6,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext.tsx';
 import { AuthModal } from '../auth/AuthModal.tsx';
+import { StandardizedSettingsPanel } from '../settings/StandardizedSettingsPanel.tsx';
 
 export interface AuthenticatedHeaderProps {
   className?: string;
@@ -56,20 +57,8 @@ export const AuthenticatedHeader: React.FC<AuthenticatedHeaderProps> = ({
     setShowAuthModal(false);
   };
 
-  // Toggle settings panel (existing functionality)
+  // Toggle settings panel (updated for React component)
   const toggleSettings = () => {
-    const settingsPanel = document.getElementById('settings-panel');
-    if (settingsPanel) {
-      const isOpen = !settingsPanel.classList.contains('-translate-y-full');
-      
-      if (isOpen) {
-        settingsPanel.classList.remove('translate-y-0', 'pointer-events-auto', 'top-20');
-        settingsPanel.classList.add('-translate-y-full', 'pointer-events-none', '-top-20');
-      } else {
-        settingsPanel.classList.remove('-translate-y-full', 'pointer-events-none', '-top-20');
-        settingsPanel.classList.add('translate-y-0', 'pointer-events-auto', 'top-20');
-      }
-    }
     setShowSettings(!showSettings);
   };
 
@@ -202,6 +191,12 @@ export const AuthenticatedHeader: React.FC<AuthenticatedHeaderProps> = ({
         onClose={() => setShowAuthModal(false)}
         onSuccess={handleAuthSuccess}
         initialMode="login"
+      />
+
+      {/* Standardized Settings Panel */}
+      <StandardizedSettingsPanel
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
       />
 
       {/* Auth Panel - Slides up from bottom */}
@@ -391,7 +386,7 @@ export const AuthenticatedHeader: React.FC<AuthenticatedHeaderProps> = ({
 
                 {/* Features Preview */}
                 <div className="border-t border-white/10 pt-4">
-                  <p className="text-white/60 text-sm text-center mb-3">What you'll get:</p>
+                  <p className="text-white/60 text-sm text-center mb-3">What you&apos;ll get:</p>
                   <div className="flex flex-wrap justify-center gap-4 text-xs">
                     <span className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded-full">WordPress Conversion</span>
                     <span className="px-2 py-1 bg-green-500/20 text-green-300 rounded-full">Batch Processing</span>

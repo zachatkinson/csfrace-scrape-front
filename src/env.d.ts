@@ -31,12 +31,18 @@ interface HealthStatusService {
   getLatestStatus(): HealthStatus[];
 }
 
+interface RequestOptions {
+  headers?: Record<string, string>;
+  timeout?: number;
+  params?: Record<string, string | number | boolean>;
+}
+
 interface ApiClient {
   setBaseURL(url: string): void;
-  get(endpoint: string, options?: any): Promise<any>;
-  post(endpoint: string, data: any, options?: any): Promise<any>;
-  put(endpoint: string, data: any, options?: any): Promise<any>;
-  delete(endpoint: string, options?: any): Promise<any>;
+  get<T = unknown>(endpoint: string, options?: RequestOptions): Promise<T>;
+  post<T = unknown>(endpoint: string, data: unknown, options?: RequestOptions): Promise<T>;
+  put<T = unknown>(endpoint: string, data: unknown, options?: RequestOptions): Promise<T>;
+  delete<T = unknown>(endpoint: string, options?: RequestOptions): Promise<T>;
 }
 
 declare global {

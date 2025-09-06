@@ -46,7 +46,7 @@ export interface WebAuthnAuthenticationResponse {
 
 export interface WebAuthnVerificationRequest {
   session_id: string;
-  credential: any; // PublicKeyCredential from WebAuthn API
+  credential: PublicKeyCredential;
 }
 
 class AuthAPI {
@@ -298,7 +298,7 @@ export function generateCodeVerifier(): string {
   const array = new Uint8Array(32);
   crypto.getRandomValues(array);
   return btoa(String.fromCharCode(...array))
-    .replace(/[+/]/g, (m) => ({ '+': '-', '/': '_' }[m]!))
+    .replace(/[+/]/g, (m) => (m === '+' ? '-' : '_'))
     .replace(/=/g, '');
 }
 
@@ -307,11 +307,11 @@ export async function generateCodeChallenge(verifier: string): Promise<string> {
   const data = encoder.encode(verifier);
   const digest = await crypto.subtle.digest('SHA-256', data);
   return btoa(String.fromCharCode(...new Uint8Array(digest)))
-    .replace(/[+/]/g, (m) => ({ '+': '-', '/': '_' }[m]!))
+    .replace(/[+/]/g, (m) => (m === '+' ? '-' : '_'))
     .replace(/=/g, '');
 }
 
-export function formatWebAuthnError(error: any): string {
+export function formatWebAuthnError(error: unknown): string {
   if (!error || typeof error.name !== 'string') {
     return 'An unknown error occurred during authentication';
   }
@@ -343,7 +343,7 @@ export function shouldRefreshToken(expiresAt: number, bufferMinutes: number = 5)
   return Date.now() >= (expiresAt - bufferMs);
 }
 
-export function parseJWTPayload(token: string): any {
+export function parseJWTPayload<T = Record<string, unknown>>(token: string): T | null {
   try {
     const parts = token.split('.');
     const base64Url = parts[1];
@@ -358,7 +358,7 @@ export function parseJWTPayload(token: string): any {
         .join('')
     );
     return JSON.parse(jsonPayload);
-  } catch (error) {
+  } catch {
     return null;
   }
 }

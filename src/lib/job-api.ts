@@ -2,6 +2,9 @@
  * Job API utilities for fetching and managing conversion jobs
  */
 
+import { getApiBaseUrl } from '../constants/api.ts';
+import { TIMING_CONSTANTS } from '../constants/timing.ts';
+
 export interface Job {
   id: number;
   title: string;
@@ -31,7 +34,7 @@ class JobAPI {
 
   constructor() {
     // Use environment variables or fallback to defaults
-    this.baseUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
+    this.baseUrl = getApiBaseUrl();
     this.apiKey = import.meta.env.PUBLIC_API_KEY;
   }
 
@@ -122,7 +125,7 @@ class JobAPI {
   /**
    * Create a new conversion job
    */
-  async createJob(url: string, options: Record<string, any> = {}): Promise<Job | null> {
+  async createJob(url: string, options: Record<string, string | number | boolean> = {}): Promise<Job | null> {
     try {
       return await this.request<Job>('/jobs', {
         method: 'POST',
@@ -140,7 +143,7 @@ class JobAPI {
   /**
    * Create a batch of jobs
    */
-  async createBatch(urls: string[], options: Record<string, any> = {}): Promise<{ batch_id: string; jobs: Job[] } | null> {
+  async createBatch(urls: string[], options: Record<string, string | number | boolean> = {}): Promise<{ batch_id: string; jobs: Job[] } | null> {
     try {
       return await this.request<{ batch_id: string; jobs: Job[] }>('/batches', {
         method: 'POST',
@@ -209,7 +212,7 @@ export function formatRelativeTime(dateString: string): string {
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
+    const diffMins = Math.floor(diffMs / TIMING_CONSTANTS.HELPERS.minutes(1));
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
     

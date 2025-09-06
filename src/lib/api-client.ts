@@ -3,6 +3,161 @@
  * Provides typed interfaces for all backend endpoints
  */
 
+import { getApiBaseUrl } from '../constants/api.ts';
+
+// Configuration types
+export interface ConverterConfig {
+  format?: 'html' | 'markdown' | 'json';
+  includeImages?: boolean;
+  imageQuality?: 'low' | 'medium' | 'high';
+  customCSS?: string;
+  preserveStyles?: boolean;
+  stripScripts?: boolean;
+  stripForms?: boolean;
+}
+
+export interface ProcessingOptions {
+  timeout?: number;
+  maxRetries?: number;
+  skipExisting?: boolean;
+  outputDirectory?: string;
+  compression?: boolean;
+  removeMetadata?: boolean;
+  customHeaders?: Record<string, string>;
+}
+
+export interface BatchConfig {
+  maxConcurrent?: number;
+  continueOnError?: boolean;
+  outputBaseDirectory?: string;
+  createArchives?: boolean;
+  cleanupAfterArchive?: boolean;
+  defaultTimeout?: number;
+  retryFailedJobs?: boolean;
+}
+
+export interface SummaryData {
+  totalJobs?: number;
+  completedJobs?: number;
+  failedJobs?: number;
+  averageProcessingTime?: number;
+  totalDataProcessed?: number;
+  errorsEncountered?: string[];
+  performanceMetrics?: {
+    cpuUsage?: number;
+    memoryUsage?: number;
+    networkBandwidth?: number;
+  };
+}
+
+export interface DatabaseHealth {
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  connectionCount?: number;
+  queryLatency?: number;
+  freeSpace?: number;
+  version?: string;
+}
+
+export interface CacheHealth {
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  hitRate?: number;
+  size?: number;
+  memoryUsage?: number;
+  connectionCount?: number;
+}
+
+export interface MonitoringHealth {
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  alertsActive?: number;
+  lastCheck?: string;
+  uptime?: number;
+}
+
+export interface SystemMetrics {
+  cpu?: number;
+  memory?: number;
+  disk?: number;
+  network?: {
+    in: number;
+    out: number;
+  };
+  loadAverage?: number[];
+}
+
+export interface ApplicationMetrics {
+  requestsPerSecond?: number;
+  averageResponseTime?: number;
+  errorRate?: number;
+  activeConnections?: number;
+  jobsQueued?: number;
+  jobsProcessing?: number;
+}
+
+export interface DatabaseMetrics {
+  connections?: number;
+  queryTime?: number;
+  transactions?: number;
+  locks?: number;
+  cacheHitRatio?: number;
+}
+
+export interface ExtraMetadata {
+  originalUrl?: string;
+  contentType?: string;
+  lastModified?: string;
+  etag?: string;
+  encoding?: string;
+  language?: string;
+  author?: string;
+  keywords?: string[];
+  customFields?: Record<string, string | number | boolean>;
+}
+
+export interface ConversionStats {
+  htmlElements?: number;
+  cssRules?: number;
+  imagesFound?: number;
+  linksExtracted?: number;
+  charactersProcessed?: number;
+  processingSteps?: string[];
+  optimizationApplied?: string[];
+  warnings?: string[];
+}
+
+export interface ContextData {
+  url?: string;
+  step?: string;
+  duration?: number;
+  retryCount?: number;
+  errorCode?: string;
+  userAgent?: string;
+  ipAddress?: string;
+  additionalInfo?: Record<string, string | number | boolean>;
+}
+
+export class ApiError extends Error {
+  public readonly errorCode?: string;
+  public readonly timestamp?: string;
+  public readonly validationErrors?: Record<string, string[]>;
+  public readonly statusCode?: number;
+
+  constructor(
+    message: string,
+    errorCode?: string,
+    timestamp?: string,
+    validationErrors?: Record<string, string[]>,
+    statusCode?: number
+  ) {
+    super(message);
+    this.name = 'ApiError';
+    this.errorCode = errorCode;
+    this.timestamp = timestamp;
+    this.validationErrors = validationErrors;
+    this.statusCode = statusCode;
+    Object.setPrototypeOf(this, ApiError.prototype);
+  }
+}
+
 // Types matching backend models
 export interface Job {
   id: number;
@@ -32,8 +187,8 @@ export interface Job {
   archive_path?: string;
   archive_size_bytes?: number;
   batch_id?: number;
-  converter_config?: Record<string, any>;
-  processing_options?: Record<string, any>;
+  converter_config?: ConverterConfig;
+  processing_options?: ProcessingOptions;
 }
 
 export type JobStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped' | 'cancelled' | 'partial';
@@ -56,8 +211,8 @@ export interface JobCreate {
   max_retries?: number;
   timeout_seconds?: number;
   skip_existing?: boolean;
-  converter_config?: Record<string, any>;
-  processing_options?: Record<string, any>;
+  converter_config?: ConverterConfig;
+  processing_options?: ProcessingOptions;
 }
 
 export interface JobUpdate {
@@ -65,8 +220,8 @@ export interface JobUpdate {
   max_retries?: number;
   timeout_seconds?: number;
   skip_existing?: boolean;
-  converter_config?: Record<string, any>;
-  processing_options?: Record<string, any>;
+  converter_config?: ConverterConfig;
+  processing_options?: ProcessingOptions;
 }
 
 export interface Batch {
@@ -87,8 +242,8 @@ export interface Batch {
   failed_jobs: number;
   skipped_jobs: number;
   success_rate: number;
-  summary_data?: Record<string, any>;
-  batch_config?: Record<string, any>;
+  summary_data?: SummaryData;
+  batch_config?: BatchConfig;
 }
 
 export interface BatchWithJobs extends Batch {
@@ -112,23 +267,23 @@ export interface BatchCreate {
   output_base_directory?: string;
   create_archives?: boolean;
   cleanup_after_archive?: boolean;
-  batch_config?: Record<string, any>;
+  batch_config?: BatchConfig;
 }
 
 export interface HealthCheck {
   status: string;
   timestamp: string;
   version: string;
-  database: Record<string, any>;
-  cache: Record<string, any>;
-  monitoring: Record<string, any>;
+  database: DatabaseHealth;
+  cache: CacheHealth;
+  monitoring: MonitoringHealth;
 }
 
 export interface MetricsResponse {
   timestamp: string;
-  system_metrics: Record<string, any>;
-  application_metrics: Record<string, any>;
-  database_metrics: Record<string, any>;
+  system_metrics: SystemMetrics;
+  application_metrics: ApplicationMetrics;
+  database_metrics: DatabaseMetrics;
 }
 
 export interface ContentResult {
@@ -150,8 +305,8 @@ export interface ContentResult {
   processing_time_seconds?: number;
   created_at: string;
   updated_at: string;
-  extra_metadata?: Record<string, any>;
-  conversion_stats?: Record<string, any>;
+  extra_metadata?: ExtraMetadata;
+  conversion_stats?: ConversionStats;
 }
 
 export interface JobLog {
@@ -162,7 +317,7 @@ export interface JobLog {
   timestamp: string;
   component?: string; // html_processor, image_downloader, etc.
   operation?: string; // fetch, process, save, etc.
-  context_data?: Record<string, any>;
+  context_data?: ContextData;
   exception_type?: string;
   exception_traceback?: string;
 }
@@ -179,7 +334,7 @@ class APIClient {
   private apiKey?: string;
 
   constructor(baseURL?: string, apiKey?: string) {
-    this.baseURL = baseURL ?? (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:8000';
+    this.baseURL = baseURL ?? getApiBaseUrl();
     if (apiKey != null) {
       this.apiKey = apiKey;
     }
@@ -223,13 +378,14 @@ class APIClient {
         const errorMessage = errorData.detail || 'Request failed';
         const error = new Error(errorMessage);
         
-        // Attach additional error information
-        (error as any).errorCode = errorData.error_code;
-        (error as any).timestamp = errorData.timestamp;
-        (error as any).validationErrors = errorData.validation_errors;
-        (error as any).statusCode = response.status;
-        
-        throw error;
+        // Create proper API error
+        throw new ApiError(
+          error.message,
+          errorData.error_code,
+          errorData.timestamp,
+          errorData.validation_errors,
+          response.status
+        );
       }
 
       // Handle 204 No Content responses
@@ -525,7 +681,7 @@ export function getRelativeTime(dateString: string): string {
 }
 
 // Enhanced error handling utilities
-export function isAPIError(error: any): error is Error & {
+export function isAPIError(error: unknown): error is Error & {
   errorCode?: string;
   timestamp?: string;
   validationErrors?: Record<string, string[]>;
@@ -534,7 +690,7 @@ export function isAPIError(error: any): error is Error & {
   return error instanceof Error && 'statusCode' in error;
 }
 
-export function getValidationErrorMessage(error: any): string | null {
+export function getValidationErrorMessage(error: unknown): string | null {
   if (isAPIError(error) && error.validationErrors) {
     const messages: string[] = [];
     for (const [field, errors] of Object.entries(error.validationErrors)) {

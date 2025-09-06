@@ -1,6 +1,8 @@
 ---
 import MainLayout from '../components/layout/MainLayout.astro';
-import _JobItem from '../components/JobItem.astro'; // Will be used for jobs list
+import { getApiBaseUrl } from '../constants/api.ts';
+import { TIMING_CONSTANTS } from '../constants/timing.ts';
+// import JobItem from '../components/JobItem.astro'; // TODO: Will be used for jobs list
 ---
 
 <MainLayout title="CSFrace Scrape - WordPress to Shopify Converter">
@@ -126,8 +128,22 @@ import _JobItem from '../components/JobItem.astro'; // Will be used for jobs lis
           <p class="text-white/70">Monitor your conversion jobs with live updates</p>
         </div>
         
-        <div class="lg:flex lg:flex-col lg:flex-1 lg:min-h-0">
-          <!-- Job List Container with scrolling -->
+        <div class="flex flex-col flex-1 min-h-0">
+          <!-- 1. ERRORS/WARNINGS (Top of stack, slides away when resolved) -->
+          <div id="jobs-error" class="hidden transition-all duration-500 ease-out transform translate-x-0" style="transition-property: transform, opacity, max-height;">
+            <!-- Enhanced error content will be populated by error-handling.ts -->
+            <div id="enhanced-error-content">
+              <h3 class="text-orange-400 font-medium mb-2">Connection issue</h3>
+              <p class="text-white/60 text-sm mb-4">Unable to connect to the conversion service.</p>
+              <button id="retry-load-jobs" class="glass-button px-4 py-2 text-sm text-orange-400/80 hover:text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 transition-all duration-200 rounded-lg">
+                Retry
+              </button>
+            </div>
+            <!-- Divider between errors and jobs list -->
+            <div class="border-t border-white/10 mt-4"></div>
+          </div>
+          
+          <!-- 2. RECENT JOBS (Middle of stack, scrollable) -->
           <div id="jobs-container" class="lg:flex-1 lg:overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent pr-2 lg:min-h-0">
             <!-- Loading State -->
             <div id="jobs-loading" class="p-6 text-center">
@@ -139,7 +155,7 @@ import _JobItem from '../components/JobItem.astro'; // Will be used for jobs lis
             <div id="jobs-list" class="space-y-4 hidden"></div>
             
             <!-- Empty State -->
-            <div id="jobs-empty" class="p-8 text-center hidden">
+            <div id="jobs-empty" class="p-4 text-center hidden">
               <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-yellow-500/10 flex items-center justify-center">
                 <svg class="w-8 h-8 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -149,30 +165,9 @@ import _JobItem from '../components/JobItem.astro'; // Will be used for jobs lis
               <p class="text-white/60 text-sm">Start your first WordPress to Shopify conversion using the form on the left!</p>
             </div>
             
-            <!-- Error State -->
-            <div id="jobs-error" class="p-8 text-center hidden">
-              <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/10 flex items-center justify-center">
-                <svg class="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-              </div>
-              <h3 class="text-red-400 font-medium mb-2">Failed to load jobs</h3>
-              <p id="error-message" class="text-white/60 text-sm mb-2">Unable to connect to the conversion service.</p>
-              <div id="error-details" class="glass-panel p-3 rounded-lg bg-red-500/5 border border-red-500/20 text-left max-w-md mx-auto mb-4 hidden">
-                <p class="text-xs font-mono text-red-400/80 mb-2" id="error-technical"></p>
-                <div class="text-xs text-white/50 space-y-1">
-                  <p class="font-medium mb-1">Troubleshooting steps:</p>
-                  <ul id="error-steps" class="list-disc list-inside space-y-0.5 pl-2"></ul>
-                </div>
-              </div>
-              <button id="retry-load-jobs" class="glass-button px-4 py-2 text-sm text-red-400/80 hover:text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-all duration-200 rounded-lg">
-                Retry
-              </button>
-            </div>
-            
           </div>
           
-          <!-- View All Jobs Button -->
+          <!-- 3. VIEW ALL JOBS BUTTON (Bottom of stack, always visible) -->
           <div class="border-t border-white/10 pt-4 mt-6 lg:flex-shrink-0 lg:mt-4">
             <a href="/dashboard" class="glass-button liquid-glass-interactive w-full px-4 py-3 text-white/90 hover:text-white font-medium bg-white/5 hover:bg-white/10 transition-all duration-200 flex items-center justify-center space-x-2">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -188,6 +183,62 @@ import _JobItem from '../components/JobItem.astro'; // Will be used for jobs lis
 </MainLayout>
 
 <script>
+  // Job type definition for script context
+  interface WordPressContent {
+    title: string;
+    content: string;
+    excerpt?: string;
+    featuredImage?: string;
+    categories?: string[];
+    tags?: string[];
+    publishedAt?: string;
+    author?: string;
+    metadata?: Record<string, unknown>;
+  }
+
+  interface ShopifyContent {
+    handle: string;
+    title: string;
+    bodyHtml: string;
+    excerpt?: string;
+    image?: {
+      src: string;
+      alt?: string;
+    };
+    tags: string[];
+    publishedAt?: string;
+    seo?: {
+      title?: string;
+      description?: string;
+    };
+    metadata?: Record<string, unknown>;
+  }
+
+  interface ConversionJob {
+    id: string;
+    url: string;
+    status: 'pending' | 'validating' | 'scraping' | 'running' | 'completed' | 'error' | 'failed' | 'cancelled';
+    progress: number;
+    wordpressContent?: WordPressContent;
+    shopifyContent?: ShopifyContent;
+    convertedHtml?: string;
+    extractedImages?: string[];
+    error?: string;
+    error_message?: string;
+    error_type?: string;
+    metadata?: {
+      title?: string;
+      type?: string;
+      wordCount?: number;
+      imageCount?: number;
+      estimatedSize?: string;
+      processingTime?: number;
+    };
+    createdAt?: Date;
+    startedAt?: Date;
+    completedAt?: Date;
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     // Time-based greeting (defaulting to user's local timezone, can be changed in settings later)
     // Timezone utilities
@@ -437,28 +488,28 @@ import _JobItem from '../components/JobItem.astro'; // Will be used for jobs lis
         ]
       };
       
-      let timeOfDay, greetingArray;
+      let greetingArray;
       if (hour >= 5 && hour < 8) {
-        timeOfDay = 'early morning';
+        // timeOfDay = 'early morning';
         greetingArray = greetings.earlyMorning;
       } else if (hour >= 8 && hour < 12) {
-        timeOfDay = 'late morning';
+        // timeOfDay = 'late morning';
         greetingArray = greetings.lateMorning;
       } else if (hour >= 12 && hour < 13) {
-        timeOfDay = 'midday';
+        // timeOfDay = 'midday';
         greetingArray = greetings.midday;
       } else if (hour >= 13 && hour < 17) {
-        timeOfDay = 'afternoon';
+        // timeOfDay = 'afternoon';
         greetingArray = greetings.afternoon;
       } else if (hour >= 17 && hour < 21) {
-        timeOfDay = 'evening';
+        // timeOfDay = 'evening';
         greetingArray = greetings.evening;
       } else if (hour >= 21 && hour < 24) {
-        timeOfDay = 'night';
+        // timeOfDay = 'night';
         greetingArray = greetings.night;
       } else {
         // hour >= 0 && hour < 5 (midnight to 5 AM)
-        timeOfDay = 'late night';
+        // timeOfDay = 'late night'; // Not used currently
         greetingArray = greetings.lateNight;
       }
       
@@ -560,7 +611,7 @@ import _JobItem from '../components/JobItem.astro'; // Will be used for jobs lis
         const url = e.target.value.trim();
         const isValid = url.length > 0 && validateURL(url);
         
-        convertNowBtn.disabled = !isValid;
+        (convertNowBtn as HTMLButtonElement).disabled = !isValid;
         
         // Update input styling based on validity
         if (url.length > 0) {
@@ -575,7 +626,7 @@ import _JobItem from '../components/JobItem.astro'; // Will be used for jobs lis
       });
       
       // Also check on paste
-      urlInput.addEventListener('paste', (e) => {
+      urlInput.addEventListener('paste', (_e) => {
         setTimeout(() => {
           urlInput.dispatchEvent(new Event('input'));
         }, 10);
@@ -595,7 +646,7 @@ import _JobItem from '../components/JobItem.astro'; // Will be used for jobs lis
         document.body.addEventListener(eventName, preventDefaults, false);
       });
       
-      function preventDefaults(e) {
+      function preventDefaults(e: Event) {
         e.preventDefault();
         e.stopPropagation();
       }
@@ -621,17 +672,17 @@ import _JobItem from '../components/JobItem.astro'; // Will be used for jobs lis
       dropZone.addEventListener('drop', handleDrop, false);
       fileInput.addEventListener('change', handleFileSelect, false);
       
-      function handleDrop(e) {
-        const files = e.dataTransfer.files;
-        handleFiles(files);
+      function handleDrop(e: DragEvent) {
+        const files = e.dataTransfer?.files;
+        if (files) handleFiles(files);
       }
       
-      function handleFileSelect(e) {
-        const files = e.target.files;
-        handleFiles(files);
+      function handleFileSelect(e: Event) {
+        const files = (e.target as HTMLInputElement).files;
+        if (files) handleFiles(files);
       }
       
-      function handleFiles(files) {
+      function handleFiles(files: FileList) {
         if (files.length > 0) {
           const file = files[0];
           if (file.type === 'text/csv' || file.type === 'text/plain' || file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
@@ -646,7 +697,7 @@ import _JobItem from '../components/JobItem.astro'; // Will be used for jobs lis
             
             // Enable convert button
             if (bulkConvertBtn) {
-              bulkConvertBtn.disabled = false;
+              (bulkConvertBtn as HTMLButtonElement).disabled = false;
             }
           } else {
             alert('Please upload a CSV or TXT file.');
@@ -665,15 +716,14 @@ import _JobItem from '../components/JobItem.astro'; // Will be used for jobs lis
       const emptyEl = document.getElementById('jobs-empty');
       const errorEl = document.getElementById('jobs-error');
       
-      // Show loading state
+      // Show loading state (jobs-error is now separate and doesn't need to be hidden)
       loadingEl?.classList.remove('hidden');
       listEl?.classList.add('hidden');
       emptyEl?.classList.add('hidden');
-      errorEl?.classList.add('hidden');
       
       try {
         // Try to fetch jobs from backend API
-        const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
+        const apiUrl = getApiBaseUrl();
         const response = await fetch(`${apiUrl}/jobs/?page=1&page_size=10`);
         
         if (!response.ok) {
@@ -704,38 +754,67 @@ import _JobItem from '../components/JobItem.astro'; // Will be used for jobs lis
           renderJobs(jobs);
         }
         
+        // Check if we should resolve any existing errors (connection restored)
+        checkAndResolveError();
+        
       } catch (error) {
         console.error('Failed to load jobs:', error);
         
         // Hide loading state
         loadingEl?.classList.add('hidden');
         
-        // If it's a connection error (backend not running), show empty state for development
-        // In production this would be a real error
-        if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
-          // Connection error - backend not running, show empty state for now
-          emptyEl?.classList.remove('hidden');
-        } else {
-          // Real server error - show error state (red)
+        // Check if we already have jobs displayed
+        const hasExistingJobs = !listEl?.classList.contains('hidden');
+        
+        // Use enhanced error handling
+        try {
+          // Import the enhanced error handling utilities
+          const { analyzeError, generateErrorHTML } = await import('../utils/error-handling.ts');
+          
+          const errorDetails = analyzeError(error);
+          const errorHTML = generateErrorHTML(errorDetails, 'jobs-error');
+          
+          // Update the enhanced error content
+          const enhancedErrorContent = document.getElementById('enhanced-error-content');
+          if (enhancedErrorContent) {
+            enhancedErrorContent.innerHTML = errorHTML;
+          }
+          
+          // Show error state in the dedicated error section (now above jobs)
           errorEl?.classList.remove('hidden');
+          
+          // If no jobs are loaded yet, also show empty state in jobs container
+          if (!hasExistingJobs) {
+            emptyEl?.classList.remove('hidden');
+          }
+          
+        } catch (importError) {
+          console.error('Failed to load enhanced error handling:', importError);
+          
+          // Fallback to basic error display
+          if ((error as Error).message?.includes('Failed to fetch') || (error as Error).name === 'TypeError') {
+            emptyEl?.classList.remove('hidden');
+          } else {
+            errorEl?.classList.remove('hidden');
+          }
         }
       }
     };
     
-    const renderJobs = (jobs) => {
+    const renderJobs = (jobs: ConversionJob[]) => {
       const listEl = document.getElementById('jobs-list');
       if (!listEl) return;
       
       // Clear existing content
       listEl.innerHTML = '';
       
-      jobs.forEach(job => {
+      jobs.forEach((job: ConversionJob) => {
         const jobEl = createJobElement(job);
         listEl.appendChild(jobEl);
       });
     };
     
-    const createJobElement = (job) => {
+    const createJobElement = (job: ConversionJob) => {
       // Job status configuration
       const statusConfig = {
         pending: {
@@ -865,7 +944,7 @@ import _JobItem from '../components/JobItem.astro'; // Will be used for jobs lis
     };
     
     // Utility functions for job formatting
-    const formatJobTitle = (url) => {
+    const formatJobTitle = (url: string) => {
       try {
         const urlObj = new URL(url);
         const pathname = urlObj.pathname;
@@ -876,7 +955,7 @@ import _JobItem from '../components/JobItem.astro'; // Will be used for jobs lis
         }
         
         const lastSegment = segments[segments.length - 1];
-        return lastSegment
+        return lastSegment ?? urlObj.hostname
           .replace(/[-_]/g, ' ')
           .replace(/\b\w/g, l => l.toUpperCase());
       } catch {
@@ -884,7 +963,7 @@ import _JobItem from '../components/JobItem.astro'; // Will be used for jobs lis
       }
     };
     
-    const getProgressMessage = (job) => {
+    const getProgressMessage = (job: ConversionJob) => {
       if (job.progress === undefined) return 'Processing...';
       
       if (job.progress < 25) return 'Fetching content...';
@@ -910,6 +989,43 @@ import _JobItem from '../components/JobItem.astro'; // Will be used for jobs lis
         }
       } catch (error) {
         console.error('Failed to retry job:', error);
+      }
+    };
+    
+    // Slide-away animation for resolved errors/warnings
+    const slideAwayError = () => {
+      const errorEl = document.getElementById('jobs-error');
+      if (!errorEl || errorEl.classList.contains('hidden')) return;
+      
+      // Start slide-away animation (slide right and fade out)
+      errorEl.style.transform = 'translateX(100%)';
+      errorEl.style.opacity = '0';
+      errorEl.style.maxHeight = '0';
+      
+      // Hide element after animation completes
+      setTimeout(() => {
+        errorEl.classList.add('hidden');
+        // Reset transform for next time
+        errorEl.style.transform = 'translateX(0)';
+        errorEl.style.opacity = '1';
+        errorEl.style.maxHeight = '';
+      }, 500); // Match transition duration
+    };
+    
+    // Check if error should be resolved (e.g., when jobs load successfully)
+    const checkAndResolveError = () => {
+      const errorEl = document.getElementById('jobs-error');
+      const listEl = document.getElementById('jobs-list');
+      const emptyEl = document.getElementById('jobs-empty');
+      
+      // If error is showing and either jobs or empty state is showing, resolve the error
+      if (errorEl && !errorEl.classList.contains('hidden')) {
+        const hasJobs = listEl && !listEl.classList.contains('hidden');
+        const hasEmptyState = emptyEl && !emptyEl.classList.contains('hidden');
+        
+        if (hasJobs || hasEmptyState) {
+          slideAwayError();
+        }
       }
     };
     
@@ -939,7 +1055,7 @@ import _JobItem from '../components/JobItem.astro'; // Will be used for jobs lis
     loadJobs();
     
     // Real-time updates - poll for job status changes every 5 seconds
-    let updateInterval: NodeJS.Timeout | null;
+    let updateInterval: ReturnType<typeof setInterval> | null;
     const startRealTimeUpdates = () => {
       updateInterval = setInterval(() => {
         const hasRunningJobs = document.querySelectorAll('[data-status="running"], [data-status="pending"]').length > 0;
@@ -948,7 +1064,7 @@ import _JobItem from '../components/JobItem.astro'; // Will be used for jobs lis
         if (hasRunningJobs || !document.getElementById('jobs-empty')?.classList.contains('hidden')) {
           loadJobs();
         }
-      }, 5000); // Poll every 5 seconds
+      }, window.CSFRACE_TIMING.JOB.JOB_STATUS_CHECK_INTERVAL); // Poll using centralized timing
     };
     
     const stopRealTimeUpdates = () => {
@@ -1004,7 +1120,7 @@ import _JobItem from '../components/JobItem.astro'; // Will be used for jobs lis
         
         try {
           // Simulate API call (in real implementation, use API client)
-          await new Promise(resolve => setTimeout(resolve, 1500));
+          await new Promise(resolve => setTimeout(resolve, window.CSFRACE_TIMING.UI.SLOW_ANIMATION));
           
           // Update UI to show job is now pending/processing
           const jobElement = retryButton.closest('.p-4') as HTMLElement;
@@ -1039,7 +1155,7 @@ import _JobItem from '../components/JobItem.astro'; // Will be used for jobs lis
           // Hide retry button and show download button
           (retryButton as HTMLElement).style.display = 'none';
           
-          console.log('Job retry initiated successfully');
+          console.warn('Job retry initiated successfully');
         } catch (error) {
           console.error('Failed to retry job:', error);
           // Reset button state on error
@@ -1054,7 +1170,7 @@ import _JobItem from '../components/JobItem.astro'; // Will be used for jobs lis
       convertNowBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         
-        const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
+        const apiUrl = getApiBaseUrl();
         const url = (urlInput as HTMLInputElement).value.trim();
         if (!url) {
           alert('Please enter a WordPress URL');
@@ -1089,7 +1205,7 @@ import _JobItem from '../components/JobItem.astro'; // Will be used for jobs lis
           }
           
           const jobData = await response.json();
-          console.log('Job created successfully:', jobData);
+          console.warn('Job created successfully:', jobData);
           
           // Clear input and show success
           (urlInput as HTMLInputElement).value = '';
@@ -1115,7 +1231,7 @@ import _JobItem from '../components/JobItem.astro'; // Will be used for jobs lis
       bulkConvertBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         
-        const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
+        const apiUrl = getApiBaseUrl();
         const file = (fileInput as HTMLInputElement).files?.[0];
         if (!file) {
           alert('Please select a file containing URLs');
@@ -1176,7 +1292,7 @@ import _JobItem from '../components/JobItem.astro'; // Will be used for jobs lis
           }
           
           const batchData = await response.json();
-          console.log('Batch created successfully:', batchData);
+          console.warn('Batch created successfully:', batchData);
           
           // Clear file input and show success
           (fileInput as HTMLInputElement).value = '';
@@ -1210,17 +1326,17 @@ import _JobItem from '../components/JobItem.astro'; // Will be used for jobs lis
         progress += Math.random() * 5;
         if (progress >= 100) {
           progressBar.style.width = '100%';
-          const statusElement = progressBar.parentElement?.nextElementSibling?.querySelector('.text-white\/50') as HTMLElement;
+          const statusElement = progressBar.parentElement?.nextElementSibling?.querySelector('.text-white/50') as HTMLElement;
           if (statusElement) {
             statusElement.textContent = 'Conversion complete!';
           }
         } else {
           progressBar.style.width = `${Math.min(progress, 100)}%`;
-          setTimeout(updateProgress, 2000 + Math.random() * 3000);
+          setTimeout(updateProgress, window.CSFRACE_TIMING.JOB.JOB_STATUS_CHECK_INTERVAL + Math.random() * window.CSFRACE_TIMING.JOB.JOB_STATUS_CHECK_INTERVAL);
         }
       };
       
-      setTimeout(updateProgress, 3000);
+      setTimeout(updateProgress, window.CSFRACE_TIMING.JOB.JOB_STATUS_CHECK_INTERVAL);
     }
   });
 </script>

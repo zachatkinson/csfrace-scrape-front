@@ -6,10 +6,8 @@
 /* Import our Liquid Glass system FIRST */
 @import './liquid-glass.css';
 
-/* Tailwind CSS Base Imports */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tailwind CSS v4 imports */
+@import "tailwindcss";
 
 /* Base styles for the application */
 @layer base {

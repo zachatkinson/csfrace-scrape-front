@@ -6,6 +6,8 @@
 
 // Import global styles (includes Tailwind + Liquid Glass)
 import '../../styles/globals.css';
+import { getApiBaseUrl } from '../../constants/api.ts';
+import { TIMING_CONSTANTS } from '../../constants/timing.ts';
 // Simple static layout - no complex React imports needed
 
 export interface Props {
@@ -72,6 +74,13 @@ const { title, description = "WordPress to Shopify content converter with ultra-
         }
       }
     </style>
+    
+    <!-- Global Configuration -->
+    <script define:vars={{apiBaseUrl: getApiBaseUrl(), timingConstants: TIMING_CONSTANTS}}>
+      // Make API base URL and timing constants available globally for client-side JavaScript
+      window.CSFRACE_API_BASE_URL = apiBaseUrl;
+      window.CSFRACE_TIMING = timingConstants;
+    </script>
   </head>
   
   <body class="h-full overflow-x-hidden">
@@ -109,13 +118,9 @@ const { title, description = "WordPress to Shopify content converter with ultra-
               </svg>
             </button>
 
-            <!-- Auth Button (Simple static button) -->
-            <button
-              id="auth-toggle"
-              class="glass-button px-4 py-2 text-blue-400 hover:text-blue-300 border border-blue-500/30 hover:border-blue-500/50 transition-all duration-200 flex items-center space-x-2"
-              aria-label="Sign In"
-            >
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <!-- Sign In Button -->
+            <button id="auth-toggle" class="glass-button px-4 py-2 text-blue-400 hover:text-blue-300 border border-blue-500/30 hover:border-blue-500/50 transition-all duration-200 flex items-center space-x-2" aria-label="Sign In">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
               <span>Sign In</span>
@@ -161,8 +166,8 @@ const { title, description = "WordPress to Shopify content converter with ultra-
                   id="api-url" 
                   type="url" 
                   class="glass-input w-full px-3 py-2" 
-                  placeholder="http://localhost:8000"
-                  value="http://localhost:8000"
+                  placeholder={getApiBaseUrl()}
+                  value={getApiBaseUrl()}
                 />
               </div>
               
@@ -630,16 +635,39 @@ const { title, description = "WordPress to Shopify content converter with ultra-
     <!-- Health Status Service -->
     <script>
       // Health Status Service
+      interface HealthStatus {
+        service: string;
+        status: 'up' | 'down' | 'degraded' | 'error';
+        lastChecked: Date;
+        error?: string;
+        responseTime?: number;
+      }
+
+      interface ServiceIndicators {
+        backend: {
+          status: 'online' | 'offline';
+          connected: boolean;
+        };
+        database: {
+          status: 'online' | 'offline' | 'unknown';
+          connected: boolean;
+        };
+        cache: {
+          status: 'online' | 'offline' | 'unknown';
+        };
+      }
+
+
       class HealthStatusService {
         apiUrl: string;
         pollInterval: number;
-        pollTimer: NodeJS.Timeout | null;
+        pollTimer: ReturnType<typeof setTimeout> | null;
         isPolling: boolean;
         cachedStatus: HealthStatus[];
 
         constructor() {
-          this.apiUrl = 'http://localhost:8000';
-          this.pollInterval = 30000; // 30 seconds
+          this.apiUrl = window.CSFRACE_API_BASE_URL;
+          this.pollInterval = window.CSFRACE_TIMING.MONITORING.HEALTH_CHECK_INTERVAL;
           this.pollTimer = null;
           this.isPolling = false;
           this.cachedStatus = [];
@@ -649,7 +677,7 @@ const { title, description = "WordPress to Shopify content converter with ultra-
           const now = new Date();
           try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const timeoutId = setTimeout(() => controller.abort(), window.CSFRACE_TIMING.MONITORING.HEALTH_CHECK_TIMEOUT);
             
             const startTime = Date.now();
             const response = await fetch(`${this.apiUrl}/health/`, {
@@ -676,13 +704,13 @@ const { title, description = "WordPress to Shopify content converter with ultra-
                   service: 'database',
                   status: healthData.database?.status === 'up' ? 'up' : 'down',
                   lastChecked: now,
-                  error: healthData.database?.status !== 'up' ? 'Database connection failed' : undefined
+                  ...(healthData.database?.status !== 'up' && { error: 'Database connection failed' })
                 },
                 {
                   service: 'cache',
                   status: healthData.cache?.status === 'up' ? 'up' : healthData.cache?.status === 'not_configured' ? 'down' : 'error',
                   lastChecked: now,
-                  error: healthData.cache?.status === 'error' ? 'Cache connection failed' : undefined
+                  ...(healthData.cache?.status === 'error' && { error: 'Cache connection failed' })
                 }
               ];
               
@@ -733,7 +761,7 @@ const { title, description = "WordPress to Shopify content converter with ultra-
                 service: 'backend',
                 status: 'down',
                 lastChecked: now,
-                error: error.message || 'Backend unreachable'
+                error: (error as Error).message ?? 'Backend unreachable'
               },
               {
                 service: 'database',
@@ -759,7 +787,7 @@ const { title, description = "WordPress to Shopify content converter with ultra-
           }
         }
 
-        updateStatusIndicators(services: any) {
+        updateStatusIndicators(services: ServiceIndicators) {
           // Update Backend API status
           const backendEl = document.getElementById('backend-status');
           if (backendEl) {
@@ -874,11 +902,25 @@ const { title, description = "WordPress to Shopify content converter with ultra-
       }
 
       // Initialize health status service
+      declare global {
+        interface Window {
+          healthStatusService: HealthStatusService;
+        }
+      }
       window.healthStatusService = new HealthStatusService();
     </script>
 
     <!-- Settings Panel JavaScript -->
     <script>
+      interface AppSettings {
+        compactMode: boolean;
+        apiUrl: string;
+        refreshInterval: number;
+        autoRefresh: boolean;
+        enableNotifications: boolean;
+        theme?: 'light' | 'dark' | 'auto';
+      }
+
       document.addEventListener('DOMContentLoaded', () => {
         const settingsToggle = document.getElementById('settings-toggle');
         const settingsClose = document.getElementById('settings-close');
@@ -978,13 +1020,13 @@ const { title, description = "WordPress to Shopify content converter with ultra-
           const settings = {
             // API Configuration
             apiUrl: (document.getElementById('api-url') as HTMLInputElement)?.value || '',
-            apiTimeout: parseInt((document.getElementById('api-timeout') as HTMLInputElement)?.value || '30000'),
-            refreshInterval: parseInt((document.getElementById('refresh-interval') as HTMLInputElement)?.value || '5000'),
+            apiTimeout: parseInt((document.getElementById('api-timeout') as HTMLInputElement)?.value || window.CSFRACE_TIMING.API.DEFAULT_TIMEOUT.toString()),
+            refreshInterval: parseInt((document.getElementById('refresh-interval') as HTMLInputElement)?.value || window.CSFRACE_TIMING.JOB.JOB_STATUS_CHECK_INTERVAL.toString()),
             
             // Job Defaults
             defaultPriority: (document.getElementById('default-priority') as HTMLSelectElement)?.value || 'normal',
-            maxRetries: parseInt((document.getElementById('max-retries') as HTMLInputElement)?.value || '3'),
-            jobTimeout: parseInt((document.getElementById('job-timeout') as HTMLInputElement)?.value || '300000'),
+            maxRetries: parseInt((document.getElementById('max-retries') as HTMLInputElement)?.value || window.CSFRACE_TIMING.API.RETRY_MAX_ATTEMPTS.toString()),
+            jobTimeout: parseInt((document.getElementById('job-timeout') as HTMLInputElement)?.value || window.CSFRACE_TIMING.JOB.SINGLE_JOB_TIMEOUT.toString()),
             
             // Display Options
             darkMode: (document.getElementById('dark-mode') as HTMLInputElement)?.checked || false,
@@ -1007,14 +1049,14 @@ const { title, description = "WordPress to Shopify content converter with ultra-
         const getStoredSettings = () => {
           const defaults = {
             // API Configuration
-            apiUrl: 'http://localhost:8000',
-            apiTimeout: 30,
-            refreshInterval: 10,
+            apiUrl: window.CSFRACE_API_BASE_URL,
+            apiTimeout: window.CSFRACE_TIMING.API.DEFAULT_TIMEOUT / 1000, // Convert to seconds for UI
+            refreshInterval: window.CSFRACE_TIMING.JOB.JOB_STATUS_CHECK_INTERVAL / 1000, // Convert to seconds for UI
             
             // Job Defaults
             defaultPriority: 'normal',
-            maxRetries: 3,
-            jobTimeout: 30,
+            maxRetries: window.CSFRACE_TIMING.API.RETRY_MAX_ATTEMPTS,
+            jobTimeout: window.CSFRACE_TIMING.JOB.SINGLE_JOB_TIMEOUT / 1000, // Convert to seconds for UI
             
             // Display Options
             darkMode: true,
@@ -1059,7 +1101,7 @@ const { title, description = "WordPress to Shopify content converter with ultra-
         };
         
         // Apply settings (for immediate effects)
-        const applySettings = (settings: any) => {
+        const applySettings = (settings: AppSettings) => {
           // Apply theme changes
           document.body.classList.toggle('compact-mode', settings.compactMode);
           

@@ -5,6 +5,8 @@
  */
 
 import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios';
+import { getApiBaseUrl, API_CONFIG } from '../constants/api.ts';
+import { TIMING_CONSTANTS } from '../constants/timing.ts';
 import type { 
   ApiResponse, 
   ConversionJob, 
@@ -25,11 +27,11 @@ interface ApiConfig {
 
 // Default configuration
 const defaultConfig: ApiConfig = {
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
+  baseURL: getApiBaseUrl(),
   apiKey: import.meta.env.VITE_API_KEY,
-  timeout: parseInt(import.meta.env.VITE_API_TIMEOUT || '30000'),
-  retryAttempts: 3,
-  retryDelay: 1000,
+  timeout: API_CONFIG.DEFAULT_TIMEOUT,
+  retryAttempts: API_CONFIG.DEFAULT_RETRIES,
+  retryDelay: TIMING_CONSTANTS.API.RETRY_DELAY_BASE,
 };
 
 /**
@@ -100,10 +102,10 @@ class ApiClient {
           originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
           
           // Exponential backoff
-          const delay = this.config.retryDelay * Math.pow(2, originalRequest._retryCount - 1);
+          const delay = TIMING_CONSTANTS.HELPERS.exponentialBackoff(originalRequest._retryCount, this.config.retryDelay);
           await new Promise(resolve => setTimeout(resolve, delay));
           
-          console.log(`Retrying request (attempt ${originalRequest._retryCount}/${this.config.retryAttempts})`);
+          console.warn(`Retrying request (attempt ${originalRequest._retryCount}/${this.config.retryAttempts})`);
           
           return this.client(originalRequest);
         }
@@ -129,17 +131,21 @@ class ApiClient {
     try {
       const response: AxiosResponse<ApiResponse<T>> = await this.client(config);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('API request failed:', error);
       
       // Format error response
-      if (error.response?.data) {
-        return error.response.data;
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data: ApiResponse<T> } };
+        if (axiosError.response?.data) {
+          return axiosError.response.data;
+        }
       }
       
+      const errorMessage = error instanceof Error ? error.message : 'Network error occurred';
       return {
         success: false,
-        error: error.message || 'Network error occurred',
+        error: errorMessage,
         timestamp: new Date().toISOString(),
       };
     }
@@ -185,7 +191,7 @@ class ApiClient {
         },
         timestamp: new Date().toISOString()
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: 'Invalid URL format',
@@ -404,7 +410,7 @@ export const api = {
   validateUrl: (url: string) => apiClient.validateUrl(url),
   submitJob: (url: string, options: ConversionOptions) => apiClient.submitJob(url, options),
   getJob: (jobId: string) => apiClient.getJob(jobId),
-  getJobs: (params?: any) => apiClient.getJobs(params),
+  getJobs: (params?: { status?: string; limit?: number; offset?: number; sortBy?: string }) => apiClient.getJobs(params),
   cancelJob: (jobId: string) => apiClient.cancelJob(jobId),
   deleteJob: (jobId: string) => apiClient.deleteJob(jobId),
   retryJob: (jobId: string) => apiClient.retryJob(jobId),
@@ -412,6 +418,6 @@ export const api = {
   submitBatch: (urls: string[], options: ConversionOptions, name?: string) => apiClient.submitBatch(urls, options, name),
   getBatch: (batchId: string) => apiClient.getBatch(batchId),
   getBatches: () => apiClient.getBatches(),
-  getStats: (period?: any) => apiClient.getStats(period),
+  getStats: (period?: { start: string; end: string }) => apiClient.getStats(period),
   uploadFile: (file: File, options: ConversionOptions) => apiClient.uploadFile(file, options),
 };

@@ -161,7 +161,7 @@ class AuthStorage {
   }
 
   // Cross-tab synchronization
-  private dispatchStorageEvent(type: string, data: any): void {
+  private dispatchStorageEvent(type: string, data: unknown): void {
     if (!this.isClient) return;
 
     const event = new CustomEvent('auth_storage_change', {
@@ -170,7 +170,7 @@ class AuthStorage {
     window.dispatchEvent(event);
   }
 
-  onStorageChange(callback: (event: { type: string; data: any; timestamp: number }) => void): () => void {
+  onStorageChange(callback: (event: { type: string; data: unknown; timestamp: number }) => void): () => void {
     if (!this.isClient) return () => {};
 
     const handler = (event: CustomEvent) => {
@@ -274,7 +274,7 @@ export const authStorage = new AuthStorage();
 // Storage event types for type safety
 export interface AuthStorageEvent {
   type: 'tokens_updated' | 'tokens_cleared' | 'user_updated' | 'user_cleared' | 'auth_cleared';
-  data: any;
+  data: unknown;
   timestamp: number;
 }
 

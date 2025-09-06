@@ -1,7 +1,7 @@
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
-import tailwind from '@astrojs/tailwind';
 import netlify from '@astrojs/netlify';
+import tailwindcss from '@tailwindcss/vite';
 
 // https://astro.build/config
 export default defineConfig({
@@ -9,10 +9,6 @@ export default defineConfig({
     react({
       // Enable React components in .astro files
       include: ['**/react/*', '**/components/**/*'],
-    }),
-    tailwind({
-      applyBaseStyles: true, // Need this for Tailwind utilities to work
-      configFile: './tailwind.config.js',
     }),
   ],
   output: 'server',
@@ -25,6 +21,7 @@ export default defineConfig({
   },
   // Vite configuration for Liquid Glass optimization
   vite: {
+    plugins: [tailwindcss()],
     optimizeDeps: {
       include: ['react', 'react-dom'],
     },

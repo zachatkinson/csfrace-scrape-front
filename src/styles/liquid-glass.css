@@ -79,329 +79,366 @@ svg.w-16 { width: 4rem !important; height: 4rem !important; }
 
 /* REMOVED - Using unified glass system above */
 
-/* Add inner highlight layer */
-.liquid-glass::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border-radius: inherit;
-  box-shadow: inset 0 1px 0 var(--glass-highlight);
-  pointer-events: none;
-  z-index: -1;
+@layer components {
+  /* Add inner highlight layer */
+  .liquid-glass::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 1px 0 var(--glass-highlight);
+    pointer-events: none;
+    z-index: -1;
+  }
 }
 
-/* Interactive Glass States */
-.liquid-glass-interactive {
-  cursor: pointer;
-  user-select: none;
-  
-  transition: all var(--glass-transition);
-}
+@layer components {
+  /* Interactive Glass States */
+  .liquid-glass-interactive {
+    cursor: pointer;
+    user-select: none;
+    
+    transition: all var(--glass-transition);
+  }
 
-.liquid-glass-interactive:hover {
-  /* Enhanced depth on hover */
-  box-shadow: 
-    0 12px 40px rgba(31, 38, 135, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
-  
-  /* Subtle lift effect */
-  transform: translateY(-1px);
-}
+  .liquid-glass-interactive:hover {
+    /* Enhanced depth on hover */
+    box-shadow: 
+      0 12px 40px rgba(31, 38, 135, 0.45),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    
+    /* Subtle lift effect */
+    transform: translateY(-1px);
+  }
 
-.liquid-glass-interactive:active {
-  /* Compressed state on press */
-  box-shadow: 
-    0 4px 16px rgba(31, 38, 135, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  
-  transform: translateY(0);
-}
+  .liquid-glass-interactive:active {
+    /* Compressed state on press */
+    box-shadow: 
+      0 4px 16px rgba(31, 38, 135, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    
+    transform: translateY(0);
+  }
 
-.liquid-glass-interactive:focus-visible {
-  outline: 2px solid rgba(59, 130, 246, 0.8);
-  outline-offset: 2px;
-}
+  .liquid-glass-interactive:focus-visible {
+    outline: 2px solid rgba(59, 130, 246, 0.8);
+    outline-offset: 2px;
+  }
 
-/* Content-Adaptive Glass (Apple's Deference Principle) */
-.liquid-glass-adaptive {
-  background: color-mix(in srgb, transparent 90%, currentColor 10%);
-  border-color: color-mix(in srgb, transparent 80%, currentColor 20%);
+  /* Content-Adaptive Glass (Apple's Deference Principle) */
+  .liquid-glass-adaptive {
+    background: color-mix(in srgb, transparent 90%, currentColor 10%);
+    border-color: color-mix(in srgb, transparent 80%, currentColor 20%);
+  }
 }
 
 /* UNIFIED GLASS SYSTEM - One class for all glass effects */
-.glass-card,
-.liquid-glass,
-.glass-button,
-.glass-nav,
-.glass-modal {
-  background: rgba(0, 0, 0, 0.4) !important;
-  backdrop-filter: blur(30px) saturate(180%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  border-radius: 12px;
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
-  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+@layer components {
+  .glass-card,
+  .liquid-glass,
+  .glass-button,
+  .glass-nav,
+  .glass-modal {
+    background: rgba(0, 0, 0, 0.4) !important;
+    backdrop-filter: blur(30px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 12px;
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
 }
 
-/* Lensing Effects (Physical Accuracy) */
-.liquid-glass-lens {
-  transform: perspective(var(--lens-perspective)) rotateX(var(--lens-rotation));
-  transform-style: preserve-3d;
-}
+@layer components {
+  /* Lensing Effects (Physical Accuracy) */
+  .liquid-glass-lens {
+    transform: perspective(var(--lens-perspective)) rotateX(var(--lens-rotation));
+    transform-style: preserve-3d;
+  }
 
-/* Background Refraction Effect */
-.liquid-glass-refraction {
-  position: relative;
-  overflow: hidden;
-}
+  /* Background Refraction Effect */
+  .liquid-glass-refraction {
+    position: relative;
+    overflow: hidden;
+  }
 
-.liquid-glass-refraction::after {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  background: inherit;
-  filter: blur(1px) contrast(1.1);
-  z-index: -1;
-  border-radius: inherit;
+  .liquid-glass-refraction::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: inherit;
+    filter: blur(1px) contrast(1.1);
+    z-index: -1;
+    border-radius: inherit;
+  }
 }
 
 /* Glass Component Variants */
 
-/* Card Glass - UPDATED TO USE DARKER BACKGROUND */
-.glass-card-backup {
-  @apply liquid-glass p-6;
-  
-  /* Enhanced shadow for card elevation */
-  box-shadow: 
-    0 8px 32px var(--glass-shadow),
-    0 2px 8px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 var(--glass-highlight);
+@layer components {
+  /* Card Glass - UPDATED TO USE DARKER BACKGROUND */
+  .glass-card-backup {
+    background: rgba(0, 0, 0, 0.4) !important;
+    backdrop-filter: blur(30px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Enhanced shadow for card elevation */
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4) !important,
+      0 8px 32px var(--glass-shadow),
+      0 2px 8px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 var(--glass-highlight);
+  }
+
+  /* Button Glass */
+  .glass-button {
+    background: rgba(0, 0, 0, 0.4) !important;
+    backdrop-filter: blur(30px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 12px;
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Interactive states */
+    cursor: pointer;
+    user-select: none;
+    
+    /* Button spacing */
+    padding: 0.75rem 1.5rem;
+    
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+    
+    /* Button-specific hover enhancement */
+    transition: all var(--glass-transition);
+  }
+
+  .glass-button:hover {
+    background: color-mix(in srgb, var(--glass-illumination) 80%, currentColor 20%);
+  }
+
+  .glass-button:active {
+    transform: translateY(1px) scale(0.98);
+  }
 }
 
-/* Button Glass */
-.glass-button {
-  @apply liquid-glass liquid-glass-interactive px-6 py-3;
-  
-  font-weight: 600;
-  text-align: center;
-  white-space: nowrap;
-  
-  /* Button-specific hover enhancement */
-  transition: all var(--glass-transition);
+@layer components {
+  /* Input Glass */
+  /* Apple HIG-Compliant Text Fields with Dark Glass */
+  input.glass-input {
+    /* Reset and base setup */
+    all: unset;
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    
+    /* Apple-recommended padding: 13px vertical, 16px horizontal */
+    padding: 13px 16px !important;
+    min-height: 44px !important; /* Apple's minimum touch target */
+    
+    /* Dark transparent background as requested */
+    background: rgba(0, 0, 0, 0.4) !important;
+    
+    /* Glass effect for depth */
+    backdrop-filter: blur(12px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(150%) !important;
+    
+    /* Subtle border to define the input area */
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 12px !important; /* Rounded corners */
+    
+    /* Layered shadows for depth and inner definition */
+    box-shadow: 
+      /* Outer shadow for depth */
+      0 4px 16px rgba(0, 0, 0, 0.3),
+      /* Inner light edge at top */
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      /* Subtle inner shadow for recess effect */
+      inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+      /* Very subtle inner glow */
+      inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+    
+    /* Typography per Apple HIG */
+    color: rgba(255, 255, 255, 0.95) !important;
+    font-size: 16px !important;
+    font-weight: 400 !important;
+    line-height: 1.4 !important;
+    letter-spacing: -0.022em !important;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif !important;
+    
+    /* Interaction */
+    cursor: text !important;
+    caret-color: rgba(0, 122, 255, 1) !important; /* Apple blue */
+    
+    /* Smooth transitions */
+    transition: all 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+  }
 }
 
-.glass-button:hover {
-  background: color-mix(in srgb, var(--glass-illumination) 80%, currentColor 20%);
+@layer components {
+  /* Hover State - Subtle enhancement */
+  input.glass-input:hover:not(:focus) {
+    /* Slightly lighter dark background */
+    background: rgba(0, 0, 0, 0.35) !important;
+    
+    /* Slightly more prominent border */
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    
+    /* Enhanced depth on hover */
+    box-shadow: 
+      0 6px 20px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+  }
+
+  /* Focus State - Apple blue accent */
+  input.glass-input:focus {
+    /* Keep dark background but slightly lighter */
+    background: rgba(0, 0, 0, 0.35) !important;
+    
+    /* Apple blue focus ring */
+    border-color: rgba(0, 122, 255, 0.8) !important;
+    outline: none !important;
+    
+    /* Apple-style focus ring with glow */
+    box-shadow: 
+      /* Blue focus ring */
+      0 0 0 3px rgba(0, 122, 255, 0.3),
+      /* Outer shadow */
+      0 4px 20px rgba(0, 0, 0, 0.5),
+      /* Inner highlights */
+      inset 0 1px 0 rgba(255, 255, 255, 0.15),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.3) !important;
+  }
+
+  /* Placeholder - Apple HIG compliant */
+  input.glass-input::placeholder {
+    color: rgba(255, 255, 255, 0.5) !important;
+    font-weight: 400 !important;
+    opacity: 1 !important;
+  }
+
+  input.glass-input:focus::placeholder {
+    color: rgba(255, 255, 255, 0.35) !important;
+  }
+
+  /* Text selection - Apple blue */
+  input.glass-input::selection {
+    background: rgba(0, 122, 255, 0.3) !important;
+    color: white !important;
+  }
+
+  /* Disabled state */
+  input.glass-input:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+  }
 }
 
-.glass-button:active {
-  transform: translateY(1px) scale(0.98);
-}
+@layer components {
+  /* Glass Select Dropdown - matching glass-input styles */
+  select.glass-input {
+    /* Reset and base setup */
+    all: unset;
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    position: relative;
+    
+    /* Apple-recommended padding: 13px vertical, 16px horizontal */
+    padding: 13px 16px !important;
+    padding-right: 40px !important; /* Space for dropdown arrow */
+    min-height: 44px !important; /* Apple's minimum touch target */
+    
+    /* Dark transparent background matching inputs */
+    background: rgba(0, 0, 0, 0.4) !important;
+    
+    /* Glass effect for depth */
+    backdrop-filter: blur(12px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(150%) !important;
+    
+    /* Subtle border to define the select area */
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 12px !important;
+    
+    /* Layered shadows for depth and inner definition */
+    box-shadow: 
+      0 4px 16px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+    
+    /* Typography per Apple HIG */
+    color: rgba(255, 255, 255, 0.95) !important;
+    font-size: 16px !important;
+    font-weight: 400 !important;
+    line-height: 1.4 !important;
+    letter-spacing: -0.022em !important;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif !important;
+    
+    /* Interaction */
+    cursor: pointer !important;
+    
+    /* Custom dropdown arrow */
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='rgba(255,255,255,0.7)' d='M6 8.825c-.2 0-.4-.1-.5-.2l-3.3-3.3c-.3-.3-.3-.8 0-1.1.3-.3.8-.3 1.1 0L6 7.025l2.7-2.7c.3-.3.8-.3 1.1 0 .3.3.3.8 0 1.1l-3.3 3.3c-.1.1-.3.2-.5.2z'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 16px center !important;
+    background-size: 12px 12px !important;
+    
+    /* Remove default appearance */
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+    
+    /* Smooth transitions */
+    transition: all 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+  }
 
-/* Input Glass */
-/* Apple HIG-Compliant Text Fields with Dark Glass */
-input.glass-input {
-  /* Reset and base setup */
-  all: unset;
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-  
-  /* Apple-recommended padding: 13px vertical, 16px horizontal */
-  padding: 13px 16px !important;
-  min-height: 44px !important; /* Apple's minimum touch target */
-  
-  /* Dark transparent background as requested */
-  background: rgba(0, 0, 0, 0.4) !important;
-  
-  /* Glass effect for depth */
-  backdrop-filter: blur(12px) saturate(150%) !important;
-  -webkit-backdrop-filter: blur(12px) saturate(150%) !important;
-  
-  /* Subtle border to define the input area */
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  border-radius: 12px !important; /* Rounded corners */
-  
-  /* Layered shadows for depth and inner definition */
-  box-shadow: 
-    /* Outer shadow for depth */
-    0 4px 16px rgba(0, 0, 0, 0.3),
-    /* Inner light edge at top */
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    /* Subtle inner shadow for recess effect */
-    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
-    /* Very subtle inner glow */
-    inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
-  
-  /* Typography per Apple HIG */
-  color: rgba(255, 255, 255, 0.95) !important;
-  font-size: 16px !important;
-  font-weight: 400 !important;
-  line-height: 1.4 !important;
-  letter-spacing: -0.022em !important;
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif !important;
-  
-  /* Interaction */
-  cursor: text !important;
-  caret-color: rgba(0, 122, 255, 1) !important; /* Apple blue */
-  
-  /* Smooth transitions */
-  transition: all 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
-}
+  /* Select Hover State */
+  select.glass-input:hover:not(:focus) {
+    background: rgba(0, 0, 0, 0.35) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 
+      0 6px 20px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+  }
 
-/* Hover State - Subtle enhancement */
-input.glass-input:hover:not(:focus) {
-  /* Slightly lighter dark background */
-  background: rgba(0, 0, 0, 0.35) !important;
-  
-  /* Slightly more prominent border */
-  border-color: rgba(255, 255, 255, 0.3) !important;
-  
-  /* Enhanced depth on hover */
-  box-shadow: 
-    0 6px 20px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.3),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
-}
+  /* Select Focus State */
+  select.glass-input:focus {
+    background: rgba(0, 0, 0, 0.35) !important;
+    border-color: rgba(0, 122, 255, 0.8) !important;
+    outline: none !important;
+    box-shadow: 
+      0 0 0 3px rgba(0, 122, 255, 0.3),
+      0 4px 20px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.3) !important;
+  }
 
-/* Focus State - Apple blue accent */
-input.glass-input:focus {
-  /* Keep dark background but slightly lighter */
-  background: rgba(0, 0, 0, 0.35) !important;
-  
-  /* Apple blue focus ring */
-  border-color: rgba(0, 122, 255, 0.8) !important;
-  outline: none !important;
-  
-  /* Apple-style focus ring with glow */
-  box-shadow: 
-    /* Blue focus ring */
-    0 0 0 3px rgba(0, 122, 255, 0.3),
-    /* Outer shadow */
-    0 4px 20px rgba(0, 0, 0, 0.5),
-    /* Inner highlights */
-    inset 0 1px 0 rgba(255, 255, 255, 0.15),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.3) !important;
-}
-
-/* Placeholder - Apple HIG compliant */
-input.glass-input::placeholder {
-  color: rgba(255, 255, 255, 0.5) !important;
-  font-weight: 400 !important;
-  opacity: 1 !important;
-}
-
-input.glass-input:focus::placeholder {
-  color: rgba(255, 255, 255, 0.35) !important;
-}
-
-/* Text selection - Apple blue */
-input.glass-input::selection {
-  background: rgba(0, 122, 255, 0.3) !important;
-  color: white !important;
-}
-
-/* Disabled state */
-input.glass-input:disabled {
-  opacity: 0.6 !important;
-  cursor: not-allowed !important;
-  background: rgba(255, 255, 255, 0.05) !important;
-}
-
-/* Glass Select Dropdown - matching glass-input styles */
-select.glass-input {
-  /* Reset and base setup */
-  all: unset;
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-  position: relative;
-  
-  /* Apple-recommended padding: 13px vertical, 16px horizontal */
-  padding: 13px 16px !important;
-  padding-right: 40px !important; /* Space for dropdown arrow */
-  min-height: 44px !important; /* Apple's minimum touch target */
-  
-  /* Dark transparent background matching inputs */
-  background: rgba(0, 0, 0, 0.4) !important;
-  
-  /* Glass effect for depth */
-  backdrop-filter: blur(12px) saturate(150%) !important;
-  -webkit-backdrop-filter: blur(12px) saturate(150%) !important;
-  
-  /* Subtle border to define the select area */
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  border-radius: 12px !important;
-  
-  /* Layered shadows for depth and inner definition */
-  box-shadow: 
-    0 4px 16px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
-  
-  /* Typography per Apple HIG */
-  color: rgba(255, 255, 255, 0.95) !important;
-  font-size: 16px !important;
-  font-weight: 400 !important;
-  line-height: 1.4 !important;
-  letter-spacing: -0.022em !important;
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif !important;
-  
-  /* Interaction */
-  cursor: pointer !important;
-  
-  /* Custom dropdown arrow */
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='rgba(255,255,255,0.7)' d='M6 8.825c-.2 0-.4-.1-.5-.2l-3.3-3.3c-.3-.3-.3-.8 0-1.1.3-.3.8-.3 1.1 0L6 7.025l2.7-2.7c.3-.3.8-.3 1.1 0 .3.3.3.8 0 1.1l-3.3 3.3c-.1.1-.3.2-.5.2z'/%3E%3C/svg%3E") !important;
-  background-repeat: no-repeat !important;
-  background-position: right 16px center !important;
-  background-size: 12px 12px !important;
-  
-  /* Remove default appearance */
-  -webkit-appearance: none !important;
-  -moz-appearance: none !important;
-  appearance: none !important;
-  
-  /* Smooth transitions */
-  transition: all 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
-}
-
-/* Select Hover State */
-select.glass-input:hover:not(:focus) {
-  background: rgba(0, 0, 0, 0.35) !important;
-  border-color: rgba(255, 255, 255, 0.3) !important;
-  box-shadow: 
-    0 6px 20px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.3),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
-}
-
-/* Select Focus State */
-select.glass-input:focus {
-  background: rgba(0, 0, 0, 0.35) !important;
-  border-color: rgba(0, 122, 255, 0.8) !important;
-  outline: none !important;
-  box-shadow: 
-    0 0 0 3px rgba(0, 122, 255, 0.3),
-    0 4px 20px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.3) !important;
-}
-
-/* Select Options styling */
-select.glass-input option {
-  background: rgba(0, 0, 0, 0.9) !important;
-  color: rgba(255, 255, 255, 0.95) !important;
-  padding: 8px 16px !important;
+  /* Select Options styling */
+  select.glass-input option {
+    background: rgba(0, 0, 0, 0.9) !important;
+    color: rgba(255, 255, 255, 0.95) !important;
+    padding: 8px 16px !important;
+  }
 }
 
 /* Glass Checkbox - Custom Apple-style checkbox */
@@ -623,53 +660,80 @@ select.glass-input option {
   }
 }
 
-/* Modal/Overlay Glass */
-.glass-modal {
-  @apply liquid-glass;
-  
-  /* Enhanced backdrop for modals */
-  backdrop-filter: blur(40px) saturate(120%);
-  -webkit-backdrop-filter: blur(40px) saturate(120%);
-  
-  /* Stronger shadow for overlay prominence */
-  box-shadow: 
-    0 25px 50px rgba(0, 0, 0, 0.4),
-    0 0 0 1px var(--glass-border),
-    inset 0 1px 0 var(--glass-highlight);
+@layer components {
+  /* Modal/Overlay Glass */
+  .glass-modal {
+    background: rgba(0, 0, 0, 0.4) !important;
+    backdrop-filter: blur(40px) saturate(120%);
+    -webkit-backdrop-filter: blur(40px) saturate(120%);
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 12px;
+    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Stronger shadow for overlay prominence */
+    box-shadow: 
+      0 25px 50px rgba(0, 0, 0, 0.4),
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4) !important,
+      0 0 0 1px var(--glass-border),
+      inset 0 1px 0 var(--glass-highlight);
+  }
 }
 
-/* Navigation Glass */
-.glass-nav {
-  @apply liquid-glass;
-  
-  /* Navigation-specific backdrop */
-  backdrop-filter: blur(30px) saturate(150%);
-  -webkit-backdrop-filter: blur(30px) saturate(150%);
-  
-  /* Subtle bottom border for definition */
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0;
+@layer components {
+  /* Navigation Glass */
+  .glass-nav {
+    background: rgba(0, 0, 0, 0.4) !important;
+    backdrop-filter: blur(30px) saturate(150%);
+    -webkit-backdrop-filter: blur(30px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+    
+    /* Subtle bottom border for definition */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0;
+  }
 }
 
-/* Status Indicator Glass */
-.glass-status {
-  @apply liquid-glass px-3 py-1 text-sm;
-  
-  border-radius: 20px;
-  font-weight: 500;
-  
-  /* Status-specific glow effect */
-  box-shadow: 
-    var(--glass-shadow),
-    0 0 20px currentColor;
+@layer components {
+  /* Status Indicator Glass */
+  .glass-status {
+    background: rgba(0, 0, 0, 0.4) !important;
+    backdrop-filter: blur(30px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 20px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Status-specific glow effect */
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4) !important,
+      var(--glass-shadow),
+      0 0 20px currentColor;
+  }
 }
 
-/* Loading State Glass */
-.glass-loading {
-  @apply liquid-glass;
-  
-  position: relative;
-  overflow: hidden;
+@layer components {
+  /* Loading State Glass */
+  .glass-loading {
+    background: rgba(0, 0, 0, 0.4) !important;
+    backdrop-filter: blur(30px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 12px;
+    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+    
+    position: relative;
+    overflow: hidden;
+  }
 }
 
 .glass-loading::before {

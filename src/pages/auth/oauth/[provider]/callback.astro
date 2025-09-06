@@ -149,7 +149,7 @@ if (!provider || !validProviders.includes(provider)) {
             // Close popup window
             setTimeout(() => {
               window.close();
-            }, 1500);
+            }, window.CSFRACE_TIMING.UI.SLOW_ANIMATION);
             
           } else {
             // Handle full page redirect scenario
@@ -182,12 +182,12 @@ if (!provider || !validProviders.includes(provider)) {
             
             setTimeout(() => {
               window.close();
-            }, 3000);
+            }, window.CSFRACE_TIMING.JOB.JOB_STATUS_CHECK_INTERVAL);
           } else {
             // Redirect back to main app with error
             setTimeout(() => {
               window.location.href = '/?auth_error=' + encodeURIComponent(error.message || 'Authentication failed');
-            }, 3000);
+            }, window.CSFRACE_TIMING.JOB.JOB_STATUS_CHECK_INTERVAL);
           }
         }
       }
