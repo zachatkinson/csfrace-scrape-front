@@ -1,0 +1,269 @@
+---
+// Health Status Debug Page
+import MainLayout from '../components/layout/MainLayout.astro';
+---
+
+<MainLayout title="Health Status Test" description="Debug page to test system health monitoring">
+  <div class="max-w-4xl mx-auto py-8">
+    <!-- Breadcrumb Navigation -->
+    <nav class="mb-6">
+      <a 
+        href="/" 
+        class="inline-flex items-center space-x-2 text-white/60 hover:text-white/90 text-sm transition-colors duration-200 group"
+      >
+        <svg class="w-4 h-4 group-hover:text-blue-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        <span class="group-hover:text-blue-400 transition-colors">Back to Main Dashboard</span>
+      </a>
+    </nav>
+    
+    <div class="glass-card p-8">
+      <h1 class="text-3xl font-bold text-white mb-2 text-center">System Health Status Test</h1>
+      <p class="text-white/70 text-center mb-8">Advanced diagnostics and troubleshooting for system services</p>
+      
+      <!-- Test Controls -->
+      <div class="flex justify-center gap-4 mb-8">
+        <button id="test-health" class="glass-button px-6 py-3 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30">
+          Test Health Endpoint
+        </button>
+        <button id="test-cors" class="glass-button px-6 py-3 bg-green-500/20 text-green-300 hover:bg-green-500/30">
+          Test CORS
+        </button>
+        <button id="check-service" class="glass-button px-6 py-3 bg-purple-500/20 text-purple-300 hover:bg-purple-500/30">
+          Check Service Status
+        </button>
+      </div>
+      
+      <!-- Test Results -->
+      <div class="space-y-6">
+        <!-- Direct Backend Test -->
+        <div class="glass-card p-6">
+          <h3 class="text-xl font-semibold text-white mb-4">Direct Backend Health Test</h3>
+          <div id="backend-status" class="p-4 rounded-lg bg-yellow-500/20 text-yellow-300">
+            Ready to test...
+          </div>
+        </div>
+        
+        <!-- CORS Test -->
+        <div class="glass-card p-6">
+          <h3 class="text-xl font-semibold text-white mb-4">CORS Test (Frontend → Backend)</h3>
+          <div id="cors-status" class="p-4 rounded-lg bg-gray-500/20 text-gray-300">
+            Not tested
+          </div>
+        </div>
+        
+        <!-- Health Service Status -->
+        <div class="glass-card p-6">
+          <h3 class="text-xl font-semibold text-white mb-4">Health Service Status</h3>
+          <div id="service-status" class="p-4 rounded-lg bg-gray-500/20 text-gray-300">
+            Not checked
+          </div>
+          <div class="mt-4">
+            <label class="block text-white/70 text-sm mb-2">Auto-refresh Health Status</label>
+            <button id="toggle-polling" class="glass-button px-4 py-2 text-white/80">
+              Enable Polling
+            </button>
+          </div>
+        </div>
+        
+        <!-- Raw Response Data -->
+        <div class="glass-card p-6">
+          <h3 class="text-xl font-semibold text-white mb-4">Raw Response Data</h3>
+          <pre id="raw-response" class="bg-black/50 text-green-300 p-4 rounded-lg text-sm overflow-auto max-h-64">
+No data yet
+          </pre>
+        </div>
+        
+        <!-- Current Footer Status Display -->
+        <div class="glass-card p-6">
+          <h3 class="text-xl font-semibold text-white mb-4">Current Footer Status (Live)</h3>
+          <div class="space-y-3">
+            <div class="text-white/70">Check the footer below to see if status indicators are updating in real-time.</div>
+            <div class="text-sm text-white/50">
+              • Green pulsing = ONLINE<br>
+              • Yellow pulsing = DEGRADED<br>
+              • Orange pulsing = ERROR/UNKNOWN<br>
+              • Red solid = OFFLINE
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</MainLayout>
+
+<script>
+  // Wait for page to load completely
+  document.addEventListener('DOMContentLoaded', () => {
+    const API_URL = window.CSFRACE_API_BASE_URL || 'http://localhost:8000';
+    
+    // Elements
+    const testHealthBtn = document.getElementById('test-health');
+    const testCorsBtn = document.getElementById('test-cors');
+    const checkServiceBtn = document.getElementById('check-service');
+    const togglePollingBtn = document.getElementById('toggle-polling');
+    
+    const backendStatusEl = document.getElementById('backend-status');
+    const corsStatusEl = document.getElementById('cors-status');
+    const serviceStatusEl = document.getElementById('service-status');
+    const rawResponseEl = document.getElementById('raw-response');
+    
+    let isPolling = false;
+    let pollingInterval: ReturnType<typeof setInterval> | null = null;
+    
+    // Test direct health endpoint
+    async function testHealthEndpoint() {
+      updateStatus(backendStatusEl, 'Testing health endpoint...', 'yellow');
+      
+      try {
+        const startTime = Date.now();
+        const response = await fetch(`${API_URL}/health/`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        });
+        const responseTime = Date.now() - startTime;
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Process status same way as HealthStatusService
+          const backendStatus = data.status === 'healthy' ? 'up' : 
+                               data.status === 'degraded' ? 'degraded' : 'down';
+          const dbStatus = data.database?.status === 'healthy' ? 'up' : 
+                          data.database?.status === 'degraded' ? 'degraded' : 'down';
+          const cacheStatus = data.cache?.status === 'healthy' ? 'up' : 
+                             data.cache?.status === 'degraded' ? 'degraded' : 
+                             data.cache?.status === 'not_configured' ? 'down' : 'error';
+          
+          // Determine color based on processed status
+          const statusColor = backendStatus === 'up' ? 'green' : 
+                             backendStatus === 'degraded' ? 'yellow' : 
+                             backendStatus === 'down' ? 'red' : 'orange';
+          
+          updateStatus(
+            backendStatusEl, 
+            `✅ Backend Health: ${backendStatus.toUpperCase()} (${responseTime}ms)\nDB: ${dbStatus.toUpperCase()}, Cache: ${cacheStatus.toUpperCase()}\nRaw Status: ${data.status}`, 
+            statusColor
+          );
+          rawResponseEl.textContent = JSON.stringify(data, null, 2);
+        } else {
+          updateStatus(backendStatusEl, `❌ Backend Error: HTTP ${response.status}`, 'red');
+          rawResponseEl.textContent = await response.text();
+        }
+      } catch (error) {
+        updateStatus(backendStatusEl, `🔴 Backend Offline: ${(error as Error).message}`, 'red');
+        rawResponseEl.textContent = (error as Error).toString();
+      }
+    }
+    
+    // Test CORS
+    async function testCORS() {
+      updateStatus(corsStatusEl, 'Testing CORS from browser...', 'yellow');
+      
+      try {
+        const response = await fetch(`${API_URL}/health/`, {
+          method: 'GET',
+          mode: 'cors',
+          headers: {
+            'Accept': 'application/json',
+            'Origin': window.location.origin
+          }
+        });
+        
+        if (response.ok) {
+          updateStatus(corsStatusEl, '✅ CORS: Working - Frontend can connect to backend', 'green');
+        } else {
+          updateStatus(corsStatusEl, `⚠️ CORS: Backend responded with ${response.status}`, 'red');
+        }
+      } catch (error) {
+        if ((error as Error).message.includes('CORS')) {
+          updateStatus(corsStatusEl, '🔴 CORS: Blocked - CORS policy issue', 'red');
+        } else {
+          updateStatus(corsStatusEl, `🔴 CORS: Error - ${(error as Error).message}`, 'red');
+        }
+      }
+    }
+    
+    // Check health service status
+    function checkHealthService() {
+      updateStatus(serviceStatusEl, 'Checking health service...', 'yellow');
+      
+      if (window.healthStatusService) {
+        const isServicePolling = window.healthStatusService.isPolling;
+        const cachedStatus = window.healthStatusService.getLatestStatus();
+        
+        let statusText = `✅ Health Service: Available\n`;
+        statusText += `Polling: ${isServicePolling ? 'ACTIVE' : 'INACTIVE'}\n`;
+        statusText += `Cached Status: ${cachedStatus.length} services`;
+        
+        if (cachedStatus.length > 0) {
+          statusText += '\n\nCached Services:';
+          cachedStatus.forEach(service => {
+            statusText += `\n• ${service.service}: ${service.status.toUpperCase()}`;
+            if (service.error) statusText += ` (${service.error})`;
+          });
+        }
+        
+        updateStatus(serviceStatusEl, statusText, 'green');
+      } else {
+        updateStatus(serviceStatusEl, '🔴 Health Service: Not Available', 'red');
+      }
+    }
+    
+    // Toggle polling
+    function togglePolling() {
+      if (!window.healthStatusService) {
+        alert('Health service not available');
+        return;
+      }
+      
+      if (isPolling) {
+        window.healthStatusService.stopPolling();
+        if (pollingInterval) clearInterval(pollingInterval);
+        isPolling = false;
+        togglePollingBtn.textContent = 'Enable Polling';
+        togglePollingBtn.className = 'glass-button px-4 py-2 text-white/80';
+      } else {
+        window.healthStatusService.startPolling();
+        // Also update our display every 5 seconds
+        pollingInterval = setInterval(checkHealthService, 5000);
+        isPolling = true;
+        togglePollingBtn.textContent = 'Disable Polling';
+        togglePollingBtn.className = 'glass-button px-4 py-2 bg-red-500/20 text-red-300';
+      }
+    }
+    
+    // Helper to update status displays
+    function updateStatus(element: HTMLElement, message: string, color: string) {
+      element.textContent = message;
+      element.className = `p-4 rounded-lg ${getColorClass(color)}`;
+    }
+    
+    function getColorClass(color: string): string {
+      switch (color) {
+        case 'green': return 'bg-green-500/20 text-green-300';
+        case 'yellow': return 'bg-yellow-500/20 text-yellow-300';  // DEGRADED
+        case 'orange': return 'bg-orange-500/20 text-orange-300';  // ERROR/UNKNOWN
+        case 'red': return 'bg-red-500/20 text-red-300';           // OFFLINE
+        default: return 'bg-gray-500/20 text-gray-300';
+      }
+    }
+    
+    // Event listeners
+    testHealthBtn?.addEventListener('click', testHealthEndpoint);
+    testCorsBtn?.addEventListener('click', testCORS);
+    checkServiceBtn?.addEventListener('click', checkHealthService);
+    togglePollingBtn?.addEventListener('click', togglePolling);
+    
+    // Auto-run initial tests
+    setTimeout(() => {
+      testHealthEndpoint();
+      setTimeout(() => testCORS(), 1000);
+      setTimeout(() => checkHealthService(), 2000);
+    }, 500);
+  });
+</script>

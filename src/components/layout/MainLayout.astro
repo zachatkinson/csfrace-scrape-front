@@ -499,7 +499,7 @@ const { title, description = "WordPress to Shopify content converter with ultra-
         <div class="flex flex-col lg:flex-row lg:justify-between lg:items-start space-y-8 lg:space-y-0">
           
           <!-- Left Side: Service Status Panel -->
-          <div class="lg:flex-1">
+          <div class="flex-shrink-0">
             <h3 class="text-white/90 font-semibold mb-4 text-sm uppercase tracking-wider">System Status</h3>
             <div class="space-y-3">
               
@@ -531,6 +531,21 @@ const { title, description = "WordPress to Shopify content converter with ultra-
                 <span class="text-gray-400 text-xs font-mono">IDLE</span>
               </div>
               
+            </div>
+            
+            <!-- Troubleshooting Link -->
+            <div class="mt-4 pt-4 border-t border-white/10">
+              <a 
+                href="/test-health" 
+                class="px-4 py-3 bg-gradient-to-r from-blue-500/80 to-purple-600/80 text-white hover:from-blue-600/90 hover:to-purple-700/90 transition-all duration-200 flex items-center space-x-2 rounded-lg border border-white/20 font-medium"
+                title="Advanced system diagnostics and troubleshooting"
+              >
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.943 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                <span>View Status Details</span>
+              </a>
             </div>
           </div>
           
@@ -675,6 +690,7 @@ const { title, description = "WordPress to Shopify content converter with ultra-
 
         async checkHealth() {
           const now = new Date();
+          console.log('🏥 Health check started at', now.toISOString());
           try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), window.CSFRACE_TIMING.MONITORING.HEALTH_CHECK_TIMEOUT);
@@ -691,31 +707,51 @@ const { title, description = "WordPress to Shopify content converter with ultra-
 
             if (response.ok) {
               const healthData = await response.json();
+              console.log('✅ Health data received:', healthData);
+              console.log('🔍 Cache status debug:', {
+                cacheExists: !!healthData.cache,
+                cacheStatus: healthData.cache?.status,
+                cacheObject: healthData.cache
+              });
               
               // Update cache with proper HealthStatus objects
+              const backendStatus = healthData.status === 'healthy' ? 'up' : 
+                                   healthData.status === 'degraded' ? 'degraded' : 'down';
               this.cachedStatus = [
                 {
                   service: 'backend',
-                  status: 'up',
+                  status: backendStatus,
                   responseTime: responseTime,
                   lastChecked: now
                 },
                 {
                   service: 'database',
-                  status: healthData.database?.status === 'up' ? 'up' : 'down',
+                  status: healthData.database?.status === 'healthy' ? 'up' : 
+                         healthData.database?.status === 'degraded' ? 'degraded' : 'down',
                   lastChecked: now,
-                  ...(healthData.database?.status !== 'up' && { error: 'Database connection failed' })
+                  ...(healthData.database?.status === 'error' && { error: 'Database connection failed' })
                 },
                 {
                   service: 'cache',
-                  status: healthData.cache?.status === 'up' ? 'up' : healthData.cache?.status === 'not_configured' ? 'down' : 'error',
+                  status: !healthData.cache ? 'unknown' :
+                         healthData.cache.status === 'healthy' ? 'up' : 
+                         healthData.cache.status === 'degraded' ? 'degraded' : 
+                         healthData.cache.status === 'not_configured' ? 'down' : 'error',
                   lastChecked: now,
-                  ...(healthData.cache?.status === 'error' && { error: 'Cache connection failed' })
+                  ...(healthData.cache?.status === 'error' && { error: 'Cache connection failed' }),
+                  ...(healthData.cache ? { rawStatus: healthData.cache.status } : { rawStatus: 'missing' })
                 }
               ];
               
+              const backendIndicatorStatus = healthData.status === 'healthy' ? 'online' : 
+                                             healthData.status === 'degraded' ? 'degraded' : 'offline';
+              console.log('🔄 Updating status indicators with:', {
+                backend: { status: backendIndicatorStatus, connected: true },
+                database: healthData.database,
+                cache: healthData.cache
+              });
               this.updateStatusIndicators({
-                backend: { status: 'online', connected: true },
+                backend: { status: backendIndicatorStatus, connected: true },
                 database: healthData.database,
                 cache: healthData.cache
               });
@@ -788,27 +824,43 @@ const { title, description = "WordPress to Shopify content converter with ultra-
         }
 
         updateStatusIndicators(services: ServiceIndicators) {
+          console.log('📊 Updating DOM status indicators:', services);
           // Update Backend API status
           const backendEl = document.getElementById('backend-status');
+          console.log('🔍 Backend element found:', !!backendEl);
           if (backendEl) {
             const indicator = backendEl.querySelector('.w-3') as HTMLElement;
             const statusText = backendEl.querySelector('.text-xs') as HTMLElement;
+            console.log('🔍 Backend indicator/status found:', !!indicator, !!statusText);
             
             if (indicator && statusText) {
+              console.log('🔄 Setting backend status to:', services.backend.status);
               if (services.backend.status === 'online') {
                 indicator.className = 'w-3 h-3 bg-green-400 rounded-full animate-pulse';
                 statusText.textContent = 'ONLINE';
                 statusText.className = 'text-green-400 text-xs font-mono';
-              } else if (services.backend.status === 'error') {
+                console.log('✅ Backend status set to ONLINE');
+              } else if (services.backend.status === 'degraded') {
                 indicator.className = 'w-3 h-3 bg-yellow-400 rounded-full animate-pulse';
-                statusText.textContent = 'ERROR';
+                statusText.textContent = 'DEGRADED';
                 statusText.className = 'text-yellow-400 text-xs font-mono';
+                console.log('⚠️ Backend status set to DEGRADED');
+              } else if (services.backend.status === 'error') {
+                indicator.className = 'w-3 h-3 bg-orange-400 rounded-full animate-pulse';
+                statusText.textContent = 'ERROR';
+                statusText.className = 'text-orange-400 text-xs font-mono';
+                console.log('⚠️ Backend status set to ERROR');
               } else {
                 indicator.className = 'w-3 h-3 bg-red-400 rounded-full';
                 statusText.textContent = 'OFFLINE';
                 statusText.className = 'text-red-400 text-xs font-mono';
+                console.log('🔴 Backend status set to OFFLINE');
               }
+            } else {
+              console.error('❌ Could not find backend indicator or status text elements');
             }
+          } else {
+            console.error('❌ Could not find backend-status element in DOM');
           }
 
           // Update Database status
@@ -818,18 +870,22 @@ const { title, description = "WordPress to Shopify content converter with ultra-
             const statusText = databaseEl.querySelector('.text-xs') as HTMLElement;
             
             if (indicator && statusText) {
-              if (services.database.status === 'healthy' && services.database.connected) {
+              if (services.database.status === 'up') {
                 indicator.className = 'w-3 h-3 bg-green-400 rounded-full animate-pulse';
                 statusText.textContent = 'ONLINE';
                 statusText.className = 'text-green-400 text-xs font-mono';
-              } else if (services.database.status === 'unhealthy') {
+              } else if (services.database.status === 'degraded') {
+                indicator.className = 'w-3 h-3 bg-yellow-400 rounded-full animate-pulse';
+                statusText.textContent = 'DEGRADED';
+                statusText.className = 'text-yellow-400 text-xs font-mono';
+              } else if (services.database.status === 'down') {
                 indicator.className = 'w-3 h-3 bg-red-400 rounded-full';
                 statusText.textContent = 'OFFLINE';
                 statusText.className = 'text-red-400 text-xs font-mono';
               } else {
-                indicator.className = 'w-3 h-3 bg-yellow-400 rounded-full animate-pulse';
+                indicator.className = 'w-3 h-3 bg-orange-400 rounded-full animate-pulse';
                 statusText.textContent = 'UNKNOWN';
-                statusText.className = 'text-yellow-400 text-xs font-mono';
+                statusText.className = 'text-orange-400 text-xs font-mono';
               }
             }
           }
@@ -841,22 +897,30 @@ const { title, description = "WordPress to Shopify content converter with ultra-
             const statusText = queueEl.querySelector('.text-xs') as HTMLElement;
             
             if (indicator && statusText) {
-              if (services.cache.status === 'healthy') {
+              if (services.cache.status === 'up') {
                 indicator.className = 'w-3 h-3 bg-green-400 rounded-full animate-pulse';
                 statusText.textContent = 'ONLINE';
                 statusText.className = 'text-green-400 text-xs font-mono';
+              } else if (services.cache.status === 'degraded') {
+                indicator.className = 'w-3 h-3 bg-yellow-400 rounded-full animate-pulse';
+                statusText.textContent = 'DEGRADED';
+                statusText.className = 'text-yellow-400 text-xs font-mono';
               } else if (services.cache.status === 'error') {
-                indicator.className = 'w-3 h-3 bg-red-400 rounded-full';
+                indicator.className = 'w-3 h-3 bg-orange-400 rounded-full';
                 statusText.textContent = 'ERROR';
+                statusText.className = 'text-orange-400 text-xs font-mono';
+              } else if (services.cache.status === 'down') {
+                indicator.className = 'w-3 h-3 bg-red-400 rounded-full';
+                statusText.textContent = 'OFFLINE';
                 statusText.className = 'text-red-400 text-xs font-mono';
-              } else if (services.cache.status === 'not_configured') {
-                indicator.className = 'w-3 h-3 bg-gray-400 rounded-full';
-                statusText.textContent = 'DISABLED';
+              } else if (services.cache.status === 'unknown') {
+                indicator.className = 'w-3 h-3 bg-gray-400 rounded-full animate-pulse';
+                statusText.textContent = 'NOT CONFIGURED';
                 statusText.className = 'text-gray-400 text-xs font-mono';
               } else {
-                indicator.className = 'w-3 h-3 bg-yellow-400 rounded-full animate-pulse';
+                indicator.className = 'w-3 h-3 bg-orange-400 rounded-full animate-pulse';
                 statusText.textContent = 'UNKNOWN';
-                statusText.className = 'text-yellow-400 text-xs font-mono';
+                statusText.className = 'text-orange-400 text-xs font-mono';
               }
             }
           }
@@ -865,6 +929,7 @@ const { title, description = "WordPress to Shopify content converter with ultra-
         startPolling() {
           if (this.isPolling) return;
           
+          console.log('🚀 Starting health status polling with interval:', this.pollInterval + 'ms');
           this.isPolling = true;
           // Check immediately
           this.checkHealth();
