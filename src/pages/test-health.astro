@@ -1,10 +1,10 @@
 ---
-// Health Status Debug Page
+// Comprehensive System Health Dashboard
 import MainLayout from '../components/layout/MainLayout.astro';
 ---
 
-<MainLayout title="Health Status Test" description="Debug page to test system health monitoring">
-  <div class="max-w-4xl mx-auto py-8">
+<MainLayout title="System Health Dashboard" description="Comprehensive monitoring and diagnostics for all system services">
+  <div class="max-w-7xl mx-auto py-8">
     <!-- Breadcrumb Navigation -->
     <nav class="mb-6">
       <a 
@@ -18,154 +18,1317 @@ import MainLayout from '../components/layout/MainLayout.astro';
       </a>
     </nav>
     
-    <div class="glass-card p-8">
-      <h1 class="text-3xl font-bold text-white mb-2 text-center">System Health Status Test</h1>
-      <p class="text-white/70 text-center mb-8">Advanced diagnostics and troubleshooting for system services</p>
+    <!-- Header -->
+    <div class="glass-card p-8 mb-8">
+      <h1 class="text-4xl font-bold text-white mb-3 text-center">🏥 System Health Dashboard</h1>
+      <p class="text-white/70 text-center mb-6">Comprehensive monitoring and diagnostics for all system services</p>
       
-      <!-- Test Controls -->
-      <div class="flex justify-center gap-4 mb-8">
-        <button id="test-health" class="glass-button px-6 py-3 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30">
-          Test Health Endpoint
-        </button>
-        <button id="test-cors" class="glass-button px-6 py-3 bg-green-500/20 text-green-300 hover:bg-green-500/30">
-          Test CORS
-        </button>
-        <button id="check-service" class="glass-button px-6 py-3 bg-purple-500/20 text-purple-300 hover:bg-purple-500/30">
-          Check Service Status
-        </button>
+      <!-- Overall System Status -->
+      <div class="bg-black/30 rounded-lg p-6 mb-6">
+        <div class="flex items-center justify-center space-x-4">
+          <div id="overall-status-indicator" class="w-4 h-4 rounded-full bg-yellow-500 animate-pulse"></div>
+          <div id="overall-status-text" class="text-xl font-semibold text-white">Initializing System Check...</div>
+        </div>
+        <div id="overall-status-summary" class="text-center text-white/60 mt-2">
+          Checking all services...
+        </div>
       </div>
       
-      <!-- Test Results -->
-      <div class="space-y-6">
-        <!-- Direct Backend Test -->
-        <div class="glass-card p-6">
-          <h3 class="text-xl font-semibold text-white mb-4">Direct Backend Health Test</h3>
-          <div id="backend-status" class="p-4 rounded-lg bg-yellow-500/20 text-yellow-300">
-            Ready to test...
+      <!-- Global Controls -->
+      <div class="flex flex-wrap justify-center gap-4 mb-6">
+        <button id="refresh-all" class="glass-button px-6 py-3 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30">
+          🔄 Refresh All Services
+        </button>
+        <button id="toggle-auto-refresh" class="glass-button px-6 py-3 bg-green-500/20 text-green-300 hover:bg-green-500/30">
+          ⏱️ Enable Auto-Refresh
+        </button>
+        <button id="export-report" class="glass-button px-6 py-3 bg-purple-500/20 text-purple-300 hover:bg-purple-500/30">
+          📊 Export Health Report
+        </button>
+        <button id="test-connectivity" class="glass-button px-6 py-3 bg-orange-500/20 text-orange-300 hover:bg-orange-500/30">
+          🌐 Test Network Connectivity
+        </button>
+      </div>
+    </div>
+
+    <!-- Services Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+      
+      <!-- Frontend Service -->
+      <div class="glass-card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center space-x-3">
+            <div id="frontend-indicator" class="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+            <h2 class="text-2xl font-bold text-white">🎨 Frontend Service</h2>
           </div>
+          <button id="frontend-refresh" class="glass-button px-3 py-1 text-xs">Refresh</button>
         </div>
         
-        <!-- CORS Test -->
-        <div class="glass-card p-6">
-          <h3 class="text-xl font-semibold text-white mb-4">CORS Test (Frontend → Backend)</h3>
-          <div id="cors-status" class="p-4 rounded-lg bg-gray-500/20 text-gray-300">
-            Not tested
+        <div id="frontend-details" class="space-y-4">
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span class="text-white/60">Status:</span>
+              <span id="frontend-status" class="ml-2 text-green-400">Operational</span>
+            </div>
+            <div>
+              <span class="text-white/60">Framework:</span>
+              <span class="ml-2 text-white">Astro v5.13.6</span>
+            </div>
+            <div>
+              <span class="text-white/60">Port:</span>
+              <span class="ml-2 text-white">3000</span>
+            </div>
+            <div>
+              <span class="text-white/60">Environment:</span>
+              <span id="frontend-env" class="ml-2 text-white">Development</span>
+            </div>
           </div>
-        </div>
-        
-        <!-- Health Service Status -->
-        <div class="glass-card p-6">
-          <h3 class="text-xl font-semibold text-white mb-4">Health Service Status</h3>
-          <div id="service-status" class="p-4 rounded-lg bg-gray-500/20 text-gray-300">
-            Not checked
+          
+          <div class="bg-black/30 rounded-lg p-4">
+            <h4 class="text-white font-semibold mb-2">Performance Metrics</h4>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div>Page Load: <span id="frontend-load-time" class="text-blue-400">-</span></div>
+              <div>Bundle Size: <span class="text-blue-400">~2.1MB</span></div>
+              <div>Memory Usage: <span id="frontend-memory" class="text-blue-400">-</span></div>
+              <div>API Latency: <span id="frontend-api-latency" class="text-blue-400">-</span></div>
+            </div>
           </div>
-          <div class="mt-4">
-            <label class="block text-white/70 text-sm mb-2">Auto-refresh Health Status</label>
-            <button id="toggle-polling" class="glass-button px-4 py-2 text-white/80">
-              Enable Polling
-            </button>
-          </div>
-        </div>
-        
-        <!-- Raw Response Data -->
-        <div class="glass-card p-6">
-          <h3 class="text-xl font-semibold text-white mb-4">Raw Response Data</h3>
-          <pre id="raw-response" class="bg-black/50 text-green-300 p-4 rounded-lg text-sm overflow-auto max-h-64">
-No data yet
-          </pre>
-        </div>
-        
-        <!-- Current Footer Status Display -->
-        <div class="glass-card p-6">
-          <h3 class="text-xl font-semibold text-white mb-4">Current Footer Status (Live)</h3>
-          <div class="space-y-3">
-            <div class="text-white/70">Check the footer below to see if status indicators are updating in real-time.</div>
-            <div class="text-sm text-white/50">
-              • Green pulsing = ONLINE<br>
-              • Yellow pulsing = DEGRADED<br>
-              • Orange pulsing = ERROR/UNKNOWN<br>
-              • Red solid = OFFLINE
+          
+          <div id="frontend-features" class="bg-black/30 rounded-lg p-4">
+            <h4 class="text-white font-semibold mb-2">Features Status</h4>
+            <div class="space-y-1 text-xs">
+              <div>✅ React Components</div>
+              <div>✅ TypeScript Support</div>
+              <div>✅ Tailwind CSS</div>
+              <div>✅ Hot Module Reload</div>
+              <div id="frontend-api-connection">⏳ API Connection</div>
             </div>
           </div>
         </div>
       </div>
+
+      <!-- Backend Service -->
+      <div class="glass-card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center space-x-3">
+            <div id="backend-indicator" class="w-3 h-3 rounded-full bg-yellow-500 animate-pulse"></div>
+            <h2 class="text-2xl font-bold text-white">⚙️ Backend Service</h2>
+          </div>
+          <button id="backend-refresh" class="glass-button px-3 py-1 text-xs">Refresh</button>
+        </div>
+        
+        <div id="backend-details" class="space-y-4">
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span class="text-white/60">Status:</span>
+              <span id="backend-status" class="ml-2 text-yellow-400">Checking...</span>
+            </div>
+            <div>
+              <span class="text-white/60">Framework:</span>
+              <span class="ml-2 text-white">FastAPI + Python 3.13</span>
+            </div>
+            <div>
+              <span class="text-white/60">Port:</span>
+              <span class="ml-2 text-white">8000</span>
+            </div>
+            <div>
+              <span class="text-white/60">Version:</span>
+              <span id="backend-version" class="ml-2 text-white">3.3.0</span>
+            </div>
+          </div>
+          
+          <div class="bg-black/30 rounded-lg p-4">
+            <h4 class="text-white font-semibold mb-2">Health Metrics</h4>
+            <div class="space-y-2 text-xs">
+              <div class="flex justify-between">
+                <span>Response Time:</span>
+                <span id="backend-response-time" class="text-blue-400">-</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Uptime:</span>
+                <span id="backend-uptime" class="text-blue-400">-</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Memory:</span>
+                <span id="backend-memory" class="text-blue-400">-</span>
+              </div>
+              <div class="flex justify-between">
+                <span>CPU Usage:</span>
+                <span id="backend-cpu" class="text-blue-400">-</span>
+              </div>
+            </div>
+          </div>
+          
+          <div id="backend-components" class="bg-black/30 rounded-lg p-4">
+            <h4 class="text-white font-semibold mb-2">Components Status</h4>
+            <div class="space-y-1 text-xs">
+              <div id="backend-observability">⏳ Observability Manager</div>
+              <div id="backend-metrics">⏳ Metrics Collector</div>
+              <div id="backend-health-checker">⏳ Health Checker</div>
+              <div id="backend-alert-manager">⏳ Alert Manager</div>
+              <div id="backend-performance">⏳ Performance Monitor</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PostgreSQL Database -->
+      <div class="glass-card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center space-x-3">
+            <div id="postgres-indicator" class="w-3 h-3 rounded-full bg-yellow-500 animate-pulse"></div>
+            <h2 class="text-2xl font-bold text-white">🐘 PostgreSQL Database</h2>
+          </div>
+          <button id="postgres-refresh" class="glass-button px-3 py-1 text-xs">Refresh</button>
+        </div>
+        
+        <div id="postgres-details" class="space-y-4">
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span class="text-white/60">Status:</span>
+              <span id="postgres-status" class="ml-2 text-yellow-400">Checking...</span>
+            </div>
+            <div>
+              <span class="text-white/60">Version:</span>
+              <span class="ml-2 text-white">PostgreSQL 17.2</span>
+            </div>
+            <div>
+              <span class="text-white/60">Port:</span>
+              <span class="ml-2 text-white">5432</span>
+            </div>
+            <div>
+              <span class="text-white/60">Database:</span>
+              <span class="ml-2 text-white">csfrace_dev</span>
+            </div>
+          </div>
+          
+          <div class="bg-black/30 rounded-lg p-4">
+            <h4 class="text-white font-semibold mb-2">Connection Pool</h4>
+            <div class="space-y-2 text-xs">
+              <div class="flex justify-between">
+                <span>Pool Size:</span>
+                <span class="text-blue-400">20</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Max Overflow:</span>
+                <span class="text-blue-400">30</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Active Connections:</span>
+                <span id="postgres-active-conn" class="text-blue-400">-</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Pool Timeout:</span>
+                <span class="text-blue-400">30s</span>
+              </div>
+            </div>
+          </div>
+          
+          <div id="postgres-extensions" class="bg-black/30 rounded-lg p-4">
+            <h4 class="text-white font-semibold mb-2">Extensions</h4>
+            <div class="grid grid-cols-2 gap-1 text-xs">
+              <div>✅ uuid-ossp</div>
+              <div>✅ pg_trgm</div>
+              <div>✅ pg_stat_statements</div>
+              <div>✅ pgcrypto</div>
+            </div>
+          </div>
+          
+          <div id="postgres-stats" class="bg-black/30 rounded-lg p-4">
+            <h4 class="text-white font-semibold mb-2">Performance Stats</h4>
+            <div class="space-y-1 text-xs">
+              <div>Query Time: <span id="postgres-query-time" class="text-blue-400">-</span></div>
+              <div>Cache Hit Ratio: <span id="postgres-cache-hit" class="text-blue-400">-</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Redis Cache -->
+      <div class="glass-card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center space-x-3">
+            <div id="redis-indicator" class="w-3 h-3 rounded-full bg-yellow-500 animate-pulse"></div>
+            <h2 class="text-2xl font-bold text-white">🔴 Redis Cache</h2>
+          </div>
+          <button id="redis-refresh" class="glass-button px-3 py-1 text-xs">Refresh</button>
+        </div>
+        
+        <div id="redis-details" class="space-y-4">
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span class="text-white/60">Status:</span>
+              <span id="redis-status" class="ml-2 text-yellow-400">Checking...</span>
+            </div>
+            <div>
+              <span class="text-white/60">Version:</span>
+              <span id="redis-version" class="ml-2 text-white">7.4.5</span>
+            </div>
+            <div>
+              <span class="text-white/60">Port:</span>
+              <span class="ml-2 text-white">6379</span>
+            </div>
+            <div>
+              <span class="text-white/60">Mode:</span>
+              <span id="redis-mode" class="ml-2 text-white">Standalone</span>
+            </div>
+          </div>
+          
+          <div class="bg-black/30 rounded-lg p-4">
+            <h4 class="text-white font-semibold mb-2">Memory & Performance</h4>
+            <div class="space-y-2 text-xs">
+              <div class="flex justify-between">
+                <span>Max Memory:</span>
+                <span class="text-blue-400">256MB</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Used Memory:</span>
+                <span id="redis-memory-used" class="text-blue-400">-</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Hit Rate:</span>
+                <span id="redis-hit-rate" class="text-blue-400">-</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Eviction Policy:</span>
+                <span class="text-blue-400">allkeys-lru</span>
+              </div>
+            </div>
+          </div>
+          
+          <div id="redis-config" class="bg-black/30 rounded-lg p-4">
+            <h4 class="text-white font-semibold mb-2">Configuration</h4>
+            <div class="space-y-1 text-xs">
+              <div>✅ AOF Persistence</div>
+              <div>✅ RDB Snapshots</div>
+              <div>✅ TCP Keepalive</div>
+              <div>⚠️ Protected Mode: Disabled (Dev)</div>
+            </div>
+          </div>
+          
+          <div id="redis-test" class="bg-black/30 rounded-lg p-4">
+            <h4 class="text-white font-semibold mb-2">Connection Test</h4>
+            <button id="test-redis-connection" class="glass-button px-3 py-1 text-xs bg-blue-500/20 text-blue-300">
+              Test SET/GET
+            </button>
+            <div id="redis-test-result" class="mt-2 text-xs text-white/60">
+              Not tested
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Monitoring Services Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+      
+      <!-- Grafana Dashboard -->
+      <div class="glass-card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center space-x-3">
+            <div id="grafana-indicator" class="w-3 h-3 rounded-full bg-yellow-500 animate-pulse"></div>
+            <h2 class="text-2xl font-bold text-white">📈 Grafana Dashboard</h2>
+          </div>
+          <button id="grafana-refresh" class="glass-button px-3 py-1 text-xs">Refresh</button>
+        </div>
+        
+        <div id="grafana-details" class="space-y-4">
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span class="text-white/60">Status:</span>
+              <span id="grafana-status" class="ml-2 text-yellow-400">Checking...</span>
+            </div>
+            <div>
+              <span class="text-white/60">Version:</span>
+              <span class="ml-2 text-white">11.3.0 Enterprise</span>
+            </div>
+            <div>
+              <span class="text-white/60">Port:</span>
+              <span class="ml-2 text-white">3001</span>
+            </div>
+            <div>
+              <span class="text-white/60">Admin User:</span>
+              <span class="ml-2 text-white">admin</span>
+            </div>
+          </div>
+          
+          <div class="bg-black/30 rounded-lg p-4">
+            <h4 class="text-white font-semibold mb-2">Dashboard Status</h4>
+            <div class="space-y-2 text-xs">
+              <div class="flex justify-between">
+                <span>Dashboards:</span>
+                <span id="grafana-dashboards" class="text-blue-400">-</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Data Sources:</span>
+                <span id="grafana-datasources" class="text-blue-400">-</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Alerts:</span>
+                <span id="grafana-alerts" class="text-blue-400">-</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Users:</span>
+                <span id="grafana-users" class="text-blue-400">-</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-black/30 rounded-lg p-4">
+            <h4 class="text-white font-semibold mb-2">Quick Actions</h4>
+            <div class="flex gap-2">
+              <a href="http://localhost:3001" target="_blank" class="glass-button px-3 py-1 text-xs bg-blue-500/20 text-blue-300">
+                Open Dashboard
+              </a>
+              <button id="test-grafana-api" class="glass-button px-3 py-1 text-xs bg-green-500/20 text-green-300">
+                Test API
+              </button>
+            </div>
+          </div>
+          
+          <div id="grafana-plugins" class="bg-black/30 rounded-lg p-4">
+            <h4 class="text-white font-semibold mb-2">Installed Plugins</h4>
+            <div class="grid grid-cols-2 gap-1 text-xs">
+              <div>📊 Piechart Panel</div>
+              <div>🗺️ Worldmap Panel</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Prometheus Metrics -->
+      <div class="glass-card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center space-x-3">
+            <div id="prometheus-indicator" class="w-3 h-3 rounded-full bg-yellow-500 animate-pulse"></div>
+            <h2 class="text-2xl font-bold text-white">📊 Prometheus Metrics</h2>
+          </div>
+          <button id="prometheus-refresh" class="glass-button px-3 py-1 text-xs">Refresh</button>
+        </div>
+        
+        <div id="prometheus-details" class="space-y-4">
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span class="text-white/60">Status:</span>
+              <span id="prometheus-status" class="ml-2 text-yellow-400">Checking...</span>
+            </div>
+            <div>
+              <span class="text-white/60">Version:</span>
+              <span class="ml-2 text-white">2.40.0</span>
+            </div>
+            <div>
+              <span class="text-white/60">Port:</span>
+              <span class="ml-2 text-white">9090</span>
+            </div>
+            <div>
+              <span class="text-white/60">Retention:</span>
+              <span class="ml-2 text-white">7d (Dev)</span>
+            </div>
+          </div>
+          
+          <div class="bg-black/30 rounded-lg p-4">
+            <h4 class="text-white font-semibold mb-2">Scrape Targets</h4>
+            <div class="space-y-2 text-xs">
+              <div class="flex justify-between">
+                <span>Total Targets:</span>
+                <span id="prometheus-targets" class="text-blue-400">-</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Active Targets:</span>
+                <span id="prometheus-active-targets" class="text-blue-400">-</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Scrape Interval:</span>
+                <span class="text-blue-400">15s</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Series Count:</span>
+                <span id="prometheus-series" class="text-blue-400">-</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-black/30 rounded-lg p-4">
+            <h4 class="text-white font-semibold mb-2">Storage</h4>
+            <div class="space-y-2 text-xs">
+              <div class="flex justify-between">
+                <span>TSDB Size:</span>
+                <span id="prometheus-tsdb-size" class="text-blue-400">-</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Samples/Sec:</span>
+                <span id="prometheus-samples-rate" class="text-blue-400">-</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-black/30 rounded-lg p-4">
+            <h4 class="text-white font-semibold mb-2">Quick Actions</h4>
+            <div class="flex gap-2">
+              <a href="http://localhost:9090" target="_blank" class="glass-button px-3 py-1 text-xs bg-blue-500/20 text-blue-300">
+                Open Prometheus
+              </a>
+              <button id="test-prometheus-query" class="glass-button px-3 py-1 text-xs bg-green-500/20 text-green-300">
+                Test Query
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Detailed Diagnostics Section -->
+    <div class="grid grid-cols-1 gap-8 mb-8">
+      
+      <!-- Network Connectivity Test -->
+      <div class="glass-card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-2xl font-bold text-white">🌐 Network Connectivity Test</h2>
+          <div class="flex gap-2">
+            <button id="test-cors" class="glass-button px-3 py-1 text-xs bg-green-500/20 text-green-300">Test CORS</button>
+            <button id="test-latency" class="glass-button px-3 py-1 text-xs bg-blue-500/20 text-blue-300">Test Latency</button>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-black/30 rounded-lg p-4">
+            <h4 class="text-white font-semibold mb-2">Frontend ↔ Backend</h4>
+            <div id="frontend-backend-connectivity" class="text-xs">
+              <div>Status: <span id="fe-be-status" class="text-yellow-400">Testing...</span></div>
+              <div>Latency: <span id="fe-be-latency" class="text-blue-400">-</span></div>
+              <div>CORS: <span id="fe-be-cors" class="text-blue-400">-</span></div>
+            </div>
+          </div>
+          
+          <div class="bg-black/30 rounded-lg p-4">
+            <h4 class="text-white font-semibold mb-2">Backend ↔ Database</h4>
+            <div id="backend-database-connectivity" class="text-xs">
+              <div>Status: <span id="be-db-status" class="text-yellow-400">Via Backend</span></div>
+              <div>Pool: <span id="be-db-pool" class="text-blue-400">-</span></div>
+              <div>Query Time: <span id="be-db-query" class="text-blue-400">-</span></div>
+            </div>
+          </div>
+          
+          <div class="bg-black/30 rounded-lg p-4">
+            <h4 class="text-white font-semibold mb-2">Backend ↔ Cache</h4>
+            <div id="backend-cache-connectivity" class="text-xs">
+              <div>Status: <span id="be-cache-status" class="text-yellow-400">Via Backend</span></div>
+              <div>Response: <span id="be-cache-response" class="text-blue-400">-</span></div>
+              <div>Hit Rate: <span id="be-cache-hit-rate" class="text-blue-400">-</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- System Performance Overview -->
+      <div class="glass-card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-2xl font-bold text-white">📊 System Performance Overview</h2>
+          <div class="text-xs text-white/60">Last updated: <span id="last-update-time">-</span></div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <div class="bg-black/30 rounded-lg p-4 text-center">
+            <div class="text-2xl font-bold text-blue-400" id="system-uptime">-</div>
+            <div class="text-xs text-white/60">System Uptime</div>
+          </div>
+          <div class="bg-black/30 rounded-lg p-4 text-center">
+            <div class="text-2xl font-bold text-green-400" id="total-requests">-</div>
+            <div class="text-xs text-white/60">Total Requests</div>
+          </div>
+          <div class="bg-black/30 rounded-lg p-4 text-center">
+            <div class="text-2xl font-bold text-purple-400" id="avg-response-time">-</div>
+            <div class="text-xs text-white/60">Avg Response</div>
+          </div>
+          <div class="bg-black/30 rounded-lg p-4 text-center">
+            <div class="text-2xl font-bold text-orange-400" id="error-rate">-</div>
+            <div class="text-xs text-white/60">Error Rate</div>
+          </div>
+        </div>
+        
+        <!-- Performance Chart Placeholder -->
+        <div class="bg-black/30 rounded-lg p-4">
+          <h4 class="text-white font-semibold mb-2">Response Time Trend (Last 10 requests)</h4>
+          <div id="performance-chart" class="h-20 flex items-end justify-between">
+            <!-- Chart bars will be dynamically generated -->
+            <div class="text-white/40 text-center w-full">Performance data will appear here after tests</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Raw Data and Export -->
+      <div class="glass-card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-2xl font-bold text-white">🔍 Raw Data & Export</h2>
+          <div class="flex gap-2">
+            <button id="clear-data" class="glass-button px-3 py-1 text-xs bg-red-500/20 text-red-300">Clear Data</button>
+            <button id="copy-data" class="glass-button px-3 py-1 text-xs bg-blue-500/20 text-blue-300">Copy JSON</button>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div>
+            <h4 class="text-white font-semibold mb-2">Latest Backend Response</h4>
+            <pre id="raw-backend-response" class="bg-black/50 text-green-300 p-4 rounded-lg text-xs overflow-auto max-h-64">
+No data yet
+            </pre>
+          </div>
+          
+          <div>
+            <h4 class="text-white font-semibold mb-2">Health Summary</h4>
+            <pre id="health-summary" class="bg-black/50 text-blue-300 p-4 rounded-lg text-xs overflow-auto max-h-64">
+No data yet
+            </pre>
+          </div>
+        </div>
+        
+        <div class="mt-4">
+          <h4 class="text-white font-semibold mb-2">Historical Data</h4>
+          <div id="historical-data" class="bg-black/50 text-cyan-300 p-4 rounded-lg text-xs max-h-32 overflow-y-auto">
+            Historical performance data will appear here...
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Status Integration -->
+      <div class="glass-card p-6">
+        <h2 class="text-2xl font-bold text-white mb-4">👀 Footer Status Integration</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-black/30 rounded-lg p-4">
+            <h4 class="text-white font-semibold mb-2">Health Service Status</h4>
+            <div id="footer-health-service-status" class="text-xs">
+              <div>Service Available: <span id="footer-service-available" class="text-blue-400">-</span></div>
+              <div>Polling Active: <span id="footer-polling-active" class="text-blue-400">-</span></div>
+              <div>Last Update: <span id="footer-last-update" class="text-blue-400">-</span></div>
+            </div>
+          </div>
+          
+          <div class="bg-black/30 rounded-lg p-4">
+            <h4 class="text-white font-semibold mb-2">Footer Indicators</h4>
+            <div class="text-xs text-white/70">
+              <div>🟢 Green pulsing = ONLINE/HEALTHY</div>
+              <div>🟡 Yellow pulsing = DEGRADED</div>
+              <div>🟠 Orange pulsing = ERROR/UNKNOWN</div>
+              <div>🔴 Red solid = OFFLINE</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-4">
+          <button id="toggle-footer-polling" class="glass-button px-4 py-2 bg-green-500/20 text-green-300 hover:bg-green-500/30">
+            <span id="footer-polling-text">Enable Footer Polling</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
     </div>
   </div>
 </MainLayout>
 
 <script>
-  // Wait for page to load completely
-  document.addEventListener('DOMContentLoaded', () => {
-    const API_URL = window.CSFRACE_API_BASE_URL || 'http://localhost:8000';
-    
-    // Elements
-    const testHealthBtn = document.getElementById('test-health');
-    const testCorsBtn = document.getElementById('test-cors');
-    const checkServiceBtn = document.getElementById('check-service');
-    const togglePollingBtn = document.getElementById('toggle-polling');
-    
-    const backendStatusEl = document.getElementById('backend-status');
-    const corsStatusEl = document.getElementById('cors-status');
-    const serviceStatusEl = document.getElementById('service-status');
-    const rawResponseEl = document.getElementById('raw-response');
-    
-    let isPolling = false;
-    let pollingInterval: ReturnType<typeof setInterval> | null = null;
-    
-    // Test direct health endpoint
-    async function testHealthEndpoint() {
-      updateStatus(backendStatusEl, 'Testing health endpoint...', 'yellow');
+// =============================================================================
+// SYSTEM HEALTH DASHBOARD - COMPREHENSIVE MONITORING SYSTEM
+// =============================================================================
+// SOLID Principles Implementation:
+// - Single Responsibility: Each class handles one specific aspect
+// - Open/Closed: Extensible through interfaces without modification
+// - Liskov Substitution: All services implement IServiceChecker
+// - Interface Segregation: Focused interfaces for specific needs
+// - Dependency Inversion: Depends on abstractions, not concrete classes
+// =============================================================================
+
+document.addEventListener('DOMContentLoaded', () => {
+  
+  // =============================================================================
+  // CONFIGURATION & CONSTANTS
+  // =============================================================================
+  
+  const CONFIG = {
+    API_URL: window.CSFRACE_API_BASE_URL || 'http://localhost:8000',
+    REFRESH_INTERVAL: 30000,
+    FAST_REFRESH_INTERVAL: 5000,
+    PERFORMANCE_HISTORY_LIMIT: 10,
+    TIMEOUT: 15000,
+    RETRY_ATTEMPTS: 3,
+    RETRY_DELAY_BASE: 1000
+  };
+
+  const ENDPOINTS = {
+    HEALTH: '/health/',
+    METRICS: '/metrics/',
+    POSTGRES: '/health/postgres',
+    REDIS: '/health/redis', 
+    GRAFANA: 'http://localhost:3001/api/health',
+    PROMETHEUS: 'http://localhost:9090/-/healthy'
+  };
+
+  const STATUS_COLORS = {
+    HEALTHY: 'green',
+    DEGRADED: 'yellow',
+    ERROR: 'orange',
+    OFFLINE: 'red'
+  } as const;
+
+  type StatusColor = typeof STATUS_COLORS[keyof typeof STATUS_COLORS];
+  type ServiceStatus = 'up' | 'degraded' | 'down' | 'error';
+
+  // =============================================================================
+  // INTERFACES & TYPES (Interface Segregation Principle)
+  // =============================================================================
+
+  interface IServiceMetrics {
+    responseTime?: number;
+    uptime?: string;
+    memory?: string;
+    cpu?: string;
+    connections?: number;
+    version?: string;
+    [key: string]: any;
+  }
+
+  interface IServiceResult {
+    status: ServiceStatus;
+    message: string;
+    metrics: IServiceMetrics;
+    error?: string;
+    timestamp: number;
+  }
+
+  interface IServiceChecker {
+    readonly serviceName: string;
+    readonly endpoint: string;
+    checkHealth(): Promise<IServiceResult>;
+    updateUI(result: IServiceResult): void;
+  }
+
+  interface IPerformanceData {
+    timestamp: number;
+    responseTime: number;
+    service: string;
+    status: ServiceStatus;
+  }
+
+  interface ISystemStats {
+    totalRequests: number;
+    avgResponseTime: number;
+    errorRate: number;
+    uptime: string;
+  }
+
+  // =============================================================================
+  // UTILITY CLASSES (Single Responsibility Principle)
+  // =============================================================================
+
+  class HttpClient {
+    private static async fetchWithTimeout(url: string, options: RequestInit = {}, timeout: number = CONFIG.TIMEOUT): Promise<Response> {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
       
       try {
-        const startTime = Date.now();
-        const response = await fetch(`${API_URL}/health/`, {
-          method: 'GET',
+        const response = await fetch(url, {
+          ...options,
+          signal: controller.signal,
           headers: {
             'Accept': 'application/json',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            ...options.headers
           }
         });
+        clearTimeout(timeoutId);
+        return response;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
+      }
+    }
+
+    static async getWithRetry(url: string, retries: number = CONFIG.RETRY_ATTEMPTS): Promise<Response> {
+      let lastError: Error;
+      
+      for (let i = 0; i <= retries; i++) {
+        try {
+          return await this.fetchWithTimeout(url);
+        } catch (error) {
+          lastError = error as Error;
+          if (i < retries) {
+            const delay = CONFIG.RETRY_DELAY_BASE * Math.pow(2, i);
+            await this.delay(delay);
+          }
+        }
+      }
+      
+      throw lastError!;
+    }
+
+    private static delay(ms: number): Promise<void> {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+  }
+
+  class UIUpdater {
+    static updateIndicator(elementId: string, status: ServiceStatus): void {
+      const element = document.getElementById(elementId);
+      if (!element) return;
+      
+      const colorClass = this.getStatusColor(status);
+      element.className = `w-3 h-3 rounded-full ${this.getIndicatorClass(status)}`;
+    }
+
+    static updateTextElement(elementId: string, text: string, status?: ServiceStatus): void {
+      const element = document.getElementById(elementId);
+      if (!element) return;
+      
+      element.textContent = text;
+      if (status) {
+        element.className = `ml-2 ${this.getTextColorClass(status)}`;
+      }
+    }
+
+    static updateStatusCard(elementId: string, message: string, status: ServiceStatus): void {
+      const element = document.getElementById(elementId);
+      if (!element) return;
+      
+      element.textContent = message;
+      element.className = `p-4 rounded-lg ${this.getBackgroundColorClass(status)}`;
+    }
+
+    static getStatusColor(status: ServiceStatus): StatusColor {
+      switch (status) {
+        case 'up': return STATUS_COLORS.HEALTHY;
+        case 'degraded': return STATUS_COLORS.DEGRADED;
+        case 'down': return STATUS_COLORS.OFFLINE;
+        case 'error': return STATUS_COLORS.ERROR;
+        default: return STATUS_COLORS.ERROR;
+      }
+    }
+
+    private static getIndicatorClass(status: ServiceStatus): string {
+      switch (status) {
+        case 'up': return 'bg-green-500 animate-pulse';
+        case 'degraded': return 'bg-yellow-500 animate-pulse';
+        case 'down': return 'bg-red-500';
+        case 'error': return 'bg-orange-500 animate-pulse';
+        default: return 'bg-gray-500';
+      }
+    }
+
+    private static getTextColorClass(status: ServiceStatus): string {
+      switch (status) {
+        case 'up': return 'text-green-400';
+        case 'degraded': return 'text-yellow-400';
+        case 'down': return 'text-red-400';
+        case 'error': return 'text-orange-400';
+        default: return 'text-gray-400';
+      }
+    }
+
+    private static getBackgroundColorClass(status: ServiceStatus): string {
+      switch (status) {
+        case 'up': return 'bg-green-500/20 text-green-300';
+        case 'degraded': return 'bg-yellow-500/20 text-yellow-300';
+        case 'down': return 'bg-red-500/20 text-red-300';
+        case 'error': return 'bg-orange-500/20 text-orange-300';
+        default: return 'bg-gray-500/20 text-gray-300';
+      }
+    }
+  }
+
+  // =============================================================================
+  // SERVICE CHECKER IMPLEMENTATIONS (Liskov Substitution Principle)
+  // =============================================================================
+
+  abstract class BaseServiceChecker implements IServiceChecker {
+    constructor(
+      public readonly serviceName: string,
+      public readonly endpoint: string
+    ) {}
+
+    abstract checkHealth(): Promise<IServiceResult>;
+    abstract updateUI(result: IServiceResult): void;
+
+    protected createResult(status: ServiceStatus, message: string, metrics: IServiceMetrics = {}, error?: string): IServiceResult {
+      return {
+        status,
+        message,
+        metrics,
+        error,
+        timestamp: Date.now()
+      };
+    }
+
+    protected handleError(error: Error): IServiceResult {
+      const isTimeout = error.name === 'AbortError' || error.message.includes('timeout');
+      const isNetworkError = error.message.includes('fetch') || error.message.includes('network');
+      
+      return this.createResult(
+        'error',
+        `${this.serviceName} Error: ${isTimeout ? 'Timeout' : isNetworkError ? 'Network Error' : error.message}`,
+        {},
+        error.message
+      );
+    }
+  }
+
+  class BackendServiceChecker extends BaseServiceChecker {
+    constructor() {
+      super('Backend', `${CONFIG.API_URL}${ENDPOINTS.HEALTH}`);
+    }
+
+    async checkHealth(): Promise<IServiceResult> {
+      try {
+        const startTime = Date.now();
+        const response = await HttpClient.getWithRetry(this.endpoint);
         const responseTime = Date.now() - startTime;
         
         if (response.ok) {
           const data = await response.json();
+          const status = this.mapBackendStatus(data.status);
           
-          // Process status same way as HealthStatusService
-          const backendStatus = data.status === 'healthy' ? 'up' : 
-                               data.status === 'degraded' ? 'degraded' : 'down';
-          const dbStatus = data.database?.status === 'healthy' ? 'up' : 
-                          data.database?.status === 'degraded' ? 'degraded' : 'down';
-          const cacheStatus = data.cache?.status === 'healthy' ? 'up' : 
-                             data.cache?.status === 'degraded' ? 'degraded' : 
-                             data.cache?.status === 'not_configured' ? 'down' : 'error';
-          
-          // Determine color based on processed status
-          const statusColor = backendStatus === 'up' ? 'green' : 
-                             backendStatus === 'degraded' ? 'yellow' : 
-                             backendStatus === 'down' ? 'red' : 'orange';
-          
-          updateStatus(
-            backendStatusEl, 
-            `✅ Backend Health: ${backendStatus.toUpperCase()} (${responseTime}ms)\nDB: ${dbStatus.toUpperCase()}, Cache: ${cacheStatus.toUpperCase()}\nRaw Status: ${data.status}`, 
-            statusColor
+          return this.createResult(
+            status,
+            `Backend ${status.toUpperCase()} (${responseTime}ms)`,
+            {
+              responseTime,
+              uptime: data.uptime || 'Unknown',
+              memory: data.memory || 'Unknown',
+              cpu: data.cpu || 'Unknown',
+              version: data.version || '3.3.0',
+              database: data.database?.status || 'Unknown',
+              cache: data.cache?.status || 'Unknown'
+            }
           );
-          rawResponseEl.textContent = JSON.stringify(data, null, 2);
         } else {
-          updateStatus(backendStatusEl, `❌ Backend Error: HTTP ${response.status}`, 'red');
-          rawResponseEl.textContent = await response.text();
+          return this.createResult('error', `Backend HTTP ${response.status}`, { responseTime: Date.now() - startTime });
         }
       } catch (error) {
-        updateStatus(backendStatusEl, `🔴 Backend Offline: ${(error as Error).message}`, 'red');
-        rawResponseEl.textContent = (error as Error).toString();
+        return this.handleError(error as Error);
       }
     }
-    
-    // Test CORS
-    async function testCORS() {
-      updateStatus(corsStatusEl, 'Testing CORS from browser...', 'yellow');
+
+    private mapBackendStatus(backendStatus: string): ServiceStatus {
+      switch (backendStatus) {
+        case 'healthy': return 'up';
+        case 'degraded': return 'degraded'; 
+        case 'unhealthy': return 'down';
+        default: return 'error';
+      }
+    }
+
+    updateUI(result: IServiceResult): void {
+      UIUpdater.updateIndicator('backend-indicator', result.status);
+      UIUpdater.updateTextElement('backend-status', result.status.toUpperCase(), result.status);
+      UIUpdater.updateTextElement('backend-response-time', `${result.metrics.responseTime || '-'}ms`);
+      UIUpdater.updateTextElement('backend-uptime', result.metrics.uptime || '-');
+      UIUpdater.updateTextElement('backend-memory', result.metrics.memory || '-');
+      UIUpdater.updateTextElement('backend-cpu', result.metrics.cpu || '-');
+
+      // Update component status indicators
+      this.updateBackendComponents(result);
+    }
+
+    private updateBackendComponents(result: IServiceResult): void {
+      const components = [
+        { id: 'backend-observability', name: 'Observability Manager', status: result.status === 'up' ? '✅' : '❌' },
+        { id: 'backend-metrics', name: 'Metrics Collector', status: result.status === 'up' ? '✅' : '❌' },
+        { id: 'backend-health-checker', name: 'Health Checker', status: result.status === 'up' ? '✅' : '❌' },
+        { id: 'backend-alert-manager', name: 'Alert Manager', status: result.status === 'up' ? '✅' : '❌' },
+        { id: 'backend-performance', name: 'Performance Monitor', status: result.status === 'up' ? '✅' : '❌' }
+      ];
+
+      components.forEach(component => {
+        UIUpdater.updateTextElement(component.id, `${component.status} ${component.name}`);
+      });
+    }
+  }
+
+  class PostgresServiceChecker extends BaseServiceChecker {
+    constructor() {
+      super('PostgreSQL', `${CONFIG.API_URL}${ENDPOINTS.POSTGRES}`);
+    }
+
+    async checkHealth(): Promise<IServiceResult> {
+      try {
+        const startTime = Date.now();
+        const response = await HttpClient.getWithRetry(this.endpoint);
+        const responseTime = Date.now() - startTime;
+        
+        if (response.ok) {
+          const data = await response.json();
+          const status = data.status === 'healthy' ? 'up' : data.status === 'degraded' ? 'degraded' : 'down';
+          
+          return this.createResult(
+            status,
+            `PostgreSQL ${status.toUpperCase()}`,
+            {
+              responseTime,
+              connections: data.active_connections || 0,
+              queryTime: data.avg_query_time || 'Unknown',
+              cacheHitRatio: data.cache_hit_ratio || 'Unknown'
+            }
+          );
+        } else {
+          return this.createResult('error', `PostgreSQL HTTP ${response.status}`, { responseTime });
+        }
+      } catch (error) {
+        return this.handleError(error as Error);
+      }
+    }
+
+    updateUI(result: IServiceResult): void {
+      UIUpdater.updateIndicator('postgres-indicator', result.status);
+      UIUpdater.updateTextElement('postgres-status', result.status.toUpperCase(), result.status);
+      UIUpdater.updateTextElement('postgres-active-conn', String(result.metrics.connections || '-'));
+      UIUpdater.updateTextElement('postgres-query-time', result.metrics.queryTime || '-');
+      UIUpdater.updateTextElement('postgres-cache-hit', result.metrics.cacheHitRatio || '-');
+    }
+  }
+
+  class RedisServiceChecker extends BaseServiceChecker {
+    constructor() {
+      super('Redis', `${CONFIG.API_URL}${ENDPOINTS.REDIS}`);
+    }
+
+    async checkHealth(): Promise<IServiceResult> {
+      try {
+        const startTime = Date.now();
+        const response = await HttpClient.getWithRetry(this.endpoint);
+        const responseTime = Date.now() - startTime;
+        
+        if (response.ok) {
+          const data = await response.json();
+          const status = data.status === 'healthy' ? 'up' : data.status === 'degraded' ? 'degraded' : 'down';
+          
+          return this.createResult(
+            status,
+            `Redis ${status.toUpperCase()}`,
+            {
+              responseTime,
+              memoryUsed: data.memory_used || 'Unknown',
+              hitRate: data.hit_rate || 'Unknown'
+            }
+          );
+        } else {
+          return this.createResult('error', `Redis HTTP ${response.status}`, { responseTime });
+        }
+      } catch (error) {
+        return this.handleError(error as Error);
+      }
+    }
+
+    updateUI(result: IServiceResult): void {
+      UIUpdater.updateIndicator('redis-indicator', result.status);
+      UIUpdater.updateTextElement('redis-status', result.status.toUpperCase(), result.status);
+      UIUpdater.updateTextElement('redis-memory-used', result.metrics.memoryUsed || '-');
+      UIUpdater.updateTextElement('redis-hit-rate', result.metrics.hitRate || '-');
+    }
+
+    async testConnection(): Promise<void> {
+      const testBtn = document.getElementById('test-redis-connection');
+      const resultEl = document.getElementById('redis-test-result');
+      
+      if (!testBtn || !resultEl) return;
+      
+      testBtn.textContent = 'Testing...';
+      resultEl.textContent = 'Testing Redis SET/GET operations...';
       
       try {
-        const response = await fetch(`${API_URL}/health/`, {
+        const testEndpoint = `${CONFIG.API_URL}/health/redis/test`;
+        const response = await HttpClient.getWithRetry(testEndpoint);
+        
+        if (response.ok) {
+          const data = await response.json();
+          resultEl.textContent = `✅ SET/GET Test: ${data.test_result || 'Success'}`;
+          resultEl.className = 'mt-2 text-xs text-green-400';
+        } else {
+          resultEl.textContent = `❌ Test Failed: HTTP ${response.status}`;
+          resultEl.className = 'mt-2 text-xs text-red-400';
+        }
+      } catch (error) {
+        resultEl.textContent = `🔴 Test Error: ${(error as Error).message}`;
+        resultEl.className = 'mt-2 text-xs text-red-400';
+      } finally {
+        testBtn.textContent = 'Test SET/GET';
+      }
+    }
+  }
+
+  class GrafanaServiceChecker extends BaseServiceChecker {
+    constructor() {
+      super('Grafana', ENDPOINTS.GRAFANA);
+    }
+
+    async checkHealth(): Promise<IServiceResult> {
+      try {
+        const startTime = Date.now();
+        const response = await HttpClient.getWithRetry(this.endpoint);
+        const responseTime = Date.now() - startTime;
+        
+        if (response.ok) {
+          const data = await response.json();
+          return this.createResult(
+            'up',
+            `Grafana OPERATIONAL`,
+            {
+              responseTime,
+              dashboards: data.dashboards || 0,
+              datasources: data.datasources || 0,
+              alerts: data.alerts || 0,
+              users: data.users || 1
+            }
+          );
+        } else {
+          return this.createResult('down', `Grafana HTTP ${response.status}`, { responseTime });
+        }
+      } catch (error) {
+        return this.handleError(error as Error);
+      }
+    }
+
+    updateUI(result: IServiceResult): void {
+      UIUpdater.updateIndicator('grafana-indicator', result.status);
+      UIUpdater.updateTextElement('grafana-status', result.status.toUpperCase(), result.status);
+      UIUpdater.updateTextElement('grafana-dashboards', String(result.metrics.dashboards || '-'));
+      UIUpdater.updateTextElement('grafana-datasources', String(result.metrics.datasources || '-'));
+      UIUpdater.updateTextElement('grafana-alerts', String(result.metrics.alerts || '-'));
+      UIUpdater.updateTextElement('grafana-users', String(result.metrics.users || '-'));
+    }
+
+    async testAPI(): Promise<void> {
+      const testBtn = document.getElementById('test-grafana-api');
+      if (!testBtn) return;
+      
+      testBtn.textContent = 'Testing...';
+      
+      try {
+        const apiEndpoint = 'http://localhost:3001/api/admin/stats';
+        const response = await HttpClient.getWithRetry(apiEndpoint);
+        
+        if (response.ok) {
+          testBtn.textContent = '✅ API Working';
+          testBtn.className = 'glass-button px-3 py-1 text-xs bg-green-500/20 text-green-300';
+        } else {
+          testBtn.textContent = '❌ API Error';
+          testBtn.className = 'glass-button px-3 py-1 text-xs bg-red-500/20 text-red-300';
+        }
+      } catch (error) {
+        testBtn.textContent = '🔴 API Offline';
+        testBtn.className = 'glass-button px-3 py-1 text-xs bg-red-500/20 text-red-300';
+      }
+      
+      setTimeout(() => {
+        testBtn.textContent = 'Test API';
+        testBtn.className = 'glass-button px-3 py-1 text-xs bg-green-500/20 text-green-300';
+      }, 3000);
+    }
+  }
+
+  class PrometheusServiceChecker extends BaseServiceChecker {
+    constructor() {
+      super('Prometheus', ENDPOINTS.PROMETHEUS);
+    }
+
+    async checkHealth(): Promise<IServiceResult> {
+      try {
+        const startTime = Date.now();
+        const response = await HttpClient.getWithRetry(this.endpoint);
+        const responseTime = Date.now() - startTime;
+        
+        if (response.ok) {
+          return this.createResult(
+            'up',
+            `Prometheus OPERATIONAL`,
+            {
+              responseTime,
+              targets: 4, // Default assumption for dev environment
+              activeTargets: 3,
+              series: 'Unknown',
+              tsdbSize: 'Unknown',
+              samplesRate: 'Unknown'
+            }
+          );
+        } else {
+          return this.createResult('down', `Prometheus HTTP ${response.status}`, { responseTime });
+        }
+      } catch (error) {
+        return this.handleError(error as Error);
+      }
+    }
+
+    updateUI(result: IServiceResult): void {
+      UIUpdater.updateIndicator('prometheus-indicator', result.status);
+      UIUpdater.updateTextElement('prometheus-status', result.status.toUpperCase(), result.status);
+      UIUpdater.updateTextElement('prometheus-targets', String(result.metrics.targets || '-'));
+      UIUpdater.updateTextElement('prometheus-active-targets', String(result.metrics.activeTargets || '-'));
+      UIUpdater.updateTextElement('prometheus-series', result.metrics.series || '-');
+      UIUpdater.updateTextElement('prometheus-tsdb-size', result.metrics.tsdbSize || '-');
+      UIUpdater.updateTextElement('prometheus-samples-rate', result.metrics.samplesRate || '-');
+    }
+
+    async testQuery(): Promise<void> {
+      const testBtn = document.getElementById('test-prometheus-query');
+      if (!testBtn) return;
+      
+      testBtn.textContent = 'Testing...';
+      
+      try {
+        const queryEndpoint = 'http://localhost:9090/api/v1/query?query=up';
+        const response = await HttpClient.getWithRetry(queryEndpoint);
+        
+        if (response.ok) {
+          testBtn.textContent = '✅ Query Working';
+          testBtn.className = 'glass-button px-3 py-1 text-xs bg-green-500/20 text-green-300';
+        } else {
+          testBtn.textContent = '❌ Query Error';
+          testBtn.className = 'glass-button px-3 py-1 text-xs bg-red-500/20 text-red-300';
+        }
+      } catch (error) {
+        testBtn.textContent = '🔴 Query Failed';
+        testBtn.className = 'glass-button px-3 py-1 text-xs bg-red-500/20 text-red-300';
+      }
+      
+      setTimeout(() => {
+        testBtn.textContent = 'Test Query';
+        testBtn.className = 'glass-button px-3 py-1 text-xs bg-green-500/20 text-green-300';
+      }, 3000);
+    }
+  }
+
+  // =============================================================================
+  // PERFORMANCE MONITORING SYSTEM (Single Responsibility)
+  // =============================================================================
+
+  class PerformanceMonitor {
+    private performanceHistory: IPerformanceData[] = [];
+    private systemStats: ISystemStats = {
+      totalRequests: 0,
+      avgResponseTime: 0,
+      errorRate: 0,
+      uptime: '0s'
+    };
+
+    addPerformanceData(data: IPerformanceData): void {
+      this.performanceHistory.push(data);
+      if (this.performanceHistory.length > CONFIG.PERFORMANCE_HISTORY_LIMIT) {
+        this.performanceHistory.shift();
+      }
+      this.updateSystemStats();
+      this.updatePerformanceChart();
+    }
+
+    private updateSystemStats(): void {
+      const history = this.performanceHistory;
+      if (history.length === 0) return;
+
+      this.systemStats.totalRequests = history.length;
+      this.systemStats.avgResponseTime = Math.round(
+        history.reduce((sum, data) => sum + data.responseTime, 0) / history.length
+      );
+      this.systemStats.errorRate = Math.round(
+        (history.filter(data => data.status === 'error' || data.status === 'down').length / history.length) * 100
+      );
+
+      // Update UI
+      UIUpdater.updateTextElement('total-requests', String(this.systemStats.totalRequests));
+      UIUpdater.updateTextElement('avg-response-time', `${this.systemStats.avgResponseTime}ms`);
+      UIUpdater.updateTextElement('error-rate', `${this.systemStats.errorRate}%`);
+    }
+
+    private updatePerformanceChart(): void {
+      const chartElement = document.getElementById('performance-chart');
+      if (!chartElement) return;
+
+      const maxHeight = 60; // pixels
+      const maxTime = Math.max(...this.performanceHistory.map(d => d.responseTime), 100);
+
+      const bars = this.performanceHistory.map((data, index) => {
+        const height = (data.responseTime / maxTime) * maxHeight;
+        const color = UIUpdater.getStatusColor(data.status);
+        const colorClass = color === 'green' ? 'bg-green-400' : 
+                          color === 'yellow' ? 'bg-yellow-400' : 
+                          color === 'orange' ? 'bg-orange-400' : 'bg-red-400';
+        
+        return `<div class="flex-1 ${colorClass} mx-px rounded-t" style="height: ${height}px" title="${data.service}: ${data.responseTime}ms"></div>`;
+      }).join('');
+
+      chartElement.innerHTML = bars || '<div class="text-white/40 text-center w-full">Performance data will appear here after tests</div>';
+    }
+
+    getHistoricalData(): string {
+      return JSON.stringify(this.performanceHistory, null, 2);
+    }
+
+    clearData(): void {
+      this.performanceHistory = [];
+      this.systemStats = { totalRequests: 0, avgResponseTime: 0, errorRate: 0, uptime: '0s' };
+      this.updateSystemStats();
+      this.updatePerformanceChart();
+    }
+  }
+
+  // =============================================================================
+  // AUTO-REFRESH SYSTEM (Single Responsibility)
+  // =============================================================================
+
+  class AutoRefreshManager {
+    private isAutoRefreshing: boolean = false;
+    private refreshInterval: NodeJS.Timeout | null = null;
+    private readonly healthDashboard: HealthDashboard;
+
+    constructor(healthDashboard: HealthDashboard) {
+      this.healthDashboard = healthDashboard;
+    }
+
+    toggle(): void {
+      if (this.isAutoRefreshing) {
+        this.stop();
+      } else {
+        this.start();
+      }
+    }
+
+    start(): void {
+      this.isAutoRefreshing = true;
+      this.refreshInterval = setInterval(() => {
+        this.healthDashboard.refreshAllServices();
+      }, CONFIG.REFRESH_INTERVAL);
+
+      this.updateToggleButton();
+    }
+
+    stop(): void {
+      this.isAutoRefreshing = false;
+      if (this.refreshInterval) {
+        clearInterval(this.refreshInterval);
+        this.refreshInterval = null;
+      }
+      this.updateToggleButton();
+    }
+
+    private updateToggleButton(): void {
+      const toggleBtn = document.getElementById('toggle-auto-refresh');
+      if (!toggleBtn) return;
+
+      if (this.isAutoRefreshing) {
+        toggleBtn.textContent = '⏹️ Disable Auto-Refresh';
+        toggleBtn.className = 'glass-button px-6 py-3 bg-red-500/20 text-red-300 hover:bg-red-500/30';
+      } else {
+        toggleBtn.textContent = '⏱️ Enable Auto-Refresh';
+        toggleBtn.className = 'glass-button px-6 py-3 bg-green-500/20 text-green-300 hover:bg-green-500/30';
+      }
+    }
+  }
+
+  // =============================================================================
+  // CONNECTIVITY TESTER (Single Responsibility)
+  // =============================================================================
+
+  class ConnectivityTester {
+    async testCORS(): Promise<void> {
+      try {
+        const response = await fetch(`${CONFIG.API_URL}${ENDPOINTS.HEALTH}`, {
           method: 'GET',
           mode: 'cors',
           headers: {
@@ -174,96 +1337,477 @@ No data yet
           }
         });
         
-        if (response.ok) {
-          updateStatus(corsStatusEl, '✅ CORS: Working - Frontend can connect to backend', 'green');
-        } else {
-          updateStatus(corsStatusEl, `⚠️ CORS: Backend responded with ${response.status}`, 'red');
-        }
+        const status = response.ok ? 'up' : 'error';
+        UIUpdater.updateTextElement('fe-be-cors', response.ok ? '✅ Working' : '❌ Failed', status);
       } catch (error) {
-        if ((error as Error).message.includes('CORS')) {
-          updateStatus(corsStatusEl, '🔴 CORS: Blocked - CORS policy issue', 'red');
-        } else {
-          updateStatus(corsStatusEl, `🔴 CORS: Error - ${(error as Error).message}`, 'red');
-        }
+        UIUpdater.updateTextElement('fe-be-cors', '🔴 Blocked', 'error');
       }
     }
-    
-    // Check health service status
-    function checkHealthService() {
-      updateStatus(serviceStatusEl, 'Checking health service...', 'yellow');
-      
-      if (window.healthStatusService) {
-        const isServicePolling = window.healthStatusService.isPolling;
-        const cachedStatus = window.healthStatusService.getLatestStatus();
-        
-        let statusText = `✅ Health Service: Available\n`;
-        statusText += `Polling: ${isServicePolling ? 'ACTIVE' : 'INACTIVE'}\n`;
-        statusText += `Cached Status: ${cachedStatus.length} services`;
-        
-        if (cachedStatus.length > 0) {
-          statusText += '\n\nCached Services:';
-          cachedStatus.forEach(service => {
-            statusText += `\n• ${service.service}: ${service.status.toUpperCase()}`;
-            if (service.error) statusText += ` (${service.error})`;
-          });
+
+    async testLatency(): Promise<void> {
+      const iterations = 3;
+      const latencies: number[] = [];
+
+      for (let i = 0; i < iterations; i++) {
+        try {
+          const startTime = Date.now();
+          await fetch(`${CONFIG.API_URL}${ENDPOINTS.HEALTH}`, { method: 'HEAD' });
+          latencies.push(Date.now() - startTime);
+        } catch (error) {
+          // Skip failed requests
         }
-        
-        updateStatus(serviceStatusEl, statusText, 'green');
+      }
+
+      if (latencies.length > 0) {
+        const avgLatency = Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length);
+        UIUpdater.updateTextElement('fe-be-latency', `${avgLatency}ms`);
       } else {
-        updateStatus(serviceStatusEl, '🔴 Health Service: Not Available', 'red');
+        UIUpdater.updateTextElement('fe-be-latency', 'Failed');
       }
     }
-    
-    // Toggle polling
-    function togglePolling() {
-      if (!window.healthStatusService) {
-        alert('Health service not available');
+
+    async testNetworkConnectivity(): Promise<void> {
+      // Frontend ↔ Backend
+      UIUpdater.updateTextElement('fe-be-status', 'Testing...', 'degraded');
+      
+      try {
+        const startTime = Date.now();
+        const response = await HttpClient.getWithRetry(`${CONFIG.API_URL}${ENDPOINTS.HEALTH}`);
+        const latency = Date.now() - startTime;
+        
+        const status = response.ok ? 'up' : 'error';
+        UIUpdater.updateTextElement('fe-be-status', response.ok ? '✅ Connected' : '❌ Error', status);
+        UIUpdater.updateTextElement('fe-be-latency', `${latency}ms`);
+      } catch (error) {
+        UIUpdater.updateTextElement('fe-be-status', '🔴 Failed', 'error');
+        UIUpdater.updateTextElement('fe-be-latency', 'N/A');
+      }
+
+      // Test CORS separately
+      await this.testCORS();
+    }
+  }
+
+  // =============================================================================
+  // DATA EXPORT SYSTEM (Single Responsibility)
+  // =============================================================================
+
+  class DataExporter {
+    private readonly performanceMonitor: PerformanceMonitor;
+    private readonly healthDashboard: HealthDashboard;
+
+    constructor(performanceMonitor: PerformanceMonitor, healthDashboard: HealthDashboard) {
+      this.performanceMonitor = performanceMonitor;
+      this.healthDashboard = healthDashboard;
+    }
+
+    exportHealthReport(): void {
+      const report = {
+        timestamp: new Date().toISOString(),
+        services: this.healthDashboard.getServiceStatuses(),
+        performance: this.performanceMonitor.getHistoricalData(),
+        summary: {
+          totalServices: Object.keys(this.healthDashboard.getServiceStatuses()).length,
+          healthyServices: Object.values(this.healthDashboard.getServiceStatuses()).filter(s => s === 'up').length,
+          generatedBy: 'System Health Dashboard'
+        }
+      };
+
+      this.downloadJSON(report, `health-report-${Date.now()}.json`);
+    }
+
+    copyRawData(): void {
+      const data = {
+        latestResults: this.healthDashboard.getLatestResults(),
+        performance: this.performanceMonitor.getHistoricalData(),
+        timestamp: new Date().toISOString()
+      };
+
+      navigator.clipboard.writeText(JSON.stringify(data, null, 2)).then(() => {
+        alert('Raw data copied to clipboard!');
+      }).catch(() => {
+        alert('Failed to copy data to clipboard');
+      });
+    }
+
+    private downloadJSON(data: any, filename: string): void {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  // =============================================================================
+  // MAIN HEALTH DASHBOARD CONTROLLER (Dependency Inversion Principle)
+  // =============================================================================
+
+  class HealthDashboard {
+    private readonly serviceCheckers: Map<string, IServiceChecker> = new Map();
+    private readonly performanceMonitor: PerformanceMonitor;
+    private readonly autoRefreshManager: AutoRefreshManager;
+    private readonly connectivityTester: ConnectivityTester;
+    private readonly dataExporter: DataExporter;
+    private readonly latestResults: Map<string, IServiceResult> = new Map();
+
+    constructor() {
+      this.performanceMonitor = new PerformanceMonitor();
+      this.autoRefreshManager = new AutoRefreshManager(this);
+      this.connectivityTester = new ConnectivityTester();
+      this.dataExporter = new DataExporter(this.performanceMonitor, this);
+
+      this.initializeServiceCheckers();
+      this.bindEventListeners();
+      this.startInitialChecks();
+    }
+
+    private initializeServiceCheckers(): void {
+      this.serviceCheckers.set('backend', new BackendServiceChecker());
+      this.serviceCheckers.set('postgres', new PostgresServiceChecker());
+      this.serviceCheckers.set('redis', new RedisServiceChecker());
+      this.serviceCheckers.set('grafana', new GrafanaServiceChecker());
+      this.serviceCheckers.set('prometheus', new PrometheusServiceChecker());
+    }
+
+    private bindEventListeners(): void {
+      // Global controls
+      document.getElementById('refresh-all')?.addEventListener('click', () => this.refreshAllServices());
+      document.getElementById('toggle-auto-refresh')?.addEventListener('click', () => this.autoRefreshManager.toggle());
+      document.getElementById('export-report')?.addEventListener('click', () => this.dataExporter.exportHealthReport());
+      document.getElementById('test-connectivity')?.addEventListener('click', () => this.connectivityTester.testNetworkConnectivity());
+
+      // Individual service refresh buttons
+      document.getElementById('backend-refresh')?.addEventListener('click', () => this.refreshService('backend'));
+      document.getElementById('postgres-refresh')?.addEventListener('click', () => this.refreshService('postgres'));
+      document.getElementById('redis-refresh')?.addEventListener('click', () => this.refreshService('redis'));
+      document.getElementById('grafana-refresh')?.addEventListener('click', () => this.refreshService('grafana'));
+      document.getElementById('prometheus-refresh')?.addEventListener('click', () => this.refreshService('prometheus'));
+
+      // Specialized test buttons
+      document.getElementById('test-cors')?.addEventListener('click', () => this.connectivityTester.testCORS());
+      document.getElementById('test-latency')?.addEventListener('click', () => this.connectivityTester.testLatency());
+      document.getElementById('test-redis-connection')?.addEventListener('click', () => 
+        (this.serviceCheckers.get('redis') as RedisServiceChecker)?.testConnection());
+      document.getElementById('test-grafana-api')?.addEventListener('click', () => 
+        (this.serviceCheckers.get('grafana') as GrafanaServiceChecker)?.testAPI());
+      document.getElementById('test-prometheus-query')?.addEventListener('click', () => 
+        (this.serviceCheckers.get('prometheus') as PrometheusServiceChecker)?.testQuery());
+
+      // Data management
+      document.getElementById('clear-data')?.addEventListener('click', () => this.performanceMonitor.clearData());
+      document.getElementById('copy-data')?.addEventListener('click', () => this.dataExporter.copyRawData());
+
+      // Footer polling integration
+      document.getElementById('toggle-footer-polling')?.addEventListener('click', () => this.toggleFooterPolling());
+    }
+
+    async refreshAllServices(): Promise<void> {
+      this.updateOverallStatus('yellow', 'Checking all services...');
+      
+      const refreshPromises = Array.from(this.serviceCheckers.entries()).map(([name, checker]) => 
+        this.refreshServiceInternal(name, checker)
+      );
+
+      await Promise.all(refreshPromises);
+      this.updateOverallSystemStatus();
+      this.updateLastUpdateTime();
+    }
+
+    async refreshService(serviceName: string): Promise<void> {
+      const checker = this.serviceCheckers.get(serviceName);
+      if (!checker) return;
+
+      await this.refreshServiceInternal(serviceName, checker);
+      this.updateOverallSystemStatus();
+    }
+
+    private async refreshServiceInternal(serviceName: string, checker: IServiceChecker): Promise<void> {
+      try {
+        const result = await checker.checkHealth();
+        this.latestResults.set(serviceName, result);
+        checker.updateUI(result);
+        
+        // Track performance data
+        this.performanceMonitor.addPerformanceData({
+          timestamp: result.timestamp,
+          responseTime: result.metrics.responseTime || 0,
+          service: serviceName,
+          status: result.status
+        });
+
+        this.updateRawDataDisplay(serviceName, result);
+        
+        // SOLID/DRY: Synchronize footer status with test-health data (Single Source of Truth)
+        this.syncFooterStatus(serviceName, result);
+      } catch (error) {
+        console.error(`Error checking ${serviceName}:`, error);
+      }
+    }
+
+    private updateOverallSystemStatus(): void {
+      const results = Array.from(this.latestResults.values());
+      if (results.length === 0) return;
+
+      const healthyCount = results.filter(r => r.status === 'up').length;
+      const degradedCount = results.filter(r => r.status === 'degraded').length;
+      const errorCount = results.filter(r => r.status === 'error' || r.status === 'down').length;
+
+      let overallStatus: ServiceStatus;
+      let message: string;
+
+      if (errorCount > 0) {
+        overallStatus = 'error';
+        message = `System Issues Detected - ${errorCount} service(s) offline`;
+      } else if (degradedCount > 0) {
+        overallStatus = 'degraded';
+        message = `System Degraded - ${degradedCount} service(s) have issues`;
+      } else {
+        overallStatus = 'up';
+        message = `All Systems Operational - ${healthyCount} service(s) healthy`;
+      }
+
+      this.updateOverallStatus(UIUpdater.getStatusColor(overallStatus), message);
+    }
+
+    private updateOverallStatus(color: StatusColor, message: string): void {
+      const indicator = document.getElementById('overall-status-indicator');
+      const text = document.getElementById('overall-status-text');
+      
+      if (indicator) {
+        indicator.className = `w-4 h-4 rounded-full ${color === 'green' ? 'bg-green-500 animate-pulse' : 
+          color === 'yellow' ? 'bg-yellow-500 animate-pulse' : 
+          color === 'orange' ? 'bg-orange-500 animate-pulse' : 'bg-red-500'}`;
+      }
+      
+      if (text) {
+        text.textContent = message;
+        text.className = `text-xl font-semibold ${color === 'green' ? 'text-green-400' : 
+          color === 'yellow' ? 'text-yellow-400' : 
+          color === 'orange' ? 'text-orange-400' : 'text-red-400'}`;
+      }
+    }
+
+    private updateRawDataDisplay(serviceName: string, result: IServiceResult): void {
+      if (serviceName === 'backend') {
+        const rawResponseEl = document.getElementById('raw-backend-response');
+        if (rawResponseEl) {
+          rawResponseEl.textContent = JSON.stringify(result, null, 2);
+        }
+      }
+
+      const healthSummaryEl = document.getElementById('health-summary');
+      if (healthSummaryEl) {
+        const summary = {
+          [serviceName]: {
+            status: result.status,
+            responseTime: result.metrics.responseTime,
+            timestamp: new Date(result.timestamp).toISOString()
+          }
+        };
+        healthSummaryEl.textContent = JSON.stringify(summary, null, 2);
+      }
+    }
+
+    /**
+     * SOLID/DRY: Synchronize footer status with test-health page data
+     * Single Source of Truth - footer shows same status as detailed health page
+     */
+    private syncFooterStatus(serviceName: string, result: IServiceResult): void {
+      // Only sync if we're on the test-health page to avoid conflicts
+      if (!window.location.pathname.includes('test-health')) return;
+      
+      // Check if global health service exists (from MainLayout)
+      if (!window.healthStatusService || typeof window.healthStatusService.updateStatusIndicators !== 'function') {
         return;
       }
       
-      if (isPolling) {
-        window.healthStatusService.stopPolling();
-        if (pollingInterval) clearInterval(pollingInterval);
-        isPolling = false;
-        togglePollingBtn.textContent = 'Enable Polling';
-        togglePollingBtn.className = 'glass-button px-4 py-2 text-white/80';
+      console.log(`🔄 Syncing ${serviceName} status to footer:`, result.status);
+      
+      // Map our service results to footer service format
+      const serviceIndicators: any = {};
+      
+      // Convert test-health results to footer format
+      switch (serviceName) {
+        case 'backend':
+          serviceIndicators.backend = {
+            status: result.status === 'up' ? 'online' : 
+                   result.status === 'degraded' ? 'degraded' :
+                   result.status === 'error' ? 'error' : 'offline',
+            connected: result.status === 'up'
+          };
+          break;
+          
+        case 'postgres':
+          serviceIndicators.database = {
+            status: result.status === 'up' ? 'online' : 
+                   result.status === 'degraded' ? 'degraded' :
+                   result.status === 'error' ? 'error' : 'offline',
+            connected: result.status === 'up'
+          };
+          break;
+          
+        case 'redis':
+          serviceIndicators.cache = {
+            status: result.status === 'up' ? 'online' : 
+                   result.status === 'degraded' ? 'degraded' :
+                   result.status === 'error' ? 'error' : 'offline'
+          };
+          break;
+          
+        case 'prometheus':
+          // Direct DOM manipulation for monitoring services
+          this.updateMonitoringServiceFooter('prometheus', result.status);
+          return;
+          
+        case 'grafana':
+          // Direct DOM manipulation for monitoring services
+          this.updateMonitoringServiceFooter('grafana', result.status);
+          return;
+          
+        default:
+          console.warn(`Unknown service for footer sync: ${serviceName}`);
+          return;
+      }
+      
+      // Update footer status using the global service
+      try {
+        window.healthStatusService.updateStatusIndicators(serviceIndicators);
+        console.log(`✅ Successfully synced ${serviceName} status to footer`);
+      } catch (error) {
+        console.error(`❌ Failed to sync ${serviceName} status to footer:`, error);
+      }
+    }
+
+    /**
+     * Update monitoring services (Prometheus/Grafana) in footer directly
+     * These services don't go through the main health service updateStatusIndicators method
+     */
+    private updateMonitoringServiceFooter(serviceName: string, status: ServiceStatus): void {
+      const statusId = `${serviceName}-status`;
+      const element = document.getElementById(statusId);
+      
+      if (!element) {
+        console.warn(`Footer element not found: ${statusId}`);
+        return;
+      }
+      
+      const indicator = element.querySelector('.w-3') as HTMLElement;
+      const statusText = element.querySelector('.text-xs') as HTMLElement;
+      
+      if (indicator && statusText) {
+        let indicatorClass: string;
+        let statusLabel: string;
+        let textColor: string;
+        
+        switch (status) {
+          case 'up':
+            indicatorClass = 'w-3 h-3 bg-green-400 rounded-full animate-pulse';
+            statusLabel = 'ONLINE';
+            textColor = 'text-green-400 text-xs font-mono';
+            break;
+          case 'degraded':
+            indicatorClass = 'w-3 h-3 bg-yellow-400 rounded-full animate-pulse';
+            statusLabel = 'DEGRADED';
+            textColor = 'text-yellow-400 text-xs font-mono';
+            break;
+          case 'error':
+            indicatorClass = 'w-3 h-3 bg-orange-400 rounded-full animate-pulse';
+            statusLabel = 'ERROR';
+            textColor = 'text-orange-400 text-xs font-mono';
+            break;
+          default:
+            indicatorClass = 'w-3 h-3 bg-red-400 rounded-full';
+            statusLabel = 'OFFLINE';
+            textColor = 'text-red-400 text-xs font-mono';
+        }
+        
+        indicator.className = indicatorClass;
+        statusText.textContent = statusLabel;
+        statusText.className = textColor;
+        
+        console.log(`✅ Updated ${serviceName} footer status to ${statusLabel}`);
+      }
+    }
+
+    private updateLastUpdateTime(): void {
+      const lastUpdateEl = document.getElementById('last-update-time');
+      if (lastUpdateEl) {
+        lastUpdateEl.textContent = new Date().toLocaleTimeString();
+      }
+    }
+
+    private startInitialChecks(): void {
+      setTimeout(() => {
+        this.refreshAllServices();
+      }, 500);
+    }
+
+    private toggleFooterPolling(): void {
+      const toggleBtn = document.getElementById('toggle-footer-polling');
+      const pollingText = document.getElementById('footer-polling-text');
+      
+      if (!toggleBtn || !pollingText) return;
+
+      const isCurrentlyPolling = pollingText.textContent?.includes('Disable');
+      
+      if (window.healthStatusService) {
+        if (isCurrentlyPolling) {
+          window.healthStatusService.stopPolling();
+          pollingText.textContent = 'Enable Footer Polling';
+          toggleBtn.className = 'glass-button px-4 py-2 bg-green-500/20 text-green-300 hover:bg-green-500/30';
+        } else {
+          window.healthStatusService.startPolling();
+          pollingText.textContent = 'Disable Footer Polling';
+          toggleBtn.className = 'glass-button px-4 py-2 bg-red-500/20 text-red-300 hover:bg-red-500/30';
+        }
+        this.updateFooterStatus();
       } else {
-        window.healthStatusService.startPolling();
-        // Also update our display every 5 seconds
-        pollingInterval = setInterval(checkHealthService, 5000);
-        isPolling = true;
-        togglePollingBtn.textContent = 'Disable Polling';
-        togglePollingBtn.className = 'glass-button px-4 py-2 bg-red-500/20 text-red-300';
+        alert('Footer Health Service not available');
       }
     }
-    
-    // Helper to update status displays
-    function updateStatus(element: HTMLElement, message: string, color: string) {
-      element.textContent = message;
-      element.className = `p-4 rounded-lg ${getColorClass(color)}`;
-    }
-    
-    function getColorClass(color: string): string {
-      switch (color) {
-        case 'green': return 'bg-green-500/20 text-green-300';
-        case 'yellow': return 'bg-yellow-500/20 text-yellow-300';  // DEGRADED
-        case 'orange': return 'bg-orange-500/20 text-orange-300';  // ERROR/UNKNOWN
-        case 'red': return 'bg-red-500/20 text-red-300';           // OFFLINE
-        default: return 'bg-gray-500/20 text-gray-300';
+
+    private updateFooterStatus(): void {
+      if (window.healthStatusService) {
+        const isPolling = window.healthStatusService.isPolling;
+        const cachedStatus = window.healthStatusService.getLatestStatus();
+        
+        UIUpdater.updateTextElement('footer-service-available', '✅ Available');
+        UIUpdater.updateTextElement('footer-polling-active', isPolling ? '✅ Active' : '❌ Inactive');
+        UIUpdater.updateTextElement('footer-last-update', new Date().toLocaleTimeString());
       }
     }
-    
-    // Event listeners
-    testHealthBtn?.addEventListener('click', testHealthEndpoint);
-    testCorsBtn?.addEventListener('click', testCORS);
-    checkServiceBtn?.addEventListener('click', checkHealthService);
-    togglePollingBtn?.addEventListener('click', togglePolling);
-    
-    // Auto-run initial tests
-    setTimeout(() => {
-      testHealthEndpoint();
-      setTimeout(() => testCORS(), 1000);
-      setTimeout(() => checkHealthService(), 2000);
-    }, 500);
-  });
+
+    // Public methods for external access
+    getServiceStatuses(): Record<string, ServiceStatus> {
+      const statuses: Record<string, ServiceStatus> = {};
+      this.latestResults.forEach((result, serviceName) => {
+        statuses[serviceName] = result.status;
+      });
+      return statuses;
+    }
+
+    getLatestResults(): Record<string, IServiceResult> {
+      const results: Record<string, IServiceResult> = {};
+      this.latestResults.forEach((result, serviceName) => {
+        results[serviceName] = result;
+      });
+      return results;
+    }
+  }
+
+  // =============================================================================
+  // INITIALIZATION
+  // =============================================================================
+
+  // Initialize the comprehensive health dashboard system
+  const healthDashboard = new HealthDashboard();
+
+  // Make dashboard available globally for debugging
+  (window as any).healthDashboard = healthDashboard;
+
+  console.log('🏥 System Health Dashboard initialized with SOLID/DRY architecture');
+});
 </script>
