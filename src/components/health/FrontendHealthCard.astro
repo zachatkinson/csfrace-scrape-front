@@ -1,0 +1,31 @@
+---
+// =============================================================================
+// FRONTEND HEALTH CARD - SERVER ISLAND (DRY/SOLID)
+// =============================================================================
+// Single Responsibility: Frontend service health checking and display
+// Uses shared service checkers - no duplicate logic!
+// =============================================================================
+
+import { FrontendServiceChecker } from '../../utils/serviceCheckers.js';
+import BaseHealthCard from './BaseHealthCard.astro';
+
+// Server-side health check using shared service checker (DRY principle)
+const serviceResult = await FrontendServiceChecker.checkHealth();
+
+// Frontend-specific metrics for display
+const details = [
+  { label: 'Framework', value: serviceResult.metrics.framework || 'Astro v5.13.5', key: 'framework' },
+  { label: 'Port', value: serviceResult.metrics.port || 3000, key: 'port' },
+  { label: 'Environment', value: serviceResult.metrics.environment || 'Development', key: 'environment' },
+  { label: 'API Connected', value: serviceResult.metrics.apiConnected ? '✅ Yes' : '❌ No', key: 'apiConnected' },
+  { label: 'Bundle Size', value: serviceResult.metrics.bundleSize || '~2.1MB', key: 'bundleSize' }
+];
+---
+
+<!-- Server Island: Frontend Health Card -->
+<BaseHealthCard 
+  serviceName="Astro Frontend"
+  serviceResult={serviceResult}
+  icon="🌐"
+  details={details}
+/>

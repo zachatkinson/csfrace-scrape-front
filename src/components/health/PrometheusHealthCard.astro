@@ -1,0 +1,28 @@
+---
+// =============================================================================
+// PROMETHEUS HEALTH CARD - SERVER ISLAND (DRY/SOLID)
+// =============================================================================
+// Single Responsibility: Prometheus service health checking and display
+// Uses shared service checkers - no duplicate logic!
+// =============================================================================
+
+import { PrometheusServiceChecker } from '../../utils/serviceCheckers.js';
+import BaseHealthCard from './BaseHealthCard.astro';
+
+// Server-side health check using shared service checker (DRY principle)
+const serviceResult = await PrometheusServiceChecker.checkHealth();
+
+// Prometheus-specific metrics for display (basic since external service)
+const details = [
+  { label: 'Service Type', value: 'Monitoring', key: 'type' },
+  { label: 'Port', value: '9090', key: 'port' }
+];
+---
+
+<!-- Server Island: Prometheus Health Card -->
+<BaseHealthCard 
+  serviceName="Prometheus"
+  serviceResult={serviceResult}
+  icon="📊"
+  details={details}
+/>

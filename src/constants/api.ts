@@ -4,22 +4,72 @@
  * ZERO TOLERANCE for hardcoded URLs - All API endpoints must use these constants
  */
 
-// Base API Configuration
+// =============================================================================
+// SOLID/DRY API CONFIGURATION
+// =============================================================================
+// Single Responsibility: API configuration management
+// DRY: Centralized configuration without duplication
+// Open/Closed: Extensible for new environments without modification
+// =============================================================================
+
+// Base API Configuration with SOLID/DRY principles
 export const API_CONFIG = {
-  // Primary API Base URL with environment variable support
-  DEFAULT_BASE_URL: (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:8000',
+  // Environment-aware API Base URL (DRY: single source of truth)
+  DEFAULT_BASE_URL: getEnvironmentAwareApiUrl(),
   
-  // Alternative environment variables for different contexts
-  PUBLIC_API_URL: import.meta.env.PUBLIC_API_URL as string | undefined,
+  // Fallback URLs for different deployment scenarios
+  DEVELOPMENT_URL: 'http://localhost:8000',
+  DOCKER_URL: 'http://backend:8000',  // Internal Docker networking
   
-  // Request Configuration
+  // Request Configuration (centralized)
   DEFAULT_TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT ?? '30000', 10),
   DEFAULT_RETRIES: 3,
   
-  // Health Check Configuration
+  // Health Check Configuration (aligned with backend)
   HEALTH_CHECK_INTERVAL: 30000, // 30 seconds
   HEALTH_CHECK_TIMEOUT: 10000,  // 10 seconds
 } as const;
+
+/**
+ * Environment-aware API URL resolver (SOLID: Single Responsibility)
+ * Determines the correct API URL based on deployment context
+ */
+function getEnvironmentAwareApiUrl(): string {
+  // Priority order (DRY: defined once, used everywhere):
+  // 1. Explicit environment variable
+  // 2. Browser location (for development)
+  // 3. Docker networking (for container deployment)
+  // 4. Default localhost fallback
+  
+  // Check for explicit environment variables
+  const viteApiUrl = import.meta.env.VITE_API_URL as string | undefined;
+  const publicApiUrl = import.meta.env.PUBLIC_API_URL as string | undefined;
+  
+  if (viteApiUrl) {
+    console.log('🔧 Using VITE_API_URL:', viteApiUrl);
+    return viteApiUrl;
+  }
+  
+  if (publicApiUrl) {
+    console.log('🔧 Using PUBLIC_API_URL:', publicApiUrl);
+    return publicApiUrl;
+  }
+  
+  // Browser-based detection (for development)
+  if (typeof window !== 'undefined') {
+    const currentHost = window.location.hostname;
+    
+    // Running in Docker container (frontend service)
+    if (currentHost === 'frontend' || currentHost === 'localhost') {
+      // Check if we can reach backend service directly
+      return 'http://localhost:8000'; // External Docker port mapping
+    }
+  }
+  
+  // Default fallback
+  console.log('🔧 Using default API URL: http://localhost:8000');
+  return 'http://localhost:8000';
+}
 
 // API Endpoints - All endpoints relative to base URL
 export const API_ENDPOINTS = {
@@ -90,10 +140,43 @@ export const API_ENDPOINTS = {
   },
 } as const;
 
-// Helper function to get the appropriate base URL
+// =============================================================================
+// SOLID API URL MANAGEMENT
+// =============================================================================
+
+/**
+ * Get the current API base URL (SOLID: Single Responsibility)
+ * Returns the resolved API URL for the current environment
+ */
 export function getApiBaseUrl(): string {
-  // Priority order: VITE_API_URL > PUBLIC_API_URL > default localhost
-  return API_CONFIG.PUBLIC_API_URL ?? API_CONFIG.DEFAULT_BASE_URL;
+  // DRY: Use the centrally configured DEFAULT_BASE_URL
+  return API_CONFIG.DEFAULT_BASE_URL;
+}
+
+/**
+ * Update API base URL dynamically (Open/Closed: extensible)
+ * Allows runtime API URL changes without breaking existing contracts
+ */
+export function updateApiBaseUrl(newUrl: string): void {
+  // Update the configuration object
+  (API_CONFIG as any).DEFAULT_BASE_URL = newUrl;
+  
+  // Notify any global services about the URL change
+  if (typeof window !== 'undefined') {
+    // Update global window variable for backward compatibility
+    (window as any).CSFRACE_API_BASE_URL = newUrl;
+    
+    // Update health service if available
+    const healthService = (window as any).healthStatusService;
+    if (healthService && typeof healthService.updateApiUrl === 'function') {
+      healthService.updateApiUrl(newUrl);
+    }
+    
+    // Dispatch custom event for other components
+    window.dispatchEvent(new CustomEvent('apiUrlChanged', { 
+      detail: { newUrl, timestamp: new Date().toISOString() } 
+    }));
+  }
 }
 
 // Helper function to build full API URL

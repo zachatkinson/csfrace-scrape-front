@@ -1,0 +1,28 @@
+---
+// =============================================================================
+// CACHE HEALTH CARD - SERVER ISLAND (DRY/SOLID)
+// =============================================================================
+// Single Responsibility: Redis cache service health checking and display
+// Uses shared service checkers - no duplicate logic!
+// =============================================================================
+
+import { CacheServiceChecker } from '../../utils/serviceCheckers.js';
+import BaseHealthCard from './BaseHealthCard.astro';
+
+// Server-side health check using shared service checker (DRY principle)
+const serviceResult = await CacheServiceChecker.checkHealth();
+
+// Cache-specific metrics for display
+const details = [
+  { label: 'Memory Used', value: serviceResult.metrics.memoryUsed || 'Unknown', key: 'memoryUsed' },
+  { label: 'Hit Rate', value: serviceResult.metrics.hitRate || 'Unknown', key: 'hitRate' }
+];
+---
+
+<!-- Server Island: Cache Health Card -->
+<BaseHealthCard 
+  serviceName="Redis Cache"
+  serviceResult={serviceResult}
+  icon="⚡"
+  details={details}
+/>

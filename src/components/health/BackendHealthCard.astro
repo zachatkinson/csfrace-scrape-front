@@ -1,0 +1,32 @@
+---
+// =============================================================================
+// BACKEND HEALTH CARD - SERVER ISLAND (DRY/SOLID)
+// =============================================================================
+// Single Responsibility: Backend service health checking and display
+// Uses shared service checkers - no duplicate logic!
+// =============================================================================
+
+import { BackendServiceChecker } from '../../utils/serviceCheckers.js';
+import BaseHealthCard from './BaseHealthCard.astro';
+
+// Server-side health check using shared service checker (DRY principle)
+const serviceResult = await BackendServiceChecker.checkHealth();
+
+// Backend-specific metrics for display
+const details = [
+  { label: 'Uptime', value: serviceResult.metrics.uptime || 'Unknown', key: 'uptime' },
+  { label: 'Memory', value: serviceResult.metrics.memory || 'Unknown', key: 'memory' },
+  { label: 'CPU', value: serviceResult.metrics.cpu || 'Unknown', key: 'cpu' },
+  { label: 'Version', value: serviceResult.metrics.version || '3.3.0', key: 'version' },
+  { label: 'Database', value: serviceResult.metrics.database || 'Unknown', key: 'database' },
+  { label: 'Cache', value: serviceResult.metrics.cache || 'Unknown', key: 'cache' }
+];
+---
+
+<!-- Server Island: Backend Health Card -->
+<BaseHealthCard 
+  serviceName="Backend API"
+  serviceResult={serviceResult}
+  icon="🔧"
+  details={details}
+/>

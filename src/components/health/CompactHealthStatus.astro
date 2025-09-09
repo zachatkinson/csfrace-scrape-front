@@ -1,0 +1,102 @@
+---
+// =============================================================================
+// COMPACT HEALTH STATUS - SERVER ISLAND FOR FOOTER (DRY/SOLID)
+// =============================================================================
+// Single Responsibility: Display compact health status for footer
+// Uses shared service checkers - no duplicate logic!
+// =============================================================================
+
+import { 
+  BackendServiceChecker,
+  DatabaseServiceChecker, 
+  CacheServiceChecker,
+  PrometheusServiceChecker,
+  GrafanaServiceChecker,
+  FrontendServiceChecker
+} from '../../utils/serviceCheckers.js';
+
+// Server-side health checks using shared service checkers (DRY principle)
+const [backend, database, cache, prometheus, grafana, frontend] = await Promise.all([
+  BackendServiceChecker.checkHealth(),
+  DatabaseServiceChecker.checkHealth(), 
+  CacheServiceChecker.checkHealth(),
+  PrometheusServiceChecker.checkHealth(),
+  GrafanaServiceChecker.checkHealth(),
+  FrontendServiceChecker.checkHealth()
+]);
+
+const services = [
+  { name: 'Frontend', result: frontend, icon: '🌐' },
+  { name: 'Backend', result: backend, icon: '🔧' },
+  { name: 'Database', result: database, icon: '🐘' },
+  { name: 'Cache', result: cache, icon: '⚡' },
+  { name: 'Prometheus', result: prometheus, icon: '📊' },
+  { name: 'Grafana', result: grafana, icon: '📈' }
+];
+
+// SOLID: Single source of truth for status color mapping
+function getStatusColor(status: string): string {
+  switch (status) {
+    case 'up': return 'green';
+    case 'degraded': return 'yellow'; 
+    case 'down': return 'red';
+    case 'error': return 'orange';
+    default: return 'gray';
+  }
+}
+
+// Calculate overall system health
+const upCount = services.filter(s => s.result.status === 'up').length;
+const totalCount = services.length;
+const overallHealth = upCount === totalCount ? 'up' : 
+                     upCount >= totalCount * 0.5 ? 'degraded' : 'down';
+---
+
+<!-- Compact Health Status for Footer (Enhanced for React Integration) -->
+<div class="flex items-center space-x-4 footer-health-status" data-component="health-status">
+  <!-- Overall Status -->
+  <div class="flex items-center space-x-2">
+    <div 
+      class="w-3 h-3 rounded-full status-indicator" 
+      class:list={[`bg-${getStatusColor(overallHealth)}-500`]}
+      data-status={overallHealth}
+    ></div>
+    <span class="text-white/80 text-sm font-medium status-text">
+      System: {upCount}/{totalCount} Services
+    </span>
+  </div>
+
+  <!-- Individual Service Indicators -->
+  <div class="flex items-center space-x-2">
+    {services.map(service => (
+      <div 
+        class="flex items-center space-x-1 group relative"
+        key={service.name}
+        data-service={service.name.toLowerCase()}
+      >
+        <div 
+          class="w-2 h-2 rounded-full status-indicator" 
+          class:list={[`bg-${getStatusColor(service.result.status)}-500`]}
+          data-status={service.result.status}
+        ></div>
+        
+        <!-- Tooltip on hover -->
+        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 
+                    bg-black/80 text-white text-xs rounded opacity-0 group-hover:opacity-100 
+                    transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+          <span class="service-tooltip">
+            {service.icon} {service.name}: <span class="status-text">{service.result.status.toUpperCase()}</span>
+            {service.result.metrics.responseTime && 
+              <span class="metrics-text"> | Response: {service.result.metrics.responseTime}ms</span>
+            }
+          </span>
+        </div>
+      </div>
+    ))}
+  </div>
+
+  <!-- Last Update Time -->
+  <div class="text-white/50 text-xs timestamp">
+    Updated: {new Date().toLocaleTimeString()}
+  </div>
+</div>
