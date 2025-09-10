@@ -1,0 +1,102 @@
+---
+// Test page for SSO + Passkeys authentication flow
+import MainLayout from '../components/layout/MainLayout.astro';
+---
+
+<MainLayout title="Authentication Test - SSO + Passkeys">
+  <div class="min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+      <!-- Test Login Form -->
+      <div class="mb-8">
+        <h2 class="text-xl font-semibold text-white mb-4 text-center">Test Login Form</h2>
+        <div id="login-form-container"></div>
+      </div>
+      
+      <!-- Test Register Form -->
+      <div class="mb-8">
+        <h2 class="text-xl font-semibold text-white mb-4 text-center">Test Register Form</h2>
+        <div id="register-form-container"></div>
+      </div>
+      
+      <!-- Test Auth Modal -->
+      <div class="text-center">
+        <button 
+          id="open-auth-modal" 
+          class="liquid-glass rounded-glass px-6 py-3 bg-blue-600/80 hover:bg-blue-600 text-white font-medium transition-all shadow-glass hover:shadow-glass-lg"
+        >
+          Open Auth Modal
+        </button>
+      </div>
+      
+      <!-- Auth Modal Container -->
+      <div id="auth-modal-container"></div>
+    </div>
+  </div>
+</MainLayout>
+
+<script>
+  import { LoginForm } from '../components/auth/LoginForm.tsx';
+  import { RegisterForm } from '../components/auth/RegisterForm.tsx';
+  import { AuthModal } from '../components/auth/AuthModal.tsx';
+  import React from 'react';
+  import { createRoot } from 'react-dom/client';
+
+  // Test LoginForm
+  const loginContainer = document.getElementById('login-form-container');
+  if (loginContainer) {
+    const loginRoot = createRoot(loginContainer);
+    loginRoot.render(
+      React.createElement(LoginForm, {
+        onSuccess: () => console.log('Login success!'),
+        onSwitchToRegister: () => console.log('Switch to register'),
+      })
+    );
+  }
+
+  // Test RegisterForm
+  const registerContainer = document.getElementById('register-form-container');
+  if (registerContainer) {
+    const registerRoot = createRoot(registerContainer);
+    registerRoot.render(
+      React.createElement(RegisterForm, {
+        onSuccess: () => console.log('Register success!'),
+        onSwitchToLogin: () => console.log('Switch to login'),
+      })
+    );
+  }
+
+  // Test AuthModal
+  const modalContainer = document.getElementById('auth-modal-container');
+  const modalButton = document.getElementById('open-auth-modal');
+  
+  if (modalContainer && modalButton) {
+    const modalRoot = createRoot(modalContainer);
+    let isModalOpen = false;
+    
+    const updateModal = () => {
+      modalRoot.render(
+        React.createElement(AuthModal, {
+          isOpen: isModalOpen,
+          onClose: () => {
+            isModalOpen = false;
+            updateModal();
+          },
+          onSuccess: () => {
+            console.log('Auth modal success!');
+            isModalOpen = false;
+            updateModal();
+          },
+          initialMode: 'login',
+        })
+      );
+    };
+    
+    modalButton.addEventListener('click', () => {
+      isModalOpen = true;
+      updateModal();
+    });
+    
+    // Initial render
+    updateModal();
+  }
+</script>

@@ -390,13 +390,13 @@ export class ErrorHandler {
   }
 
   /**
-   * Handle authentication errors specifically
+   * Handle authentication errors specifically using secure token storage
    */
-  static handleAuthError(error: StandardApiError, redirectToLogin: () => void): void {
+  static async handleAuthError(error: StandardApiError, redirectToLogin: () => void): Promise<void> {
     if (error.code === ApiErrorCode.UNAUTHORIZED || error.code === ApiErrorCode.AUTHENTICATION_EXPIRED) {
-      // Clear any stored tokens
-      localStorage.removeItem('csfrace-access-token');
-      sessionStorage.removeItem('csfrace-access-token');
+      // Clear any stored tokens using secure storage system
+      const { clearStoredTokens } = await import('./auth-tokens');
+      clearStoredTokens();
       
       // Redirect to login
       redirectToLogin();

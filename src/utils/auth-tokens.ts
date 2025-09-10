@@ -2,7 +2,18 @@
  * Authentication Token Utilities
  * SOLID: Single Responsibility - Token management utilities only
  * Handles JWT token parsing, validation, expiry calculations, and refresh logic
+ * 
+ * SECURITY: Uses enterprise-grade secure token storage
+ * - Access tokens: Memory-only (cleared on tab close)
+ * - Refresh tokens: HttpOnly cookies (XSS-safe)
+ * - Session data: Encrypted localStorage
  */
+
+import { 
+  secureTokenStorage, 
+  TokenType, 
+  TokenMigrationService 
+} from './secure-token-storage';
 
 // =============================================================================
 // TOKEN INTERFACES
@@ -130,32 +141,45 @@ const TOKEN_STORAGE_KEYS = {
 } as const;
 
 /**
- * Store tokens securely in localStorage
+ * Store tokens using enterprise-grade secure storage
+ * SECURITY: Access tokens in memory, refresh tokens in HttpOnly cookies
  */
 export function storeTokens(accessToken: string, refreshToken?: string): void {
   try {
-    localStorage.setItem(TOKEN_STORAGE_KEYS.ACCESS_TOKEN, accessToken);
+    // Migrate any legacy tokens first
+    TokenMigrationService.migrateLegacyTokens();
     
+    // Store access token in memory (cleared on tab close)
+    secureTokenStorage.storeToken(TokenType.ACCESS_TOKEN, accessToken);
+    
+    // Store refresh token in HttpOnly cookie (XSS-safe)
     if (refreshToken) {
-      localStorage.setItem(TOKEN_STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+      secureTokenStorage.storeToken(TokenType.REFRESH_TOKEN, refreshToken);
     }
     
-    // Store expiry for quick checks
+    // Store session metadata in encrypted storage
     const info = getTokenInfo(accessToken);
     if (info) {
-      localStorage.setItem(TOKEN_STORAGE_KEYS.TOKEN_EXPIRY, info.expiresAt.toISOString());
+      const sessionData = {
+        expiresAt: info.expiresAt.toISOString(),
+        issuedAt: new Date().toISOString(),
+        tokenType: info.payload.token_type || 'access'
+      };
+      secureTokenStorage.storeToken(TokenType.SESSION_DATA, JSON.stringify(sessionData));
     }
   } catch (error) {
-    console.error('Failed to store tokens:', error);
+    console.error('Failed to store tokens securely:', error);
+    throw new Error('Token storage failed - check encryption configuration');
   }
 }
 
 /**
- * Retrieve stored access token
+ * Retrieve stored access token from secure memory storage
+ * SECURITY: Access tokens are never stored persistently
  */
 export function getStoredAccessToken(): string | null {
   try {
-    return localStorage.getItem(TOKEN_STORAGE_KEYS.ACCESS_TOKEN);
+    return secureTokenStorage.getToken(TokenType.ACCESS_TOKEN);
   } catch (error) {
     console.error('Failed to retrieve access token:', error);
     return null;
@@ -163,11 +187,15 @@ export function getStoredAccessToken(): string | null {
 }
 
 /**
- * Retrieve stored refresh token
+ * Retrieve stored refresh token 
+ * SECURITY: Refresh tokens are in HttpOnly cookies - not accessible from JavaScript
+ * This function returns null by design - server manages refresh token security
  */
 export function getStoredRefreshToken(): string | null {
   try {
-    return localStorage.getItem(TOKEN_STORAGE_KEYS.REFRESH_TOKEN);
+    // HttpOnly cookies cannot be accessed from JavaScript (security feature)
+    // The server will handle refresh token validation and rotation
+    return null;
   } catch (error) {
     console.error('Failed to retrieve refresh token:', error);
     return null;
@@ -175,13 +203,32 @@ export function getStoredRefreshToken(): string | null {
 }
 
 /**
- * Clear all stored tokens
+ * Get session metadata from encrypted storage
+ * SECURITY: Session information is encrypted and expires automatically
+ */
+export function getSessionData(): { expiresAt: string; issuedAt: string; tokenType: string } | null {
+  try {
+    const sessionDataStr = secureTokenStorage.getToken(TokenType.SESSION_DATA);
+    if (!sessionDataStr) return null;
+    
+    return JSON.parse(sessionDataStr);
+  } catch (error) {
+    console.error('Failed to retrieve session data:', error);
+    return null;
+  }
+}
+
+/**
+ * Clear all stored tokens using secure storage
+ * SECURITY: Clears memory, encrypted storage, and HttpOnly cookies
  */
 export function clearStoredTokens(): void {
   try {
-    localStorage.removeItem(TOKEN_STORAGE_KEYS.ACCESS_TOKEN);
-    localStorage.removeItem(TOKEN_STORAGE_KEYS.REFRESH_TOKEN);
-    localStorage.removeItem(TOKEN_STORAGE_KEYS.TOKEN_EXPIRY);
+    // Clear all tokens from secure storage
+    secureTokenStorage.clearAllTokens();
+    
+    // Clear any remaining legacy tokens
+    TokenMigrationService.clearLegacyTokens();
   } catch (error) {
     console.error('Failed to clear tokens:', error);
   }

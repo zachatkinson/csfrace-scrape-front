@@ -163,14 +163,35 @@ export interface ISecureStorageOptions {
   expirationMinutes?: number;
 }
 
+/**
+ * Secure Storage Error Classes
+ * Single Responsibility: Each error type handles specific failure scenarios
+ */
+export class EncryptionKeyError extends Error {
+  constructor(message = 'Encryption key not configured. Set VITE_ENCRYPTION_KEY environment variable.') {
+    super(message);
+    this.name = 'EncryptionKeyError';
+  }
+}
+
 export class SecureStorage {
-  private static readonly ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || 'default-key';
+  private static getEncryptionKey(): string {
+    const key = import.meta.env.VITE_ENCRYPTION_KEY;
+    if (!key) {
+      throw new EncryptionKeyError();
+    }
+    if (key.length < 32) {
+      throw new EncryptionKeyError('Encryption key must be at least 32 characters long');
+    }
+    return key;
+  }
 
   public static setItem(key: string, value: string, options: ISecureStorageOptions = {}): void {
     let dataToStore = value;
     
     if (options.encrypt) {
-      dataToStore = SecurityUtils.encryptToken(value, { key: this.ENCRYPTION_KEY });
+      const encryptionKey = this.getEncryptionKey();
+      dataToStore = SecurityUtils.encryptToken(value, { key: encryptionKey });
     }
     
     const storageItem = {
@@ -199,7 +220,8 @@ export class SecureStorage {
       }
       
       if (parsed.encrypted) {
-        return SecurityUtils.decryptToken(parsed.data, { key: this.ENCRYPTION_KEY });
+        const encryptionKey = this.getEncryptionKey();
+        return SecurityUtils.decryptToken(parsed.data, { key: encryptionKey });
       }
       
       return parsed.data;

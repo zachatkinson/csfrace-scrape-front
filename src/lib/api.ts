@@ -110,10 +110,11 @@ class ApiClient {
           return this.client(originalRequest);
         }
         
-        // Handle authentication errors
+        // Handle authentication errors using secure token storage
         if (error.response?.status === 401) {
-          sessionStorage.removeItem('csfrace-access-token');
-          localStorage.removeItem('csfrace-refresh-token');
+          // Clear tokens using secure storage system
+          const { clearStoredTokens } = await import('../utils/auth-tokens');
+          clearStoredTokens();
           // Don't redirect here - let the AuthContext handle it
         }
         
