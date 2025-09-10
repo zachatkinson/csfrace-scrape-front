@@ -50,12 +50,16 @@ const responseTime = serviceResult.metrics.responseTime;
 ---
 
 <!-- Health Card Component -->
-<div class="glass-card p-6 border-l-4" class:list={[
-  `border-${statusColor}-500`,
-  serviceResult.status === 'up' ? 'bg-green-500/5' : 
-  serviceResult.status === 'degraded' ? 'bg-yellow-500/5' :
-  serviceResult.status === 'down' ? 'bg-red-500/5' : 'bg-orange-500/5'
-]}>
+<div 
+  class="glass-card p-6 border-l-4" 
+  class:list={[
+    `border-${statusColor}-500`,
+    serviceResult.status === 'up' ? 'bg-green-500/5' : 
+    serviceResult.status === 'degraded' ? 'bg-yellow-500/5' :
+    serviceResult.status === 'down' ? 'bg-red-500/5' : 'bg-orange-500/5'
+  ]}
+  data-service={serviceName.toLowerCase().includes('frontend') ? 'frontend' : serviceName.toLowerCase().replace(/\s+/g, '-')}
+>
   <!-- Header -->
   <div class="flex items-center justify-between mb-4">
     <div class="flex items-center space-x-3">
@@ -99,7 +103,7 @@ const responseTime = serviceResult.metrics.responseTime;
     {details.map(detail => (
       <div key={detail.key}>
         <span class="text-white/60">{detail.label}:</span>
-        <span class="ml-2 text-white font-mono">{detail.value}</span>
+        <span class="ml-2 text-white font-mono" data-metric={detail.key}>{detail.value}</span>
       </div>
     ))}
   </div>

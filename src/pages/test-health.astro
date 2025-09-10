@@ -92,8 +92,8 @@ import MainLayout from '../components/layout/MainLayout.astro';
           <div class="bg-black/30 rounded-lg p-4">
             <h4 class="text-white font-semibold mb-2">Service Info</h4>
             <div class="space-y-1 text-xs">
-              <div>Framework: <span class="text-blue-400">Astro v5.13.6</span></div>
-              <div>Port: <span class="text-blue-400">3000</span></div>
+              <div>Framework: <span id="frontend-framework" class="text-blue-400">Astro v5.x</span></div>
+              <div>Port: <span id="frontend-port" class="text-blue-400">3000</span></div>
               <div>Environment: 
                 <span id="frontend-env" class="ml-2 text-white">Development</span>
               </div>
@@ -104,7 +104,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
             <h4 class="text-white font-semibold mb-2">Performance Metrics</h4>
             <div class="grid grid-cols-2 gap-2 text-xs">
               <div>Page Load: <span id="frontend-load-time" class="text-blue-400">-</span></div>
-              <div>Bundle Size: <span class="text-blue-400">~2.1MB</span></div>
+              <div>Bundle Size: <span id="frontend-bundle-size" class="text-blue-400">~2.1MB</span></div>
               <div>Memory Usage: <span id="frontend-memory" class="text-blue-400">-</span></div>
               <div>API Latency: <span id="frontend-api-latency" class="text-blue-400">-</span></div>
             </div>
@@ -113,10 +113,10 @@ import MainLayout from '../components/layout/MainLayout.astro';
           <div class="bg-black/30 rounded-lg p-4">
             <h4 class="text-white font-semibold mb-2">Features Status</h4>
             <div class="space-y-1 text-xs">
-              <div>✅ React Components</div>
-              <div>✅ TypeScript Support</div>
-              <div>✅ Tailwind CSS</div>
-              <div>✅ Hot Module Reload</div>
+              <div id="frontend-feature-react">✅ React Components</div>
+              <div id="frontend-feature-typescript">✅ TypeScript Support</div>
+              <div id="frontend-feature-tailwind">✅ Tailwind CSS</div>
+              <div id="frontend-feature-hmr">✅ Hot Module Reload</div>
             </div>
           </div>
         </div>
@@ -154,11 +154,8 @@ import MainLayout from '../components/layout/MainLayout.astro';
           <div class="bg-black/30 rounded-lg p-4">
             <h4 class="text-white font-semibold mb-2">Service Info</h4>
             <div class="space-y-1 text-xs">
-              <div>Framework: <span class="text-blue-400">FastAPI + Python 3.3.0</span></div>
-              <div>Uptime: <span id="backend-uptime" class="text-blue-400">-</span></div>
+              <div>Framework: <span id="backend-framework" class="text-blue-400" data-framework="backend">FastAPI + Python 3.13</span></div>
               <div>Version: <span id="backend-version" class="text-blue-400">-</span></div>
-              <div>Memory: <span id="backend-memory" class="text-blue-400">-</span></div>
-              <div>CPU: <span id="backend-cpu" class="text-blue-400">-</span></div>
             </div>
           </div>
           
@@ -205,9 +202,17 @@ import MainLayout from '../components/layout/MainLayout.astro';
         
         <div class="space-y-3">
           <div class="bg-black/30 rounded-lg p-4">
+            <h4 class="text-white font-semibold mb-2">Database Info</h4>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div>Version: <span id="postgres-version" class="text-blue-400">PostgreSQL 15</span></div>
+              <div>Size: <span id="postgres-size" class="text-blue-400">-</span></div>
+            </div>
+          </div>
+          
+          <div class="bg-black/30 rounded-lg p-4">
             <h4 class="text-white font-semibold mb-2">Connection Pool</h4>
             <div class="grid grid-cols-2 gap-2 text-xs">
-              <div>Max Connections: <span class="text-blue-400">200</span></div>
+              <div>Max Connections: <span class="text-blue-400" data-postgres-max-connections>200</span></div>
               <div>Active: <span id="postgres-active-connections" class="text-blue-400">-</span></div>
             </div>
           </div>
@@ -268,7 +273,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
           <div class="bg-black/30 rounded-lg p-4">
             <h4 class="text-white font-semibold mb-2">Configuration</h4>
             <div class="space-y-1 text-xs">
-              <div>Version: <span class="text-blue-400">7.4.5</span></div>
+              <div>Version: <span class="text-blue-400" data-redis-version>7.4.5</span></div>
               <div>Mode: 
                 <span id="redis-mode" class="ml-2 text-white">Standalone</span>
               </div>
@@ -340,7 +345,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
           <div class="bg-black/30 rounded-lg p-4">
             <h4 class="text-white font-semibold mb-2">Service Info</h4>
             <div class="space-y-1 text-xs">
-              <div>Version: <span class="text-blue-400">11.3.0 Enterprise</span></div>
+              <div>Version: <span class="text-blue-400" data-grafana-version>11.3.0 Enterprise</span></div>
               <div>Port: <span class="text-blue-400">3001</span></div>
               <div>Admin User: <span class="text-blue-400">admin</span></div>
             </div>
@@ -411,7 +416,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
           <div class="bg-black/30 rounded-lg p-4">
             <h4 class="text-white font-semibold mb-2">Service Info</h4>
             <div class="space-y-1 text-xs">
-              <div>Version: <span class="text-blue-400">2.40.0</span></div>
+              <div>Version: <span class="text-blue-400" data-prometheus-version>2.40.0</span></div>
               <div>Port: <span class="text-blue-400">9090</span></div>
               <div>Retention: <span class="text-blue-400">30 Days</span></div>
             </div>
@@ -1106,23 +1111,11 @@ import MainLayout from '../components/layout/MainLayout.astro';
     updateUI(result: IServiceResult): void {
       UIUpdater.updateStatusIndicator('backend-status-indicator', result.status);
       UIUpdater.updateTextElement('backend-status-text', result.message, result.status);
-      UIUpdater.updateTextElement('backend-uptime', result.metrics.uptime || 'Unknown');
-      UIUpdater.updateTextElement('backend-version', result.metrics.version || 'Unknown');
-      UIUpdater.updateTextElement('backend-memory', result.metrics.memory || 'Unknown');
-      UIUpdater.updateTextElement('backend-cpu', result.metrics.cpu || 'Unknown');
+      // Note: backend-uptime, backend-version, backend-memory, backend-cpu 
+      // are now handled by the dedicated backend-metrics.ts script
       
-      // Update component status indicators
-      const components = [
-        { id: 'backend-observability', name: 'Observability Manager', status: result.status === 'up' ? '✅' : '❌' },
-        { id: 'backend-metrics', name: 'Metrics Collector', status: result.status === 'up' ? '✅' : '❌' },
-        { id: 'backend-health-checker', name: 'Health Checker', status: result.status === 'up' ? '✅' : '❌' },
-        { id: 'backend-alert-manager', name: 'Alert Manager', status: result.status === 'up' ? '✅' : '❌' },
-        { id: 'backend-performance', name: 'Performance Monitor', status: result.status === 'up' ? '✅' : '❌' }
-      ];
-
-      components.forEach(component => {
-        UIUpdater.updateTextElement(component.id, `${component.status} ${component.name}`);
-      });
+      // Component status indicators are now handled by the dedicated backend-metrics.ts script
+      // Note: Removed duplicate component updates to prevent conflicts
 
       // Update raw data display
       UIUpdater.updateElement('raw-backend-data', JSON.stringify(result, null, 2));
@@ -2584,3 +2577,21 @@ import MainLayout from '../components/layout/MainLayout.astro';
   }
 
 </script>
+
+<!-- Client-Side Metrics Collection Script -->
+<script type="module" src="/src/scripts/client-side-metrics.ts"></script>
+
+<!-- Backend Service Metrics Collection Script -->
+<script type="module" src="/src/scripts/backend-metrics.ts"></script>
+
+<!-- PostgreSQL Database Metrics Collection Script -->
+<script type="module" src="/src/scripts/postgres-metrics.ts"></script>
+
+<!-- Redis Cache Metrics Collection Script -->
+<script type="module" src="/src/scripts/redis-metrics.ts"></script>
+
+<!-- Grafana Dashboard Metrics Collection Script -->
+<script type="module" src="/src/scripts/grafana-metrics.ts"></script>
+
+<!-- Prometheus Metrics Service Collection Script -->
+<script type="module" src="/src/scripts/prometheus-metrics.ts"></script>

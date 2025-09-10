@@ -116,6 +116,7 @@ export class SecurityUtils {
   public static validatePassword(password: string, hashedPassword: string): boolean {
     try {
       const [salt, hash] = hashedPassword.split(':');
+      if (!salt || !hash) return false;
       const testHash = CryptoJS.PBKDF2(password, salt, {
         keySize: 512/32,
         iterations: 10000

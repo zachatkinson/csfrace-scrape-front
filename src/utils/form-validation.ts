@@ -136,7 +136,7 @@ export class FieldValidator {
   private rules: ValidationRule[] = [];
   private debounceTimeout: number | null = null;
 
-  constructor(private fieldName: string) {}
+  constructor(private _fieldName: string) {}
 
   /**
    * Add validation rule

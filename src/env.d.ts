@@ -1,5 +1,12 @@
 /// <reference types="astro/client" />
 
+// Extend Astro namespace for middleware locals
+declare namespace App {
+  interface Locals {
+    rateLimitRemaining?: number;
+  }
+}
+
 interface HealthStatus {
   service: string;
   status: 'up' | 'down' | 'error';

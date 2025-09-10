@@ -1,4 +1,5 @@
-import React, { Component, ReactNode, ErrorInfo } from 'react';
+import React, { Component } from 'react';
+import type { ReactNode, ErrorInfo } from 'react';
 import { SecurityUtils } from '../../utils/security.ts';
 
 interface IErrorBoundaryState {
@@ -121,7 +122,7 @@ export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundary
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     const errorId = this.state.errorId || SecurityUtils.generateCSRFToken().substring(0, 8);
     
     this.setState({
@@ -155,7 +156,7 @@ export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundary
     this.reportError(error, errorInfo, errorId);
   }
 
-  componentDidUpdate(prevProps: IErrorBoundaryProps): void {
+  override componentDidUpdate(prevProps: IErrorBoundaryProps): void {
     if (this.props.resetOnPropsChange && prevProps.children !== this.props.children) {
       if (this.state.hasError) {
         this.resetErrorBoundary();
@@ -163,7 +164,7 @@ export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundary
     }
   }
 
-  componentWillUnmount(): void {
+  override componentWillUnmount(): void {
     if (this.resetTimeoutId) {
       window.clearTimeout(this.resetTimeoutId);
     }
@@ -219,7 +220,7 @@ export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundary
     }, 100);
   };
 
-  render(): ReactNode {
+  override render(): ReactNode {
     if (this.state.hasError && this.state.error && this.state.errorInfo) {
       // Custom fallback UI
       if (this.props.fallback) {
@@ -259,7 +260,7 @@ export function withErrorBoundary<T extends object>(
 
 // Hook for throwing errors in functional components (for testing)
 export function useErrorHandler() {
-  return (error: Error, errorInfo?: Partial<ErrorInfo>) => {
+  return (error: Error, _errorInfo?: Partial<ErrorInfo>) => {
     throw error;
   };
 }

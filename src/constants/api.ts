@@ -43,27 +43,24 @@ function getEnvironmentAwareApiUrl(): string {
   
   // Check for explicit environment variables
   const viteApiUrl = import.meta.env.VITE_API_URL as string | undefined;
+  const viteServerApiUrl = import.meta.env.VITE_SERVER_API_URL as string | undefined;
   const publicApiUrl = import.meta.env.PUBLIC_API_URL as string | undefined;
   
+  // Server-side rendering (inside Docker container)
+  if (typeof window === 'undefined' && viteServerApiUrl) {
+    console.log('🐳 Server-side: Using VITE_SERVER_API_URL:', viteServerApiUrl);
+    return viteServerApiUrl;
+  }
+  
+  // Client-side (browser)
   if (viteApiUrl) {
-    console.log('🔧 Using VITE_API_URL:', viteApiUrl);
+    console.log('🔧 Browser-side: Using VITE_API_URL:', viteApiUrl);
     return viteApiUrl;
   }
   
   if (publicApiUrl) {
     console.log('🔧 Using PUBLIC_API_URL:', publicApiUrl);
     return publicApiUrl;
-  }
-  
-  // Browser-based detection (for development)
-  if (typeof window !== 'undefined') {
-    const currentHost = window.location.hostname;
-    
-    // Running in Docker container (frontend service)
-    if (currentHost === 'frontend' || currentHost === 'localhost') {
-      // Check if we can reach backend service directly
-      return 'http://localhost:8000'; // External Docker port mapping
-    }
   }
   
   // Default fallback

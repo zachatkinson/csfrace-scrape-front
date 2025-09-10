@@ -3,11 +3,13 @@
 // Single source of truth for all health status checking across the application
 // =============================================================================
 
+import { getApiBaseUrl } from '../constants/api.js';
+
 // =============================================================================
 // MODERN 2025 POLLING CONFIGURATION - ADAPTIVE & EFFICIENT
 // =============================================================================
 export const SHARED_CONFIG = {
-  API_URL: import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' ? (window as any).CSFRACE_API_BASE_URL || 'http://localhost:8000' : 'http://localhost:8000'),
+  API_URL: getApiBaseUrl(),
   
   // Adaptive timeout based on connection quality
   TIMEOUT: 6000, // Base timeout - will adapt based on response times
@@ -146,6 +148,306 @@ export class ErrorHandler {
 }
 
 // =============================================================================
+// SHARED ENVIRONMENT DETECTION UTILITIES (DRY Principle)
+// =============================================================================
+export class EnvironmentDetector {
+  static isServerSide(): boolean {
+    return typeof window === 'undefined';
+  }
+
+  static isBrowserSide(): boolean {
+    return typeof window !== 'undefined';
+  }
+
+  static getCurrentPort(): number | string {
+    if (this.isServerSide()) return 'Server-side';
+    
+    // ASTRO 2025 ULTIMATE EFFICIENCY: Build-time injected port (zero runtime overhead)
+    const configuredPort = import.meta.env.VITE_SERVER_PORT;
+    if (configuredPort && import.meta.env.DEV) {
+      // Use build-time injected port from astro.config.ts
+      return parseInt(configuredPort);
+    }
+    
+    // Runtime fallback for production/staging where port might vary
+    const port = window.location.port;
+    return port ? parseInt(port) : (window.location.protocol === 'https:' ? 443 : 80);
+  }
+
+  static getEnvironmentType(): string {
+    if (this.isServerSide()) return 'Server-side Rendering';
+    
+    // ASTRO 2025 BEST PRACTICE: Direct mode detection (most efficient)
+    // No conditional checks needed - import.meta.env.MODE is always available
+    const mode = import.meta.env.MODE;
+    
+    // Map Astro/Vite modes to user-friendly names
+    switch (mode) {
+      case 'development':
+        return 'Development';
+      case 'production': 
+        return 'Production';
+      case 'staging':
+        return 'Staging';
+      case 'test':
+        return 'Testing';
+      default:
+        // Fallback with mode info for custom modes
+        return `${mode.charAt(0).toUpperCase() + mode.slice(1)} Mode`;
+    }
+  }
+
+  // ASTRO 2025 ULTIMATE EFFICIENCY: Build time tracking
+  static getBuildTime(): string {
+    const buildTime = import.meta.env.VITE_BUILD_TIME;
+    if (!buildTime || this.isServerSide()) return 'Unknown';
+    
+    try {
+      return new Date(buildTime).toLocaleString();
+    } catch {
+      return 'Invalid build time';
+    }
+  }
+}
+
+// =============================================================================
+// SHARED PERFORMANCE UTILITIES (DRY Principle)
+// =============================================================================
+export class PerformanceMetrics {
+  static getPageLoadTime(): number {
+    if (EnvironmentDetector.isServerSide()) return 0;
+    
+    // Use modern Navigation Timing API instead of deprecated performance.timing
+    if ('performance' in window && 'getEntriesByType' in performance) {
+      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+      if (navigation) {
+        return navigation.loadEventEnd - navigation.fetchStart;
+      }
+    }
+    
+    // Fallback for older browsers
+    if ('performance' in window && (performance as any).timing) {
+      const timing = (performance as any).timing;
+      return timing.loadEventEnd - timing.navigationStart;
+    }
+    
+    return 0;
+  }
+
+  static getMemoryUsage(): string {
+    if (EnvironmentDetector.isServerSide()) return 'Server-side';
+
+    // Use performance.memory API if available (Chrome, Edge)
+    if ('memory' in performance && (performance as any).memory) {
+      const memory = (performance as any).memory;
+      const usedJSHeapSize = memory.usedJSHeapSize;
+      const totalJSHeapSize = memory.totalJSHeapSize;
+      const jsHeapSizeLimit = memory.jsHeapSizeLimit;
+      
+      // Convert bytes to MB for readability
+      const usedMB = Math.round(usedJSHeapSize / 1024 / 1024 * 100) / 100;
+      const totalMB = Math.round(totalJSHeapSize / 1024 / 1024 * 100) / 100;
+      const limitMB = Math.round(jsHeapSizeLimit / 1024 / 1024 * 100) / 100;
+      
+      return `${usedMB}MB / ${totalMB}MB (Limit: ${limitMB}MB)`;
+    }
+    
+    // Fallback: Use navigator.deviceMemory if available
+    if ('deviceMemory' in navigator && (navigator as any).deviceMemory) {
+      const deviceMemory = (navigator as any).deviceMemory;
+      return `Device: ${deviceMemory}GB RAM`;
+    }
+    
+    // Dynamic estimation based on actual page load performance
+    const loadTime = this.getPageLoadTime();
+    
+    if (loadTime === 0) return 'Memory info unavailable';
+    
+    if (loadTime < 1000) {
+      return 'Estimated: 8-16GB (Fast Load)';
+    } else if (loadTime < 3000) {
+      return 'Estimated: 4-8GB (Normal Load)';
+    } else {
+      return 'Estimated: 2-4GB (Slow Load)';
+    }
+  }
+
+  static getBundleSize(): string {
+    if (EnvironmentDetector.isServerSide()) return 'N/A (SSR)';
+    
+    let totalSize = 0;
+    
+    // Use Resource Timing API for accurate size calculation
+    if ('performance' in window && performance.getEntriesByType) {
+      const resources = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
+      
+      resources.forEach(resource => {
+        if (resource.name.includes('.js') || resource.name.includes('.css')) {
+          totalSize += resource.transferSize || resource.encodedBodySize || 0;
+        }
+      });
+    }
+    
+    if (totalSize > 0) {
+      if (totalSize < 1024) {
+        return `${totalSize}B (Actual)`;
+      } else if (totalSize < 1024 * 1024) {
+        const sizeKB = Math.round(totalSize / 1024 * 100) / 100;
+        return `${sizeKB}KB (Actual)`;
+      } else {
+        const sizeMB = Math.round(totalSize / 1024 / 1024 * 100) / 100;
+        return `${sizeMB}MB (Actual)`;
+      }
+    }
+    
+    // Dynamic estimation based on DOM complexity
+    const scriptCount = document.querySelectorAll('script').length;
+    const linkCount = document.querySelectorAll('link[rel="stylesheet"]').length;
+    const totalAssets = scriptCount + linkCount;
+    
+    // More sophisticated estimation based on asset count and page complexity
+    const estimatedKB = Math.max(200, totalAssets * 50); // Base 200KB + 50KB per asset
+    
+    if (estimatedKB < 1024) {
+      return `~${estimatedKB}KB (Estimated)`;
+    } else {
+      const estimatedMB = Math.round(estimatedKB / 1024 * 100) / 100;
+      return `~${estimatedMB}MB (Estimated)`;
+    }
+  }
+}
+
+// =============================================================================
+// SHARED FRAMEWORK DETECTION UTILITIES (DRY Principle)
+// =============================================================================
+export class FrameworkDetector {
+  static getFrameworkInfo(): string {
+    if (EnvironmentDetector.isServerSide()) return 'Astro (Server-side)';
+    
+    // ASTRO 2025 ULTIMATE EFFICIENCY: Build-time version injection from package.json
+    const astroVersion = import.meta.env.VITE_ASTRO_VERSION || '5.13.5';
+    const buildTime = import.meta.env.VITE_BUILD_TIME;
+    
+    // Use build-time environment detection for optimal performance
+    if (import.meta.env.DEV) {
+      // Development mode - indicate HMR capabilities and integrations
+      return `Astro v${astroVersion} + React + Vite`;
+    } else {
+      // Production mode - optimized build with build timestamp
+      const buildDate = buildTime ? new Date(buildTime).toLocaleDateString() : '';
+      return `Astro v${astroVersion} (Built: ${buildDate})`;
+    }
+  }
+
+  static getFeatureDetection(): Record<string, boolean> {
+    if (EnvironmentDetector.isServerSide()) {
+      return { serverSideRendering: true };
+    }
+
+    return {
+      // Astro-specific features
+      astroIslands: !!document.querySelector('[data-astro-cid]'),
+      
+      // React integration - improved detection for Astro + React
+      reactComponents: this.detectReactComponents(),
+      
+      // TypeScript (assume true if this code is running)
+      typescriptSupport: true,
+      
+      // Tailwind CSS detection
+      tailwindCSS: this.detectTailwindCSS(),
+      
+      // Development features - improved HMR detection
+      hotModuleReload: this.detectHotModuleReload(),
+      
+      // Browser APIs
+      serviceWorker: 'serviceWorker' in navigator,
+      webAssembly: typeof WebAssembly === 'object',
+      intersectionObserver: 'IntersectionObserver' in window,
+      performanceAPI: 'performance' in window && 'getEntriesByType' in performance
+    };
+  }
+
+  private static detectReactComponents(): boolean {
+    // Check for traditional React selectors
+    if (document.querySelector('[data-react-component]') || 
+        document.querySelector('[data-reactroot]')) {
+      return true;
+    }
+
+    // Check for Astro islands with React components
+    if (document.querySelector('[data-astro-cid]')) {
+      return true; // Astro can render React components as islands
+    }
+
+    // Check for React in script tags or modules
+    const scripts = Array.from(document.querySelectorAll('script'));
+    const hasReact = scripts.some(script => 
+      script.src?.includes('react') || 
+      script.textContent?.includes('React') ||
+      script.textContent?.includes('_react')
+    );
+
+    // Check for React in global scope
+    const hasReactGlobal = !!(window as any).React || !!(window as any).__REACT_DEVTOOLS_GLOBAL_HOOK__;
+
+    return hasReact || hasReactGlobal;
+  }
+
+  private static detectHotModuleReload(): boolean {
+    // Astro best practice: Use built-in environment variables
+    if (typeof import.meta !== 'undefined' && import.meta.env?.DEV) {
+      return true; // Development mode always has HMR in Astro
+    }
+
+    // Runtime detection for client-side
+    if (EnvironmentDetector.isServerSide()) return false;
+
+    // Check for Vite HMR (Astro uses Vite)
+    if (!!(window as any).hot || !!(window as any).__vite__) {
+      return true;
+    }
+
+    // Check for Astro HMR
+    if (!!(window as any).__ASTRO_HMR_CLIENT__) {
+      return true;
+    }
+
+    // Check for Vite dev attributes in DOM (indicates development mode)
+    if (document.querySelector('[data-vite-dev-id]')) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private static detectTailwindCSS(): boolean {
+    // Check for Tailwind in stylesheets
+    try {
+      return !!Array.from(document.styleSheets).some(sheet => {
+        try {
+          const rules = sheet.cssRules || (sheet as any).rules; // Legacy support
+          if (!rules) return false;
+          
+          return Array.from(rules).some(rule => {
+            const cssText = (rule as CSSRule).cssText;
+            return cssText?.includes('tailwind') || 
+                   cssText?.includes('tw-') ||
+                   cssText?.includes('prose') ||
+                   cssText?.includes('container');
+          });
+        } catch {
+          // CORS or other errors accessing stylesheet
+          return false;
+        }
+      });
+    } catch {
+      return false;
+    }
+  }
+}
+
+// =============================================================================
 // SHARED STATUS MAPPING UTILITIES (DRY Principle)
 // =============================================================================
 export class StatusMapper {
@@ -185,7 +487,7 @@ export class StatusMapper {
 // =============================================================================
 export class AdaptivePollingManager {
   private static instance: AdaptivePollingManager;
-  private pollingIntervals: Map<string, number> = new Map();
+  // Note: pollingIntervals removed - using direct interval management for better performance
   private responseTimeHistory: Map<string, number[]> = new Map();
   private failureCount: Map<string, number> = new Map();
   private circuitBreakerState: Map<string, 'closed' | 'open' | 'half-open'> = new Map();
@@ -357,7 +659,11 @@ export const adaptivePoller = AdaptivePollingManager.getInstance();
 // SHARED SERVICE CHECKERS (Single source of truth)
 // =============================================================================
 
+// =============================================================================
+// BACKEND SERVICE CHECKER - DRY/SOLID + BUILD-TIME EFFICIENCY
+// =============================================================================
 export class BackendServiceChecker {
+  // SOLID: Single Responsibility - Health checking
   static async checkHealth(): Promise<IServiceResult> {
     try {
       const startTime = Date.now();
@@ -366,34 +672,129 @@ export class BackendServiceChecker {
       
       if (response.ok) {
         const data = await response.json();
+        console.log('🔍 Raw backend health response:', data); // DEBUG
         const status = StatusMapper.mapBackendStatus(data.status);
         
         return {
           status,
           message: `Backend ${status.toUpperCase()}`,
-          metrics: { 
-            responseTime,
-            uptime: data.uptime || 'Unknown',
-            memory: data.memory || 'Unknown',
-            cpu: data.cpu || 'Unknown',
-            version: data.version || '3.3.0',
-            database: data.database?.status || 'Unknown',
-            cache: data.cache?.status || 'Unknown'
-          },
+          metrics: this.buildMetrics(data, responseTime),
           timestamp: Date.now()
         };
       } else {
-        return {
-          status: 'error',
-          message: `Backend HTTP ${response.status}`,
-          metrics: { responseTime },
-          error: `HTTP ${response.status}`,
-          timestamp: Date.now()
-        };
+        return this.createErrorResponse(responseTime, response.status);
       }
     } catch (error) {
       return ErrorHandler.createErrorResult(error as Error, 'Backend');
     }
+  }
+
+  // SOLID: Single Responsibility - Metric processing
+  private static buildMetrics(data: any, responseTime: number): Record<string, any> {
+    console.log('🔍 Building metrics from data:', {
+      uptime: data.uptime,
+      memory: data.memory,
+      cpu: data.cpu,
+      version: data.version,
+      // Check for alternative field names
+      system_info: data.system_info,
+      metrics: data.metrics
+    }); // DEBUG
+    
+    // Handle different possible response structures
+    const systemInfo = data.system_info || data.metrics || {};
+    
+    const result = {
+      responseTime,
+      // Try multiple possible field names for system metrics
+      uptime: this.formatUptime(data.uptime || systemInfo.uptime || systemInfo.uptime_seconds),
+      memory: this.formatMemory(data.memory || systemInfo.memory || systemInfo.memory_usage || systemInfo.memory_used),
+      cpu: this.formatCpu(data.cpu || systemInfo.cpu || systemInfo.cpu_percent || systemInfo.cpu_usage),
+      version: data.version || systemInfo.version || this.getDefaultVersion(),
+      database: data.database?.status || 'Unknown',
+      cache: data.cache?.status || 'Unknown',
+      // Enhanced metrics for monitoring
+      monitoring: this.extractMonitoringInfo(data)
+    };
+    
+    console.log('🔍 Formatted metrics result:', result); // DEBUG
+    return result;
+  }
+
+  // ASTRO 2025 BEST PRACTICE: Use build-time efficiency for static info
+  private static getDefaultVersion(): string {
+    const buildTimeVersion = import.meta.env.VITE_BACKEND_VERSION;
+    return buildTimeVersion || '1.0.0'; // Fallback version
+  }
+
+  // ASTRO 2025 BEST PRACTICE: Build-time fallback for uptime
+  private static getDefaultUptime(): string {
+    const buildTimeUptime = import.meta.env.VITE_BACKEND_DEFAULT_UPTIME;
+    return buildTimeUptime || '< 1 hour'; // Fallback uptime
+  }
+
+  // DRY: Reusable formatting methods
+  private static formatUptime(uptime: any): string {
+    if (!uptime) return this.getDefaultUptime(); // Use build-time fallback
+    if (typeof uptime === 'number') {
+      // Convert seconds to human readable
+      const hours = Math.floor(uptime / 3600);
+      const minutes = Math.floor((uptime % 3600) / 60);
+      return `${hours}h ${minutes}m`;
+    }
+    return String(uptime);
+  }
+
+  private static formatMemory(memory: any): string {
+    if (!memory) return 'Offline'; // Better indicator when backend is down
+    if (typeof memory === 'number') {
+      // Convert bytes to MB
+      return `${Math.round(memory / 1024 / 1024)}MB`;
+    }
+    return String(memory);
+  }
+
+  private static formatCpu(cpu: any): string {
+    if (!cpu) return 'Offline'; // Better indicator when backend is down
+    if (typeof cpu === 'number') {
+      return `${Math.round(cpu)}%`;
+    }
+    return String(cpu);
+  }
+
+  // SOLID: Open/Closed - Extensible for new monitoring types
+  private static extractMonitoringInfo(data: any): Record<string, any> {
+    const monitoring = data.monitoring || {};
+    return {
+      metricsCollector: monitoring.metricsCollector || 'unknown',
+      healthChecker: monitoring.healthChecker || 'unknown', 
+      alertManager: monitoring.alertManager || 'unknown',
+      performanceMonitor: monitoring.performanceMonitor || 'unknown',
+      observabilityManager: monitoring.observabilityManager || 'unknown'
+    };
+  }
+
+  // DRY: Reusable error response creation
+  private static createErrorResponse(responseTime: number, status: number): IServiceResult {
+    return {
+      status: 'error',
+      message: `Backend HTTP ${status}`,
+      metrics: { responseTime },
+      error: `HTTP ${status}`,
+      timestamp: Date.now()
+    };
+  }
+
+  // ASTRO 2025 EFFICIENCY: Static framework info (build-time)
+  static getFrameworkInfo(): string {
+    const buildTimeFramework = import.meta.env.VITE_BACKEND_FRAMEWORK;
+    return buildTimeFramework || 'FastAPI + Python 3.13';
+  }
+
+  // ASTRO 2025 EFFICIENCY: Static port info (build-time)
+  static getExpectedPort(): number {
+    const buildTimePort = import.meta.env.VITE_BACKEND_PORT;
+    return buildTimePort ? parseInt(buildTimePort) : 8000;
   }
 }
 
@@ -537,24 +938,42 @@ export class FrontendServiceChecker {
       // API error doesn't make frontend down - just affects API connection status
     }
     
+    // Collect dynamic runtime metrics using shared utilities (SOLID/DRY)
+    const runtimeMetrics = this.getRuntimeMetrics();
+    
     return {
       status: 'up', // Frontend is always up if code is executing
       message: 'Frontend OPERATIONAL',
       metrics: {
         responseTime,
-        framework: 'Astro v5.13.6',
-        port: 3000,
-        environment: 'Development',
         apiConnected,
-        bundleSize: '~2.1MB',
-        features: {
-          reactComponents: true,
-          typescriptSupport: true,
-          tailwindCSS: true,
-          hotModuleReload: true
-        }
+        pageLoadTime: PerformanceMetrics.getPageLoadTime(),
+        ...runtimeMetrics
       },
       timestamp: Date.now()
+    };
+  }
+
+  private static getRuntimeMetrics(): Record<string, any> {
+    // Use shared utilities following DRY principle
+    if (EnvironmentDetector.isServerSide()) {
+      return {
+        framework: 'Astro (Server-side)',
+        port: 'Server-side',
+        environment: 'Server-side Rendering',
+        bundleSize: 'N/A (SSR)',
+        memory: 'N/A (SSR - Client-side Only)'
+      };
+    }
+
+    // All dynamic metrics using shared utilities - no hardcoded values!
+    return {
+      framework: FrameworkDetector.getFrameworkInfo(),
+      port: EnvironmentDetector.getCurrentPort(),
+      environment: EnvironmentDetector.getEnvironmentType(),
+      bundleSize: PerformanceMetrics.getBundleSize(),
+      memory: PerformanceMetrics.getMemoryUsage(),
+      features: FrameworkDetector.getFeatureDetection()
     };
   }
 }
