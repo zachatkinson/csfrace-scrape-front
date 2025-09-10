@@ -13,43 +13,97 @@ const AuthModalComponent: React.FC = () => {
   
   // Listen for the custom event from MainLayout
   useEffect(() => {
-    const handleOpenAuthModal = () => {
+    // Ensure we're in the browser
+    if (typeof window === 'undefined') return;
+    
+    const handleOpenAuthModal = (event: Event) => {
+      console.log('🔴 AuthModal: Received openAuthModal event', event);
       setIsOpen(true);
     };
     
-    window.addEventListener('openAuthModal', handleOpenAuthModal);
+    const handleTestModal = () => {
+      console.log('🧪 AuthModal: Test event received');
+      setIsOpen(true);
+    };
+    
+    try {
+      window.addEventListener('openAuthModal', handleOpenAuthModal);
+      window.addEventListener('testAuthModal', handleTestModal);
+      console.log('🟢 AuthModal: Event listeners added successfully, current isOpen:', isOpen);
+    } catch (error) {
+      console.error('❌ AuthModal: Failed to add event listeners:', error);
+    }
     
     return () => {
-      window.removeEventListener('openAuthModal', handleOpenAuthModal);
+      try {
+        window.removeEventListener('openAuthModal', handleOpenAuthModal);
+        window.removeEventListener('testAuthModal', handleTestModal);
+        console.log('🧹 AuthModal: Event listeners cleaned up');
+      } catch (error) {
+        console.error('❌ AuthModal: Failed to remove event listeners:', error);
+      }
     };
-  }, []);
+  }, []); // Remove isOpen dependency to avoid re-registering listeners
   
   const handleClose = useCallback(() => {
+    console.log('🔴 AuthModal: Closing modal');
     setIsOpen(false);
   }, []);
   
   const handleSuccess = useCallback(() => {
-    console.log('Authentication successful!');
+    console.log('✅ Authentication successful!');
     setIsOpen(false);
-    // TODO: Refresh user state/redirect as needed
-    // You might want to dispatch a custom event here too
     window.dispatchEvent(new CustomEvent('authSuccess'));
   }, []);
   
+  // Debug state changes
+  useEffect(() => {
+    console.log('🔄 AuthModal state changed, isOpen:', isOpen);
+  }, [isOpen]);
+  
   return (
-    <AuthModal
-      isOpen={isOpen}
-      onClose={handleClose}
-      onSuccess={handleSuccess}
-      initialMode="login"
-    />
+    <div>
+      {console.log('🎯 AuthModalComponent rendering, isOpen:', isOpen)}
+      <AuthModal
+        isOpen={isOpen}
+        onClose={handleClose}
+        onSuccess={handleSuccess}
+        initialMode="login"
+      />
+    </div>
   );
 };
 
+// Wrap with error boundary for SSR safety
+const SafeAuthModalComponent: React.FC = () => {
+  const [hasError, setHasError] = useState(false);
+  
+  useEffect(() => {
+    const handleError = () => {
+      setHasError(true);
+    };
+    
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
+  
+  if (hasError) {
+    console.error('AuthModal failed to load');
+    return null;
+  }
+  
+  return <AuthModalComponent />;
+};
+
 export const AuthModalManager: React.FC = () => {
+  // Only render on the client to avoid SSR issues
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  
   return (
     <AuthProvider>
-      <AuthModalComponent />
+      <SafeAuthModalComponent />
     </AuthProvider>
   );
 };

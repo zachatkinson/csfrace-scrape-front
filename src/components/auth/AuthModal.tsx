@@ -81,7 +81,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       onClick={handleBackdropClick}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-fade-in" />
+      <div className="absolute inset-0 backdrop-blur-md bg-white/10 animate-fade-in" />
 
       {/* Modal Container */}
       <div className="relative w-full max-w-md mx-auto animate-scale-up">

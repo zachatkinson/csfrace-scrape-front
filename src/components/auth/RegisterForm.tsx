@@ -23,7 +23,6 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   // SOLID: Interface Segregation - Use focused auth hooks
   const { error: basicError, clearError, isLoading: basicLoading } = useBasicAuth();
   const { 
-    oauthProviders, 
     loginWithOAuth, 
     isLoading: oauthLoading, 
     error: oauthError 
@@ -142,7 +141,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 
           {/* OAuth Providers */}
           <OAuthProviderList
-            providers={undefined} // Use all enabled providers from registry
+            providers={[]} // Use all enabled providers from registry
             mode="register"
             loading={currentAuthMethod === 'oauth' && isLoading}
             disabled={isLoading}

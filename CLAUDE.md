@@ -3,6 +3,56 @@
 ## Project Overview
 This is an Astro-based frontend application for scraping and displaying content from URLs, built with React components and Tailwind CSS.
 
+## 🚨 CRITICAL: NO LOCAL SERVICES RULE 🚨
+
+**NEVER CREATE LOCAL AUTHENTICATION OR API SERVICES IN THE FRONTEND**
+
+This project has a **complete Docker backend** at `http://localhost:8000` with enterprise-grade APIs:
+- ✅ **Authentication**: `/auth/token`, `/auth/register`, `/auth/me`, `/auth/refresh`
+- ✅ **OAuth**: `/auth/oauth/providers`, `/auth/oauth/login`, `/auth/oauth/{provider}/callback`
+- ✅ **Passkeys**: `/auth/passkeys/register/begin`, `/auth/passkeys/authenticate/complete`
+- ✅ **Security**: `/auth/lockout-status`, `/auth/revoke-token`, `/auth/revocation-stats`
+- ✅ **User Management**: `/auth/users`, `/auth/change-password`, `/auth/password-reset`
+
+**Frontend should ONLY:**
+- Make simple `fetch()` calls to Docker backend APIs
+- Manage browser state (React Context for UI)
+- Handle forms and UI interactions
+- Store tokens in localStorage/sessionStorage
+
+**Frontend should NEVER:**
+- Create `AuthProvider`, `TokenManager`, `OAuthHandler` services
+- Implement JWT token validation or refresh logic
+- Create database models or ORM abstractions
+- Duplicate functionality that exists in Docker backend
+
+**Example of CORRECT approach:**
+```typescript
+// ✅ GOOD: Simple API client
+const login = async (email, password) => {
+  const response = await fetch('http://localhost:8000/auth/token', {
+    method: 'POST',
+    body: new FormData()...
+  });
+  return response.json();
+};
+```
+
+**Example of WRONG approach:**
+```typescript
+// ❌ BAD: Local services that duplicate Docker functionality
+class AuthService {
+  private tokenManager = new TokenManager();
+  private oauthHandler = new OAuthHandler();
+  async login() { /* complex logic */ }
+}
+```
+
+**When in doubt: Check if the endpoint exists in Docker first!**
+```bash
+curl -s http://localhost:8000/openapi.json | jq -r '.paths | keys[]'
+```
+
 ## Core Development Principles
 
 ### 1. SOLID Principles

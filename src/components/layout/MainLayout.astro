@@ -716,6 +716,7 @@ const {
         // Show Auth Modal - will be handled by React component
         if (authToggle) {
           authToggle.addEventListener('click', () => {
+            console.log('🟡 Button clicked: Dispatching openAuthModal event');
             // Dispatch custom event that React component can listen to
             window.dispatchEvent(new CustomEvent('openAuthModal'));
           });

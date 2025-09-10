@@ -6,7 +6,7 @@
  */
 
 import React, { useMemo } from 'react';
-import { IOAuthProviderListProps } from '../../../types/oauth';
+import type { IOAuthProviderListProps } from '../../../types/oauth';
 import { OAuthButton } from './OAuthButton';
 import { useOAuthProviders } from './OAuthProviderRegistry';
 

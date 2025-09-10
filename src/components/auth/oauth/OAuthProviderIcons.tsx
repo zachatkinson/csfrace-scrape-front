@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { OAuthProviderId } from '../../../types/oauth';
+import type { OAuthProviderId } from '../../../types/oauth';
 
 /**
  * Icon Component Props Interface

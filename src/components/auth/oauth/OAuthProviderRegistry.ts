@@ -5,7 +5,7 @@
  * Open/Closed: Extensible for new providers without modification
  */
 
-import { IOAuthProvider, IOAuthProviderRegistry, OAuthProviderId } from '../../../types/oauth';
+import type { IOAuthProvider, IOAuthProviderRegistry, OAuthProviderId } from '../../../types/oauth';
 import { createProviderIcon } from './OAuthProviderIcons';
 
 /**

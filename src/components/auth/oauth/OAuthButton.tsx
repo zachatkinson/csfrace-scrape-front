@@ -7,7 +7,7 @@
 
 import React, { useCallback, useMemo } from 'react';
 import { LiquidButton } from '../../liquid-glass';
-import { IOAuthButtonProps } from '../../../types/oauth';
+import type { IOAuthButtonProps } from '../../../types/oauth';
 
 /**
  * OAuth Button Component
