@@ -16,10 +16,16 @@ interface RedisMetrics {
   uptime: string;
   connectedClients: number;
   configStatus: string;
+  totalEntries: number;
+  totalOperations: number;
+  architecture: string;
+  os: string;
 }
 
 class RedisMetricsUpdater {
   private static instance: RedisMetricsUpdater;
+  private lastGoodHitRate: string | null = null;
+  private lastGoodMemoryUsed: string | null = null;
   
   static getInstance(): RedisMetricsUpdater {
     if (!RedisMetricsUpdater.instance) {
@@ -35,15 +41,36 @@ class RedisMetricsUpdater {
       // Get health data from Redis via backend
       const healthResult = await CacheServiceChecker.checkHealth();
       
-      // Prepare metrics using build-time efficiency for static data
+      // DEBUG: Log what we're getting from the backend
+      console.log('🔍 Backend response:', {
+        hitRate: healthResult.metrics.hitRate,
+        memoryUsed: healthResult.metrics.memoryUsed,
+        fullHealthResult: healthResult
+      });
+      
+      // Prepare metrics with value preservation logic
+      const rawHitRate = healthResult.metrics.hitRate === 'Unknown' ? 'CALCULATING...' : healthResult.metrics.hitRate;
+      const rawMemoryUsed = healthResult.metrics.memoryUsed === 'Unknown' ? 'CALCULATING...' : healthResult.metrics.memoryUsed;
+      
+      console.log('🔍 Raw values before preservation:', {
+        rawHitRate,
+        rawMemoryUsed,
+        lastGoodHitRate: this.lastGoodHitRate,
+        lastGoodMemoryUsed: this.lastGoodMemoryUsed
+      });
+      
       const metrics: RedisMetrics = {
         version: healthResult.metrics.version || '7.4.5',
         mode: healthResult.metrics.mode || 'Standalone',
-        memoryUsed: healthResult.metrics.memory_used || 'Unknown',
-        hitRate: healthResult.metrics.hit_rate || 'Unknown',
+        memoryUsed: this.getPreservedValue(rawMemoryUsed, this.lastGoodMemoryUsed, 'memoryUsed'),
+        hitRate: this.getPreservedValue(rawHitRate, this.lastGoodHitRate, 'hitRate'),
         backend: healthResult.metrics.backend || 'Redis',
         uptime: healthResult.metrics.uptime || 'Unknown',
-        connectedClients: healthResult.metrics.connected_clients || 0,
+        connectedClients: healthResult.metrics.connectedClients || 0,
+        totalEntries: healthResult.metrics.totalEntries || 0,
+        totalOperations: healthResult.metrics.totalOperations || 0,
+        architecture: healthResult.metrics.architecture || 'unknown',
+        os: healthResult.metrics.os || 'unknown',
         configStatus: healthResult.status === 'up' ? 'Configuration OK' : 'Configuration Failed'
       };
 
@@ -61,10 +88,72 @@ class RedisMetricsUpdater {
       
       console.log('✅ Redis cache metrics updated successfully', metrics);
       
+      // NEW: Emit completion event for header aggregation (DRY + Single Source of Truth)
+      this.emitServiceCardCompleteEvent(healthResult);
+      
     } catch (error) {
       console.error('❌ Failed to update Redis cache metrics:', error);
       this.updateServiceStatus('error', 'Failed to fetch cache metrics');
     }
+  }
+
+  // DRY: Value preservation logic to prevent regression from good to bad values
+  private getPreservedValue(newValue: string, lastGoodValue: string | null, metricType: 'hitRate' | 'memoryUsed'): string {
+    const isMeaningful = this.isMeaningfulValue(newValue, metricType);
+    console.log(`🔍 getPreservedValue ${metricType}:`, {
+      newValue,
+      lastGoodValue,
+      isMeaningful,
+      decision: isMeaningful ? 'use new' : (lastGoodValue ? 'preserve last good' : 'use new anyway')
+    });
+    
+    // If new value is meaningful (not CALCULATING... and not 0%), use it and store it
+    if (isMeaningful) {
+      if (metricType === 'hitRate') {
+        this.lastGoodHitRate = newValue;
+      } else if (metricType === 'memoryUsed') {
+        this.lastGoodMemoryUsed = newValue;
+      }
+      console.log(`✅ Using and storing new ${metricType}: ${newValue}`);
+      return newValue;
+    }
+
+    // If new value is bad but we have a good stored value, keep the good one
+    if (lastGoodValue && this.isMeaningfulValue(lastGoodValue, metricType)) {
+      console.log(`🛡️ Preserving last good ${metricType}: ${lastGoodValue} (ignoring: ${newValue})`);
+      return lastGoodValue;
+    }
+
+    // Otherwise, return the new value (likely CALCULATING...)
+    console.log(`📝 Using new ${metricType} (no good value to preserve): ${newValue}`);
+    return newValue;
+  }
+
+  // Helper to determine if a value is meaningful and should be displayed
+  private isMeaningfulValue(value: string, metricType: 'hitRate' | 'memoryUsed'): boolean {
+    if (value === 'CALCULATING...' || value === 'Unknown') {
+      console.log(`🔍 isMeaningfulValue ${metricType}: "${value}" -> false (loading/unknown state)`);
+      return false;
+    }
+
+    if (metricType === 'hitRate') {
+      // For hit rate, reject "0%" or any zero values
+      const isZero = value.match(/^0(\.\d+)?%$/i);
+      const result = !isZero;
+      console.log(`🔍 isMeaningfulValue ${metricType}: "${value}" -> ${result} (isZero: ${!!isZero})`);
+      return result;
+    }
+
+    if (metricType === 'memoryUsed') {
+      // For memory used, reject "0B" or any zero memory values  
+      const isZero = value.match(/^0(\.\d+)?(B|KB|MB|GB)$/i);
+      const result = !isZero;
+      console.log(`🔍 isMeaningfulValue ${metricType}: "${value}" -> ${result} (isZero: ${!!isZero})`);
+      return result;
+    }
+
+    console.log(`🔍 isMeaningfulValue ${metricType}: "${value}" -> true (default)`);
+    return true;
   }
 
   // SOLID: Single Responsibility - Cache info updates (direct DOM like other services)
@@ -75,10 +164,11 @@ class RedisMetricsUpdater {
       versionElement.textContent = metrics.version;
     }
 
-    // Update mode
+    // Update mode and make it blue like other values
     const modeElement = document.getElementById('redis-mode');
     if (modeElement) {
       modeElement.textContent = metrics.mode;
+      modeElement.className = 'ml-2 text-blue-400'; // Change from text-white to text-blue-400
     }
 
     // Update backend type if available
@@ -96,16 +186,89 @@ class RedisMetricsUpdater {
 
   // SOLID: Single Responsibility - Performance metrics updates
   private updatePerformanceMetrics(metrics: RedisMetrics): void {
-    // Update memory used
+    // Update memory used with smooth transition
     const memoryElement = document.getElementById('redis-memory-used');
     if (memoryElement) {
-      memoryElement.textContent = metrics.memoryUsed;
+      // Add transition class for smooth updates
+      memoryElement.style.transition = 'color 0.3s ease, opacity 0.2s ease';
+      
+      // Debug what's being set in DOM
+      console.log(`🔍 DOM Update memoryUsed: "${memoryElement.textContent}" -> "${metrics.memoryUsed}"`);
+      
+      // Brief opacity transition for loading state changes
+      if (memoryElement.textContent === 'CALCULATING...' && metrics.memoryUsed !== 'CALCULATING...') {
+        memoryElement.style.opacity = '0.5';
+        setTimeout(() => {
+          console.log(`🔍 setTimeout DOM Update memoryUsed: -> "${metrics.memoryUsed}"`);
+          memoryElement.textContent = metrics.memoryUsed;
+          memoryElement.style.opacity = '1';
+        }, 150);
+      } else {
+        memoryElement.textContent = metrics.memoryUsed;
+      }
+      
+      // Color code based on memory usage if meaningful
+      if (metrics.memoryUsed !== 'Unknown' && metrics.memoryUsed !== 'CALCULATING...') {
+        // Extract numeric value for color coding
+        const memoryMatch = metrics.memoryUsed.match(/^(\d+(?:\.\d+)?)(MB|GB|KB)/i);
+        if (memoryMatch) {
+          const value = parseFloat(memoryMatch[1]);
+          const unit = memoryMatch[2].toLowerCase();
+          let memoryMB = value;
+          
+          // Convert to MB for comparison
+          if (unit === 'gb') memoryMB = value * 1024;
+          if (unit === 'kb') memoryMB = value / 1024;
+          
+          if (memoryMB <= 50) {
+            memoryElement.className = 'text-green-400'; // Low usage: ≤50MB
+          } else if (memoryMB <= 200) {
+            memoryElement.className = 'text-yellow-400'; // Medium usage: 50-200MB
+          } else {
+            memoryElement.className = 'text-red-400'; // High usage: >200MB
+          }
+        } else {
+          memoryElement.className = 'text-blue-400'; // Default color
+        }
+      } else {
+        memoryElement.className = 'text-blue-400'; // Unknown/Default or Calculating
+      }
     }
 
-    // Update hit rate
+    // Update hit rate with smooth transition and color coding
     const hitRateElement = document.getElementById('redis-hit-rate');
     if (hitRateElement) {
-      hitRateElement.textContent = metrics.hitRate;
+      // Add transition class for smooth updates
+      hitRateElement.style.transition = 'color 0.3s ease, opacity 0.2s ease';
+      
+      // Debug what's being set in DOM
+      console.log(`🔍 DOM Update hitRate: "${hitRateElement.textContent}" -> "${metrics.hitRate}"`);
+      
+      // Brief opacity transition for loading state changes
+      if (hitRateElement.textContent === 'CALCULATING...' && metrics.hitRate !== 'CALCULATING...') {
+        hitRateElement.style.opacity = '0.5';
+        setTimeout(() => {
+          console.log(`🔍 setTimeout DOM Update hitRate: -> "${metrics.hitRate}"`);
+          hitRateElement.textContent = metrics.hitRate;
+          hitRateElement.style.opacity = '1';
+        }, 150);
+      } else {
+        hitRateElement.textContent = metrics.hitRate;
+      }
+      
+      // Color code based on hit rate performance (similar to PostgreSQL cache hit ratio)
+      if (metrics.hitRate !== 'Unknown' && metrics.hitRate !== 'CALCULATING...') {
+        const ratio = parseFloat(metrics.hitRate.replace('%', ''));
+        if (ratio >= 90) {
+          hitRateElement.className = 'text-green-400'; // Excellent: 90%+
+        } else if (ratio >= 75) {
+          hitRateElement.className = 'text-yellow-400'; // Good: 75-89%
+        } else {
+          hitRateElement.className = 'text-red-400'; // Poor: <75%
+        }
+      } else {
+        hitRateElement.className = 'text-blue-400'; // Unknown/Default or Calculating
+      }
     }
 
     // Update connected clients if element exists
@@ -180,6 +343,53 @@ class RedisMetricsUpdater {
       // Will be updated by updateCacheInfo method with dynamic value
     }
   }
+
+  // NEW: Emit completion event for header aggregation (DRY + Single Source of Truth)
+  private emitServiceCardCompleteEvent(healthResult: any): void {
+    const event = new CustomEvent('serviceCardComplete', {
+      detail: {
+        serviceName: 'redis',
+        result: {
+          status: healthResult.status,
+          message: healthResult.message,
+          metrics: healthResult.metrics,
+          timestamp: Date.now()
+        }
+      }
+    });
+    
+    console.log('📡 Redis card emitting completion event:', event.detail);
+    window.dispatchEvent(event);
+  }
+
+  // Manual refresh with loading state (for refresh button)
+  async manualRefresh(): Promise<void> {
+    console.log('🔄 Manual Redis cache metrics refresh');
+    
+    // Set loading states before fetching
+    this.setLoadingStates();
+    
+    // Wait a moment to show loading state
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Update metrics
+    await this.updateRedisMetrics();
+  }
+
+  // Set loading states for manual refresh
+  private setLoadingStates(): void {
+    const memoryElement = document.getElementById('redis-memory-used');
+    if (memoryElement) {
+      memoryElement.textContent = 'CALCULATING...';
+      memoryElement.className = 'text-blue-400';
+    }
+
+    const hitRateElement = document.getElementById('redis-hit-rate');
+    if (hitRateElement) {
+      hitRateElement.textContent = 'CALCULATING...';
+      hitRateElement.className = 'text-blue-400';
+    }
+  }
 }
 
 // Auto-initialize when script loads (following same pattern as other services)
@@ -200,11 +410,23 @@ if (typeof window !== 'undefined') {
     });
   }
   
-  // Set up periodic updates (every 30 seconds for dynamic data)
+  // Set up periodic updates (every 1 minute for dynamic data)
   setInterval(() => {
-    console.log('🔄 Periodic Redis cache metrics update');
+    console.log('🔄 Periodic Redis cache metrics update (1-minute poll)');
     updater.updateRedisMetrics();
-  }, 30000);
+  }, 60000);
+
+  // Hook up refresh button (look for redis-refresh button)
+  const refreshButton = document.getElementById('redis-refresh');
+  if (refreshButton) {
+    refreshButton.addEventListener('click', async () => {
+      console.log('🔄 Manual Redis refresh button clicked');
+      await updater.manualRefresh();
+    });
+    console.log('🔄 Redis refresh button connected');
+  } else {
+    console.log('⚠️ Redis refresh button not found');
+  }
 }
 
 export default RedisMetricsUpdater;

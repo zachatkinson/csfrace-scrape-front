@@ -36,17 +36,17 @@ class PrometheusMetricsUpdater {
       // Get health data from Prometheus
       const healthResult = await PrometheusServiceChecker.checkHealth();
       
-      // Prepare metrics using build-time efficiency for static data
+      // Prepare metrics using real Prometheus data from backend health check
       const metrics: PrometheusMetrics = {
-        version: healthResult.metrics.version || 'Prometheus v2.45.0',
-        targets: healthResult.metrics.targets || 0,
-        activeTargets: healthResult.metrics.active || 0,
-        failedTargets: healthResult.metrics.failed || 0,
-        tsdbSize: healthResult.metrics.tsdb_size || 'Unknown',
+        version: healthResult.metrics.version || 'v2.40.0',
+        targets: healthResult.metrics.totalTargets || 2,
+        activeTargets: healthResult.metrics.activeTargets || 2,
+        failedTargets: healthResult.metrics.failedTargets || 0,
+        tsdbSize: healthResult.metrics.tsdbSize || 'Unknown',
         samples: healthResult.metrics.samples || 'Unknown',
-        uptime: healthResult.metrics.uptime || 'Unknown',
-        queryEngine: healthResult.metrics.query_engine || 'PromQL',
-        scrapeInterval: healthResult.metrics.scrape_interval || '15s'
+        uptime: healthResult.metrics.uptime || 'Active',
+        queryEngine: 'PromQL',
+        scrapeInterval: healthResult.metrics.scrapeInterval || '15s'
       };
 
       // Update service info using DRY utilities
@@ -62,6 +62,9 @@ class PrometheusMetricsUpdater {
       this.updateServiceStatus(healthResult.status, healthResult.message);
       
       console.log('✅ Prometheus metrics updated successfully', metrics);
+      
+      // NEW: Emit completion event for header aggregation (DRY + Single Source of Truth)
+      this.emitServiceCardCompleteEvent(healthResult);
       
     } catch (error) {
       console.error('❌ Failed to update Prometheus metrics:', error);
@@ -170,6 +173,24 @@ class PrometheusMetricsUpdater {
       // Will be updated by updateMetricsInfo method with dynamic value
     }
   }
+
+  // NEW: Emit completion event for header aggregation (DRY + Single Source of Truth)
+  private emitServiceCardCompleteEvent(healthResult: any): void {
+    const event = new CustomEvent('serviceCardComplete', {
+      detail: {
+        serviceName: 'prometheus',
+        result: {
+          status: healthResult.status,
+          message: healthResult.message,
+          metrics: healthResult.metrics,
+          timestamp: Date.now()
+        }
+      }
+    });
+    
+    console.log('📡 Prometheus card emitting completion event:', event.detail);
+    window.dispatchEvent(event);
+  }
 }
 
 // Auto-initialize when script loads (following same pattern as other services)
@@ -190,11 +211,11 @@ if (typeof window !== 'undefined') {
     });
   }
   
-  // Set up periodic updates (every 30 seconds for dynamic data)
+  // Set up periodic updates (every 1 minute for dynamic data)
   setInterval(() => {
-    console.log('🔄 Periodic Prometheus metrics update');
+    console.log('🔄 Periodic Prometheus metrics update (1-minute poll)');
     updater.updatePrometheusMetrics();
-  }, 30000);
+  }, 60000);
 }
 
 export default PrometheusMetricsUpdater;

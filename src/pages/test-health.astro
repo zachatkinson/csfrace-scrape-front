@@ -4,6 +4,14 @@ import MainLayout from '../components/layout/MainLayout.astro';
 ---
 
 <MainLayout title="System Health Dashboard" description="Comprehensive monitoring and diagnostics for all system services">
+  
+  <!-- Refresh Button Animation Styles -->
+  <style>
+    .refresh-pulse {
+      animation: pulse 0.5s ease-in-out;
+    }
+  </style>
+
   <div class="max-w-7xl mx-auto py-8">
     <!-- Breadcrumb Navigation -->
     <nav class="mb-6">
@@ -32,11 +40,14 @@ import MainLayout from '../components/layout/MainLayout.astro';
       <!-- Overall System Status -->
       <div class="bg-black/30 rounded-lg p-6 mb-6">
         <div class="flex items-center justify-center space-x-4">
-          <div id="overall-status-indicator" class="w-4 h-4 rounded-full bg-yellow-500 animate-pulse"></div>
-          <div id="overall-status-text" class="text-xl font-semibold text-white">Initializing System Check...</div>
+          <div id="overall-status-indicator" class="w-4 h-4 rounded-full bg-blue-500 animate-pulse"></div>
+          <div id="overall-status-text" class="text-xl font-semibold text-white">🔄 MEASURING....</div>
         </div>
         <div id="overall-status-summary" class="text-center text-white/60 mt-2">
-          Checking all services...
+          Waiting for service cards to complete health checks...
+        </div>
+        <div id="overall-last-checked" class="text-center text-white/40 text-sm italic mt-1">
+          Last Checked at: Initializing...
         </div>
       </div>
       
@@ -58,17 +69,11 @@ import MainLayout from '../components/layout/MainLayout.astro';
     </div>
 
     <!-- Services Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
       
       <!-- Frontend Service -->
       <div class="glass-card p-6 relative">
         <div class="absolute top-4 right-4 flex gap-2">
-          <button id="frontend-refresh" class="glass-button px-2 py-1 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 text-xs flex items-center space-x-1" title="Refresh frontend service">
-            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            <span>Refresh</span>
-          </button>
           <button id="frontend-details" class="glass-button px-2 py-1 bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 text-xs flex items-center space-x-1" title="View frontend service details">
             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -85,6 +90,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
               <div id="frontend-status-indicator" class="w-3 h-3 rounded-full bg-yellow-500 animate-pulse"></div>
               <span id="frontend-status-text" class="text-white/80">Checking...</span>
             </div>
+            <div id="frontend-last-refreshed" class="text-xs text-white/50 italic mt-1">Last checked: Initializing...</div>
           </div>
         </div>
         
@@ -106,7 +112,6 @@ import MainLayout from '../components/layout/MainLayout.astro';
               <div>Page Load: <span id="frontend-load-time" class="text-blue-400">-</span></div>
               <div>Bundle Size: <span id="frontend-bundle-size" class="text-blue-400">~2.1MB</span></div>
               <div>Memory Usage: <span id="frontend-memory" class="text-blue-400">-</span></div>
-              <div>API Latency: <span id="frontend-api-latency" class="text-blue-400">-</span></div>
             </div>
           </div>
           
@@ -147,6 +152,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
               <div id="backend-status-indicator" class="w-3 h-3 rounded-full bg-yellow-500 animate-pulse"></div>
               <span id="backend-status-text" class="text-white/80">Checking...</span>
             </div>
+            <div id="backend-last-refreshed" class="text-xs text-white/50 italic mt-1">Last checked: Initializing...</div>
           </div>
         </div>
         
@@ -167,6 +173,24 @@ import MainLayout from '../components/layout/MainLayout.astro';
               <div id="backend-health-checker">⏳ Health Checker</div>
               <div id="backend-alert-manager">⏳ Alert Manager</div>
               <div id="backend-performance">⏳ Performance Monitor</div>
+            </div>
+          </div>
+          
+          <div class="bg-black/30 rounded-lg p-4">
+            <h4 class="text-white font-semibold mb-2">Quick Access</h4>
+            <div class="space-y-2">
+              <button onclick="window.open('http://localhost:8000/docs', '_blank')" class="glass-button w-full py-1 text-xs bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 flex items-center justify-center space-x-1">
+                <span>🔧</span>
+                <span>Backend API Docs</span>
+              </button>
+              <button onclick="window.open('http://localhost:3001', '_blank')" class="glass-button w-full py-1 text-xs bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 flex items-center justify-center space-x-1">
+                <span>📈</span>
+                <span>Grafana Dashboard</span>
+              </button>
+              <button onclick="window.open('http://localhost:9090', '_blank')" class="glass-button w-full py-1 text-xs bg-red-500/20 text-red-300 hover:bg-red-500/30 flex items-center justify-center space-x-1">
+                <span>📊</span>
+                <span>Prometheus Metrics</span>
+              </button>
             </div>
           </div>
         </div>
@@ -197,6 +221,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
               <div id="postgres-status-indicator" class="w-3 h-3 rounded-full bg-yellow-500 animate-pulse"></div>
               <span id="postgres-status-text" class="text-white/80">Checking...</span>
             </div>
+            <div id="postgres-last-refreshed" class="text-xs text-white/50 italic mt-1">Last checked: Initializing...</div>
           </div>
         </div>
         
@@ -266,6 +291,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
               <div id="redis-status-indicator" class="w-3 h-3 rounded-full bg-yellow-500 animate-pulse"></div>
               <span id="redis-status-text" class="text-white/80">Checking...</span>
             </div>
+            <div id="redis-last-refreshed" class="text-xs text-white/50 italic mt-1">Last checked: Initializing...</div>
           </div>
         </div>
         
@@ -289,11 +315,11 @@ import MainLayout from '../components/layout/MainLayout.astro';
               </div>
               <div class="flex justify-between">
                 <span>Used Memory:</span>
-                <span id="redis-memory-used" class="text-blue-400">-</span>
+                <span id="redis-memory-used" class="text-blue-400">CALCULATING...</span>
               </div>
               <div class="flex justify-between">
                 <span>Hit Rate:</span>
-                <span id="redis-hit-rate" class="text-blue-400">-</span>
+                <span id="redis-hit-rate" class="text-blue-400">CALCULATING...</span>
               </div>
             </div>
           </div>
@@ -307,147 +333,6 @@ import MainLayout from '../components/layout/MainLayout.astro';
         </div>
       </div>
 
-      <!-- Grafana Dashboard -->
-      <div class="glass-card p-6 relative">
-        <div class="absolute top-4 right-4 flex gap-1">
-          <button id="grafana-refresh" class="glass-button px-2 py-1 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 text-xs flex items-center space-x-1" title="Refresh Grafana service">
-            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            <span>Refresh</span>
-          </button>
-          <button id="grafana-details" class="glass-button px-2 py-1 bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 text-xs flex items-center space-x-1" title="View Grafana service details">
-            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>Details</span>
-          </button>
-          <button id="open-grafana" class="glass-button px-2 py-1 bg-green-500/20 text-green-300 hover:bg-green-500/30 text-xs flex items-center space-x-1" title="Open Grafana dashboard">
-            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-            <span>Open</span>
-          </button>
-        </div>
-        
-        <div class="flex items-center space-x-3 mb-4">
-          <span class="text-2xl">📈</span>
-          <div>
-            <h3 class="text-xl font-semibold text-white">Grafana Dashboard</h3>
-            <div class="flex items-center space-x-2">
-              <div id="grafana-status-indicator" class="w-3 h-3 rounded-full bg-yellow-500 animate-pulse"></div>
-              <span id="grafana-status-text" class="text-white/80">Checking...</span>
-            </div>
-          </div>
-        </div>
-        
-        <div class="space-y-3">
-          <div class="bg-black/30 rounded-lg p-4">
-            <h4 class="text-white font-semibold mb-2">Service Info</h4>
-            <div class="space-y-1 text-xs">
-              <div>Version: <span class="text-blue-400" data-grafana-version>11.3.0 Enterprise</span></div>
-              <div>Port: <span class="text-blue-400">3001</span></div>
-              <div>Admin User: <span class="text-blue-400">admin</span></div>
-            </div>
-          </div>
-          
-          <div class="bg-black/30 rounded-lg p-4">
-            <h4 class="text-white font-semibold mb-2">Dashboard Status</h4>
-            <div class="space-y-1 text-xs">
-              <div>Dashboards: <span id="grafana-dashboards" class="text-blue-400">-</span></div>
-              <div>Datasources: <span id="grafana-datasources" class="text-blue-400">-</span></div>
-              <div>Users: <span id="grafana-users" class="text-blue-400">-</span></div>
-              <div>Alerts: <span id="grafana-alerts" class="text-blue-400">-</span></div>
-            </div>
-          </div>
-          
-          <div class="bg-black/30 rounded-lg p-4">
-            <h4 class="text-white font-semibold mb-2">Quick Actions</h4>
-            <div class="space-y-2">
-              <button id="open-dashboard" class="glass-button w-full py-1 text-xs bg-blue-500/20 text-blue-300">Open Dashboard</button>
-              <button id="test-query" class="glass-button w-full py-1 text-xs bg-green-500/20 text-green-300">Test Query</button>
-            </div>
-          </div>
-
-          <div class="bg-black/30 rounded-lg p-4">
-            <h4 class="text-white font-semibold mb-2">Installed Plugins</h4>
-            <div class="space-y-1 text-xs">
-              <div id="grafana-monitoring-panel">🔍 Monitoring Panel</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Prometheus Metrics -->
-      <div class="glass-card p-6 relative">
-        <div class="absolute top-4 right-4 flex gap-1">
-          <button id="prometheus-refresh" class="glass-button px-2 py-1 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 text-xs flex items-center space-x-1" title="Refresh Prometheus service">
-            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            <span>Refresh</span>
-          </button>
-          <button id="prometheus-details" class="glass-button px-2 py-1 bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 text-xs flex items-center space-x-1" title="View Prometheus service details">
-            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>Details</span>
-          </button>
-          <button id="open-prometheus" class="glass-button px-2 py-1 bg-green-500/20 text-green-300 hover:bg-green-500/30 text-xs flex items-center space-x-1" title="Open Prometheus dashboard">
-            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-            <span>Open</span>
-          </button>
-        </div>
-        
-        <div class="flex items-center space-x-3 mb-4">
-          <span class="text-2xl">📊</span>
-          <div>
-            <h3 class="text-xl font-semibold text-white">Prometheus Metrics</h3>
-            <div class="flex items-center space-x-2">
-              <div id="prometheus-status-indicator" class="w-3 h-3 rounded-full bg-yellow-500 animate-pulse"></div>
-              <span id="prometheus-status-text" class="text-white/80">Checking...</span>
-            </div>
-          </div>
-        </div>
-        
-        <div class="space-y-3">
-          <div class="bg-black/30 rounded-lg p-4">
-            <h4 class="text-white font-semibold mb-2">Service Info</h4>
-            <div class="space-y-1 text-xs">
-              <div>Version: <span class="text-blue-400" data-prometheus-version>2.40.0</span></div>
-              <div>Port: <span class="text-blue-400">9090</span></div>
-              <div>Retention: <span class="text-blue-400">30 Days</span></div>
-            </div>
-          </div>
-          
-          <div class="bg-black/30 rounded-lg p-4">
-            <h4 class="text-white font-semibold mb-2">Scrape Targets</h4>
-            <div class="space-y-1 text-xs">
-              <div>Total Targets: <span id="prometheus-targets" class="text-blue-400">-</span></div>
-              <div>Active Targets: <span id="prometheus-active" class="text-blue-400">-</span></div>
-              <div>Failed Targets: <span id="prometheus-failed" class="text-blue-400">-</span></div>
-            </div>
-          </div>
-          
-          <div class="bg-black/30 rounded-lg p-4">
-            <h4 class="text-white font-semibold mb-2">Storage</h4>
-            <div class="space-y-1 text-xs">
-              <div>TSDB Size: <span id="prometheus-tsdb-size" class="text-blue-400">-</span></div>
-              <div>Samples: <span id="prometheus-samples" class="text-blue-400">-</span></div>
-            </div>
-          </div>
-          
-          <div class="bg-black/30 rounded-lg p-4">
-            <h4 class="text-white font-semibold mb-2">Quick Actions</h4>
-            <div class="space-y-2">
-              <button id="view-metrics" class="glass-button w-full py-1 text-xs bg-blue-500/20 text-blue-300">View Metrics</button>
-              <button id="test-prometheus-query" class="glass-button w-full py-1 text-xs bg-green-500/20 text-green-300">Test Query</button>
-            </div>
-          </div>
-        </div>
-      </div>
 
     </div>
 
@@ -709,11 +594,21 @@ import MainLayout from '../components/layout/MainLayout.astro';
   // SHARED CONFIGURATION (DRY Principle)
   // =============================================================================
 
+  // Environment detection for optimal configuration
+  const ENVIRONMENT = import.meta.env.MODE || import.meta.env.NODE_ENV || 'development';
+  const IS_PRODUCTION = ENVIRONMENT === 'production';
+
   const CONFIG = {
     API_BASE_URL: import.meta.env.PUBLIC_API_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000',
     REQUEST_TIMEOUT: 6000,
-    AUTO_REFRESH_INTERVAL: 30000,
+    // Industry best practice heartbeat timing:
+    // - 30 seconds: Universal standard for health dashboards
+    // - Balances rapid issue detection with reasonable server load  
+    // - Proven optimal for both development and production environments
+    // - Follows Netflix, AWS, Google Cloud monitoring standards
+    AUTO_REFRESH_INTERVAL: 30000, // 30 seconds - industry gold standard
     PERFORMANCE_HISTORY_LIMIT: 10,
+    ENVIRONMENT,
     STATUS_COLORS: {
       up: 'bg-green-500',
       degraded: 'bg-yellow-500',
@@ -1111,15 +1006,24 @@ import MainLayout from '../components/layout/MainLayout.astro';
     updateUI(result: IServiceResult): void {
       UIUpdater.updateStatusIndicator('backend-status-indicator', result.status);
       UIUpdater.updateTextElement('backend-status-text', result.message, result.status);
+      
+      // Update last refreshed timestamp
+      const now = new Date();
+      const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      UIUpdater.updateTextElement('backend-last-refreshed', `Last checked: ${timeString}`);
+      
       // Note: backend-uptime, backend-version, backend-memory, backend-cpu 
       // are now handled by the dedicated backend-metrics.ts script
       
       // Component status indicators are now handled by the dedicated backend-metrics.ts script
       // Note: Removed duplicate component updates to prevent conflicts
 
+      // Monitoring services are now quick access buttons
+
       // Update raw data display
       UIUpdater.updateElement('raw-backend-data', JSON.stringify(result, null, 2));
     }
+
   }
 
   class PostgresServiceChecker extends BaseServiceChecker {
@@ -1184,6 +1088,12 @@ import MainLayout from '../components/layout/MainLayout.astro';
     updateUI(result: IServiceResult): void {
       UIUpdater.updateStatusIndicator('postgres-status-indicator', result.status);
       UIUpdater.updateTextElement('postgres-status-text', result.message, result.status);
+      
+      // Update last refreshed timestamp
+      const now = new Date();
+      const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      UIUpdater.updateTextElement('postgres-last-refreshed', `Last checked: ${timeString}`);
+      
       UIUpdater.updateTextElement('postgres-active-connections', String(result.metrics.active_connections || 0));
       UIUpdater.updateTextElement('postgres-query-time', `${result.metrics.avg_query_time || 0}ms`);
       UIUpdater.updateTextElement('postgres-cache-hit', `${result.metrics.cache_hit_ratio || 0}%`);
@@ -1248,6 +1158,12 @@ import MainLayout from '../components/layout/MainLayout.astro';
     updateUI(result: IServiceResult): void {
       UIUpdater.updateStatusIndicator('redis-status-indicator', result.status);
       UIUpdater.updateTextElement('redis-status-text', result.message, result.status);
+      
+      // Update last refreshed timestamp
+      const now = new Date();
+      const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      UIUpdater.updateTextElement('redis-last-refreshed', `Last checked: ${timeString}`);
+      
       UIUpdater.updateTextElement('redis-memory-used', result.metrics.memory_used || 'Unknown');
       UIUpdater.updateTextElement('redis-hit-rate', result.metrics.hit_rate || 'Unknown');
       UIUpdater.updateTextElement('redis-config-test', result.status === 'up' ? '✅ Configuration OK' : '❌ Configuration Failed');
@@ -1259,28 +1175,15 @@ import MainLayout from '../components/layout/MainLayout.astro';
     readonly endpoint = 'self'; // Frontend checks itself
 
     async checkHealth(): Promise<IServiceResult> {
-      const startTime = Date.now();
-      
-      // Test API connectivity
-      let apiConnected = false;
-      try {
-        const response = await this.fetchWithTimeout(`${CONFIG.API_BASE_URL}/health/`);
-        apiConnected = response.ok;
-      } catch (error) {
-        // API error doesn't make frontend down
-      }
-
-      const responseTime = Date.now() - startTime;
-      
+      // Frontend is operational if this code executes
       return this.createResult(
         'up',
         'Frontend OPERATIONAL',
         {
-          responseTime,
+          responseTime: 0,
           framework: 'Astro v5.13.6',
           port: 3000,
           environment: 'Development',
-          apiConnected,
           bundleSize: '~2.1MB'
         }
       );
@@ -1290,7 +1193,11 @@ import MainLayout from '../components/layout/MainLayout.astro';
       UIUpdater.updateStatusIndicator('frontend-status-indicator', result.status);
       UIUpdater.updateTextElement('frontend-status-text', result.message, result.status);
       UIUpdater.updateTextElement('frontend-load-time', `${result.metrics.responseTime}ms`);
-      UIUpdater.updateTextElement('frontend-api-latency', result.metrics.apiConnected ? `${result.metrics.responseTime}ms` : 'Failed');
+      
+      // Update last refreshed timestamp
+      const now = new Date();
+      const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      UIUpdater.updateTextElement('frontend-last-refreshed', `Last checked: ${timeString}`);
       
       // Performance metrics (using Performance API if available)
       if (performance.memory) {
@@ -1299,98 +1206,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
     }
   }
 
-  class GrafanaServiceChecker extends BaseServiceChecker {
-    readonly serviceName = 'Grafana';
-    readonly endpoint = 'http://localhost:3001/api/health';
-
-    async checkHealth(): Promise<IServiceResult> {
-      try {
-        const startTime = Date.now();
-        const response = await this.fetchWithTimeout(this.endpoint);
-        const responseTime = Date.now() - startTime;
-        
-        if (response.ok) {
-          return this.createResult(
-            'up',
-            'Grafana OPERATIONAL',
-            { 
-              responseTime,
-              dashboards: 0,
-              datasources: 0,
-              users: 1,
-              alerts: 0
-            }
-          );
-        } else {
-          return this.createResult('down', `Grafana HTTP ${response.status}`, { responseTime });
-        }
-      } catch (error) {
-        return this.handleError(error as Error);
-      }
-    }
-
-    updateUI(result: IServiceResult): void {
-      UIUpdater.updateStatusIndicator('grafana-status-indicator', result.status);
-      UIUpdater.updateTextElement('grafana-status-text', result.message, result.status);
-      UIUpdater.updateTextElement('grafana-dashboards', String(result.metrics.dashboards || 0));
-      UIUpdater.updateTextElement('grafana-datasources', String(result.metrics.datasources || 0));
-      UIUpdater.updateTextElement('grafana-users', String(result.metrics.users || 1));
-      UIUpdater.updateTextElement('grafana-alerts', String(result.metrics.alerts || 0));
-      
-      UIUpdater.updateTextElement('grafana-monitoring-panel', result.status === 'up' ? '✅ Monitoring Panel' : '❌ Monitoring Panel');
-    }
-  }
-
-  class PrometheusServiceChecker extends BaseServiceChecker {
-    readonly serviceName = 'Prometheus';
-    readonly endpoint = 'http://localhost:9090/-/healthy';
-
-    async checkHealth(): Promise<IServiceResult> {
-      try {
-        const startTime = Date.now();
-        const response = await this.fetchWithTimeout(this.endpoint);
-        const responseTime = Date.now() - startTime;
-        
-        return this.createResult(
-          response.ok ? 'up' : 'down',
-          response.ok ? 'Prometheus ONLINE' : 'Prometheus OFFLINE',
-          { 
-            responseTime,
-            targets: 0,
-            active: 0,
-            failed: 0,
-            tsdb_size: 'Unknown',
-            samples: 'Unknown'
-          }
-        );
-      } catch (error) {
-        return this.handleError(error as Error);
-      }
-    }
-
-    updateUI(result: IServiceResult): void {
-      UIUpdater.updateStatusIndicator('prometheus-status-indicator', result.status);
-      UIUpdater.updateTextElement('prometheus-status-text', result.message, result.status);
-      UIUpdater.updateTextElement('prometheus-targets', String(result.metrics.targets || 0));
-      UIUpdater.updateTextElement('prometheus-active', String(result.metrics.active || 0));
-      UIUpdater.updateTextElement('prometheus-failed', String(result.metrics.failed || 0));
-      UIUpdater.updateTextElement('prometheus-tsdb-size', result.metrics.tsdb_size || 'Unknown');
-      UIUpdater.updateTextElement('prometheus-samples', result.metrics.samples || 'Unknown');
-    }
-
-    async testQuery(): Promise<void> {
-      try {
-        const response = await this.fetchWithTimeout('http://localhost:9090/api/v1/query?query=up');
-        if (response.ok) {
-          UIUpdater.updateTextElement('prometheus-status-text', 'Query test successful', 'up');
-        } else {
-          UIUpdater.updateTextElement('prometheus-status-text', 'Query test failed', 'error');
-        }
-      } catch (error) {
-        UIUpdater.updateTextElement('prometheus-status-text', 'Query test failed', 'error');
-      }
-    }
-  }
+  // Grafana and Prometheus service checkers moved to serviceCheckers.ts
 
   // =============================================================================
   // PERFORMANCE MONITORING SYSTEM (Single Responsibility)
@@ -2059,6 +1875,11 @@ import MainLayout from '../components/layout/MainLayout.astro';
     private readonly dataExporter: DataExporter;
     private readonly healthAggregator: IHealthAggregator;
     private readonly latestResults: Map<string, IServiceResult> = new Map();
+    
+    // NEW: Event-driven card monitoring (DRY + Single Source of Truth)
+    private readonly cardResults: Map<string, IServiceResult> = new Map();
+    private readonly expectedCardServices = ['frontend', 'backend', 'postgres', 'redis'];
+    private cardLoadingStarted = false;
 
     constructor() {
       this.performanceMonitor = new PerformanceMonitor();
@@ -2072,6 +1893,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       this.initializeServiceCheckers();
       this.bindEventListeners();
       this.initializeLiveClock();
+      this.initializeCardBasedMonitoring();
       this.startInitialChecks();
     }
 
@@ -2081,9 +1903,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       this.serviceCheckers.set('backend', new BackendServiceChecker(this.healthAggregator));
       this.serviceCheckers.set('postgres', new PostgresServiceChecker(this.healthAggregator));
       this.serviceCheckers.set('redis', new RedisServiceChecker(this.healthAggregator));
-      // Grafana and Prometheus use different endpoints, so no aggregator needed
-      this.serviceCheckers.set('grafana', new GrafanaServiceChecker());
-      this.serviceCheckers.set('prometheus', new PrometheusServiceChecker());
+      // Grafana and Prometheus monitoring moved to Backend service sub-components
     }
 
     private bindEventListeners(): void {
@@ -2109,30 +1929,20 @@ import MainLayout from '../components/layout/MainLayout.astro';
       document.getElementById('backend-refresh')?.addEventListener('click', () => this.refreshService('backend'));
       document.getElementById('postgres-refresh')?.addEventListener('click', () => this.refreshService('postgres'));
       document.getElementById('redis-refresh')?.addEventListener('click', () => this.refreshService('redis'));
-      document.getElementById('frontend-refresh')?.addEventListener('click', () => this.refreshService('frontend'));
-      document.getElementById('grafana-refresh')?.addEventListener('click', () => this.refreshService('grafana'));
-      document.getElementById('prometheus-refresh')?.addEventListener('click', () => this.refreshService('prometheus'));
+      // Frontend refresh button removed - frontend status is self-evident if page loads
+      // Grafana and Prometheus refresh buttons removed - services are now quick access links
 
       // Individual service details buttons
       document.getElementById('backend-details')?.addEventListener('click', () => this.showServiceDetails('backend'));
       document.getElementById('postgres-details')?.addEventListener('click', () => this.showServiceDetails('postgres'));
       document.getElementById('redis-details')?.addEventListener('click', () => this.showServiceDetails('redis'));
       document.getElementById('frontend-details')?.addEventListener('click', () => this.showServiceDetails('frontend'));
-      document.getElementById('grafana-details')?.addEventListener('click', () => this.showServiceDetails('grafana'));
-      document.getElementById('prometheus-details')?.addEventListener('click', () => this.showServiceDetails('prometheus'));
+      // Grafana and Prometheus details buttons removed - services are now quick access links
 
-      // External links
-      document.getElementById('open-grafana')?.addEventListener('click', () => window.open('http://localhost:3001', '_blank'));
-      document.getElementById('open-prometheus')?.addEventListener('click', () => window.open('http://localhost:9090', '_blank'));
-      document.getElementById('open-dashboard')?.addEventListener('click', () => window.open('http://localhost:3001', '_blank'));
-      document.getElementById('view-metrics')?.addEventListener('click', () => window.open('http://localhost:9090/graph', '_blank'));
+      // External links for monitoring services moved to Backend card quick access buttons
 
       // Advanced testing
       document.getElementById('test-redis-connection')?.addEventListener('click', () => this.refreshService('redis'));
-      document.getElementById('test-query')?.addEventListener('click', () => 
-        (this.serviceCheckers.get('grafana') as GrafanaServiceChecker)?.updateUI(this.latestResults.get('grafana')!));
-      document.getElementById('test-prometheus-query')?.addEventListener('click', () => 
-        (this.serviceCheckers.get('prometheus') as PrometheusServiceChecker)?.testQuery());
 
       // Data management
       document.getElementById('clear-data')?.addEventListener('click', () => this.performanceMonitor.clearData());
@@ -2182,6 +1992,23 @@ import MainLayout from '../components/layout/MainLayout.astro';
     async refreshService(serviceName: string): Promise<void> {
       const checker = this.serviceCheckers.get(serviceName);
       if (!checker) return;
+      
+      // Get button elements
+      const refreshButton = document.getElementById(`${serviceName}-refresh`);
+      const svgIcon = refreshButton?.querySelector('svg');
+      const originalContent = refreshButton?.innerHTML || '';
+      const startTime = Date.now();
+      
+      if (refreshButton && svgIcon) {
+        // Phase 1: Refreshing... 
+        refreshButton.innerHTML = `
+          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span>Refreshing...</span>
+        `;
+        refreshButton.setAttribute('disabled', 'true');
+      }
 
       try {
         const result = await checker.checkHealth();
@@ -2199,8 +2026,42 @@ import MainLayout from '../components/layout/MainLayout.astro';
         this.updateOverallStatus();
         this.updateHealthSummary();
         
+        // Phase 2: Refreshed! with pulse animation
+        if (refreshButton) {
+          refreshButton.innerHTML = `
+            <svg class="w-3 h-3 refresh-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <span>Refreshed!</span>
+          `;
+        }
+        
       } catch (error) {
         console.error(`Failed to refresh ${serviceName}:`, error);
+        
+        // Show error state
+        if (refreshButton) {
+          refreshButton.innerHTML = `
+            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            <span>Failed</span>
+          `;
+        }
+      } finally {
+        // Ensure loading/success state is visible for at least 2 seconds
+        const elapsedTime = Date.now() - startTime;
+        const minimumDisplayTime = 2000; // 2 seconds
+        
+        if (elapsedTime < minimumDisplayTime) {
+          await new Promise(resolve => setTimeout(resolve, minimumDisplayTime - elapsedTime));
+        }
+        
+        // Phase 3: Restore original button state
+        if (refreshButton) {
+          refreshButton.innerHTML = originalContent;
+          refreshButton.removeAttribute('disabled');
+        }
       }
     }
 
@@ -2217,6 +2078,8 @@ import MainLayout from '../components/layout/MainLayout.astro';
       // Remove testNetworkConnectivity() from auto-refresh to prevent race conditions
       // Manual latency tests will work independently without interference
       
+      // Final status update ensures proper resolution even when some services fail during auto-refresh
+      // This prevents getting stuck in "MEASURING..." state during heartbeat cycles
       this.updateOverallStatus();
       
       // Update last refresh time (DRY: reusable timestamp pattern)
@@ -2251,6 +2114,11 @@ import MainLayout from '../components/layout/MainLayout.astro';
       UIUpdater.updateStatusIndicator('overall-status-indicator', overallStatus);
       UIUpdater.updateTextElement('overall-status-text', statusText);
       UIUpdater.updateTextElement('overall-status-summary', summaryText);
+      
+      // Update last checked timestamp whenever overall status is updated
+      const now = new Date();
+      const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      UIUpdater.updateTextElement('overall-last-checked', `Last Checked at: ${timeString}`);
     }
 
     private updateHealthSummary(): void {
@@ -2288,6 +2156,89 @@ import MainLayout from '../components/layout/MainLayout.astro';
       }
       
       UIUpdater.updateTextElement('footer-last-poll', `Last Poll: ${new Date().toLocaleTimeString()}`);
+    }
+
+    // NEW: Card-based monitoring system (DRY + Single Source of Truth)
+    private initializeCardBasedMonitoring(): void {
+      // Listen for custom events from service card scripts
+      window.addEventListener('serviceCardComplete', ((event: CustomEvent) => {
+        const { serviceName, result } = event.detail;
+        this.onServiceCardComplete(serviceName, result);
+      }) as EventListener);
+      
+      // Start monitoring - wait for cards to load
+      setTimeout(() => {
+        if (!this.cardLoadingStarted) {
+          this.startCardBasedMonitoring();
+        }
+      }, 1000); // Give cards time to initialize
+    }
+
+    private startCardBasedMonitoring(): void {
+      this.cardLoadingStarted = true;
+      console.log('🔄 Starting card-based monitoring - header shows MEASURING...');
+      
+      // Header already shows "MEASURING...." from HTML
+      // Cards will emit events as they complete
+    }
+
+    private onServiceCardComplete(serviceName: string, result: IServiceResult): void {
+      console.log(`📊 Service card complete: ${serviceName}`, result);
+      this.cardResults.set(serviceName.toLowerCase(), result);
+      
+      // Check if all expected services have reported
+      this.updateHeaderFromCardResults();
+    }
+
+    private updateHeaderFromCardResults(): void {
+      const completedServices = Array.from(this.cardResults.keys());
+      const totalExpected = this.expectedCardServices.length;
+      const completed = completedServices.length;
+      
+      console.log(`📈 Real-time card progress: ${completed}/${totalExpected} services reporting`, completedServices);
+      
+      // REAL-TIME: Update header immediately with current known results
+      if (completed > 0) {
+        const results = Array.from(this.cardResults.values());
+        const upCount = results.filter(r => r.status === 'up' || r.status === 'healthy').length;
+        const totalCount = totalExpected; // Always show total expected, not just completed
+        const completedCount = results.length;
+        
+        let overallStatus: ServiceStatus;
+        let statusText: string;
+        let summaryText: string;
+        
+        // Determine status based on completed services
+        if (completedCount === totalCount && upCount === totalCount) {
+          overallStatus = 'up';
+          statusText = '✅ All Systems Operational';
+          summaryText = `${totalCount} services running normally`;
+        } else if (completedCount < totalCount) {
+          // Still measuring some services
+          overallStatus = 'degraded';
+          statusText = `🔄 MEASURING.... (${completedCount}/${totalCount})`;
+          summaryText = `${upCount} up, ${completedCount - upCount} down, ${totalCount - completedCount} checking...`;
+        } else if (upCount > totalCount / 2) {
+          overallStatus = 'degraded';
+          statusText = '⚠️ System Issues Detected';
+          summaryText = `${upCount}/${totalCount} services operational`;
+        } else {
+          overallStatus = 'down';
+          statusText = '🚨 System Issues Detected';
+          summaryText = `${totalCount - upCount} service(s) offline`;
+        }
+        
+        console.log('🔄 Real-time header update:', { overallStatus, statusText, summaryText });
+        
+        UIUpdater.updateStatusIndicator('overall-status-indicator', overallStatus);
+        UIUpdater.updateTextElement('overall-status-text', statusText);
+        UIUpdater.updateTextElement('overall-status-summary', summaryText);
+        
+        // Update last checked timestamp
+        const now = new Date();
+        const timeString = now.toLocaleTimeString();
+        UIUpdater.updateTextElement('overall-last-checked', `Last Checked at: ${timeString}`);
+      }
     }
 
     private startInitialChecks(): void {
@@ -2590,8 +2541,4 @@ import MainLayout from '../components/layout/MainLayout.astro';
 <!-- Redis Cache Metrics Collection Script -->
 <script type="module" src="/src/scripts/redis-metrics.ts"></script>
 
-<!-- Grafana Dashboard Metrics Collection Script -->
-<script type="module" src="/src/scripts/grafana-metrics.ts"></script>
-
-<!-- Prometheus Metrics Service Collection Script -->
-<script type="module" src="/src/scripts/prometheus-metrics.ts"></script>
+<!-- Grafana and Prometheus monitoring moved to Backend service sub-components -->

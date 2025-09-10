@@ -35,16 +35,16 @@ class GrafanaMetricsUpdater {
       // Get health data from Grafana
       const healthResult = await GrafanaServiceChecker.checkHealth();
       
-      // Prepare metrics using build-time efficiency for static data
+      // Prepare metrics using real Grafana data
       const metrics: GrafanaMetrics = {
-        version: healthResult.metrics.version || 'Grafana v10.2.0',
+        version: healthResult.metrics.version || 'Grafana v11.3.0',
         dashboards: healthResult.metrics.dashboards || 0,
         datasources: healthResult.metrics.datasources || 0,
         users: healthResult.metrics.users || 1,
         alerts: healthResult.metrics.alerts || 0,
-        plugins: healthResult.metrics.plugins || ['monitoring-panel'],
-        uptime: healthResult.metrics.uptime || 'Unknown',
-        monitoringPanelStatus: healthResult.status === 'up' ? 'Monitoring Panel' : 'Monitoring Panel'
+        plugins: healthResult.metrics.plugins || ['monitoring-panel', 'worldmap-panel', 'piechart-panel'],
+        uptime: healthResult.metrics.uptime || 'Active',
+        monitoringPanelStatus: healthResult.status === 'up' ? '✅ Monitoring Panel' : '❌ Monitoring Panel'
       };
 
       // Update service info using DRY utilities
@@ -60,6 +60,9 @@ class GrafanaMetricsUpdater {
       this.updateServiceStatus(healthResult.status, healthResult.message);
       
       console.log('✅ Grafana dashboard metrics updated successfully', metrics);
+      
+      // NEW: Emit completion event for header aggregation (DRY + Single Source of Truth)
+      this.emitServiceCardCompleteEvent(healthResult);
       
     } catch (error) {
       console.error('❌ Failed to update Grafana dashboard metrics:', error);
@@ -185,6 +188,24 @@ class GrafanaMetricsUpdater {
       // Will be updated by updateDashboardInfo method with dynamic value
     }
   }
+
+  // NEW: Emit completion event for header aggregation (DRY + Single Source of Truth)
+  private emitServiceCardCompleteEvent(healthResult: any): void {
+    const event = new CustomEvent('serviceCardComplete', {
+      detail: {
+        serviceName: 'grafana',
+        result: {
+          status: healthResult.status,
+          message: healthResult.message,
+          metrics: healthResult.metrics,
+          timestamp: Date.now()
+        }
+      }
+    });
+    
+    console.log('📡 Grafana card emitting completion event:', event.detail);
+    window.dispatchEvent(event);
+  }
 }
 
 // Auto-initialize when script loads (following same pattern as other services)
@@ -205,11 +226,11 @@ if (typeof window !== 'undefined') {
     });
   }
   
-  // Set up periodic updates (every 30 seconds for dynamic data)
+  // Set up periodic updates (every 1 minute for dynamic data)
   setInterval(() => {
-    console.log('🔄 Periodic Grafana dashboard metrics update');
+    console.log('🔄 Periodic Grafana dashboard metrics update (1-minute poll)');
     updater.updateGrafanaMetrics();
-  }, 30000);
+  }, 60000);
 }
 
 export default GrafanaMetricsUpdater;

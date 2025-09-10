@@ -52,6 +52,9 @@ class BackendMetricsUpdater {
       
       console.log('✅ Backend metrics updated successfully', metrics);
       
+      // NEW: Emit completion event for header aggregation (DRY + Single Source of Truth)
+      this.emitServiceCardCompleteEvent(healthResult);
+      
     } catch (error) {
       console.error('❌ Failed to update backend metrics:', error);
       this.updateServiceStatus('error', 'Failed to fetch metrics');
@@ -193,6 +196,24 @@ class BackendMetricsUpdater {
       }
     });
   }
+
+  // NEW: Emit completion event for header aggregation (DRY + Single Source of Truth)
+  private emitServiceCardCompleteEvent(healthResult: any): void {
+    const event = new CustomEvent('serviceCardComplete', {
+      detail: {
+        serviceName: 'backend',
+        result: {
+          status: healthResult.status,
+          message: healthResult.message,
+          metrics: healthResult.metrics,
+          timestamp: Date.now()
+        }
+      }
+    });
+    
+    console.log('📡 Backend card emitting completion event:', event.detail);
+    window.dispatchEvent(event);
+  }
 }
 
 // Auto-initialize when script loads (following same pattern as frontend)
@@ -213,11 +234,11 @@ if (typeof window !== 'undefined') {
     });
   }
   
-  // Set up periodic updates (every 30 seconds for dynamic data)
+  // Set up periodic updates (every 1 minute for dynamic data)
   setInterval(() => {
-    console.log('🔄 Periodic backend metrics update');
+    console.log('🔄 Periodic backend metrics update (1-minute poll)');
     updater.updateBackendMetrics();
-  }, 30000);
+  }, 60000);
 }
 
 export default BackendMetricsUpdater;
