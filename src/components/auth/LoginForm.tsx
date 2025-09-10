@@ -1,113 +1,93 @@
 /**
- * Login Form Component
- * Modern login form with Liquid Glass design and comprehensive validation
+ * Modern SSO + Passkeys-Only Login Form
+ * Implements modern authentication without passwords - OAuth and WebAuthn only
+ * Following industry best practices for security and user experience
  */
 
-import React, { useState, useCallback } from 'react';
-import { LiquidCard, LiquidInput, LiquidButton } from '../liquid-glass';
-import { useBasicAuth } from '../../contexts/AuthContext.tsx';
-import type { LoginCredentials } from '../../types/auth.ts';
+import React, { useState, useCallback, useEffect } from 'react';
+import { LiquidCard, LiquidButton } from '../liquid-glass';
+import { useOAuth, useWebAuthn, useBasicAuth } from '../../contexts/AuthContext.tsx';
 
 export interface LoginFormProps {
   onSuccess?: () => void;
   onSwitchToRegister?: () => void;
-  onForgotPassword?: () => void;
   className?: string;
+  // Remove onForgotPassword - no longer needed with SSO/Passkeys
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({
   onSuccess,
   onSwitchToRegister,
-  onForgotPassword,
   className = '',
 }) => {
-  // SOLID: Interface Segregation - Only depend on basic authentication features!
-  const { login, isLoading, error, clearError } = useBasicAuth();
+  // SOLID: Interface Segregation - Use focused auth hooks
+  const { error: basicError, clearError, isLoading: basicLoading } = useBasicAuth();
+  const { 
+    oauthProviders, 
+    loginWithOAuth, 
+    isLoading: oauthLoading, 
+    error: oauthError 
+  } = useOAuth();
+  const { 
+    webauthnSupported, 
+    authenticateWithPasskey, 
+    isLoading: webauthnLoading, 
+    error: webauthnError 
+  } = useWebAuthn();
   
-  const [credentials, setCredentials] = useState<LoginCredentials>({
-    email: '',
-    password: '',
-    remember_me: false,
-  });
+  // State for UI feedback
+  const [currentAuthMethod, setCurrentAuthMethod] = useState<'none' | 'oauth' | 'webauthn'>('none');
   
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-  const [showPassword, setShowPassword] = useState(false);
+  // Combined error state
+  const error = basicError || oauthError || webauthnError;
+  const isLoading = basicLoading || oauthLoading || webauthnLoading;
 
-  // Form validation
-  const validateForm = useCallback((): boolean => {
-    const errors: Record<string, string> = {};
+  // Available OAuth providers: google, github, microsoft, facebook, apple
+  // const availableProviders = oauthProviders.filter(provider => 
+  //   ['google', 'github', 'microsoft', 'facebook', 'apple'].includes(provider.name.toLowerCase())
+  // );
 
-    // Email validation
-    if (!credentials.email) {
-      errors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(credentials.email)) {
-      errors.email = 'Please enter a valid email address';
-    }
-
-    // Password validation
-    if (!credentials.password) {
-      errors.password = 'Password is required';
-    } else if (credentials.password.length < 6) {
-      errors.password = 'Password must be at least 6 characters';
-    }
-
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  }, [credentials]);
-
-  // Handle form submission
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-
+  // Handle OAuth login
+  const handleOAuthLogin = useCallback(async (providerName: string) => {
+    setCurrentAuthMethod('oauth');
     clearError();
-
+    
     try {
-      await login(credentials);
+      await loginWithOAuth(providerName);
       onSuccess?.();
     } catch (error) {
-      // Error is handled by the auth context
-      console.error('Login failed:', error);
+      console.error(`OAuth login failed for ${providerName}:`, error);
+      setCurrentAuthMethod('none');
     }
-  }, [credentials, validateForm, clearError, login, onSuccess]);
+  }, [loginWithOAuth, onSuccess, clearError]);
 
-  // Handle input changes
-  const handleInputChange = useCallback((field: keyof LoginCredentials) => (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+  // Handle WebAuthn authentication
+  const handlePasskeyLogin = useCallback(async () => {
+    setCurrentAuthMethod('webauthn');
+    clearError();
     
-    setCredentials(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-
-    // Clear validation error for this field
-    if (validationErrors[field]) {
-      setValidationErrors(prev => {
-        const next = { ...prev };
-        delete next[field];
-        return next;
-      });
+    try {
+      await authenticateWithPasskey();
+      onSuccess?.();
+    } catch (error) {
+      console.error('Passkey authentication failed:', error);
+      setCurrentAuthMethod('none');
     }
+  }, [authenticateWithPasskey, onSuccess, clearError]);
 
-    // Clear global error
-    if (error) {
-      clearError();
-    }
-  }, [validationErrors, error, clearError]);
+  // Clear any errors when component mounts
+  useEffect(() => {
+    clearError();
+  }, [clearError]);
 
   return (
     <div className={`w-full max-w-md mx-auto ${className}`.trim()}>
       <LiquidCard
-        title="Welcome Back"
-        subtitle="Sign in to your account to continue"
+        title="Welcome to CSFrace"
+        subtitle="Choose your preferred sign-in method - secure and password-free"
         className="w-full"
       >
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-6">
           {/* Global Error Display */}
           {error && (
             <div className="p-4 rounded-glass bg-red-500/20 border border-red-500/30 text-red-100 text-sm">
@@ -123,124 +103,34 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             </div>
           )}
 
-          {/* Email Field */}
-          <LiquidInput
-            type="email"
-            label="Email Address"
-            placeholder="Enter your email"
-            value={credentials.email}
-            onChange={handleInputChange('email')}
-            error={!!validationErrors.email}
-            errorText={validationErrors.email}
-            disabled={isLoading}
-            leftIcon={
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-              </svg>
-            }
-            required
-            autoComplete="email"
-            autoFocus
-          />
-
-          {/* Password Field */}
-          <LiquidInput
-            type={showPassword ? 'text' : 'password'}
-            label="Password"
-            placeholder="Enter your password"
-            value={credentials.password}
-            onChange={handleInputChange('password')}
-            error={!!validationErrors.password}
-            errorText={validationErrors.password}
-            disabled={isLoading}
-            leftIcon={
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-            }
-            rightIcon={
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="p-1 text-white/60 hover:text-white transition-colors"
+          {/* Passkey Authentication (Primary) */}
+          {webauthnSupported && (
+            <div>
+              <LiquidButton
+                variant="primary"
+                size="lg"
+                fullWidth
+                loading={currentAuthMethod === 'webauthn' && isLoading}
                 disabled={isLoading}
-              >
-                {showPassword ? (
+                onClick={handlePasskeyLogin}
+                leftIcon={
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 12H9v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4a2 2 0 012-2m0 0V9a2 2 0 012-2h2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                   </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                )}
-              </button>
-            }
-            required
-            autoComplete="current-password"
-          />
-
-          {/* Remember Me & Forgot Password */}
-          <div className="flex items-center justify-between">
-            <label className="flex items-center space-x-2 text-sm text-white/80">
-              <input
-                type="checkbox"
-                checked={credentials.remember_me}
-                onChange={handleInputChange('remember_me')}
-                disabled={isLoading}
-                className="w-4 h-4 rounded border-white/30 bg-black/20 text-blue-500 focus:ring-blue-500/50 focus:ring-2 transition-all"
-              />
-              <span>Remember me</span>
-            </label>
-
-            {onForgotPassword && (
-              <button
-                type="button"
-                onClick={onForgotPassword}
-                disabled={isLoading}
-                className="text-sm text-blue-400 hover:text-blue-300 transition-colors disabled:opacity-50"
+                }
               >
-                Forgot password?
-              </button>
-            )}
-          </div>
-
-          {/* Submit Button */}
-          <LiquidButton
-            type="submit"
-            variant="primary"
-            size="lg"
-            fullWidth
-            loading={isLoading}
-            disabled={isLoading}
-            leftIcon={
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-              </svg>
-            }
-          >
-            {isLoading ? 'Signing In...' : 'Sign In'}
-          </LiquidButton>
-
-          {/* Switch to Register */}
-          {onSwitchToRegister && (
-            <div className="text-center pt-4">
-              <p className="text-white/60 text-sm">
-                Don&apos;t have an account?{' '}
-                <button
-                  type="button"
-                  onClick={onSwitchToRegister}
-                  disabled={isLoading}
-                  className="text-blue-400 hover:text-blue-300 transition-colors disabled:opacity-50 font-medium"
-                >
-                  Sign up
-                </button>
-              </p>
+                {currentAuthMethod === 'webauthn' && isLoading ? 'Authenticating...' : 'Sign in with Passkey'}
+              </LiquidButton>
+              
+              <div className="text-center mt-2">
+                <p className="text-xs text-white/60">
+                  Use your fingerprint, face, or security key
+                </p>
+              </div>
             </div>
           )}
 
-          {/* Social Login Placeholder */}
+          {/* Divider */}
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-white/20"></div>
@@ -250,12 +140,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          {/* OAuth Providers */}
+          <div className="space-y-3">
+            {/* Google OAuth */}
             <LiquidButton
-              type="button"
               variant="secondary"
-              size="md"
-              disabled={true} // Will enable when OAuth is implemented
+              size="lg"
+              fullWidth
+              loading={currentAuthMethod === 'oauth' && isLoading}
+              disabled={isLoading}
+              onClick={() => handleOAuthLogin('google')}
               leftIcon={
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -265,24 +159,112 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 </svg>
               }
             >
-              Google
+              {currentAuthMethod === 'oauth' && isLoading ? 'Connecting...' : 'Continue with Google'}
             </LiquidButton>
 
+            {/* GitHub OAuth */}
             <LiquidButton
-              type="button"
               variant="secondary"
-              size="md"
-              disabled={true} // Will enable when WebAuthn is implemented
+              size="lg"
+              fullWidth
+              loading={currentAuthMethod === 'oauth' && isLoading}
+              disabled={isLoading}
+              onClick={() => handleOAuthLogin('github')}
               leftIcon={
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" />
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 0C5.374 0 0 5.373 0 12 0 17.302 3.438 21.8 8.207 23.387c.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
                 </svg>
               }
             >
-              Passkey
+              {currentAuthMethod === 'oauth' && isLoading ? 'Connecting...' : 'Continue with GitHub'}
+            </LiquidButton>
+
+            {/* Microsoft OAuth */}
+            <LiquidButton
+              variant="secondary"
+              size="lg"
+              fullWidth
+              loading={currentAuthMethod === 'oauth' && isLoading}
+              disabled={isLoading}
+              onClick={() => handleOAuthLogin('microsoft')}
+              leftIcon={
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M11.4 24H0V12.6h11.4V24zM24 24H12.6V12.6H24V24zM11.4 11.4H0V0h11.4v11.4zM24 11.4H12.6V0H24v11.4z"/>
+                </svg>
+              }
+            >
+              {currentAuthMethod === 'oauth' && isLoading ? 'Connecting...' : 'Continue with Microsoft'}
+            </LiquidButton>
+
+            {/* Facebook OAuth */}
+            <LiquidButton
+              variant="secondary"
+              size="lg"
+              fullWidth
+              loading={currentAuthMethod === 'oauth' && isLoading}
+              disabled={isLoading}
+              onClick={() => handleOAuthLogin('facebook')}
+              leftIcon={
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+              }
+            >
+              {currentAuthMethod === 'oauth' && isLoading ? 'Connecting...' : 'Continue with Facebook'}
+            </LiquidButton>
+
+            {/* Apple OAuth */}
+            <LiquidButton
+              variant="secondary"
+              size="lg"
+              fullWidth
+              loading={currentAuthMethod === 'oauth' && isLoading}
+              disabled={isLoading}
+              onClick={() => handleOAuthLogin('apple')}
+              leftIcon={
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12.017 0C8.396 0 8.847 1.266 8.847 2.333h3.152C14.053.72 15.456 0 12.017 0zM19.5 10.167c0 5.52-3.98 7.997-6.833 7.997-2.853 0-4.5-2.477-4.5-7.997S9.814 2.17 12.667 2.17c2.853 0 6.833 2.477 6.833 7.997z"/>
+                  <path d="M13.833 4c-.92 0-2.04 1.04-2.04 2s1.12 2.04 2.04 2.04 2.04-1.04 2.04-2-1.12-2-2.04-2z"/>
+                </svg>
+              }
+            >
+              {currentAuthMethod === 'oauth' && isLoading ? 'Connecting...' : 'Continue with Apple'}
             </LiquidButton>
           </div>
-        </form>
+
+          {/* Benefits section */}
+          <div className="liquid-glass rounded-glass p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <span className="text-sm font-medium text-white">Password-free security</span>
+            </div>
+            <div className="text-xs text-white/70 space-y-1">
+              <div>• No passwords to remember or lose</div>
+              <div>• Enhanced security with biometric authentication</div>
+              <div>• Quick sign-in with your existing accounts</div>
+              <div>• Industry-standard OAuth 2.0 protection</div>
+            </div>
+          </div>
+
+          {/* Switch to Register */}
+          {onSwitchToRegister && (
+            <div className="text-center pt-2">
+              <p className="text-white/60 text-sm">
+                New to CSFrace?{' '}
+                <button
+                  type="button"
+                  onClick={onSwitchToRegister}
+                  disabled={isLoading}
+                  className="text-blue-400 hover:text-blue-300 transition-colors disabled:opacity-50 font-medium"
+                >
+                  Create account
+                </button>
+              </p>
+            </div>
+          )}
+        </div>
       </LiquidCard>
     </div>
   );

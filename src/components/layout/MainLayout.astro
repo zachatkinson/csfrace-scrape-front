@@ -13,6 +13,8 @@ import { TIMING_CONSTANTS } from '../../constants/timing.ts';
 import CompactHealthStatus from '../health/CompactHealthStatus.astro';
 // Import React component for real-time enhancements (client:idle)
 import RealtimeHealthEnhancer from '../health/RealtimeHealthEnhancer.tsx';
+// Import Auth Modal Manager React Island
+import AuthModalManager from '../islands/AuthModalManager.tsx';
 
 export interface Props {
   title: string;
@@ -100,96 +102,8 @@ const {
         </div>
       </header>
 
-      <!-- Auth Panel - Slides up from bottom (opposite of settings) -->
-      <div 
-        id="auth-panel" 
-        class="fixed -bottom-20 left-0 right-0 z-40 transform translate-y-full transition-transform duration-300 ease-out pointer-events-none"
-      >
-        <div class="max-w-4xl mx-auto px-8 py-6">
-          <div class="glass-card p-6 border border-white/20">
-            <!-- Close Button -->
-            <button 
-              id="auth-close"
-              class="absolute top-4 right-4 glass-button p-2 text-white/60 hover:text-white"
-              aria-label="Close"
-            >
-              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-
-            <!-- Welcome Section -->
-            <div class="text-center mb-6">
-              <h2 class="text-3xl font-bold text-white mb-3">Welcome to CSFrace Scrape!</h2>
-              <p class="text-white/70 text-lg">Access powerful WordPress to Shopify conversion tools</p>
-            </div>
-
-            <!-- Auth Options Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <button
-                id="sign-in-btn"
-                class="glass-button p-6 text-center hover:bg-white/10 transition-colors group"
-              >
-                <svg class="w-8 h-8 mx-auto mb-3 text-blue-400 group-hover:text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                <div class="text-white text-lg font-medium mb-2">Sign In</div>
-                <div class="text-white/60 text-sm">Access your existing account</div>
-              </button>
-              
-              <button
-                id="register-btn"
-                class="glass-button p-6 text-center hover:bg-white/10 transition-colors group"
-              >
-                <svg class="w-8 h-8 mx-auto mb-3 text-green-400 group-hover:text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                </svg>
-                <div class="text-white text-lg font-medium mb-2">Create Account</div>
-                <div class="text-white/60 text-sm">Get started with a new account</div>
-              </button>
-            </div>
-
-            <!-- OAuth Providers -->
-            <div class="border-t border-white/10 pt-4">
-              <p class="text-white/60 text-sm text-center mb-3">Or continue with:</p>
-              <div class="flex gap-2 justify-center">
-                <button class="glass-button px-4 py-2 flex items-center gap-2 text-sm font-medium text-red-300 hover:text-red-200 hover:bg-red-500/20 transition-colors">
-                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                  </svg>
-                  Google
-                </button>
-                <button class="glass-button px-4 py-2 flex items-center gap-2 text-sm font-medium text-gray-300 hover:text-gray-200 hover:bg-gray-500/20 transition-colors">
-                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                  </svg>
-                  GitHub
-                </button>
-                <button class="glass-button px-4 py-2 flex items-center gap-2 text-sm font-medium text-blue-300 hover:text-blue-200 hover:bg-blue-500/20 transition-colors">
-                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M0 0h11v11H0V0zm13 0h11v11H13V0zM0 13h11v11H0V13zm13 0h11v11H13V13z"/>
-                  </svg>
-                  Microsoft
-                </button>
-              </div>
-            </div>
-
-            <!-- Features Preview -->
-            <div class="border-t border-white/10 pt-4 mt-4">
-              <p class="text-white/60 text-sm text-center mb-3">What you'll get:</p>
-              <div class="flex flex-wrap justify-center gap-4 text-xs">
-                <span class="px-2 py-1 bg-blue-500/20 text-blue-300 rounded-full">WordPress Conversion</span>
-                <span class="px-2 py-1 bg-green-500/20 text-green-300 rounded-full">Batch Processing</span>
-                <span class="px-2 py-1 bg-purple-500/20 text-purple-300 rounded-full">Job History</span>
-                <span class="px-2 py-1 bg-orange-500/20 text-orange-300 rounded-full">Real-time Progress</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- Auth Modal - React Island -->
+      <AuthModalManager client:load />
 
       <!-- Main Content -->
       <main class="flex-1 px-8 py-8">
@@ -796,38 +710,22 @@ const {
     <!-- Modal and Panel JavaScript -->
     <script>
       document.addEventListener('DOMContentLoaded', () => {
-        // Auth Modal Controls
+        // Auth Modal Controls - Now handled by React Island
         const authToggle = document.getElementById('auth-toggle');
-        const authPanel = document.getElementById('auth-panel');
-        const authClose = document.getElementById('auth-close');
+        
+        // Show Auth Modal - will be handled by React component
+        if (authToggle) {
+          authToggle.addEventListener('click', () => {
+            // Dispatch custom event that React component can listen to
+            window.dispatchEvent(new CustomEvent('openAuthModal'));
+          });
+        }
         
         // Settings Panel Controls  
         const settingsToggle = document.getElementById('settings-toggle');
         const settingsPanel = document.getElementById('settings-panel');
         const settingsClose = document.getElementById('settings-close');
         const cancelSettings = document.getElementById('cancel-settings');
-        
-        // Show Auth Modal
-        if (authToggle && authPanel) {
-          authToggle.addEventListener('click', () => {
-            authPanel.style.pointerEvents = 'auto';
-            authPanel.classList.remove('translate-y-full');
-            authPanel.classList.add('translate-y-0');
-          });
-        }
-        
-        // Hide Auth Modal
-        const closeAuthModal = () => {
-          if (authPanel) {
-            authPanel.classList.remove('translate-y-0');
-            authPanel.classList.add('translate-y-full');
-            setTimeout(() => {
-              authPanel.style.pointerEvents = 'none';
-            }, 300);
-          }
-        };
-        
-        if (authClose) authClose.addEventListener('click', closeAuthModal);
         
         // Show Settings Panel
         if (settingsToggle && settingsPanel) {
@@ -852,23 +750,15 @@ const {
         if (settingsClose) settingsClose.addEventListener('click', closeSettingsPanel);
         if (cancelSettings) cancelSettings.addEventListener('click', closeSettingsPanel);
         
-        // Close modals on escape key
+        // Close settings panel on escape key
         document.addEventListener('keydown', (e) => {
           if (e.key === 'Escape') {
-            closeAuthModal();
             closeSettingsPanel();
+            // Auth modal handles its own escape key
           }
         });
         
-        // Close modals on backdrop click
-        if (authPanel) {
-          authPanel.addEventListener('click', (e) => {
-            if (e.target === authPanel) {
-              closeAuthModal();
-            }
-          });
-        }
-        
+        // Close settings panel on backdrop click
         if (settingsPanel) {
           settingsPanel.addEventListener('click', (e) => {
             if (e.target === settingsPanel) {
@@ -876,37 +766,6 @@ const {
             }
           });
         }
-        
-        // Auth buttons functionality (placeholder for now)
-        const signInBtn = document.getElementById('sign-in-btn');
-        const registerBtn = document.getElementById('register-btn');
-        
-        if (signInBtn) {
-          signInBtn.addEventListener('click', () => {
-            console.log('Sign in clicked');
-            // TODO: Implement actual sign in logic
-            alert('Sign In functionality coming soon!');
-          });
-        }
-        
-        if (registerBtn) {
-          registerBtn.addEventListener('click', () => {
-            console.log('Register clicked');
-            // TODO: Implement actual register logic
-            alert('Registration functionality coming soon!');
-          });
-        }
-        
-        // OAuth buttons functionality (placeholder)
-        document.addEventListener('click', (e) => {
-          if (e.target.closest('button')?.textContent?.includes('Google')) {
-            alert('Google OAuth coming soon!');
-          } else if (e.target.closest('button')?.textContent?.includes('GitHub')) {
-            alert('GitHub OAuth coming soon!');
-          } else if (e.target.closest('button')?.textContent?.includes('Microsoft')) {
-            alert('Microsoft OAuth coming soon!');
-          }
-        });
         
         // Settings functionality (placeholder)
         const saveSettings = document.getElementById('save-settings');
