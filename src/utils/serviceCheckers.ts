@@ -818,8 +818,10 @@ export class DatabaseServiceChecker {
           metrics: { 
             responseTime,
             connections: data.database?.active_connections || 0,
-            queryTime: data.database?.avg_query_time || 'Unknown',
-            cacheHitRatio: data.database?.cache_hit_ratio || 'Unknown'
+            size: data.database?.size || 'Unknown',
+            sizeBytes: data.database?.size_bytes || 0,
+            queryTime: (data.database?.response_time_ms !== undefined && data.database?.response_time_ms !== null && data.database?.response_time_ms > 0) ? `${data.database.response_time_ms} ms` : 'Unknown',
+            cache_hit_ratio: data.database?.cache_hit_ratio || null
           },
           timestamp: Date.now()
         };

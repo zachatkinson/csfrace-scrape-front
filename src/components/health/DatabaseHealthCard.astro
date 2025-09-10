@@ -14,9 +14,9 @@ const serviceResult = await DatabaseServiceChecker.checkHealth();
 
 // Database-specific metrics for display
 const details = [
+  { label: 'Database Size', value: serviceResult.metrics.size || 'Unknown', key: 'size' },
   { label: 'Active Connections', value: serviceResult.metrics.connections || 0, key: 'connections' },
-  { label: 'Query Time', value: serviceResult.metrics.queryTime || 'Unknown', key: 'queryTime' },
-  { label: 'Cache Hit Ratio', value: serviceResult.metrics.cacheHitRatio || 'Unknown', key: 'cacheHitRatio' }
+  { label: 'Query Time', value: serviceResult.metrics.queryTime || 'Unknown', key: 'queryTime' }
 ];
 ---
 
