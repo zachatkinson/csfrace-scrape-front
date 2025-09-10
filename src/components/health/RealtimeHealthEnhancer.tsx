@@ -87,6 +87,9 @@ function updateDOMElements(services: ServiceStatuses) {
   // Update detailed health cards if on test-health page
   updateHealthCards(services);
   
+  // Update summary status directly (better than events)
+  updateSummaryStatus(services);
+  
   // Dispatch custom event for other components
   window.dispatchEvent(new CustomEvent('healthStatusUpdated', { 
     detail: services 
@@ -127,6 +130,12 @@ function updateFooterStatus(services: ServiceStatuses) {
       metricsText.textContent = `${result.metrics.responseTime}ms`;
     }
   });
+
+  // Update footer timestamp (applies to all services)
+  const footerTimestamp = footerContainer.querySelector('.timestamp');
+  if (footerTimestamp) {
+    footerTimestamp.textContent = `Updated: ${new Date().toLocaleTimeString()}`;
+  }
 }
 
 function updateHealthCards(services: ServiceStatuses) {
@@ -167,6 +176,57 @@ function updateHealthCards(services: ServiceStatuses) {
       timestampElement.textContent = new Date(result.timestamp).toLocaleTimeString();
     }
   });
+}
+
+function updateSummaryStatus(services: ServiceStatuses) {
+  // Calculate overall system status
+  const serviceList = Object.values(services).filter(Boolean);
+  if (serviceList.length === 0) return;
+  
+  const upCount = serviceList.filter(s => s.status === 'up').length;
+  const downCount = serviceList.filter(s => s.status === 'down').length;
+  const totalCount = serviceList.length;
+  
+  // Determine overall status
+  let overallStatus: string;
+  let statusColor: string;
+  let statusIcon: string;
+  
+  if (upCount === totalCount) {
+    overallStatus = 'up';
+    statusColor = 'bg-green-500';
+    statusIcon = '✅ OPERATIONAL';
+  } else if (downCount === totalCount) {
+    overallStatus = 'down';
+    statusColor = 'bg-red-500';
+    statusIcon = '🚨 SYSTEM DOWN';
+  } else {
+    overallStatus = 'degraded';
+    statusColor = 'bg-yellow-500';
+    statusIcon = '⚠️ DEGRADED';
+  }
+  
+  // Update summary elements if they exist (test-health page)
+  const statusIndicator = document.getElementById('overall-status-indicator');
+  const statusText = document.getElementById('overall-status-text');
+  const statusSummary = document.getElementById('overall-status-summary');
+  const lastChecked = document.getElementById('overall-last-checked');
+  
+  if (statusIndicator) {
+    statusIndicator.className = `w-4 h-4 rounded-full ${statusColor}`;
+  }
+  
+  if (statusText) {
+    statusText.textContent = statusIcon;
+  }
+  
+  if (statusSummary) {
+    statusSummary.textContent = `(${totalCount}/${totalCount}) ${upCount} up, ${downCount} down, 0 checking...`;
+  }
+  
+  if (lastChecked) {
+    lastChecked.textContent = `Last Checked at: ${new Date().toLocaleTimeString()}`;
+  }
 }
 
 // =============================================================================

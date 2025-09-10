@@ -10,18 +10,15 @@ import {
   BackendServiceChecker,
   DatabaseServiceChecker, 
   CacheServiceChecker,
-  PrometheusServiceChecker,
-  GrafanaServiceChecker,
   FrontendServiceChecker
 } from '../../utils/serviceCheckers.js';
 
 // Server-side health checks using shared service checkers (DRY principle)
-const [backend, database, cache, prometheus, grafana, frontend] = await Promise.all([
+// Footer shows only CORE user-facing services (monitoring tools excluded)
+const [backend, database, cache, frontend] = await Promise.all([
   BackendServiceChecker.checkHealth(),
   DatabaseServiceChecker.checkHealth(), 
   CacheServiceChecker.checkHealth(),
-  PrometheusServiceChecker.checkHealth(),
-  GrafanaServiceChecker.checkHealth(),
   FrontendServiceChecker.checkHealth()
 ]);
 
@@ -29,9 +26,7 @@ const services = [
   { name: 'Frontend', result: frontend, icon: '🌐' },
   { name: 'Backend', result: backend, icon: '🔧' },
   { name: 'Database', result: database, icon: '🐘' },
-  { name: 'Cache', result: cache, icon: '⚡' },
-  { name: 'Prometheus', result: prometheus, icon: '📊' },
-  { name: 'Grafana', result: grafana, icon: '📈' }
+  { name: 'Cache', result: cache, icon: '⚡' }
 ];
 
 // SOLID: Single source of truth for status color mapping
