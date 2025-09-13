@@ -113,17 +113,17 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
   };
 
   const handleJobUpdate = (job: ScrapingJobUI) => {
-        onJobUpdate?.(job);
-      },
-      onBatchSubmitted: (jobs) => {
-        jobs.forEach(job => onJobSubmit?.(job));
-        actions.setSuccess(`Batch created successfully: ${jobs.length} jobs`);
-      },
-        onJobError: (job, error) => {
-        actions.setError(`Job failed: ${error}`);
-      },
-    }
-  ));
+    onJobUpdate?.(job);
+  };
+  
+  const handleBatchSubmitted = (jobs: ScrapingJobUI[]) => {
+    jobs.forEach(job => onJobSubmit?.(job));
+    actions.setSuccess(`Batch created successfully: ${jobs.length} jobs`);
+  };
+  
+  const handleJobError = (job: ScrapingJobUI, error: string) => {
+    actions.setError(`Job failed: ${error}`);
+  };
 
   // Event handlers using service-oriented architecture
   const handleSingleUrlSubmit = async () => {
@@ -142,7 +142,7 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
     }
   };
 
-  const handleBatchSubmit = async () => {
+  const handleBatchFormSubmit = async () => {
     actions.setBatchSubmitting(true);
     actions.clearMessages();
     
@@ -193,7 +193,7 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
           batchUrls={state.batchUrls}
           onBatchUrlsChange={actions.setBatchUrls}
           onFileUpload={handleFileUpload}
-          onSubmit={handleBatchSubmit}
+          onSubmit={handleBatchFormSubmit}
           onClear={actions.clearBatchUrls}
           isSubmitting={state.isBatchSubmitting}
           isAuthenticated={isAuthenticated}

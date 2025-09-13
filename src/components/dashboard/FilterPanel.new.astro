@@ -1,0 +1,253 @@
+---
+/**
+ * FilterPanel - Clean Astro Islands Architecture
+ * Following DRY/SOLID principles and Astro best practices
+ * 
+ * SOLID Implementation:
+ * - S: Single responsibility - only renders static HTML structure
+ * - O: Open for extension via props interface
+ * - L: Substitutable component following Astro patterns
+ * - I: Clean props interface
+ * - D: Depends on type abstractions, not concrete implementations
+ */
+
+// =============================================================================
+// IMPORTS & TYPES (TypeScript strict mode)
+// =============================================================================
+import type { IFilterPanelProps } from './types/filter.types';
+import { FILTER_CONFIG, SORT_OPTIONS, CSS_CLASSES } from './types/filter.types';
+
+// =============================================================================
+// COMPONENT PROPS (Interface Segregation Principle)
+// =============================================================================
+export interface Props extends IFilterPanelProps {}
+
+const { 
+  availableStatuses = ['all', 'processing', 'completed', 'failed', 'queued'],
+  currentFilter = 'all',
+  currentSort = 'newest',
+  searchQuery = '',
+  totalJobs = 0,
+  selectedJobs = 0
+} = Astro.props;
+
+// =============================================================================
+// SERVER-SIDE LOGIC (DRY Principle)
+// =============================================================================
+
+// Function to check if a filter should be disabled (moved to server-side for performance)
+const isFilterDisabled = (filterKey: string): boolean => {
+  if (filterKey === 'all') return false;
+  return !availableStatuses.includes(filterKey);
+};
+
+// Generate filter button data for efficient rendering
+const filterButtons = Object.entries(FILTER_CONFIG).map(([key, config]) => ({
+  key,
+  config,
+  isActive: currentFilter === key,
+  isDisabled: isFilterDisabled(key),
+  id: `filter-${key}`,
+  ariaLabel: `Filter by ${config.label.toLowerCase()} jobs`,
+  title: isFilterDisabled(key) 
+    ? `No ${config.label.toLowerCase()} jobs available` 
+    : `Show ${config.label.toLowerCase()} jobs`
+}));
+
+// Generate sort options data
+const sortOptionsData = SORT_OPTIONS.map(option => ({
+  ...option,
+  isSelected: currentSort === option.value
+}));
+---
+
+<!-- =============================================================================
+     STATIC HTML STRUCTURE (Astro Islands Architecture)
+     Pure HTML with data attributes for client-side script attachment
+     ============================================================================= -->
+
+<div 
+  class="glass-card p-6" 
+  data-component="filter-panel"
+  data-current-filter={currentFilter}
+  data-current-sort={currentSort}
+  data-search-query={searchQuery}
+  data-total-jobs={totalJobs}
+  data-selected-jobs={selectedJobs}
+  data-available-statuses={JSON.stringify(availableStatuses)}
+>
+  <div class="flex items-center justify-between flex-wrap gap-4">
+    
+    <!-- =================================================================
+         STATUS FILTERS SECTION (Single Responsibility)
+         ================================================================= -->
+    <div class="flex items-center space-x-2">
+      <span class="text-white/70 text-sm font-medium">Filter:</span>
+      <div class="flex space-x-2" data-filter-group="status">
+        {filterButtons.map(({ key, config, isActive, isDisabled, id, ariaLabel, title }) => (
+          <button 
+            id={id}
+            class:list={[
+              CSS_CLASSES.FILTER_BTN,
+              isActive ? CSS_CLASSES.FILTER_ACTIVE : '',
+              isDisabled ? CSS_CLASSES.FILTER_DISABLED : CSS_CLASSES.FILTER_HOVER
+            ]}
+            data-filter={key}
+            data-filter-label={config.label}
+            disabled={isDisabled}
+            title={title}
+            aria-label={ariaLabel}
+            type="button"
+          >
+            <span class="filter-label">{config.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+    
+    <!-- =================================================================
+         CONTROLS SECTION (Single Responsibility)
+         ================================================================= -->
+    <div class="flex items-center space-x-4">
+      
+      <!-- Sort Selector -->
+      <div class="flex items-center space-x-2">
+        <label for="sort-select" class="text-white/70 text-sm">Sort:</label>
+        <select 
+          id="sort-select" 
+          class={`${CSS_CLASSES.GLASS_INPUT} min-w-0`}
+          data-sort-control
+          data-current-sort={currentSort}
+          aria-label="Sort jobs by"
+        >
+          {sortOptionsData.map(({ value, label, isSelected }) => (
+            <option 
+              value={value}
+              selected={isSelected}
+            >
+              {label}
+            </option>
+          ))}
+        </select>
+      </div>
+      
+      <!-- Search Input -->
+      <div class="flex items-center space-x-2">
+        <svg class="w-4 h-4 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input 
+          id="search-input" 
+          type="text" 
+          placeholder="Search jobs..." 
+          class={`${CSS_CLASSES.GLASS_INPUT} w-48`}
+          value={searchQuery}
+          data-search-control
+          data-current-query={searchQuery}
+          aria-label="Search jobs"
+        />
+      </div>
+      
+      <!-- =============================================================
+           BATCH ACTIONS SECTION (Single Responsibility)
+           ============================================================= -->
+      <div class="flex items-center space-x-2" data-batch-actions>
+        <button 
+          id="select-all-btn" 
+          class={`${CSS_CLASSES.GLASS_BUTTON} text-white/90 hover:text-white`}
+          data-action="select-all"
+          data-all-selected={selectedJobs === totalJobs ? 'true' : 'false'}
+          aria-label="Select or deselect all jobs"
+          type="button"
+        >
+          {selectedJobs === totalJobs ? 'Select None' : 'Select All'}
+        </button>
+        
+        <button 
+          id="delete-selected-btn" 
+          class:list={[
+            CSS_CLASSES.GLASS_BUTTON,
+            'text-red-400/80 hover:text-red-400',
+            selectedJobs === 0 ? 'disabled:opacity-50' : ''
+          ]}
+          disabled={selectedJobs === 0}
+          data-action="delete-selected"
+          data-selected-count={selectedJobs}
+          aria-label={`Delete ${selectedJobs} selected jobs`}
+          type="button"
+        >
+          Delete Selected
+          {selectedJobs > 0 && (
+            <span class="ml-1 bg-red-500/20 px-1 rounded-full text-xs">
+              {selectedJobs}
+            </span>
+          )}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =============================================================================
+     ASTRO ISLANDS ARCHITECTURE (Best Practice)
+     Separate script files for each responsibility (SOLID principles)
+     No define:vars anti-pattern - using data attributes instead
+     ============================================================================= -->
+
+<!-- Central Communication Coordinator (loads first) -->
+<script src="./scripts/filter-coordinator.ts"></script>
+
+<!-- Individual Manager Islands (load after coordinator) -->
+<script src="./scripts/filter-manager.ts"></script>
+<script src="./scripts/search-manager.ts"></script>
+<script src="./scripts/sort-manager.ts"></script>
+<script src="./scripts/batch-actions.ts"></script>
+
+<!-- =============================================================================
+     COMPONENT STYLES (DRY Principle)
+     ============================================================================= -->
+<style>
+  /* Import global styles for consistency */
+  @use "../../styles/global.css";
+  
+  /* Component-specific styles following established patterns */
+  .filter-btn {
+    @apply bg-white/10 text-white/70;
+  }
+  
+  .filter-btn:hover:not(:disabled) {
+    @apply bg-white/20 text-white;
+  }
+  
+  .filter-btn.active {
+    @apply bg-blue-500/50 text-blue-300 border-blue-400/30;
+  }
+  
+  .filter-btn:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+  
+  .filter-btn:disabled:hover {
+    @apply bg-white/10 text-white/70;
+  }
+  
+  
+  .glass-input {
+    @apply bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50;
+    @apply focus:bg-white/20 focus:border-white/40 focus:outline-none;
+  }
+  
+  .glass-button {
+    @apply bg-white/10 border border-white/20 rounded-lg;
+    @apply hover:bg-white/20 hover:border-white/40;
+    @apply transition-all duration-200;
+  }
+  
+  .glass-button:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+  
+  .glass-button:disabled:hover {
+    @apply bg-white/10 border-white/20;
+  }
+</style>
