@@ -41,13 +41,13 @@ import MainLayout from '../components/layout/MainLayout.astro';
       <div class="bg-black/30 rounded-lg p-6 mb-6">
         <div class="flex items-center justify-center space-x-4">
           <div id="overall-status-indicator" class="w-4 h-4 rounded-full bg-blue-500 animate-pulse"></div>
-          <div id="overall-status-text" class="text-xl font-semibold text-white">🔄 MEASURING....</div>
+          <div id="overall-status-text" class="text-xl font-semibold text-white">Loading&hellip;</div>
         </div>
         <div id="overall-status-summary" class="text-center text-white/60 mt-2">
-          Waiting for service cards to complete health checks...
+          Loading system status from persistent health data...
         </div>
         <div id="overall-last-checked" class="text-center text-white/40 text-sm italic mt-1">
-          Last Checked at: Initializing...
+          Last Checked at: Loading...
         </div>
       </div>
       
@@ -509,40 +509,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
 
     </div>
 
-    <!-- Footer Status Integration -->
-    <div class="glass-card p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-2xl font-bold text-white">🔗 Footer Status Integration</h2>
-        <div class="flex gap-2">
-          <button id="toggle-footer-polling" class="glass-button px-3 py-1 text-xs bg-purple-500/20 text-purple-300">Enable Footer Polling</button>
-        </div>
-      </div>
-      
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-black/30 rounded-lg p-4">
-          <h3 class="text-white font-semibold mb-3">Footer Status</h3>
-          <div class="space-y-2 text-sm">
-            <div id="footer-running-status">Running Status: <span class="text-yellow-400">Checking...</span></div>
-            <div id="footer-auto-polling">Auto-Polling: <span class="text-red-400">Disabled</span></div>
-            <div id="footer-last-poll">Last Poll: <span class="text-blue-400">Never</span></div>
-          </div>
-        </div>
-        
-        <div class="bg-black/30 rounded-lg p-4">
-          <h3 class="text-white font-semibold mb-3">Footer Indicators</h3>
-          <div class="space-y-1 text-sm">
-            <div>🟢 Service Online: <span class="text-green-400">3 services</span></div>
-            <div>🟡 Service Issues: <span class="text-yellow-400">0 services</span></div>
-            <div>🔴 Service Offline: <span class="text-red-400">0 services</span></div>
-          </div>
-        </div>
-        
-        <div class="bg-black/30 rounded-lg p-4">
-          <h3 class="text-white font-semibold mb-3">Real-time Monitoring</h3>
-          <div class="text-xs text-white/60 mb-2">Status: <span id="realtime-status">🟢 6:13:04 AM</span></div>
-        </div>
-      </div>
-    </div>
+
 
   </div>
 </MainLayout>
@@ -600,13 +567,11 @@ import MainLayout from '../components/layout/MainLayout.astro';
 
   const CONFIG = {
     API_BASE_URL: import.meta.env.PUBLIC_API_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000',
-    REQUEST_TIMEOUT: 6000,
-    // Industry best practice heartbeat timing:
-    // - 30 seconds: Universal standard for health dashboards
-    // - Balances rapid issue detection with reasonable server load  
-    // - Proven optimal for both development and production environments
-    // - Follows Netflix, AWS, Google Cloud monitoring standards
-    AUTO_REFRESH_INTERVAL: 30000, // 30 seconds - industry gold standard
+    REQUEST_TIMEOUT: IS_PRODUCTION ? 6000 : 15000, // More generous timeout for development
+    // Development vs Production timing configuration:
+    // - Development: 60 seconds - more relaxed for debugging and testing
+    // - Production: 30 seconds - industry standard for monitoring dashboards
+    AUTO_REFRESH_INTERVAL: IS_PRODUCTION ? 30000 : 60000, // 60s dev, 30s prod
     PERFORMANCE_HISTORY_LIMIT: 10,
     ENVIRONMENT,
     STATUS_COLORS: {
@@ -755,146 +720,55 @@ import MainLayout from '../components/layout/MainLayout.astro';
   }
 
   // =============================================================================
-  // TIMEZONE MANAGER UTILITY CLASS (Single Responsibility Principle)
+  // TIMEZONE UTILITY - DRY/SOLID: Use centralized timezone utility
   // =============================================================================
 
-  class TimezoneManager {
-    private static readonly STORAGE_KEY = 'csfrace-settings';
-    
-    static getUserTimezone(): string {
-      try {
-        const settings = this.getStoredSettings();
-        const userTimezone = settings?.timezone || 'auto';
-        
-        if (userTimezone === 'auto') {
-          return Intl.DateTimeFormat().resolvedOptions().timeZone;
-        }
-        
-        return userTimezone;
-      } catch (error) {
-        console.warn('Failed to get user timezone, using system default:', error);
-        return Intl.DateTimeFormat().resolvedOptions().timeZone;
-      }
-    }
-    
-    static formatTimestamp(timestamp: number, options?: Intl.DateTimeFormatOptions): string {
-      try {
-        const timezone = this.getUserTimezone();
-        const defaultOptions: Intl.DateTimeFormatOptions = {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          timeZone: timezone,
-          timeZoneName: 'short'
-        };
-        
-        const formatOptions = { ...defaultOptions, ...options };
-        return new Intl.DateTimeFormat('en-US', formatOptions).format(new Date(timestamp));
-      } catch (error) {
-        console.warn('Failed to format timestamp with timezone, using fallback:', error);
-        return new Date(timestamp).toLocaleString();
-      }
-    }
-    
-    static formatRelativeTime(timestamp: number): string {
-      try {
-        const now = Date.now();
-        const diffMs = now - timestamp;
-        const diffSec = Math.floor(diffMs / 1000);
-        const diffMin = Math.floor(diffSec / 60);
-        const diffHour = Math.floor(diffMin / 60);
-        
-        if (diffSec < 60) return `${diffSec}s ago`;
-        if (diffMin < 60) return `${diffMin}m ago`;
-        if (diffHour < 24) return `${diffHour}h ago`;
-        
-        const diffDays = Math.floor(diffHour / 24);
-        return `${diffDays}d ago`;
-      } catch (error) {
-        console.warn('Failed to format relative time:', error);
-        return 'Unknown time';
-      }
-    }
-    
-    static getTimezoneAbbreviation(): string {
-      try {
-        const timezone = this.getUserTimezone();
-        const formatter = new Intl.DateTimeFormat('en-US', {
-          timeZone: timezone,
-          timeZoneName: 'short'
-        });
-        
-        const parts = formatter.formatToParts(new Date());
-        const timeZonePart = parts.find(part => part.type === 'timeZoneName');
-        return timeZonePart?.value || timezone;
-      } catch (error) {
-        console.warn('Failed to get timezone abbreviation:', error);
-        return 'UTC';
-      }
-    }
-    
-    private static getStoredSettings(): any {
-      try {
-        const stored = localStorage.getItem(this.STORAGE_KEY);
-        return stored ? JSON.parse(stored) : null;
-      } catch (error) {
-        console.warn('Failed to get stored settings:', error);
-        return null;
-      }
-    }
+  import {
+    getCurrentTimezone,
+    formatTimestamp,
+    formatRelativeTime,
+    getTimezoneAbbreviation,
+    getTimezoneInfo
+  } from '../utils/timezone.js';
+
+  // =============================================================================
+  // GLOBAL HEALTH DATA CONSUMER (Single Responsibility + DRY Principle)
+  // Connect to existing RealtimeHealthEnhancer instead of making duplicate API calls
+  // =============================================================================
+
+  interface IHealthDataConsumer {
+    getLatestHealthData(): {services: any, overallStatus: any, timestamp: number} | null;
+    requestRefresh(): void;
   }
 
-  // =============================================================================
-  // HEALTH AGGREGATOR INTERFACE (Dependency Inversion Principle)
-  // =============================================================================
+  class GlobalHealthDataConsumer implements IHealthDataConsumer {
+    private latestHealthData: {services: any, overallStatus: any, timestamp: number} | null = null;
+    private eventListenerAttached = false;
 
-  interface IHealthAggregator {
-    getHealthData(): Promise<{success: boolean, data?: any, error?: string, responseTime?: number}>;
-  }
-
-  // =============================================================================
-  // COMPOSITE HEALTH AGGREGATOR (Single Responsibility + DRY Principle)
-  // =============================================================================
-
-  class CompositeHealthAggregator implements IHealthAggregator {
-    private cachedHealthData: {success: boolean, data?: any, error?: string, responseTime?: number} | null = null;
-    private lastFetch: number = 0;
-    private readonly CACHE_DURATION = 5000; // 5 seconds cache to avoid duplicate calls
-
-    async getHealthData(): Promise<{success: boolean, data?: any, error?: string, responseTime?: number}> {
-      // Use cached data if recent (eliminates duplicate API calls within 5 seconds)
-      const now = Date.now();
-      if (this.cachedHealthData && (now - this.lastFetch) < this.CACHE_DURATION) {
-        return this.cachedHealthData;
-      }
-
-      // Fetch fresh health data
-      try {
-        const startTime = Date.now();
-        const response = await fetch(`${CONFIG.API_BASE_URL}/health/`);
-        const responseTime = Date.now() - startTime;
-        
-        if (response.ok) {
-          const data = await response.json();
-          this.cachedHealthData = { success: true, data, responseTime };
-        } else {
-          this.cachedHealthData = { success: false, error: `HTTP ${response.status}: ${response.statusText}`, responseTime };
-        }
-      } catch (error) {
-        this.cachedHealthData = { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
-      }
-
-      this.lastFetch = now;
-      return this.cachedHealthData;
+    constructor() {
+      this.attachEventListener();
     }
 
-    // Force refresh (for manual testing)
-    invalidateCache(): void {
-      this.cachedHealthData = null;
-      this.lastFetch = 0;
+    private attachEventListener(): void {
+      if (this.eventListenerAttached) return;
+      
+      // Listen to the global health updates from RealtimeHealthEnhancer
+      window.addEventListener('consolidatedHealthUpdate', (event: any) => {
+        this.latestHealthData = event.detail;
+        console.log('🎯 GlobalHealthDataConsumer: Received health update', this.latestHealthData);
+      });
+      
+      this.eventListenerAttached = true;
+    }
+
+    getLatestHealthData(): {services: any, overallStatus: any, timestamp: number} | null {
+      return this.latestHealthData;
+    }
+
+    // Request manual refresh by triggering global health refresh
+    requestRefresh(): void {
+      // Dispatch event to request global health refresh
+      window.dispatchEvent(new CustomEvent('requestHealthRefresh'));
     }
   }
 
@@ -906,8 +780,8 @@ import MainLayout from '../components/layout/MainLayout.astro';
     abstract readonly serviceName: string;
     abstract readonly endpoint: string;
     
-    // Dependency Injection: Accept health aggregator to eliminate duplicate fetches
-    constructor(protected healthAggregator?: IHealthAggregator) {}
+    // Dependency Injection: Accept health data consumer to eliminate duplicate fetches
+    constructor(protected healthDataConsumer?: IHealthDataConsumer) {}
 
     protected async fetchWithTimeout(url: string, timeout: number = CONFIG.REQUEST_TIMEOUT): Promise<Response> {
       const controller = new AbortController();
@@ -962,23 +836,17 @@ import MainLayout from '../components/layout/MainLayout.astro';
     readonly endpoint = `${CONFIG.API_BASE_URL}/health/`;
 
     async checkHealth(): Promise<IServiceResult> {
-      // Use health aggregator if available (DRY principle - eliminates duplicate fetches)
-      if (this.healthAggregator) {
-        const healthResult = await this.healthAggregator.getHealthData();
+      // Use global health data consumer (DRY principle - eliminates duplicate fetches)
+      if (this.healthDataConsumer) {
+        const globalHealthData = this.healthDataConsumer.getLatestHealthData();
         
-        if (healthResult.success && healthResult.data) {
+        if (globalHealthData && globalHealthData.services.backend) {
+          const backendData = globalHealthData.services.backend;
           return this.createResult(
-            healthResult.data.status === 'healthy' ? 'up' : 'degraded',
-            `Backend ${healthResult.data.status}`,
-            { 
-              responseTime: healthResult.responseTime || 0,
-              uptime: healthResult.data.uptime,
-              version: healthResult.data.version,
-              environment: healthResult.data.environment
-            }
+            backendData.status,
+            backendData.message,
+            backendData.metrics || {}
           );
-        } else {
-          return this.createResult('error', healthResult.error || 'Backend health check failed', {}, healthResult.error);
         }
       }
       
@@ -1031,27 +899,17 @@ import MainLayout from '../components/layout/MainLayout.astro';
     readonly endpoint = `${CONFIG.API_BASE_URL}/health/`;
 
     async checkHealth(): Promise<IServiceResult> {
-      // Use health aggregator if available (DRY principle - eliminates duplicate fetches)
-      if (this.healthAggregator) {
-        const healthResult = await this.healthAggregator.getHealthData();
+      // Use global health data consumer (DRY principle - eliminates duplicate fetches)
+      if (this.healthDataConsumer) {
+        const globalHealthData = this.healthDataConsumer.getLatestHealthData();
         
-        if (healthResult.success && healthResult.data) {
-          const dbData = healthResult.data.database || {};
-          
+        if (globalHealthData && globalHealthData.services.database) {
+          const databaseData = globalHealthData.services.database;
           return this.createResult(
-            dbData.status === 'healthy' ? 'up' : 'down',
-            `Database ${dbData.status || 'unknown'}`,
-            { 
-              responseTime: healthResult.responseTime || 0,
-              connected: dbData.connected,
-              response_time_ms: dbData.response_time_ms,
-              active_connections: dbData.active_connections,
-              avg_query_time: dbData.avg_query_time,
-              cache_hit_ratio: dbData.cache_hit_ratio
-            }
+            databaseData.status,
+            databaseData.message,
+            databaseData.metrics || {}
           );
-        } else {
-          return this.createResult('error', healthResult.error || 'Database health check failed', {}, healthResult.error);
         }
       }
       
@@ -1105,25 +963,17 @@ import MainLayout from '../components/layout/MainLayout.astro';
     readonly endpoint = `${CONFIG.API_BASE_URL}/health/`;
 
     async checkHealth(): Promise<IServiceResult> {
-      // Use health aggregator if available (DRY principle - eliminates duplicate fetches)
-      if (this.healthAggregator) {
-        const healthResult = await this.healthAggregator.getHealthData();
+      // Use global health data consumer (DRY principle - eliminates duplicate fetches)
+      if (this.healthDataConsumer) {
+        const globalHealthData = this.healthDataConsumer.getLatestHealthData();
         
-        if (healthResult.success && healthResult.data) {
-          const cacheData = healthResult.data.cache || {};
-          
+        if (globalHealthData && globalHealthData.services.cache) {
+          const cacheData = globalHealthData.services.cache;
           return this.createResult(
-            cacheData.status === 'healthy' ? 'up' : 'down',
-            `Cache ${cacheData.status || 'unknown'}`,
-            { 
-              responseTime: healthResult.responseTime || 0,
-              backend: cacheData.backend,
-              memory_used: cacheData.memory_used,
-              hit_rate: cacheData.hit_rate
-            }
+            cacheData.status,
+            cacheData.message,
+            cacheData.metrics || {}
           );
-        } else {
-          return this.createResult('error', healthResult.error || 'Cache health check failed', {}, healthResult.error);
         }
       }
       
@@ -1175,7 +1025,21 @@ import MainLayout from '../components/layout/MainLayout.astro';
     readonly endpoint = 'self'; // Frontend checks itself
 
     async checkHealth(): Promise<IServiceResult> {
-      // Frontend is operational if this code executes
+      // Use global health data consumer if available
+      if (this.healthDataConsumer) {
+        const globalHealthData = this.healthDataConsumer.getLatestHealthData();
+        
+        if (globalHealthData && globalHealthData.services.frontend) {
+          const frontendData = globalHealthData.services.frontend;
+          return this.createResult(
+            frontendData.status,
+            frontendData.message,
+            frontendData.metrics || {}
+          );
+        }
+      }
+      
+      // Fallback: Frontend is operational if this code executes
       return this.createResult(
         'up',
         'Frontend OPERATIONAL',
@@ -1279,13 +1143,13 @@ import MainLayout from '../components/layout/MainLayout.astro';
 
     getHistoricalData(): string {
       const historyWithTimezone = {
-        timezone: TimezoneManager.getUserTimezone(),
-        timezoneAbbreviation: TimezoneManager.getTimezoneAbbreviation(),
-        lastUpdated: TimezoneManager.formatTimestamp(Date.now()),
+        timezone: getCurrentTimezone(),
+        timezoneAbbreviation: getTimezoneAbbreviation(),
+        lastUpdated: formatTimestamp(new Date()),
         data: this.performanceHistory.map(entry => ({
           ...entry,
-          formattedTimestamp: TimezoneManager.formatTimestamp(entry.timestamp),
-          relativeTime: TimezoneManager.formatRelativeTime(entry.timestamp)
+          formattedTimestamp: formatTimestamp(new Date(entry.timestamp)),
+          relativeTime: formatRelativeTime(entry.timestamp)
         }))
       };
       return JSON.stringify(historyWithTimezone, null, 2);
@@ -1829,8 +1693,8 @@ import MainLayout from '../components/layout/MainLayout.astro';
 
     exportHealthReport(): void {
       const reportData = {
-        timestamp: TimezoneManager.formatTimestamp(Date.now()),
-        timezone: TimezoneManager.getUserTimezone(),
+        timestamp: formatTimestamp(new Date()),
+        timezone: getCurrentTimezone(),
         services: Array.from(this.healthDashboard.getLatestResults().entries()).map(([service, result]) => ({
           service,
           ...result
@@ -1873,7 +1737,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
     private readonly autoRefreshManager: AutoRefreshManager;
     private readonly connectivityTester: ConnectivityTester;
     private readonly dataExporter: DataExporter;
-    private readonly healthAggregator: IHealthAggregator;
+    private readonly healthDataConsumer: IHealthDataConsumer;
     private readonly latestResults: Map<string, IServiceResult> = new Map();
     
     // NEW: Event-driven card monitoring (DRY + Single Source of Truth)
@@ -1887,23 +1751,158 @@ import MainLayout from '../components/layout/MainLayout.astro';
       this.connectivityTester = new ConnectivityTester();
       this.dataExporter = new DataExporter(this.performanceMonitor, this);
       
-      // Initialize health aggregator for DRY principle (eliminates duplicate API calls)
-      this.healthAggregator = new CompositeHealthAggregator();
+      // Initialize global health data consumer (eliminates duplicate API calls)
+      this.healthDataConsumer = new GlobalHealthDataConsumer();
 
       this.initializeServiceCheckers();
       this.bindEventListeners();
       this.initializeLiveClock();
       this.initializeCardBasedMonitoring();
+      this.connectToGlobalHealthUpdates();
       this.startInitialChecks();
     }
 
     private initializeServiceCheckers(): void {
-      // Inject health aggregator into service checkers that use the same endpoint (DRY + Dependency Injection)
-      this.serviceCheckers.set('frontend', new FrontendServiceChecker());
-      this.serviceCheckers.set('backend', new BackendServiceChecker(this.healthAggregator));
-      this.serviceCheckers.set('postgres', new PostgresServiceChecker(this.healthAggregator));
-      this.serviceCheckers.set('redis', new RedisServiceChecker(this.healthAggregator));
+      // Use global health data consumer instead of individual API calls (eliminates rate limiting)
+      this.serviceCheckers.set('frontend', new FrontendServiceChecker(this.healthDataConsumer));
+      this.serviceCheckers.set('backend', new BackendServiceChecker(this.healthDataConsumer));
+      this.serviceCheckers.set('postgres', new PostgresServiceChecker(this.healthDataConsumer));
+      this.serviceCheckers.set('redis', new RedisServiceChecker(this.healthDataConsumer));
       // Grafana and Prometheus monitoring moved to Backend service sub-components
+    }
+
+    private connectToGlobalHealthUpdates(): void {
+      // Listen for global health updates from RealtimeHealthEnhancer
+      window.addEventListener('consolidatedHealthUpdate', (event: any) => {
+        console.log('🎯 HealthDashboard: Received global health update', event.detail);
+        this.updateFromGlobalHealthData(event.detail);
+      });
+
+      // Listen for manual refresh requests
+      window.addEventListener('requestHealthRefresh', () => {
+        console.log('🔄 HealthDashboard: Manual refresh requested');
+        this.refreshAllServices();
+      });
+
+      // Check for existing persistent health data on page load
+      // This ensures the test-health page immediately shows current status
+      setTimeout(() => {
+        this.checkForExistingHealthData();
+      }, 100); // Small delay to ensure health system is initialized
+    }
+
+    private checkForExistingHealthData(): void {
+      // Look for existing consolidated health data that may have been
+      // set by the persistent health system on other pages
+      const healthService = (window as any).healthStatusService;
+      if (healthService && typeof healthService.getCurrentHealthData === 'function') {
+        const existingData = healthService.getCurrentHealthData();
+        if (existingData && existingData.services) {
+          console.log('🎯 HealthDashboard: Found existing persistent health data on page load', existingData);
+          this.updateFromGlobalHealthData(existingData);
+          return;
+        }
+      }
+
+      // Fallback: Try to get data from window state (used by CompactHealthStatus)
+      const healthState = (window as any).__healthStatusState;
+      if (healthState && healthState.lastHealthTimestamp) {
+        // We have a timestamp but may not have full service data
+        // Update the timestamp at least
+        const lastCheckedEl = document.getElementById('overall-last-checked');
+        if (lastCheckedEl) {
+          try {
+            const timeString = new Date(healthState.lastHealthTimestamp).toLocaleTimeString();
+            lastCheckedEl.textContent = `Last Checked at: ${timeString}`;
+          } catch (error) {
+            // Keep default loading text
+          }
+        }
+      }
+
+      console.log('🎯 HealthDashboard: No existing persistent health data found, waiting for first update');
+    }
+    
+    private updateFromGlobalHealthData(healthData: any): void {
+      if (!healthData || !healthData.services) return;
+
+      const { services, timestamp } = healthData;
+      console.log('🔄 HealthDashboard: Updating dashboard with global health data', services);
+
+      // Update each service card with the global health data
+      Object.entries(services).forEach(([serviceName, serviceData]: [string, any]) => {
+        if (serviceData) {
+          const checker = this.serviceCheckers.get(serviceName === 'database' ? 'postgres' : serviceName === 'cache' ? 'redis' : serviceName);
+          if (checker) {
+            console.log(`🔄 HealthDashboard: Updating ${serviceName} card`, serviceData);
+            checker.updateUI(serviceData);
+          }
+        }
+      });
+
+      // Update overall status display based on persistent health data
+      this.updateOverallStatusFromPersistentData(services, timestamp);
+    }
+
+    private updateOverallStatusFromPersistentData(services: any, timestamp?: number): void {
+      // Count services (frontend, backend, database, cache)
+      const serviceList = ['frontend', 'backend', 'database', 'cache'];
+      const loadedServices = serviceList.filter(service => services[service] && services[service].status);
+      const upServices = serviceList.filter(service => services[service] && services[service].status === 'up');
+
+      const totalCount = serviceList.length; // Always 4 services
+      const loadedCount = loadedServices.length;
+      const upCount = upServices.length;
+
+      let statusText: string;
+      let summaryText: string;
+      let statusIndicatorClass: string;
+
+      if (loadedCount === 0) {
+        // No data loaded yet
+        statusText = 'Loading&hellip;';
+        summaryText = 'Loading system status from persistent health data...';
+        statusIndicatorClass = 'bg-blue-500 animate-pulse';
+      } else if (upCount === totalCount) {
+        // All services operational
+        statusText = '✅ All Services Operational';
+        summaryText = `${upCount} of ${totalCount} services loaded`;
+        statusIndicatorClass = 'bg-green-500';
+      } else {
+        // Some services have issues
+        statusText = '⚠️ Service Issues, Please Review Details';
+        summaryText = `${upCount} of ${totalCount} services loaded`;
+        statusIndicatorClass = 'bg-red-500';
+      }
+
+      // Update UI elements
+      const statusIndicator = document.getElementById('overall-status-indicator');
+      const statusTextEl = document.getElementById('overall-status-text');
+      const summaryEl = document.getElementById('overall-status-summary');
+      const lastCheckedEl = document.getElementById('overall-last-checked');
+
+      if (statusIndicator) {
+        statusIndicator.className = `w-4 h-4 rounded-full transition-colors duration-300 ${statusIndicatorClass}`;
+      }
+      if (statusTextEl) statusTextEl.textContent = statusText;
+      if (summaryEl) summaryEl.textContent = summaryText;
+
+      if (lastCheckedEl && timestamp) {
+        try {
+          const lastCheckedTime = new Date(timestamp).toLocaleTimeString();
+          lastCheckedEl.textContent = `Last Checked at: ${lastCheckedTime}`;
+        } catch (error) {
+          lastCheckedEl.textContent = 'Last Checked at: Unknown';
+        }
+      }
+
+      console.log('🎯 HealthDashboard: Updated overall status', {
+        statusText,
+        summaryText,
+        upCount,
+        totalCount,
+        loadedCount
+      });
     }
 
     private bindEventListeners(): void {
@@ -1955,15 +1954,15 @@ import MainLayout from '../components/layout/MainLayout.astro';
     private initializeLiveClock(): void {
       // Initialize timezone display
       const updateTimezoneInfo = () => {
-        const timezone = TimezoneManager.getUserTimezone();
-        const abbreviation = TimezoneManager.getTimezoneAbbreviation();
+        const timezone = getCurrentTimezone();
+        const abbreviation = getTimezoneAbbreviation();
         UIUpdater.updateTextElement('timezone-info', `Timezone: ${timezone} (${abbreviation})`);
       };
 
       // Update clock every second
       const updateClock = () => {
         const now = Date.now();
-        const timeString = TimezoneManager.formatTimestamp(now, {
+        const timeString = formatTimestamp(new Date(now), {
           hour: '2-digit',
           minute: '2-digit',
           second: '2-digit',
@@ -1990,16 +1989,13 @@ import MainLayout from '../components/layout/MainLayout.astro';
     }
 
     async refreshService(serviceName: string): Promise<void> {
-      const checker = this.serviceCheckers.get(serviceName);
-      if (!checker) return;
+      console.log(`🔄 HealthDashboard: Individual refresh requested for ${serviceName}`);
       
       // Get button elements
       const refreshButton = document.getElementById(`${serviceName}-refresh`);
-      const svgIcon = refreshButton?.querySelector('svg');
       const originalContent = refreshButton?.innerHTML || '';
-      const startTime = Date.now();
       
-      if (refreshButton && svgIcon) {
+      if (refreshButton) {
         // Phase 1: Refreshing... 
         refreshButton.innerHTML = `
           <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2010,80 +2006,34 @@ import MainLayout from '../components/layout/MainLayout.astro';
         refreshButton.setAttribute('disabled', 'true');
       }
 
-      try {
-        const result = await checker.checkHealth();
-        this.latestResults.set(serviceName, result);
-        checker.updateUI(result);
-        
-        // Track performance data
-        this.performanceMonitor.addPerformanceData({
-          timestamp: result.timestamp,
-          responseTime: result.metrics.responseTime || 0,
-          service: serviceName,
-          status: result.status
-        });
-
-        this.updateOverallStatus();
-        this.updateHealthSummary();
-        
-        // Phase 2: Refreshed! with pulse animation
-        if (refreshButton) {
-          refreshButton.innerHTML = `
-            <svg class="w-3 h-3 refresh-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
-            <span>Refreshed!</span>
-          `;
-        }
-        
-      } catch (error) {
-        console.error(`Failed to refresh ${serviceName}:`, error);
-        
-        // Show error state
-        if (refreshButton) {
-          refreshButton.innerHTML = `
-            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            <span>Failed</span>
-          `;
-        }
-      } finally {
-        // Ensure loading/success state is visible for at least 2 seconds
-        const elapsedTime = Date.now() - startTime;
-        const minimumDisplayTime = 2000; // 2 seconds
-        
-        if (elapsedTime < minimumDisplayTime) {
-          await new Promise(resolve => setTimeout(resolve, minimumDisplayTime - elapsedTime));
-        }
-        
-        // Phase 3: Restore original button state
+      // Trigger individual service refresh via global health system
+      window.dispatchEvent(new CustomEvent('requestServiceRefresh', {
+        detail: { serviceName }
+      }));
+      
+      // Re-enable button after short delay (UI feedback)
+      setTimeout(() => {
         if (refreshButton) {
           refreshButton.innerHTML = originalContent;
           refreshButton.removeAttribute('disabled');
         }
-      }
+      }, 1500);
+
+        console.log(`✅ Individual service refresh completed for ${serviceName}`);
     }
 
     async refreshAllServices(): Promise<void> {
+      console.log('🔄 HealthDashboard: Manual refresh triggered');
       UIUpdater.updateTextElement('overall-status-text', 'Refreshing all services...');
       UIUpdater.updateTextElement('overall-status-summary', 'Please wait...');
-      
-      const refreshPromises = Array.from(this.serviceCheckers.keys()).map(
-        serviceName => this.refreshService(serviceName)
-      );
 
-      await Promise.allSettled(refreshPromises);
-      
-      // Remove testNetworkConnectivity() from auto-refresh to prevent race conditions
-      // Manual latency tests will work independently without interference
-      
-      // Final status update ensures proper resolution even when some services fail during auto-refresh
-      // This prevents getting stuck in "MEASURING..." state during heartbeat cycles
-      this.updateOverallStatus();
-      
-      // Update last refresh time (DRY: reusable timestamp pattern)
+      // Trigger global health refresh instead of individual service calls
+      this.healthDataConsumer.requestRefresh();
+
+      // Update last refresh time immediately
       TimestampUpdater.updateLastRefresh('last-update-time');
+
+      console.log('🔄 HealthDashboard: Manual refresh request sent to global health system');
     }
 
     private updateOverallStatus(): void {
@@ -2123,8 +2073,8 @@ import MainLayout from '../components/layout/MainLayout.astro';
 
     private updateHealthSummary(): void {
       const summary = {
-        timestamp: TimezoneManager.formatTimestamp(Date.now()),
-        timezone: TimezoneManager.getTimezoneAbbreviation(),
+        timestamp: formatTimestamp(new Date()),
+        timezone: getTimezoneAbbreviation(),
         services: Object.fromEntries(
           Array.from(this.latestResults.entries()).map(([service, result]) => [
             service,
@@ -2411,7 +2361,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
                   <div>Status: <span class="ml-2 ${this.getStatusColor(result.status)}">${result.status.toUpperCase()}</span></div>
                   <div>Message: <span class="ml-2 text-white">${result.message}</span></div>
                   <div>Response Time: <span class="ml-2 text-blue-400">${result.metrics.responseTime || 0}ms</span></div>
-                  <div>Last Check: <span class="ml-2 text-purple-400">${TimezoneManager.formatRelativeTime(result.timestamp)}</span></div>
+                  <div>Last Check: <span class="ml-2 text-purple-400">${formatRelativeTime(result.timestamp)}</span></div>
                 </div>
               </div>
 
@@ -2431,9 +2381,9 @@ import MainLayout from '../components/layout/MainLayout.astro';
               <div class="bg-black/30 rounded-lg p-4">
                 <h3 class="text-white font-semibold mb-3">Timing Information</h3>
                 <div class="text-sm space-y-2">
-                  <div>Last Updated: <span class="ml-2 text-blue-400">${TimezoneManager.formatTimestamp(result.timestamp)}</span></div>
-                  <div>Relative Time: <span class="ml-2 text-purple-400">${TimezoneManager.formatRelativeTime(result.timestamp)}</span></div>
-                  <div>Timezone: <span class="ml-2 text-green-400">${TimezoneManager.getUserTimezone()} (${TimezoneManager.getTimezoneAbbreviation()})</span></div>
+                  <div>Last Updated: <span class="ml-2 text-blue-400">${formatTimestamp(new Date(result.timestamp))}</span></div>
+                  <div>Relative Time: <span class="ml-2 text-purple-400">${formatRelativeTime(result.timestamp)}</span></div>
+                  <div>Timezone: <span class="ml-2 text-green-400">${getCurrentTimezone()} (${getTimezoneAbbreviation()})</span></div>
                 </div>
               </div>
 
