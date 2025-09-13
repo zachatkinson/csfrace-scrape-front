@@ -1,8 +1,9 @@
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import node from '@astrojs/node';
-import tailwind from '@tailwindcss/vite';
 import { readFileSync } from 'fs';
+import tailwindcss from '@tailwindcss/vite';
+
 
 // =============================================================================
 // ASTRO 2025 ULTIMATE EFFICIENCY: BUILD-TIME VARIABLE INJECTION
@@ -41,7 +42,6 @@ export default defineConfig({
   },
   // Vite configuration for Liquid Glass optimization
   vite: {
-    plugins: [tailwind()],
     // ASTRO 2025: Inject build-time constants (zero runtime overhead)
     define: {
       'import.meta.env.VITE_ASTRO_VERSION': JSON.stringify(astroVersion),
@@ -87,6 +87,7 @@ export default defineConfig({
         plugins: [],
       },
     },
+    plugins: [tailwindcss()]
   },
   // Environment variables configuration
   // Backend API URLs should be defined in .env files as:
