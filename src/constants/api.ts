@@ -130,7 +130,7 @@ export const API_ENDPOINTS = {
 
   // Health & Monitoring
   HEALTH: {
-    CHECK: '/health',
+    CHECK: '/health/',
     METRICS: '/health/metrics',
     LIVE: '/health/live',
     READY: '/health/ready',

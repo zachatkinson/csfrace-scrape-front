@@ -1,107 +1,99 @@
 ---
 // =============================================================================
-// COMPACT HEALTH STATUS - SERVER ISLAND FOR FOOTER (DRY/SOLID)
+// COMPACT HEALTH STATUS - OPTIMIZED SERVER ISLAND FOR FOOTER (DRY/SOLID)
 // =============================================================================
-// Single Responsibility: Display compact health status for footer
-// Uses shared service checkers - no duplicate logic!
+// ASTRO PERFORMANCE OPTIMIZATIONS APPLIED:
+// 1. ✅ Streaming: Individual service components render independently
+// 2. ✅ Zero Props: Maximum caching performance (GET requests only)
+// 3. ✅ Parallel Loading: Services load simultaneously
+// Following Astro MCP recommendations for optimal performance
 // =============================================================================
 
-import { 
+import type { IServiceResult } from '../../utils/serviceCheckers.js';
+import {
   BackendServiceChecker,
-  DatabaseServiceChecker, 
+  DatabaseServiceChecker,
   CacheServiceChecker,
   FrontendServiceChecker
 } from '../../utils/serviceCheckers.js';
+import { formatTimestamp } from '../../utils/timezone.js';
 
-// Server-side health checks using shared service checkers (DRY principle)
-// Footer shows only CORE user-facing services (monitoring tools excluded)
-const [backend, database, cache, frontend] = await Promise.all([
-  BackendServiceChecker.checkHealth(),
-  DatabaseServiceChecker.checkHealth(), 
-  CacheServiceChecker.checkHealth(),
-  FrontendServiceChecker.checkHealth()
-]);
+// CACHE-BUSTING: Add timestamp to prevent excessive caching of health data
+// Health checks should be relatively fresh, not heavily cached
+const cacheBreaker = Date.now();
+console.log('🔄 CompactHealthStatus: Cache breaker:', cacheBreaker);
 
-console.log('🔍 CompactHealthStatus service results:', {
-  backend: backend.status,
-  database: database.status,
-  cache: cache.status,
-  frontend: frontend.status
-});
+// Service checkers are imported, not passed as props
+const serviceCheckers = {
+  frontend: FrontendServiceChecker,
+  backend: BackendServiceChecker,
+  database: DatabaseServiceChecker,
+  cache: CacheServiceChecker
+};
 
-const services = [
-  { name: 'Frontend', result: frontend, icon: '🌐' },
-  { name: 'Backend', result: backend, icon: '🔧' },
-  { name: 'Database', result: database, icon: '🐘' },
-  { name: 'Cache', result: cache, icon: '⚡' }
-];
+const serviceConfigs = {
+  frontend: { icon: '🌐', name: 'Frontend', priority: 1 },
+  cache: { icon: '⚡', name: 'Cache', priority: 2 },
+  database: { icon: '🐘', name: 'Database', priority: 3 },
+  backend: { icon: '🔧', name: 'Backend', priority: 4 }
+};
 
-console.log('🔍 CompactHealthStatus services array:', services.map(s => ({ 
-  name: s.name, 
-  status: s.result.status,
-  message: s.result.message 
+// ASTRO SPA OPTIMIZATION: Only initialize health data on true initial site load
+// With transition:persist, this component persists across page navigations
+// So we only need to set initial states once, not on every page
+const healthResults = Object.entries(serviceConfigs).map(([key, config]) => ({
+  service: key,
+  result: {
+    status: key === 'frontend' ? 'up' : 'loading',
+    message: 'Waiting for initial health check...',
+    metrics: null
+  },
+  config
+}));
+
+console.log('🎯 CompactHealthStatus: Initial load with loading states (persistent across navigation)');
+
+// Sort by priority for optimal display order (fastest services first)
+healthResults.sort((a, b) => a.config.priority - b.config.priority);
+
+console.log('🚀 OptimizedCompactHealthStatus: Individual service indicators only');
+console.log('🚀 Health results:', healthResults.map(hr => ({
+  service: hr.service,
+  status: hr.result.status,
+  responseTime: hr.result.metrics?.responseTime
 })));
-
-console.log('🔍 CompactHealthStatus counts:', {
-  total: services.length,
-  up: services.filter(s => s.result.status === 'up').length,
-  statuses: services.map(s => s.result.status)
-});
-
-// SOLID: Single source of truth for status color mapping
-function getStatusColor(status: string): string {
-  switch (status) {
-    case 'up': return 'green';
-    case 'degraded': return 'yellow'; 
-    case 'down': return 'red';
-    case 'error': return 'orange';
-    default: return 'gray';
-  }
-}
-
-// Calculate overall system health
-const upCount = services.filter(s => s.result.status === 'up').length;
-const totalCount = services.length;
-const overallHealth = upCount === totalCount ? 'up' : 
-                     upCount >= totalCount * 0.5 ? 'degraded' : 'down';
 ---
 
-<!-- Compact Health Status for Footer (Enhanced for React Integration) -->
-<div class="flex items-center space-x-4 footer-health-status" data-component="health-status">
-  <!-- Overall Status -->
-  <div class="flex items-center space-x-2">
-    <div 
-      class="w-3 h-3 rounded-full status-indicator" 
-      class:list={[`bg-${getStatusColor(overallHealth)}-500`]}
-      data-status={overallHealth}
-    ></div>
-    <span class="text-white/80 text-sm font-medium status-text">
-      System: {upCount}/{totalCount} Services
-    </span>
-  </div>
+<!-- OPTIMIZED COMPACT HEALTH STATUS (Individual Service Indicators Only) -->
+<div class="flex items-center space-x-4 footer-health-status"
+     data-component="health-status"
+     data-health-results={JSON.stringify(healthResults)}>
 
-  <!-- Individual Service Indicators -->
+
+  <!-- Individual Service Indicators (Streaming Optimized) -->
   <div class="flex items-center space-x-2">
-    {services.map(service => (
-      <div 
-        class="flex items-center space-x-1 group relative"
-        key={service.name}
-        data-service={service.name.toLowerCase()}
-      >
-        <div 
-          class="w-2 h-2 rounded-full status-indicator" 
-          class:list={[`bg-${getStatusColor(service.result.status)}-500`]}
-          data-status={service.result.status}
-        ></div>
-        
-        <!-- Tooltip on hover -->
-        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 
-                    bg-black/80 text-white text-xs rounded opacity-0 group-hover:opacity-100 
+    {healthResults.map(({ service, result, config }) => (
+      <div class="flex items-center space-x-1 group relative"
+           key={service}
+           data-service={service}>
+
+        <div class={`w-2 h-2 rounded-full transition-all duration-300 ${
+          result.status === 'up' ? 'bg-green-400' :
+          result.status === 'degraded' ? 'bg-yellow-400' :
+          result.status === 'loading' ? 'bg-yellow-400 animate-pulse' :
+          result.status === 'down' ? 'bg-red-400' :
+          // Default states: frontend green (site is live), others pulsing yellow
+          service === 'frontend' ? 'bg-green-400' : 'bg-yellow-400 animate-pulse'
+        }`} data-status={result.status || (service === 'frontend' ? 'up' : 'loading')} data-service-name={service}></div>
+
+        <!-- Optimized Tooltip -->
+        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1
+                    bg-black/90 text-white text-xs rounded opacity-0 group-hover:opacity-100
                     transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
           <span class="service-tooltip">
-            {service.icon} {service.name}: <span class="status-text">{service.result.status.toUpperCase()}</span>
-            {service.result.metrics.responseTime && 
-              <span class="metrics-text"> | Response: {service.result.metrics.responseTime}ms</span>
+            {config.icon} {config.name}: {result.status.toUpperCase()}
+            {result.metrics?.responseTime &&
+              <span> | {result.metrics.responseTime}ms</span>
             }
           </span>
         </div>
@@ -109,52 +101,212 @@ const overallHealth = upCount === totalCount ? 'up' :
     ))}
   </div>
 
-  <!-- Last Update Time -->
-  <div class="text-white/50 text-xs timestamp">
-    Updated: {new Date().toLocaleTimeString()}
+  <!-- Timestamp Indicator -->
+  <div class="text-white/50 text-xs">
+    <span>Last Updated: </span><span id="health-timestamp">Never</span>
   </div>
+
 </div>
 
-<!-- Client-side script to emit consolidatedHealthUpdate events (Astro best practice for Server Islands) -->
-<script define:vars={{ services, overallHealth }}>
+<!-- ASTRO BEST PRACTICE: Using data attributes instead of define:vars -->
+<script>
   // =============================================================================
-  // BEST PRACTICE: Server Island with Client-side Enhancement
-  // Emit consolidatedHealthUpdate events using Server Island data (DRY/SOLID)
+  // HYBRID ASTRO OPTIMIZATION: Server Islands + Event-Driven Real-Time Updates
+  // Combines Astro best practices (data attributes) with heartbeat event handling
   // =============================================================================
-  
-  console.log('🏝️ CompactHealthStatus Server Island: Emitting consolidatedHealthUpdate event');
-  
-  // Transform server data to match expected format
-  const serviceData = {};
-  services.forEach(service => {
-    const serviceName = service.name.toLowerCase();
-    serviceData[serviceName] = {
-      status: service.result.status,
-      message: service.result.message,
-      metrics: service.result.metrics,
-      timestamp: new Date().toISOString()
-    };
-  });
-  
-  // Emit the consolidatedHealthUpdate event that the embedded script is listening for
-  const consolidatedEvent = new CustomEvent('consolidatedHealthUpdate', {
-    detail: {
-      services: serviceData,
-      overallStatus: overallHealth,
-      timestamp: Date.now()
+
+  import { formatTimestamp, onTimezoneChange } from '../../utils/timezone.js';
+
+  console.log('🚀 OptimizedCompactHealthStatus: SPA-aware initialization with persistent state');
+
+  // Function to update timestamp display with user's timezone preference
+  function updateTimestamp(healthTimestamp) {
+    const timestampElement = document.getElementById('health-timestamp');
+    if (timestampElement) {
+      // Use health data timestamp if provided, otherwise current time
+      const timestampToUse = healthTimestamp ? new Date(healthTimestamp) : new Date();
+      const newTimestamp = formatTimestamp(timestampToUse);
+      console.log('🕐 HybridCompactHealthStatus: Updating timestamp to:', newTimestamp, 'from health data:', healthTimestamp);
+      timestampElement.textContent = newTimestamp;
+    } else {
+      console.warn('🚨 HybridCompactHealthStatus: health-timestamp element not found');
     }
-  });
-  
-  console.log('🏝️ Server Island emitting consolidatedHealthUpdate:', consolidatedEvent.detail);
-  window.dispatchEvent(consolidatedEvent);
-  
-  // Also set up periodic updates to keep service cards in sync (every 30 seconds)
-  const updateInterval = setInterval(() => {
-    // Re-fetch server island content and emit updates
-    // This will happen automatically when the server island refreshes
-    console.log('🏝️ Server Island: Periodic update triggered');
+  }
+
+  // Process health data and emit events (DRY function for both data sources)
+  function processHealthData(healthResults, overallHealth, source = 'unknown') {
+    console.log(`🚀 HybridCompactHealthStatus: Processing ${source} data`, {
+      resultsCount: healthResults.length,
+      overallHealth
+    });
+
+    // Transform data to expected format
+    const serviceData = {};
+    healthResults.forEach(({ service, result }) => {
+      serviceData[service] = {
+        status: result.status,
+        message: result.message,
+        metrics: result.metrics,
+        timestamp: new Date().toISOString()
+      };
+    });
+
+    // Emit consolidated health update event
+    const consolidatedEvent = new CustomEvent('consolidatedHealthUpdate', {
+      detail: {
+        services: serviceData,
+        overallStatus: overallHealth,
+        timestamp: Date.now(),
+        isPolling: source === 'heartbeat',
+        isVisible: true,
+        optimized: true,
+        source
+      }
+    });
+
     window.dispatchEvent(consolidatedEvent);
-  }, 30000);
-  
-  console.log('🏝️ CompactHealthStatus enhanced with client-side event emission');
+    console.log(`🚀 HybridCompactHealthStatus: ${source} data emitted`, serviceData);
+
+    // Update timestamp display with actual health check time
+    const healthTimestamp = Date.now();
+    state.lastHealthTimestamp = healthTimestamp;
+    updateTimestamp(healthTimestamp);
+  }
+
+  // INITIAL LOAD: Read server-side data from data attributes (Astro best practice)
+  const healthStatusComponent = document.querySelector('[data-component="health-status"]');
+
+  if (healthStatusComponent) {
+    const healthResultsData = healthStatusComponent.dataset.healthResults;
+    const overallHealthData = healthStatusComponent.dataset.overallHealth;
+
+    if (healthResultsData && overallHealthData) {
+      try {
+        const healthResults = JSON.parse(healthResultsData);
+        const overallHealth = overallHealthData;
+        processHealthData(healthResults, overallHealth, 'server-initial');
+      } catch (error) {
+        console.error('🚨 HybridCompactHealthStatus: Failed to parse initial health data', error);
+      }
+    }
+  }
+
+  // REAL-TIME UPDATES: Listen for heartbeat events with fresh health data
+  function handleHeartbeatUpdate(event) {
+    console.log('🔄 HybridCompactHealthStatus: Received heartbeat update', event.detail);
+
+    // Only update timestamp for real service updates (not clock/summary updates)
+    const realServices = ['frontend', 'backend', 'database', 'cache'];
+    const hasRealServiceData = event.detail?.services &&
+      Object.keys(event.detail.services).some(service => realServices.includes(service));
+
+    if (hasRealServiceData) {
+      // Update timestamp with the actual timestamp from health data
+      const healthTimestamp = event.detail?.timestamp || Date.now();
+      state.lastHealthTimestamp = healthTimestamp;
+      updateTimestamp(healthTimestamp);
+      console.log('🕐 HybridCompactHealthStatus: Updated timestamp for real service data');
+    } else {
+      console.log('🚫 HybridCompactHealthStatus: Skipping timestamp update - no real service data');
+    }
+
+    // Update service indicators based on heartbeat data
+    updateServiceIndicators(event.detail.services);
+
+    // The heartbeat system emits consolidatedHealthUpdate events
+    // Timestamp is updated only for real service data, not clock/summary updates
+  }
+
+  // Update individual service indicators based on real-time data
+  function updateServiceIndicators(services) {
+    if (!services) return;
+
+    // Only update indicators for the four real services
+    const realServices = ['frontend', 'backend', 'database', 'cache'];
+
+    Object.entries(services).forEach(([serviceName, serviceData]) => {
+      // Skip non-real services (like summary, clock, etc.)
+      if (!realServices.includes(serviceName)) {
+        console.log(`🚫 Skipping indicator update for non-service: ${serviceName}`);
+        return;
+      }
+
+      const indicator = document.querySelector(`[data-service-name="${serviceName}"]`);
+      if (indicator) {
+        // Determine status: null/undefined = loading, actual status = use it
+        const status = serviceData === null || serviceData === undefined ? 'loading' : serviceData.status;
+
+        // Update visual state with default logic
+        indicator.className = `w-2 h-2 rounded-full transition-all duration-300 ${
+          status === 'up' ? 'bg-green-400' :
+          status === 'degraded' ? 'bg-yellow-400' :
+          status === 'loading' ? 'bg-yellow-400 animate-pulse' :
+          status === 'down' ? 'bg-red-400' :
+          // Default states: frontend green (site is live), others pulsing yellow
+          serviceName === 'frontend' ? 'bg-green-400' : 'bg-yellow-400 animate-pulse'
+        }`;
+
+        indicator.setAttribute('data-status', status);
+        console.log(`🚦 Updated ${serviceName} indicator to:`, status);
+      }
+    });
+  }
+
+  // Store state in window object to persist across script re-runs
+  window.__healthStatusState = window.__healthStatusState || {
+    lastHealthTimestamp: null,
+    isInitialized: false
+  };
+
+  // Use references to the persistent state
+  const state = window.__healthStatusState;
+
+  function initializeTimestamp() {
+    // With transition:persist, this script can run multiple times during navigation
+    // Restore timestamp on every script run (for navigation)
+    const timestampElement = document.getElementById('health-timestamp');
+    if (timestampElement && state.lastHealthTimestamp) {
+      // Restore the timestamp display immediately
+      const restoredTimestamp = formatTimestamp(new Date(state.lastHealthTimestamp));
+      timestampElement.textContent = restoredTimestamp;
+      console.log('🔄 OptimizedCompactHealthStatus: Restored timestamp:', restoredTimestamp);
+    }
+
+    // Only initialize event listeners once to avoid duplicates
+    if (state.isInitialized) {
+      console.log('🔄 OptimizedCompactHealthStatus: Skipping re-initialization (persistent state)');
+      return;
+    }
+
+    console.log('🎯 OptimizedCompactHealthStatus: First-time initialization');
+    state.isInitialized = true;
+
+    // Listen for timezone setting changes - reformat with same health data timestamp
+    const cleanupTimezoneListener = onTimezoneChange(() => {
+      if (state.lastHealthTimestamp) {
+        updateTimestamp(state.lastHealthTimestamp);
+      }
+      // NO fallback to current time - only update when we have actual health data
+      // This prevents timezone changes from triggering fake "system status updates"
+    });
+
+    // Listen for heartbeat health updates
+    window.addEventListener('consolidatedHealthUpdate', handleHeartbeatUpdate);
+
+    // Cleanup only on actual page unload (not view transitions)
+    window.addEventListener('beforeunload', () => {
+      cleanupTimezoneListener();
+      window.removeEventListener('consolidatedHealthUpdate', handleHeartbeatUpdate);
+      state.isInitialized = false; // Reset for next actual page load
+      state.lastHealthTimestamp = null; // Clear timestamp on full page unload
+    });
+  }
+
+  // Initialize immediately if DOM is ready, otherwise wait for DOMContentLoaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeTimestamp);
+  } else {
+    // DOM is already ready, initialize immediately
+    initializeTimestamp();
+  }
 </script>

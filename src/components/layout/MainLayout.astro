@@ -9,10 +9,12 @@
 import '../../styles/global.css';
 import { getApiBaseUrl } from '../../constants/api.ts';
 import { TIMING_CONSTANTS } from '../../constants/timing.ts';
+// Import Astro View Transitions for SPA-like navigation
+import { ViewTransitions } from 'astro:transitions';
 // Import DRY/SOLID Server Island component for health status
 import CompactHealthStatus from '../health/CompactHealthStatus.astro';
 // Import React component for real-time enhancements (client:idle)
-import RealtimeHealthEnhancer from '../health/RealtimeHealthEnhancer.tsx';
+import RealtimeHealthEnhancer from '../../components/health/RealtimeHealthEnhancer.tsx';
 // Import DRY/SOLID Auth Modal Component
 import AuthModal from '../auth/AuthModal.astro';
 // Import DRY/SOLID Settings Panel Component
@@ -42,7 +44,10 @@ const {
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
-    
+
+    <!-- Enable Astro View Transitions for SPA-like navigation -->
+    <ViewTransitions />
+
     <!-- Performance optimizations -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -58,7 +63,8 @@ const {
       
       <!-- Header -->
       <header class="glass-card sticky top-0 z-50 border-b border-white/10"
-              style="border-radius: 0; margin: 0;">
+              style="border-radius: 0; margin: 0;"
+              transition:persist="app-header">
         <div class="max-w-7xl mx-auto px-8 py-6">
           <div class="flex items-center justify-between">
             <!-- Logo -->
@@ -112,7 +118,8 @@ const {
       </main>
 
       <!-- Footer with Server Island Health Status -->
-      <footer class="bg-black/90 backdrop-blur-lg border-t border-white/10 mt-16">
+      <footer class="bg-black/90 backdrop-blur-lg border-t border-white/10 mt-16"
+              transition:persist="app-footer">
         <div class="max-w-7xl mx-auto px-8 py-8">
           <div class="flex flex-col lg:flex-row lg:justify-between lg:items-start space-y-8 lg:space-y-0">
             
@@ -122,19 +129,9 @@ const {
               
               <!-- Server Island for Real-time Health Status (DRY/SOLID) -->
               <div class="space-y-3">
-                <!-- Server Island Health Status - Proper Implementation -->
-                <!-- Best Practice: Server-side health checks with progressive loading -->
-                <CompactHealthStatus server:defer>
-                  <div slot="fallback" class="flex items-center space-x-2 text-white/70">
-                    <div class="flex space-x-1">
-                      <div class="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-                      <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse" style="animation-delay: 0.1s;"></div>
-                      <div class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" style="animation-delay: 0.2s;"></div>
-                      <div class="w-2 h-2 bg-purple-400 rounded-full animate-pulse" style="animation-delay: 0.3s;"></div>
-                    </div>
-                    <span class="text-sm font-medium">Checking system status...</span>
-                  </div>
-                </CompactHealthStatus>
+                <!-- Persistent Health Status - Optimized SPA Implementation -->
+                <!-- Best Practice: Single initialization + persistent heartbeat updates -->
+                <CompactHealthStatus transition:persist="health-status" />
               </div>
               
               <!-- Troubleshooting Link -->
@@ -195,7 +192,7 @@ const {
     <!-- HYBRID ENHANCEMENT: React Island for Real-time Updates -->
     <!-- Following Astro best practice: client:idle for minimal impact -->
     {enableRealTimeUpdates && (
-      <RealtimeHealthEnhancer client:load />
+      <RealtimeHealthEnhancer client:load showIndicator={false} />
     )}
 
     <!-- Responsive Background Image Styling (Modern 2025 Best Practices) -->
