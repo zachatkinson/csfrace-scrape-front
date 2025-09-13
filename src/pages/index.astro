@@ -5,41 +5,14 @@ import JobDashboard from '../components/JobDashboard.astro';
 ---
 
 <MainLayout title="CSFrace Scrape - WordPress to Shopify Converter">
-  <!-- Main Content Section -->
   <section class="text-center py-16">
-    <!-- Desktop Grid Layout -->
-    <div class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-8 lg:gap-12 lg:items-start" id="main-grid-layout">
-      
-      <!-- Left Column: Conversion Form -->
-      <div class="conversion-form-column">
+    <div class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-8 lg:gap-12 lg:items-start">
+      <div>
         <ConversionForm />
       </div>
-      
-      <!-- Right Column: Real-time Processing & Recent History -->
       <div class="lg:sticky lg:top-8 lg:h-[calc(100vh-8rem)]">
         <JobDashboard />
       </div>
     </div>
   </section>
-
-  <style>
-    /* Force grid layout on large screens */
-    @media (min-width: 1024px) {
-      #main-grid-layout {
-        display: grid !important;
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        gap: 3rem !important;
-        align-items: start !important;
-      }
-    }
-  </style>
 </MainLayout>
-
-<!-- 
-  All functionality moved to components following Astro best practices:
-  - ConversionForm: Handles all form interactions, validation, and submission
-  - JobDashboard: Handles job display and management
-  
-  This page now serves as a clean layout coordinator with zero business logic.
-  Perfect DRY/SOLID architecture withsingle responsibility per component.
--->
