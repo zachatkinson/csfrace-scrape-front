@@ -128,7 +128,7 @@ export const UnifiedLoginForm: React.FC<UnifiedLoginFormProps> = ({
         </div>
 
         <div className="mt-6">
-          <OAuthProviderListwhen
+          <OAuthProviderList
             providers={undefined}
             mode="login"
             loading={false}
