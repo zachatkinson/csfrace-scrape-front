@@ -1,0 +1,110 @@
+/**
+ * Auth Modal Manager - React Island Component
+ * SOLID/DRY implementation with proper separation of concerns
+ * Single Responsibility: Manages auth modal state and event handling
+ * Dependency Inversion: Uses abstractions for event handling and error boundaries
+ */
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { AuthModal } from '../auth/AuthModal.tsx';
+import { AuthProvider } from '../../contexts/AuthContext.tsx';
+
+// SOLID: Single Responsibility - Custom hook for event handling
+const useAuthModalEvents = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  const handleOpen = useCallback(() => {
+    setIsOpen(true);
+  }, []);
+  
+  const handleClose = useCallback(() => {
+    setIsOpen(false);
+  }, []);
+  
+  const handleSuccess = useCallback(() => {
+    setIsOpen(false);
+    window.dispatchEvent(new CustomEvent('authSuccess'));
+  }, []);
+  
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    // DRY: Consolidated event handler
+    const eventTypes = ['openAuthModal', 'testAuthModal'];
+    
+    eventTypes.forEach(eventType => {
+      window.addEventListener(eventType, handleOpen);
+    });
+    
+    return () => {
+      eventTypes.forEach(eventType => {
+        window.removeEventListener(eventType, handleOpen);
+      });
+    };
+  }, [handleOpen]);
+  
+  return { isOpen, handleClose, handleSuccess };
+};
+
+// SOLID: Single Responsibility - Pure modal component
+const AuthModalComponent: React.FC = () => {
+  const { isOpen, handleClose, handleSuccess } = useAuthModalEvents();
+  
+  return (
+    <AuthModal
+      isOpen={isOpen}
+      onClose={handleClose}
+      onSuccess={handleSuccess}
+      initialMode="login"
+    />
+  );
+};
+
+// SOLID: Single Responsibility - Error boundary wrapper
+interface ErrorBoundaryState {
+  hasError: boolean;
+}
+
+class AuthModalErrorBoundary extends React.Component<
+  React.PropsWithChildren<{}>,
+  ErrorBoundaryState
+> {
+  constructor(props: React.PropsWithChildren<{}>) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  
+  static getDerivedStateFromError(): ErrorBoundaryState {
+    return { hasError: true };
+  }
+  
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('AuthModal Error:', error, errorInfo);
+  }
+  
+  render() {
+    if (this.state.hasError) {
+      return null; // Graceful degradation
+    }
+    
+    return this.props.children;
+  }
+}
+
+// SOLID: Open/Closed - Extensible manager component
+export const AuthModalManager: React.FC = () => {
+  // Dependency Inversion: Abstract SSR check
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  
+  return (
+    <AuthProvider>
+      <AuthModalErrorBoundary>
+        <AuthModalComponent />
+      </AuthModalErrorBoundary>
+    </AuthProvider>
+  );
+};
+
+export default AuthModalManager;

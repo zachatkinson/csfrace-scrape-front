@@ -1,0 +1,301 @@
+---
+/**
+ * Settings Panel Component - Following Astro Best Practices & DRY/SOLID Principles
+ * Uses BaseModal for consistent modal behavior and animations
+ * Single Responsibility: Handles application settings UI and interactions
+ */
+
+// Import DRY/SOLID BaseModal component
+import BaseModal from './common/BaseModal.astro';
+---
+
+<!-- Custom element wrapper with data attributes (Astro best practice) -->
+<settings-panel>
+  <!-- DRY/SOLID BaseModal with Settings-specific content -->
+  <BaseModal 
+    id="settings-panel" 
+    closeButtonId="settings-close"
+    maxWidth="max-w-4xl"
+  >
+    <div class="glass-card p-6 mb-6">
+      <div class="mb-6">
+        <h2 class="text-2xl font-bold text-white">⚙️ Application Settings</h2>
+      </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- API Configuration -->
+            <div class="space-y-4">
+              <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                <svg class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                API Configuration
+              </h3>
+              
+              <div class="space-y-3">
+                <div>
+                  <label for="api-url" class="block text-sm font-medium text-white/80 mb-1">Backend URL</label>
+                  <input 
+                    type="url" 
+                    id="api-url" 
+                    class="glass-input w-full" 
+                    placeholder="http://localhost:8000"
+                  />
+                </div>
+                
+                <div>
+                  <label for="api-timeout" class="block text-sm font-medium text-white/80 mb-1">Request Timeout (seconds)</label>
+                  <input 
+                    type="number" 
+                    id="api-timeout" 
+                    class="glass-input w-full" 
+                    min="5" 
+                    max="300"
+                  />
+                </div>
+                
+                <div>
+                  <label for="refresh-interval" class="block text-sm font-medium text-white/80 mb-1">Auto-refresh Interval (seconds)</label>
+                  <input 
+                    type="number" 
+                    id="refresh-interval" 
+                    class="glass-input w-full" 
+                    min="5" 
+                    max="300"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Job Defaults -->
+            <div class="space-y-4">
+              <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                <svg class="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+                Job Defaults
+              </h3>
+              
+              <div class="space-y-3">
+                <div>
+                  <label for="default-priority" class="block text-sm font-medium text-white/80 mb-1">Default Priority</label>
+                  <select id="default-priority" class="glass-input w-full">
+                    <option value="Low">Low</option>
+                    <option value="Normal">Normal</option>
+                    <option value="High">High</option>
+                    <option value="Urgent">Urgent</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label for="max-retries" class="block text-sm font-medium text-white/80 mb-1">Max Retries</label>
+                  <input 
+                    type="number" 
+                    id="max-retries" 
+                    class="glass-input w-full" 
+                    min="0" 
+                    max="10"
+                  />
+                </div>
+                
+                <div>
+                  <label for="job-timeout" class="block text-sm font-medium text-white/80 mb-1">Job Timeout (seconds)</label>
+                  <input 
+                    type="number" 
+                    id="job-timeout" 
+                    class="glass-input w-full" 
+                    min="10" 
+                    max="300"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Display Options -->
+            <div class="space-y-4">
+              <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                <svg class="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z" />
+                </svg>
+                Display Options
+              </h3>
+              
+              <div class="space-y-3">
+                <div class="flex items-center space-x-3">
+                  <input 
+                    type="checkbox" 
+                    id="dark-mode" 
+                    class="glass-checkbox"
+                  />
+                  <label for="dark-mode" class="text-sm text-white/80">Dark Mode</label>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                  <input 
+                    type="checkbox" 
+                    id="show-job-ids" 
+                    class="glass-checkbox"
+                  />
+                  <label for="show-job-ids" class="text-sm text-white/80">Show Job IDs</label>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                  <input 
+                    type="checkbox" 
+                    id="compact-mode" 
+                    class="glass-checkbox"
+                  />
+                  <label for="compact-mode" class="text-sm text-white/80">Compact Mode</label>
+                </div>
+                
+                <div>
+                  <label for="jobs-per-page" class="block text-sm font-medium text-white/80 mb-1">Jobs Per Page</label>
+                  <select id="jobs-per-page" class="glass-input w-full">
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label for="timezone" class="block text-sm font-medium text-white/80 mb-1">Timezone</label>
+                  <select id="timezone" class="glass-input w-full">
+                    <option value="auto">Auto-detect</option>
+                    <option value="America/New_York">Eastern Time</option>
+                    <option value="America/Chicago">Central Time</option>
+                    <option value="America/Denver">Mountain Time</option>
+                    <option value="America/Los_Angeles">Pacific Time</option>
+                    <option value="America/Anchorage">Alaska Time</option>
+                    <option value="Pacific/Honolulu">Hawaii Time</option>
+                    <option value="Europe/London">London (GMT)</option>
+                    <option value="Europe/Berlin">Central European Time</option>
+                    <option value="Europe/Berlin">Berlin</option>
+                    <option value="Europe/Rome">Rome</option>
+                    <option value="Europe/Madrid">Madrid</option>
+                    <option value="Europe/Amsterdam">Amsterdam</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Notifications -->
+            <div class="space-y-4">
+              <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                <svg class="w-5 h-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 19h1.64a3 3 0 002.82-1.95L12 7h8a2 2 0 012 2v4.38a2 2 0 01-.41 1.22L19 17a4 4 0 01-3.18 1.62H12M4 19V7a1 1 0 011-1h1m-2 13V9.5" />
+                </svg>
+                Notifications
+              </h3>
+              
+              <div class="space-y-3">
+                <div class="flex items-center space-x-3">
+                  <input 
+                    type="checkbox" 
+                    id="completion-alerts" 
+                    class="glass-checkbox"
+                  />
+                  <label for="completion-alerts" class="text-sm text-white/80">Job Completion Alerts</label>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                  <input 
+                    type="checkbox" 
+                    id="error-notifications" 
+                    class="glass-checkbox"
+                  />
+                  <label for="error-notifications" class="text-sm text-white/80">Error Notifications</label>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                  <input 
+                    type="checkbox" 
+                    id="browser-notifications" 
+                    class="glass-checkbox"
+                  />
+                  <label for="browser-notifications" class="text-sm text-white/80">Browser Push Notifications</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Action Buttons -->
+          <div class="flex items-center justify-between mt-8 pt-6 border-t border-white/10">
+            <button 
+              id="reset-settings"
+              class="glass-button px-4 py-2 text-orange-400 hover:text-orange-300 border border-orange-500/30 hover:border-orange-500/50 transition-all duration-200"
+            >
+              Reset to Defaults
+            </button>
+            
+            <div class="flex items-center space-x-3">
+              <button 
+                id="cancel-settings"
+                class="glass-button px-4 py-2 text-white/70 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                id="save-settings"
+                class="glass-button px-6 py-2 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-500/50 hover:border-blue-500/70 transition-all duration-200"
+              >
+                Save Settings
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </BaseModal>
+</settings-panel>
+
+<!-- CSS animations now handled by BaseModal - DRY implementation -->
+
+<script>
+  // Custom element following Astro best practices
+  // This script is bundled, optimized, and deduplicated by Astro
+  import { SettingsManager } from '../scripts/settingsManager';
+  
+  class SettingsPanel extends HTMLElement {
+    private settingsManager: SettingsManager | null = null;
+    
+    connectedCallback() {
+      // Initialize settings manager
+      this.settingsManager = new SettingsManager({
+        container: this,
+        onSettingsChange: (settings) => {
+          // Handle settings changes
+          console.log('Settings updated:', settings);
+        }
+      });
+      
+      // Initialize the settings functionality
+      this.settingsManager.init();
+    }
+    
+    disconnectedCallback() {
+      // Cleanup when element is removed
+      this.settingsManager = null;
+    }
+    
+    // Public method for external control
+    openSettings() {
+      this.settingsManager?.open();
+    }
+    
+    // Public method to close settings
+    closeSettings() {
+      this.settingsManager?.close();
+    }
+    
+    // Public method to get current settings
+    getSettings() {
+      return this.settingsManager?.getSettings() || null;
+    }
+  }
+  
+  // Define the custom element
+  customElements.define('settings-panel', SettingsPanel);
+</script>

@@ -1,0 +1,116 @@
+---
+/**
+ * BaseModal - DRY/SOLID Modal Foundation Component
+ * Provides consistent modal behavior, animations, and accessibility
+ * Single Responsibility: Handle modal display logic and animations
+ * Open/Closed: Extensible through slots and props
+ * Dependency Inversion: Depends on abstractions (props/slots) not concrete implementations
+ */
+
+export interface Props {
+  id: string;
+  className?: string;
+  closeButtonId?: string;
+  backdropBlur?: boolean;
+  maxWidth?: string;
+  zIndex?: string;
+}
+
+const { 
+  id,
+  className = '',
+  closeButtonId,
+  backdropBlur = true,
+  maxWidth = 'max-w-4xl',
+  zIndex = 'z-50'
+} = Astro.props;
+---
+
+<!-- Base Modal Structure with Unified Animations -->
+<div 
+  id={id}
+  class={`fixed inset-0 ${zIndex} flex items-center justify-center p-4 pointer-events-none opacity-0 transition-opacity duration-300 ease-out ${className}`}
+  style="display: none;"
+>
+  <!-- Unified Backdrop with Conditional Blur (matching AuthModal) - Force light backdrop -->
+  <div 
+    class="base-modal-backdrop animate-fade-in" 
+    style={`position: absolute; inset: 0; background-color: rgba(255, 255, 255, 0.1) !important; ${backdropBlur ? 'backdrop-filter: blur(12px) !important;' : ''}`}
+  ></div>
+  
+  <!-- Modal Container with Unified Scale Animation -->
+  <div class={`relative w-full ${maxWidth} mx-auto animate-scale-up`}>
+    <!-- Optional Close Button -->
+    {closeButtonId && (
+      <button 
+        id={closeButtonId}
+        class="absolute -top-12 -right-2 z-10 p-2 text-white/80 hover:text-white transition-colors rounded-full hover:bg-white/10"
+        aria-label="Close modal"
+      >
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    )}
+    
+    <!-- Modal Content Slot -->
+    <div class="relative">
+      <slot />
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Unified Modal Animations - DRY Implementation */
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes scale-up {
+    from { 
+      opacity: 0; 
+      transform: scale(0.95); 
+    }
+    to { 
+      opacity: 1; 
+      transform: scale(1); 
+    }
+  }
+  
+  .animate-fade-in {
+    animation: fade-in 0.2s ease-out;
+  }
+  
+  .animate-scale-up {
+    animation: scale-up 0.3s ease-out;
+  }
+  
+  /* Force light backdrop with maximum specificity - overrides any conflicting styles */
+  .base-modal-backdrop.animate-fade-in {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(12px) !important;
+    position: absolute !important;
+    inset: 0 !important;
+  }
+  
+  /* Additional specificity to override any Tailwind or other CSS */
+  div.base-modal-backdrop.animate-fade-in {
+    background: rgba(255, 255, 255, 0.1) !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  /* Ultra-specific override for settings panel modal */
+  #settings-panel .base-modal-backdrop,
+  #settings-panel div.base-modal-backdrop {
+    background: rgba(255, 255, 255, 0.1) !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  /* Ultra-specific override for auth modal consistency */
+  #auth-modal .base-modal-backdrop,
+  #auth-modal div.base-modal-backdrop {
+    background: rgba(255, 255, 255, 0.1) !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+  }
+</style>

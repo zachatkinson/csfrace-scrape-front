@@ -1,0 +1,321 @@
+---
+// =============================================================================
+// JOB CARD - DRY/SOLID Dashboard Component  
+// =============================================================================
+// Single Responsibility: Display individual job information with actions
+// Following established DRY/SOLID patterns from health monitoring components
+// =============================================================================
+
+import type { IJobData } from '../../types/job.ts';
+
+export interface Props {
+  job: IJobData;
+  isSelected?: boolean;
+  showActions?: boolean;
+}
+
+const { job, isSelected = false, showActions = true } = Astro.props;
+
+// SOLID: Single source of truth for status configurations
+const JOB_STATUS_CONFIG = {
+  completed: { color: 'green', icon: '✅', label: 'Completed' },
+  processing: { color: 'blue', icon: '⚡', label: 'Processing' },
+  failed: { color: 'red', icon: '❌', label: 'Failed' },
+  cancelled: { color: 'yellow', icon: '⏹️', label: 'Cancelled' },
+  queued: { color: 'gray', icon: '⏳', label: 'Pending' },
+  skipped: { color: 'orange', icon: '⏭️', label: 'Skipped' },
+  partial: { color: 'purple', icon: '🔄', label: 'Partial' }
+} as const;
+
+// SOLID: Pure function for status icon generation
+const getStatusIcon = (status: string): string => {
+  const config = JOB_STATUS_CONFIG[status] || JOB_STATUS_CONFIG.queued;
+  
+  if (status === 'processing') {
+    return `<div class="animate-spin rounded-full w-3 h-3 border-2 border-${config.color}-400/30 border-t-${config.color}-400"></div>`;
+  }
+  
+  return `<div class="w-3 h-3 rounded-full bg-${config.color}-400"></div>`;
+};
+
+// SOLID: Pure function for status color classes
+const getStatusColorClass = (status: string): string => {
+  const config = JOB_STATUS_CONFIG[status] || JOB_STATUS_CONFIG.queued;
+  return `text-${config.color}-400`;
+};
+
+// SOLID: Pure function for relative time formatting
+const formatRelativeTime = (date: Date): string => {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return `${diffDays}d ago`;
+};
+
+// SOLID: Pure function for file size formatting
+const formatFileSize = (bytes: number): string => {
+  if (!bytes) return 'N/A';
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
+};
+
+const statusConfig = JOB_STATUS_CONFIG[job.status] || JOB_STATUS_CONFIG.queued;
+---
+
+<!-- Job Card Component (DRY/SOLID) -->
+<div 
+  class:list={[
+    'job-item p-4 rounded-lg border-l-4 bg-white/5 transition-all duration-200',
+    `border-${statusConfig.color}-400`,
+    isSelected ? 'selected bg-blue-500/10 border-blue-400' : '',
+    'hover:bg-white/10'
+  ]}
+  data-job-id={job.id}
+  data-component="job-card"
+>
+  <div class="flex items-start justify-between">
+    <!-- Left: Selection + Info -->
+    <div class="flex items-start space-x-4 flex-1">
+      <!-- Selection Checkbox -->
+      <input 
+        type="checkbox" 
+        class="job-checkbox mt-1 rounded border-white/20 bg-white/10 text-blue-400 focus:ring-blue-400/50" 
+        checked={isSelected}
+        data-job-id={job.id}
+        aria-label={`Select job: ${job.title}`}
+      />
+      
+      <!-- Job Information -->
+      <div class="flex items-center space-x-3 flex-1">
+        <!-- Status Icon -->
+        <div class="status-icon" set:html={getStatusIcon(job.status)} />
+        
+        <!-- Job Details -->
+        <div class="flex-1">
+          <!-- Job Title (Clickable) -->
+          <h3 
+            class="text-white font-medium cursor-pointer hover:text-blue-400 transition-colors job-title" 
+            data-job-id={job.id} 
+            data-action="view-details"
+            title="Click to view job details"
+          >
+            {job.title}
+          </h3>
+          
+          <!-- Job URL -->
+          <p class="text-white/60 text-sm truncate max-w-md job-url" title={job.url}>
+            {job.url}
+          </p>
+          
+          <!-- Job Metadata -->
+          <div class="flex items-center space-x-4 mt-2 text-xs text-white/50 job-metadata">
+            <span class="job-time" title={job.createdAt.toLocaleString()}>
+              {formatRelativeTime(job.createdAt)}
+            </span>
+            <span class="job-id">ID: {job.id}</span>
+            {job.domain && <span class="job-domain">{job.domain}</span>}
+            {job.wordCount > 0 && <span class="job-words">{job.wordCount.toLocaleString()} words</span>}
+            {job.imageCount > 0 && <span class="job-images">{job.imageCount} images</span>}
+            {job.contentSize && <span class="job-size">{formatFileSize(job.contentSize)}</span>}
+            {job.duration && job.duration !== 'N/A' && <span class="job-duration">⏱️ {job.duration}</span>}
+            {job.retryCount > 0 && (
+              <span class="job-retries text-orange-400">
+                🔄 {job.retryCount}/{job.maxRetries}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Right: Status + Progress + Actions -->
+    <div class="flex items-center space-x-4">
+      <!-- Progress Bar (for processing jobs) -->
+      {job.status === 'processing' && job.progress > 0 && (
+        <div class="flex items-center space-x-2">
+          <div class="w-24 h-2 bg-white/20 rounded-full overflow-hidden">
+            <div 
+              class="bg-gradient-to-r from-blue-400 to-blue-600 h-full rounded-full transition-all duration-1000"
+              style={`width: ${job.progress}%`}
+            />
+          </div>
+          <span class="text-white/70 text-xs">{job.progress}%</span>
+        </div>
+      )}
+      
+      <!-- Status Badge -->
+      <div class:list={[
+        'glass-status px-3 py-1 rounded-full border',
+        getStatusColorClass(job.status),
+        `border-${statusConfig.color}-400/30`,
+        `bg-${statusConfig.color}-500/10`
+      ]}>
+        <span class="text-xs font-medium">
+          {statusConfig.icon} {statusConfig.label}
+        </span>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Error Display -->
+  {job.error && (
+    <div class="mt-4 ml-7">
+      <div class="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+        <p class="text-red-400 text-xs font-medium mb-1">
+          ⚠️ Error{job.errorType ? ` (${job.errorType})` : ''}
+        </p>
+        <p class="text-red-300/80 text-xs">{job.error}</p>
+      </div>
+    </div>
+  )}
+  
+  <!-- Action Buttons and Tags -->
+  {showActions && (
+    <div class="flex items-center justify-between mt-4">
+      <!-- Priority and Batch Tags -->
+      <div class="flex items-center space-x-2">
+        {job.priority && job.priority !== 'normal' && (
+          <span class="text-white/50 text-xs bg-white/10 px-2 py-1 rounded-full">
+            🔥 {job.priority.toUpperCase()}
+          </span>
+        )}
+        {job.batchId && (
+          <span class="text-white/50 text-xs bg-white/10 px-2 py-1 rounded-full">
+            📦 Batch {job.batchId}
+          </span>
+        )}
+      </div>
+      
+      <!-- Action Buttons -->
+      <div class="flex items-center space-x-2 ml-auto job-actions">
+        <!-- View Details Button -->
+        <button 
+          class="glass-button px-3 py-1 text-xs text-white/90 hover:text-white" 
+          data-action="view-details" 
+          data-job-id={job.id}
+          title="View job details"
+        >
+          <svg class="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+          View
+        </button>
+        
+        <!-- Download Button (completed jobs only) -->
+        {job.status === 'completed' && (
+          <button 
+            class="glass-button px-3 py-1 text-xs text-white/90 hover:text-white" 
+            data-action="download" 
+            data-job-id={job.id}
+            title="Download converted content"
+          >
+            <svg class="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+            </svg>
+            Download
+          </button>
+        )}
+        
+        <!-- Cancel Button (processing jobs only) -->
+        {job.status === 'processing' && (
+          <button 
+            class="glass-button px-3 py-1 text-xs text-yellow-400/80 hover:text-yellow-400" 
+            data-action="cancel" 
+            data-job-id={job.id}
+            title="Cancel job"
+          >
+            <svg class="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Cancel
+          </button>
+        )}
+        
+        <!-- Retry Button (failed jobs only) -->
+        {job.status === 'failed' && job.retryCount < job.maxRetries && (
+          <button 
+            class="glass-button px-3 py-1 text-xs text-blue-400/80 hover:text-blue-400" 
+            data-action="retry" 
+            data-job-id={job.id}
+            title="Retry job"
+          >
+            <svg class="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Retry
+          </button>
+        )}
+        
+        <!-- Delete Button -->
+        <button 
+          class="glass-button px-3 py-1 text-xs text-red-400/80 hover:text-red-400" 
+          data-action="delete" 
+          data-job-id={job.id}
+          title="Delete job"
+        >
+          <svg class="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          Delete
+        </button>
+      </div>
+    </div>
+  )}
+</div>
+
+<!-- JobCard Component Styles -->
+<style>
+  .job-item {
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .job-item:hover {
+    @apply bg-white/10 scale-[1.01];
+  }
+  
+  .job-item.selected {
+    @apply bg-blue-500/10 border-blue-400;
+  }
+  
+  .job-title:hover {
+    @apply text-blue-400;
+  }
+  
+  .glass-status {
+    @apply backdrop-blur-sm;
+  }
+  
+  .glass-button {
+    @apply bg-white/10 border border-white/20 rounded-lg;
+    @apply hover:bg-white/20 hover:border-white/40;
+    @apply transition-all duration-200;
+  }
+  
+  .job-checkbox {
+    @apply rounded border-white/20 bg-white/10 text-blue-400;
+    @apply focus:ring-2 focus:ring-blue-400/50 focus:ring-offset-0;
+  }
+  
+  .status-icon {
+    @apply flex items-center justify-center;
+  }
+  
+  /* Animation for processing status */
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+</style>

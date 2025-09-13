@@ -1,18 +1,24 @@
 /**
- * UrlScraper Component - Refactored with SOLID Principles
- * Now uses service-oriented architecture with focused responsibilities
- * Dramatically simplified from 465 lines to clean composition pattern
+ * UrlScraper Component - Following CLAUDE.md Best Practices
+ * Uses direct API calls to Docker backend - NO SERVICE ABSTRACTIONS!
+ * Simple fetch() calls as per Astro + CLAUDE.md guidelines
  */
 
 import React, { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext.tsx';
 import { useScrapingForm } from '../../hooks/useScrapingForm.ts';
-import { useServiceContainer } from '../../services/ServiceContainer.ts';
-import { JobProcessingService } from '../../services/JobProcessingService.ts';
 import { ModeSwitcher } from '../scraping/Modeswitcher.tsx';
 import { SingleUrlForm } from '../scraping/SingleUrlForm.tsx';
 import { BatchUrlForm } from '../scraping/BatchUrlForm.tsx';
-import type { ScrapingJobUI } from '../../services/JobProcessingService.ts';
+import { getApiBaseUrl } from '../../constants/api';
+import { getAuthHeaders, isAuthenticated } from '../../utils/authApi';
+
+export interface ScrapingJobUI {
+  id?: string;
+  url: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  result?: any;
+  error?: string;
+}
 
 export interface UrlScraperProps {
   onJobSubmit?: (job: ScrapingJobUI) => void;
@@ -22,7 +28,7 @@ export interface UrlScraperProps {
 }
 
 /**
- * UrlScraper - Clean, service-oriented URL processing interface
+ * UrlScraper - Simple component using direct Docker API calls
  */
 export const UrlScraper: React.FC<UrlScraperProps> = ({
   onJobSubmit,
@@ -30,23 +36,83 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
   maxConcurrentJobs: _maxConcurrentJobs = 5,
   className = '',
 }) => {
-  const { isAuthenticated } = useAuth();
-  
-  // Service-oriented form state management
+  const authenticated = isAuthenticated();
+
+  // Simple form state management
   const { state, actions, computed } = useScrapingForm();
   
-  // SOLID: Dependency Inversion - Use service container instead of direct instantiation
-  const serviceContainer = useServiceContainer();
-  
-  // Job processing service with dependency injection
-  const [jobService] = useState(() => new JobProcessingService(
-    serviceContainer.api, // Inject API service dependency
-    {
-      onJobSubmitted: (job) => {
-        onJobSubmit?.(job);
-        actions.setSuccess(`Job created successfully: ${job.url}`);
-      },
-      onJobUpdated: (job) => {
+  // Simple job submission using direct API calls - NO SERVICE ABSTRACTION!
+  const handleJobSubmit = async (url: string, options: any = {}) => {
+    try {
+      actions.setLoading(true);
+
+      // Direct call to Docker backend - following CLAUDE.md best practices
+      const job = await fetch(`${getApiBaseUrl()}/jobs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({ url, options }),
+      }).then(async (response) => {
+        if (!response.ok) {
+          throw new Error(await response.text() || `HTTP ${response.status}`);
+        }
+        return response.json();
+      });
+
+      // Create UI job object
+      const uiJob: ScrapingJobUI = {
+        id: job.id,
+        url: job.url,
+        status: job.status,
+        result: job.result,
+        error: job.error,
+      };
+
+      onJobSubmit?.(uiJob);
+      actions.setSuccess(`Job created successfully: ${url}`);
+    } catch (error) {
+      actions.setError(error instanceof Error ? error.message : 'Job submission failed');
+    } finally {
+      actions.setLoading(false);
+    }
+  };
+
+  // Simple batch submission using direct API calls
+  const handleBatchSubmit = async (urls: string[], options: any = {}) => {
+    try {
+      actions.setLoading(true);
+
+      // Direct call to Docker backend - following CLAUDE.md best practices
+      const batch = await fetch(`${getApiBaseUrl()}/batches`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({
+          name: `Batch ${new Date().toLocaleString()}`,
+          urls,
+          options
+        }),
+      }).then(async (response) => {
+        if (!response.ok) {
+          throw new Error(await response.text() || `HTTP ${response.status}`);
+        }
+        return response.json();
+      });
+
+      actions.setSuccess(`Batch created successfully with ${urls.length} URLs`);
+      return batch;
+    } catch (error) {
+      actions.setError(error instanceof Error ? error.message : 'Batch submission failed');
+    } finally {
+      actions.setLoading(false);
+    }
+  };
+
+  const handleJobUpdate = (job: ScrapingJobUI) => {
         onJobUpdate?.(job);
       },
       onBatchSubmitted: (jobs) => {

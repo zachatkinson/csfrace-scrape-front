@@ -13,8 +13,12 @@ import { TIMING_CONSTANTS } from '../../constants/timing.ts';
 import CompactHealthStatus from '../health/CompactHealthStatus.astro';
 // Import React component for real-time enhancements (client:idle)
 import RealtimeHealthEnhancer from '../health/RealtimeHealthEnhancer.tsx';
-// Import Auth Modal Manager React Island
-import AuthModalManager from '../islands/AuthModalManager.tsx';
+// Import DRY/SOLID Auth Modal Component
+import AuthModal from '../auth/AuthModal.astro';
+// Import DRY/SOLID Settings Panel Component
+import SettingsPanel from '../SettingsPanel.astro';
+// Import DRY/SOLID Sign In Button Component
+import SignInButton from '../SignInButton.astro';
 
 export interface Props {
   title: string;
@@ -43,20 +47,23 @@ const {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     
-    <!-- Preload critical background image -->
-    <link rel="preload" as="image" href="/scrape_bg.jpg" type="image/jpeg">
+    <!-- Preload critical background images - modern AVIF with JPG fallback -->
+    <link rel="preload" as="image" href="/scrape_bg_mobile.avif" type="image/avif" media="(max-width: 768px)">
+    <link rel="preload" as="image" href="/scrape_bg_tablet.avif" type="image/avif" media="(min-width: 769px) and (max-width: 1024px)">
+    <link rel="preload" as="image" href="/scrape_bg_desktop.avif" type="image/avif" media="(min-width: 1025px)">
   </head>
   
   <body class="h-full overflow-x-hidden">
     <div class="min-h-screen flex flex-col liquid-glass-layout">
       
       <!-- Header -->
-      <header class="bg-black/40 backdrop-blur-lg border-b border-white/10 sticky top-0 z-50">
+      <header class="glass-card sticky top-0 z-50 border-b border-white/10"
+              style="border-radius: 0; margin: 0;">
         <div class="max-w-7xl mx-auto px-8 py-6">
           <div class="flex items-center justify-between">
             <!-- Logo -->
             <div class="flex items-center space-x-4">
-              <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
+              <div class="w-10 h-10 glass-card bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
                 <span class="text-white font-bold text-lg">CS</span>
               </div>
               <div>
@@ -68,17 +75,18 @@ const {
             <!-- Navigation & Settings -->
             <div class="flex items-center space-x-4">
               <!-- Navigation Links -->
-              <nav class="hidden md:flex items-center space-x-6">
-                <a href="/" class="text-white/70 hover:text-white transition-colors">Converter</a>
-                <a href="/dashboard" class="text-white/70 hover:text-white transition-colors">Job Dashboard</a>
-                <a href="/test-health" class="text-white/70 hover:text-white transition-colors">Health Status</a>
+              <nav class="hidden md:flex items-center space-x-4">
+                <a href="/" class="px-3 py-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200">Converter</a>
+                <a href="/dashboard" class="px-3 py-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200">Job Dashboard</a>
+                <a href="/test-health" class="px-3 py-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200">Health Status</a>
               </nav>
               
               <!-- Settings Button -->
               <button 
                 id="settings-toggle"
-                class="p-2 glass-button bg-white/10 hover:bg-white/20 rounded-lg transition-all duration-200"
+                class="p-2 glass-card glass-button bg-white/5 hover:bg-white/15 rounded-lg transition-all duration-200"
                 title="Application Settings"
+                aria-label="Open Application Settings"
               >
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -86,28 +94,21 @@ const {
                 </svg>
               </button>
 
-              <!-- Auth Button (Sign In) -->
-              <button
-                id="auth-toggle"
-                class="glass-button px-4 py-2 text-blue-400 hover:text-blue-300 border border-blue-500/30 hover:border-blue-500/50 transition-all duration-200 flex items-center space-x-2"
-                aria-label="Sign In"
-              >
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                <span>Sign In</span>
-              </button>
+              <!-- Auth Button (Sign In) - DRY/SOLID Component -->
+              <SignInButton />
             </div>
           </div>
         </div>
       </header>
 
       <!-- Auth Modal - React Island -->
-      <AuthModalManager client:load />
+      <AuthModal />
 
       <!-- Main Content -->
-      <main class="flex-1 px-8 py-8">
-        <slot />
+      <main class="flex-1 min-h-screen">
+        <div class="max-w-7xl mx-auto px-8 py-8">
+          <slot />
+        </div>
       </main>
 
       <!-- Footer with Server Island Health Status -->
@@ -121,13 +122,19 @@ const {
               
               <!-- Server Island for Real-time Health Status (DRY/SOLID) -->
               <div class="space-y-3">
-                <!-- Fallback content while Server Island loads -->
-                <div class="fallback-loading text-white/50 text-sm animate-pulse">
-                  Loading system status...
-                </div>
-                
-                <!-- Server Island: Uses shared service checkers - no duplicate logic -->
-                <CompactHealthStatus server:defer />
+                <!-- Server Island Health Status - Proper Implementation -->
+                <!-- Best Practice: Server-side health checks with progressive loading -->
+                <CompactHealthStatus server:defer>
+                  <div slot="fallback" class="flex items-center space-x-2 text-white/70">
+                    <div class="flex space-x-1">
+                      <div class="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                      <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse" style="animation-delay: 0.1s;"></div>
+                      <div class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" style="animation-delay: 0.2s;"></div>
+                      <div class="w-2 h-2 bg-purple-400 rounded-full animate-pulse" style="animation-delay: 0.3s;"></div>
+                    </div>
+                    <span class="text-sm font-medium">Checking system status...</span>
+                  </div>
+                </CompactHealthStatus>
               </div>
               
               <!-- Troubleshooting Link -->
@@ -182,480 +189,13 @@ const {
       </footer>
     </div>
 
-    <!-- Comprehensive Settings Panel - Slides down from top -->
-    <div 
-      id="settings-panel" 
-      class="fixed -top-20 left-0 right-0 z-40 transform -translate-y-full transition-transform duration-300 ease-out pointer-events-none"
-    >
-      <div class="max-w-4xl mx-auto px-8 py-6">
-        <div class="glass-card p-6">
-          <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl font-bold text-white">⚙️ Application Settings</h2>
-            <button 
-              id="settings-close" 
-              class="glass-button p-2 text-white/80 hover:text-white"
-              aria-label="Close Settings"
-            >
-              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <!-- API Configuration -->
-            <div class="space-y-4">
-              <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
-                <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
-                </svg>
-                API Configuration
-              </h3>
-              
-              <div>
-                <label class="block text-white/70 text-sm mb-2">Backend URL</label>
-                <input 
-                  id="api-url" 
-                  type="url" 
-                  class="glass-input w-full px-3 py-2" 
-                  placeholder="http://localhost:8000"
-                  value="http://localhost:8000"
-                />
-              </div>
-              
-              <div>
-                <label class="block text-white/70 text-sm mb-2">Request Timeout (seconds)</label>
-                <input 
-                  id="api-timeout" 
-                  type="number" 
-                  class="glass-input w-full px-3 py-2" 
-                  min="5" max="300" 
-                  value="30"
-                />
-              </div>
-              
-              <div>
-                <label class="block text-white/70 text-sm mb-2">Auto-refresh Interval (seconds)</label>
-                <input 
-                  id="refresh-interval" 
-                  type="number" 
-                  class="glass-input w-full px-3 py-2" 
-                  min="5" max="300" 
-                  value="10"
-                />
-              </div>
-            </div>
-            
-            <!-- Job Defaults -->
-            <div class="space-y-4">
-              <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
-                <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-                Job Defaults
-              </h3>
-              
-              <div>
-                <label class="block text-white/70 text-sm mb-2">Default Priority</label>
-                <select id="default-priority" class="glass-input w-full px-3 py-2">
-                  <option value="low">Low</option>
-                  <option value="normal" selected>Normal</option>
-                  <option value="high">High</option>
-                  <option value="urgent">Urgent</option>
-                </select>
-              </div>
-              
-              <div>
-                <label class="block text-white/70 text-sm mb-2">Max Retries</label>
-                <input 
-                  id="max-retries" 
-                  type="number" 
-                  class="glass-input w-full px-3 py-2" 
-                  min="0" max="10" 
-                  value="3"
-                />
-              </div>
-              
-              <div>
-                <label class="block text-white/70 text-sm mb-2">Job Timeout (seconds)</label>
-                <input 
-                  id="job-timeout" 
-                  type="number" 
-                  class="glass-input w-full px-3 py-2" 
-                  min="10" max="3600" 
-                  value="30"
-                />
-              </div>
-            </div>
-            
-            <!-- Display Options -->
-            <div class="space-y-4">
-              <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
-                <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-                Display Options
-              </h3>
-              
-              <div class="checkbox-container">
-                <input 
-                  id="dark-mode" 
-                  type="checkbox" 
-                  class="glass-checkbox" 
-                  checked
-                />
-                <label for="dark-mode" class="text-white/70">Dark Mode</label>
-              </div>
-              
-              <div class="checkbox-container">
-                <input 
-                  id="show-job-ids" 
-                  type="checkbox" 
-                  class="glass-checkbox" 
-                  checked
-                />
-                <label for="show-job-ids" class="text-white/70">Show Job IDs</label>
-              </div>
-              
-              <div class="checkbox-container">
-                <input 
-                  id="compact-mode" 
-                  type="checkbox" 
-                  class="glass-checkbox"
-                />
-                <label for="compact-mode" class="text-white/70">Compact Mode</label>
-              </div>
-              
-              <div>
-                <label class="block text-white/70 text-sm mb-2">Jobs Per Page</label>
-                <select id="jobs-per-page" class="glass-input w-full px-3 py-2">
-                  <option value="5">5</option>
-                  <option value="10" selected>10</option>
-                  <option value="25">25</option>
-                  <option value="50">50</option>
-                </select>
-              </div>
-              
-              <div>
-                <label class="block text-white/70 text-sm mb-2">Timezone</label>
-                <select id="timezone" class="glass-input w-full px-3 py-2">
-                  <option value="auto" selected>Auto-detect</option>
-                  <optgroup label="North America">
-                    <option value="America/New_York">Eastern Time</option>
-                    <option value="America/Chicago">Central Time</option>
-                    <option value="America/Denver">Mountain Time</option>
-                    <option value="America/Los_Angeles">Pacific Time</option>
-                    <option value="America/Anchorage">Alaska Time</option>
-                    <option value="Pacific/Honolulu">Hawaii Time</option>
-                  </optgroup>
-                  <optgroup label="Europe">
-                    <option value="Europe/London">London (GMT)</option>
-                    <option value="Europe/Paris">Central European Time</option>
-                    <option value="Europe/Berlin">Berlin</option>
-                    <option value="Europe/Rome">Rome</option>
-                    <option value="Europe/Madrid">Madrid</option>
-                    <option value="Europe/Amsterdam">Amsterdam</option>
-                  </optgroup>
-                </select>
-              </div>
-            </div>
-            
-            <!-- Notifications -->
-            <div class="space-y-4">
-              <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
-                <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM12 9a3 3 0 110 6 3 3 0 010-6zm0 0a9 9 0 110 18 9 9 0 010-18z" />
-                </svg>
-                Notifications
-              </h3>
-              
-              <div class="checkbox-container">
-                <input 
-                  id="completion-alerts" 
-                  type="checkbox" 
-                  class="glass-checkbox" 
-                  checked
-                />
-                <label for="completion-alerts" class="text-white/70">Job Completion Alerts</label>
-              </div>
-              
-              <div class="checkbox-container">
-                <input 
-                  id="error-notifications" 
-                  type="checkbox" 
-                  class="glass-checkbox" 
-                  checked
-                />
-                <label for="error-notifications" class="text-white/70">Error Notifications</label>
-              </div>
-              
-              <div class="checkbox-container">
-                <input 
-                  id="browser-notifications" 
-                  type="checkbox" 
-                  class="glass-checkbox"
-                />
-                <label for="browser-notifications" class="text-white/70">Browser Push Notifications</label>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Action Buttons -->
-          <div class="flex items-center justify-between mt-8 pt-6 border-t border-white/10">
-            <button 
-              id="reset-settings"
-              class="glass-button px-4 py-2 text-orange-400 hover:text-orange-300 border border-orange-500/30 hover:border-orange-500/50 transition-all duration-200"
-            >
-              Reset to Defaults
-            </button>
-            
-            <div class="flex items-center space-x-3">
-              <button 
-                id="cancel-settings"
-                class="glass-button px-4 py-2 text-white/70 hover:text-white transition-colors"
-              >
-                Cancel
-              </button>
-              <button 
-                id="save-settings"
-                class="glass-button px-6 py-2 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-500/50 hover:border-blue-500/70 transition-all duration-200"
-              >
-                Save Settings
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Comprehensive Settings JavaScript (DRY/SOLID implementation) -->
-    <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        const settingsToggle = document.getElementById('settings-toggle');
-        const settingsClose = document.getElementById('settings-close');
-        const settingsPanel = document.getElementById('settings-panel');
-        const cancelSettings = document.getElementById('cancel-settings');
-        const saveSettings = document.getElementById('save-settings');
-        const resetSettings = document.getElementById('reset-settings');
-        
-        let isSettingsOpen = false;
-        
-        // Open settings panel with slide-down animation
-        const openSettings = () => {
-          if (settingsPanel) {
-            settingsPanel.style.pointerEvents = 'all';
-            settingsPanel.classList.remove('-translate-y-full');
-            settingsPanel.classList.add('translate-y-0');
-            isSettingsOpen = true;
-            loadSettings();
-          }
-        };
-        
-        // Close settings panel with slide-up animation
-        const closeSettings = () => {
-          if (settingsPanel) {
-            settingsPanel.classList.remove('translate-y-0');
-            settingsPanel.classList.add('-translate-y-full');
-            setTimeout(() => {
-              settingsPanel.style.pointerEvents = 'none';
-            }, 300);
-            isSettingsOpen = false;
-          }
-        };
-        
-        // Load settings from localStorage into form elements
-        const loadSettings = () => {
-          const settings = getStoredSettings();
-          
-          // API Configuration
-          document.getElementById('api-url').value = settings.apiUrl;
-          document.getElementById('api-timeout').value = settings.apiTimeout;
-          document.getElementById('refresh-interval').value = settings.refreshInterval;
-          
-          // Job Defaults
-          document.getElementById('default-priority').value = settings.defaultPriority;
-          document.getElementById('max-retries').value = settings.maxRetries;
-          document.getElementById('job-timeout').value = settings.jobTimeout;
-          
-          // Display Options
-          document.getElementById('dark-mode').checked = settings.darkMode;
-          document.getElementById('show-job-ids').checked = settings.showJobIds;
-          document.getElementById('compact-mode').checked = settings.compactMode;
-          document.getElementById('jobs-per-page').value = settings.jobsPerPage;
-          document.getElementById('timezone').value = settings.timezone;
-          
-          // Notifications
-          document.getElementById('completion-alerts').checked = settings.completionAlerts;
-          document.getElementById('error-notifications').checked = settings.errorNotifications;
-          document.getElementById('browser-notifications').checked = settings.browserNotifications;
-        };
-        
-        // Save settings to localStorage
-        const saveSettingsToStorage = () => {
-          const settings = {
-            // API Configuration
-            apiUrl: document.getElementById('api-url').value,
-            apiTimeout: parseInt(document.getElementById('api-timeout').value),
-            refreshInterval: parseInt(document.getElementById('refresh-interval').value),
-            
-            // Job Defaults
-            defaultPriority: document.getElementById('default-priority').value,
-            maxRetries: parseInt(document.getElementById('max-retries').value),
-            jobTimeout: parseInt(document.getElementById('job-timeout').value),
-            
-            // Display Options
-            darkMode: document.getElementById('dark-mode').checked,
-            showJobIds: document.getElementById('show-job-ids').checked,
-            compactMode: document.getElementById('compact-mode').checked,
-            jobsPerPage: parseInt(document.getElementById('jobs-per-page').value),
-            timezone: document.getElementById('timezone').value,
-            
-            // Notifications
-            completionAlerts: document.getElementById('completion-alerts').checked,
-            errorNotifications: document.getElementById('error-notifications').checked,
-            browserNotifications: document.getElementById('browser-notifications').checked
-          };
-          
-          localStorage.setItem('csfrace-settings', JSON.stringify(settings));
-          return settings;
-        };
-        
-        // Get stored settings with defaults
-        const getStoredSettings = () => {
-          const defaults = {
-            // API Configuration
-            apiUrl: 'http://localhost:8000',
-            apiTimeout: 30,
-            refreshInterval: 10,
-            
-            // Job Defaults
-            defaultPriority: 'normal',
-            maxRetries: 3,
-            jobTimeout: 30,
-            
-            // Display Options
-            darkMode: true,
-            showJobIds: true,
-            compactMode: false,
-            jobsPerPage: 10,
-            timezone: 'auto',
-            
-            // Notifications
-            completionAlerts: true,
-            errorNotifications: true,
-            browserNotifications: false
-          };
-          
-          try {
-            const stored = localStorage.getItem('csfrace-settings');
-            return stored ? { ...defaults, ...JSON.parse(stored) } : defaults;
-          } catch {
-            return defaults;
-          }
-        };
-        
-        // Reset to defaults
-        const resetToDefaults = () => {
-          if (confirm('Reset all settings to defaults? This cannot be undone.')) {
-            localStorage.removeItem('csfrace-settings');
-            loadSettings();
-            
-            // Show confirmation
-            const button = document.getElementById('reset-settings');
-            if (button) {
-              const originalText = button.textContent;
-              button.textContent = 'Reset Complete!';
-              button.style.color = '#10b981';
-              
-              setTimeout(() => {
-                button.textContent = originalText;
-                button.style.color = '';
-              }, 2000);
-            }
-          }
-        };
-        
-        // Apply settings (for immediate effects)
-        const applySettings = (settings) => {
-          // Apply theme changes
-          document.body.classList.toggle('compact-mode', settings.compactMode);
-          
-          // Dispatch settings change event for other components
-          window.dispatchEvent(new CustomEvent('settingsChanged', { detail: settings }));
-        };
-        
-        // Event listeners
-        settingsToggle?.addEventListener('click', () => {
-          if (isSettingsOpen) {
-            closeSettings();
-          } else {
-            openSettings();
-          }
-        });
-        
-        settingsClose?.addEventListener('click', closeSettings);
-        cancelSettings?.addEventListener('click', closeSettings);
-        
-        saveSettings?.addEventListener('click', () => {
-          const settings = saveSettingsToStorage();
-          applySettings(settings);
-          
-          // Show success feedback
-          const button = document.getElementById('save-settings');
-          if (button) {
-            const originalText = button.textContent;
-            button.textContent = 'Settings Saved!';
-            button.style.backgroundColor = 'rgba(16, 185, 129, 0.2)';
-            
-            setTimeout(() => {
-              button.textContent = originalText;
-              button.style.backgroundColor = '';
-              closeSettings();
-            }, 1500);
-          }
-        });
-        
-        resetSettings?.addEventListener('click', resetToDefaults);
-        
-        // Close on backdrop click
-        settingsPanel?.addEventListener('click', (e) => {
-          if (e.target === settingsPanel) {
-            closeSettings();
-          }
-        });
-        
-        // Request notification permission if browser notifications are enabled
-        document.getElementById('browser-notifications')?.addEventListener('change', (e) => {
-          const target = e.target;
-          if (target && target.checked) {
-            if ('Notification' in window && Notification.permission === 'default') {
-              Notification.requestPermission().then(permission => {
-                if (permission !== 'granted') {
-                  target.checked = false;
-                  alert('Browser notifications require permission to be granted.');
-                }
-              });
-            }
-          }
-        });
-        
-        // Initialize settings on page load
-        const initialSettings = getStoredSettings();
-        applySettings(initialSettings);
-        
-        // Make settings globally available
-        window.getAppSettings = getStoredSettings;
-        window.saveAppSettings = saveSettingsToStorage;
-
-        console.log('🎯 Hybrid MainLayout loaded - Server Islands + React polling!');
-        console.log('✅ Zero duplicate code - perfect DRY/SOLID architecture!');
-      });
-    </script>
+    <!-- DRY/SOLID Settings Panel Component -->
+    <SettingsPanel />
 
     <!-- HYBRID ENHANCEMENT: React Island for Real-time Updates -->
     <!-- Following Astro best practice: client:idle for minimal impact -->
     {enableRealTimeUpdates && (
-      <RealtimeHealthEnhancer client:idle />
+      <RealtimeHealthEnhancer client:load />
     )}
 
     <!-- Responsive Background Image Styling (Modern 2025 Best Practices) -->
@@ -670,23 +210,20 @@ const {
       /* Modern 2025: AVIF-first responsive background images */
       /* Mobile portrait - 50KB vs 1MB original (95% smaller!) */
       body {
-        background: url('/scrape_bg_mobile.avif') center center/cover no-repeat fixed,
-                    url('/scrape_bg_mobile.jpg') center center/cover no-repeat fixed;
+        background: url('/scrape_bg_mobile.avif') center center/cover no-repeat fixed;
       }
       
       /* Tablet screens - optimized aspect ratio */
       @media (min-width: 768px) {
         body {
-          background: url('/scrape_bg_tablet.avif') center center/cover no-repeat fixed,
-                      url('/scrape_bg_tablet.jpg') center center/cover no-repeat fixed;
+          background: url('/scrape_bg_tablet.avif') center center/cover no-repeat fixed;
         }
       }
       
       /* Desktop landscape - full resolution */  
       @media (min-width: 1024px) {
         body {
-          background: url('/scrape_bg_desktop.avif') center center/cover no-repeat fixed,
-                      url('/scrape_bg_desktop.jpg') center center/cover no-repeat fixed;
+          background: url('/scrape_bg_desktop.avif') center center/cover no-repeat fixed;
         }
       }
       
@@ -709,87 +246,27 @@ const {
 
     <!-- Modal and Panel JavaScript -->
     <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        // Auth Modal Controls - Now handled by React Island
-        const authToggle = document.getElementById('auth-toggle');
-        
-        // Show Auth Modal - will be handled by React component
-        if (authToggle) {
-          authToggle.addEventListener('click', () => {
-            console.log('🟡 Button clicked: Dispatching openAuthModal event');
-            // Dispatch custom event that React component can listen to
-            window.dispatchEvent(new CustomEvent('openAuthModal'));
-          });
+      // Initialize global timing constants
+      window.CSFRACE_TIMING = {
+        JOB: {
+          STATUS_CHECK_INTERVAL: 2000,
+          TIMEOUT: 300000,
+          POLL_INTERVAL: 2000
+        },
+        API: {
+          DEFAULT_TIMEOUT: 30000,
+          RETRY_DELAY_BASE: 1000,
+          RETRY_MAX_ATTEMPTS: 3
+        },
+        UI: {
+          NORMAL_ANIMATION: 300,
+          FAST_ANIMATION: 150,
+          LOADING_MIN_DISPLAY: 200
         }
-        
-        // Settings Panel Controls  
-        const settingsToggle = document.getElementById('settings-toggle');
-        const settingsPanel = document.getElementById('settings-panel');
-        const settingsClose = document.getElementById('settings-close');
-        const cancelSettings = document.getElementById('cancel-settings');
-        
-        // Show Settings Panel
-        if (settingsToggle && settingsPanel) {
-          settingsToggle.addEventListener('click', () => {
-            settingsPanel.style.pointerEvents = 'auto';
-            settingsPanel.classList.remove('-translate-y-full');
-            settingsPanel.classList.add('translate-y-0');
-          });
-        }
-        
-        // Hide Settings Panel
-        const closeSettingsPanel = () => {
-          if (settingsPanel) {
-            settingsPanel.classList.remove('translate-y-0');
-            settingsPanel.classList.add('-translate-y-full');
-            setTimeout(() => {
-              settingsPanel.style.pointerEvents = 'none';
-            }, 300);
-          }
-        };
-        
-        if (settingsClose) settingsClose.addEventListener('click', closeSettingsPanel);
-        if (cancelSettings) cancelSettings.addEventListener('click', closeSettingsPanel);
-        
-        // Close settings panel on escape key
-        document.addEventListener('keydown', (e) => {
-          if (e.key === 'Escape') {
-            closeSettingsPanel();
-            // Auth modal handles its own escape key
-          }
-        });
-        
-        // Close settings panel on backdrop click
-        if (settingsPanel) {
-          settingsPanel.addEventListener('click', (e) => {
-            if (e.target === settingsPanel) {
-              closeSettingsPanel();
-            }
-          });
-        }
-        
-        // Settings functionality (placeholder)
-        const saveSettings = document.getElementById('save-settings');
-        const resetSettings = document.getElementById('reset-settings');
-        
-        if (saveSettings) {
-          saveSettings.addEventListener('click', () => {
-            console.log('Settings saved');
-            alert('Settings saved successfully!');
-            closeSettingsPanel();
-          });
-        }
-        
-        if (resetSettings) {
-          resetSettings.addEventListener('click', () => {
-            if (confirm('Reset all settings to defaults?')) {
-              console.log('Settings reset');
-              alert('Settings reset to defaults!');
-              // TODO: Implement actual reset logic
-            }
-          });
-        }
-      });
+      };
+
+      // Settings panel functionality now handled by SettingsPanel.astro custom element
+      // All modal behavior moved to BaseModalManager for DRY/SOLID architecture
     </script>
   </body>
 </html>

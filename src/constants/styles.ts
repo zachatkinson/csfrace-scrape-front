@@ -243,7 +243,7 @@ export const FORM_STYLES = {
 // Modal and overlay patterns
 export const MODAL_STYLES = {
   // Modal overlays
-  BACKDROP: 'fixed inset-0 bg-black/50 backdrop-blur-sm z-50',
+  BACKDROP: 'fixed inset-0 bg-white/10 backdrop-blur-sm z-50',
   CONTAINER: `${LAYOUT_STYLES.ABSOLUTE_CENTER} p-4`,
   CONTENT: `${BASE_STYLES.GLASS_CARD} max-w-lg w-full max-h-[90vh] overflow-y-auto`,
   

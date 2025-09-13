@@ -15,13 +15,12 @@ package-lock.json
 yarn.lock
 # pnpm-lock.yaml - Keep this committed for reproducible builds
 
-# Environment variables
+# Environment variables (following Astro best practices)
 .env
 .env.local
-.env.production
-.env.staging
-.env.test
 .env.*.local
+# Note: .env.development and .env.production are committed for team consistency
+# Only .env and .env.*.local contain secrets and should be ignored
 
 # Logs
 logs/

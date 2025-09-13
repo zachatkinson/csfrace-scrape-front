@@ -22,12 +22,31 @@ const [backend, database, cache, frontend] = await Promise.all([
   FrontendServiceChecker.checkHealth()
 ]);
 
+console.log('🔍 CompactHealthStatus service results:', {
+  backend: backend.status,
+  database: database.status,
+  cache: cache.status,
+  frontend: frontend.status
+});
+
 const services = [
   { name: 'Frontend', result: frontend, icon: '🌐' },
   { name: 'Backend', result: backend, icon: '🔧' },
   { name: 'Database', result: database, icon: '🐘' },
   { name: 'Cache', result: cache, icon: '⚡' }
 ];
+
+console.log('🔍 CompactHealthStatus services array:', services.map(s => ({ 
+  name: s.name, 
+  status: s.result.status,
+  message: s.result.message 
+})));
+
+console.log('🔍 CompactHealthStatus counts:', {
+  total: services.length,
+  up: services.filter(s => s.result.status === 'up').length,
+  statuses: services.map(s => s.result.status)
+});
 
 // SOLID: Single source of truth for status color mapping
 function getStatusColor(status: string): string {
@@ -95,3 +114,47 @@ const overallHealth = upCount === totalCount ? 'up' :
     Updated: {new Date().toLocaleTimeString()}
   </div>
 </div>
+
+<!-- Client-side script to emit consolidatedHealthUpdate events (Astro best practice for Server Islands) -->
+<script define:vars={{ services, overallHealth }}>
+  // =============================================================================
+  // BEST PRACTICE: Server Island with Client-side Enhancement
+  // Emit consolidatedHealthUpdate events using Server Island data (DRY/SOLID)
+  // =============================================================================
+  
+  console.log('🏝️ CompactHealthStatus Server Island: Emitting consolidatedHealthUpdate event');
+  
+  // Transform server data to match expected format
+  const serviceData = {};
+  services.forEach(service => {
+    const serviceName = service.name.toLowerCase();
+    serviceData[serviceName] = {
+      status: service.result.status,
+      message: service.result.message,
+      metrics: service.result.metrics,
+      timestamp: new Date().toISOString()
+    };
+  });
+  
+  // Emit the consolidatedHealthUpdate event that the embedded script is listening for
+  const consolidatedEvent = new CustomEvent('consolidatedHealthUpdate', {
+    detail: {
+      services: serviceData,
+      overallStatus: overallHealth,
+      timestamp: Date.now()
+    }
+  });
+  
+  console.log('🏝️ Server Island emitting consolidatedHealthUpdate:', consolidatedEvent.detail);
+  window.dispatchEvent(consolidatedEvent);
+  
+  // Also set up periodic updates to keep service cards in sync (every 30 seconds)
+  const updateInterval = setInterval(() => {
+    // Re-fetch server island content and emit updates
+    // This will happen automatically when the server island refreshes
+    console.log('🏝️ Server Island: Periodic update triggered');
+    window.dispatchEvent(consolidatedEvent);
+  }, 30000);
+  
+  console.log('🏝️ CompactHealthStatus enhanced with client-side event emission');
+</script>

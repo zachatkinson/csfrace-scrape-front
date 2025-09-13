@@ -17,12 +17,12 @@ export const API_CONFIG = {
   // Environment-aware API Base URL (DRY: single source of truth)
   DEFAULT_BASE_URL: getEnvironmentAwareApiUrl(),
   
-  // Fallback URLs for different deployment scenarios
-  DEVELOPMENT_URL: 'http://localhost:8000',
-  DOCKER_URL: 'http://backend:8000',  // Internal Docker networking
+  // Fallback URLs for different deployment scenarios (DRY: from env vars)
+  DEVELOPMENT_URL: import.meta.env.VITE_API_URL || import.meta.env.PUBLIC_API_BASE_URL || 'http://localhost:8000',
+  DOCKER_URL: import.meta.env.VITE_SERVER_API_URL || 'http://backend:8000',  // Internal Docker networking
   
-  // Request Configuration (centralized)
-  DEFAULT_TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT ?? '30000', 10),
+  // Request Configuration (centralized) - Astro best practice
+  DEFAULT_TIMEOUT: parseInt(import.meta.env.PUBLIC_API_TIMEOUT ?? '30000', 10),
   DEFAULT_RETRIES: 3,
   
   // Health Check Configuration (aligned with backend)
@@ -35,37 +35,43 @@ export const API_CONFIG = {
  * Determines the correct API URL based on deployment context
  */
 function getEnvironmentAwareApiUrl(): string {
-  // Priority order (DRY: defined once, used everywhere):
-  // 1. Explicit environment variable
-  // 2. Browser location (for development)
-  // 3. Docker networking (for container deployment)
-  // 4. Default localhost fallback
+  // ASTRO BEST PRACTICE: Environment-aware API URL selection
+  // Following official Astro documentation patterns
   
-  // Check for explicit environment variables
-  const viteApiUrl = import.meta.env.VITE_API_URL as string | undefined;
-  const viteServerApiUrl = import.meta.env.VITE_SERVER_API_URL as string | undefined;
-  const publicApiUrl = import.meta.env.PUBLIC_API_URL as string | undefined;
-  
-  // Server-side rendering (inside Docker container)
-  if (typeof window === 'undefined' && viteServerApiUrl) {
-    console.log('🐳 Server-side: Using VITE_SERVER_API_URL:', viteServerApiUrl);
-    return viteServerApiUrl;
+  // Server-side (Server Islands, SSR) - use internal Docker network in production
+  if (typeof window === 'undefined') {
+    const serverApiUrl = import.meta.env.SERVER_API_BASE_URL;
+    if (serverApiUrl) {
+      console.log('🐳 Server-side: Using SERVER_API_BASE_URL:', serverApiUrl);
+      return serverApiUrl;
+    }
   }
   
-  // Client-side (browser)
-  if (viteApiUrl) {
-    console.log('🔧 Browser-side: Using VITE_API_URL:', viteApiUrl);
-    return viteApiUrl;
-  }
-  
+  // Client-side (browser) - use public API URL
+  const publicApiUrl = import.meta.env.PUBLIC_API_BASE_URL;
   if (publicApiUrl) {
-    console.log('🔧 Using PUBLIC_API_URL:', publicApiUrl);
+    console.log('🔧 Browser-side: Using PUBLIC_API_BASE_URL:', publicApiUrl);
     return publicApiUrl;
   }
   
-  // Default fallback
-  console.log('🔧 Using default API URL: http://localhost:8000');
-  return 'http://localhost:8000';
+  // Legacy support for Docker compose environment variables
+  const viteApiUrl = import.meta.env.VITE_API_URL as string | undefined;
+  const viteServerApiUrl = import.meta.env.VITE_SERVER_API_URL as string | undefined;
+  
+  if (typeof window === 'undefined' && viteServerApiUrl) {
+    console.log('🐳 Legacy: Using VITE_SERVER_API_URL:', viteServerApiUrl);
+    return viteServerApiUrl;
+  }
+  
+  if (viteApiUrl) {
+    console.log('🔧 Legacy: Using VITE_API_URL:', viteApiUrl);
+    return viteApiUrl;
+  }
+  
+  // Default fallback (DRY: from environment or sensible default)
+  const defaultUrl = import.meta.env.PUBLIC_API_BASE_URL || 'http://localhost:8000';
+  console.log(`🔧 Using default API URL: ${defaultUrl}`);
+  return defaultUrl;
 }
 
 // API Endpoints - All endpoints relative to base URL

@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { AppSettings, ApiConfigSettings } from '../interfaces/forms.ts';
+import { getApiBaseUrl } from '../constants/api.js';
 
 // =============================================================================
 // SETTINGS STORAGE KEYS
@@ -42,7 +43,7 @@ const getDefaultAppSettings = (): AppSettings => ({
 const getDefaultApiSettings = (): ApiConfigSettings => ({
   apiUrl: typeof window !== 'undefined' && (window as any).CSFRACE_API_BASE_URL 
     ? (window as any).CSFRACE_API_BASE_URL 
-    : 'http://localhost:8000',
+    : getApiBaseUrl(),
   apiTimeout: 30,
   refreshInterval: 10,
   retryAttempts: 3,

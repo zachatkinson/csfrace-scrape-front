@@ -1,39 +1,26 @@
 /**
  * Authentication Modal Component  
- * Unified modal for SSO + Passkeys-only authentication
- * Now supports only login and registration modes - no password reset needed
+ * Unified modal for modern passkey-first authentication
+ * Single flow that handles both login and registration automatically
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
-import { LoginForm } from './LoginForm.tsx';
-import { RegisterForm } from './RegisterForm.tsx';
+import React, { useCallback, useEffect } from 'react';
+import { UnifiedAuthForm } from './UnifiedAuthForm.tsx';
+import { createBackdropClickHandler } from '../../utils/modalUtils';
 
 export interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialMode?: 'login' | 'register';
   onSuccess?: () => void;
   className?: string;
 }
 
-type AuthMode = 'login' | 'register';
-
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
-  initialMode = 'login',
   onSuccess,
   className = '',
 }) => {
-  const [mode, setMode] = useState<AuthMode>(initialMode);
-
-  // Reset mode when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      setMode(initialMode);
-    }
-  }, [isOpen, initialMode]);
-
   // Handle escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -58,25 +45,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     onClose();
   }, [onSuccess, onClose]);
 
-  const handleSwitchToRegister = useCallback(() => {
-    setMode('register');
-  }, []);
-
-  const handleSwitchToLogin = useCallback(() => {
-    setMode('login');
-  }, []);
-
-
-  const handleBackdropClick = useCallback((e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  }, [onClose]);
+  // Use DRY utility for consistent backdrop click behavior
+  const handleBackdropClick = useCallback(
+    createBackdropClickHandler(onClose, ['backdrop-blur-md', 'base-modal-backdrop']),
+    [onClose]
+  );
 
   if (!isOpen) return null;
 
   return (
     <div
+      id="auth-modal-container"
       className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${className}`.trim()}
       onClick={handleBackdropClick}
     >
@@ -98,20 +77,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
         {/* Modal Content */}
         <div className="relative">
-          {mode === 'login' && (
-            <LoginForm
-              onSuccess={handleSuccess}
-              onSwitchToRegister={handleSwitchToRegister}
-            />
-          )}
-
-          {mode === 'register' && (
-            <RegisterForm
-              onSuccess={handleSuccess}
-              onSwitchToLogin={handleSwitchToLogin}
-            />
-          )}
-
+          <UnifiedAuthForm onSuccess={handleSuccess} />
         </div>
       </div>
     </div>

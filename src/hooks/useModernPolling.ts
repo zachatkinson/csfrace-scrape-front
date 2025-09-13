@@ -198,20 +198,48 @@ export const useCachePolling = (options: Omit<UseAdaptivePollingOptions, 'servic
   );
 };
 
+export const useFrontendPolling = (options: Omit<UseAdaptivePollingOptions, 'serviceName'> = {}) => {
+  return useAdaptivePolling(
+    async () => {
+      const { PerformanceMetrics, FrameworkDetector } = await import('../utils/serviceCheckers.js');
+      
+      // Frontend runs in browser - create status based on client-side metrics
+      const pageLoadTime = PerformanceMetrics.getPageLoadTime();
+      const memoryUsage = PerformanceMetrics.getMemoryUsage();
+      const framework = FrameworkDetector.getFrameworkInfo();
+      
+      return {
+        status: 'up' as const,
+        message: 'Frontend OPERATIONAL',
+        metrics: {
+          responseTime: pageLoadTime,
+          memory: memoryUsage,
+          framework: framework,
+          port: window.location.port || (window.location.protocol === 'https:' ? '443' : '80')
+        },
+        timestamp: Date.now()
+      };
+    },
+    { ...options, serviceName: 'frontend' }
+  );
+};
+
 // =============================================================================
-// 5. COMBINED SERVICES POLLING HOOK (For components that need multiple services)
+// 5. COMBINED SERVICES POLLING HOOK (For components that need all 4 services)
 // =============================================================================
 export const useAllServicesPolling = (enabled: boolean = true) => {
+  const frontend = useFrontendPolling({ enabled });
   const backend = useBackendPolling({ enabled });
   const database = useDatabasePolling({ enabled });
   const cache = useCachePolling({ enabled });
   
   return {
+    frontend: frontend.lastResult,
     backend: backend.lastResult,
     database: database.lastResult,
     cache: cache.lastResult,
-    isPolling: backend.isPolling || database.isPolling || cache.isPolling,
-    isVisible: backend.isVisible
+    isPolling: frontend.isPolling || backend.isPolling || database.isPolling || cache.isPolling,
+    isVisible: frontend.isVisible
   };
 };
 

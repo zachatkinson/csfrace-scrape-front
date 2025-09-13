@@ -1,0 +1,133 @@
+---
+/**
+ * OAuth Callback Handler
+ * Handles OAuth provider redirects and exchanges authorization codes for tokens
+ */
+
+import MainLayout from '../../components/layout/MainLayout.astro';
+
+const title = 'Authentication - CSFrace';
+const description = 'Completing authentication...';
+---
+
+<MainLayout title={title} description={description}>
+  <main class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-purple-900 to-black">
+    <div class="text-center p-8">
+      <!-- Loading spinner -->
+      <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-6"></div>
+      
+      <!-- Status message -->
+      <h1 class="text-2xl font-bold text-white mb-4">Completing Authentication</h1>
+      <p class="text-white/70 mb-8">Please wait while we securely log you in...</p>
+      
+      <!-- Error display -->
+      <div id="error-display" class="hidden p-4 rounded-glass bg-red-500/20 border border-red-500/30 text-red-100 text-sm max-w-md mx-auto">
+        <div class="flex items-start space-x-3">
+          <svg class="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div>
+            <p class="font-medium">Authentication Failed</p>
+            <p id="error-message" class="mt-1"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    import { getApiBaseUrl } from '../../constants/api.js';
+    
+    // Handle OAuth callback on page load
+    (async () => {
+      try {
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const state = urlParams.get('state');
+        const error = urlParams.get('error');
+        
+        // Check for OAuth error
+        if (error) {
+          throw new Error(`OAuth error: ${error}. ${urlParams.get('error_description') || ''}`);
+        }
+        
+        // Check for authorization code
+        if (!code) {
+          throw new Error('No authorization code received from OAuth provider');
+        }
+        
+        // Extract provider from state or URL
+        const provider = urlParams.get('provider') || 
+                        sessionStorage.getItem('oauth_provider') || 
+                        'unknown';
+        
+        // Exchange code for tokens with backend using GET with query parameters
+        const params = new URLSearchParams({
+          code: code,
+          state: state
+        });
+        const response = await fetch(`${getApiBaseUrl()}/auth/oauth/${provider}/callback?${params}`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Authentication failed');
+        }
+        
+        const tokens = await response.json();
+        
+        // Get user profile
+        const userResponse = await fetch(`${getApiBaseUrl()}/auth/me`, {
+          headers: {
+            'Authorization': `Bearer ${tokens.access_token}`,
+          },
+        });
+        
+        if (!userResponse.ok) {
+          throw new Error('Failed to get user profile');
+        }
+        
+        const user = await userResponse.json();
+        
+        // Store tokens and user in localStorage
+        localStorage.setItem('auth_tokens', JSON.stringify(tokens));
+        localStorage.setItem('auth_user', JSON.stringify(user));
+        
+        // Clean up OAuth state
+        sessionStorage.removeItem('oauth_provider');
+        
+        // Dispatch success event for AuthContext
+        window.dispatchEvent(new CustomEvent('authSuccess', {
+          detail: { user, tokens }
+        }));
+        
+        // Redirect to home page
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1000);
+        
+      } catch (error) {
+        console.error('OAuth callback error:', error);
+        
+        // Show error message
+        const errorDisplay = document.getElementById('error-display');
+        const errorMessage = document.getElementById('error-message');
+        
+        if (errorDisplay && errorMessage) {
+          errorMessage.textContent = error.message || 'An unexpected error occurred';
+          errorDisplay.classList.remove('hidden');
+        }
+        
+        // Redirect to home after 5 seconds
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 5000);
+      }
+    })();
+  </script>
+</MainLayout>

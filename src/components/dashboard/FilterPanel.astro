@@ -1,0 +1,288 @@
+---
+// =============================================================================
+// FILTER PANEL - DRY/SOLID Dashboard Component
+// =============================================================================
+// Single Responsibility: Handle job status filters and search functionality
+// Following established DRY/SOLID patterns from health monitoring components
+// =============================================================================
+
+export interface Props {
+  availableStatuses?: string[];
+  currentFilter?: string;
+  currentSort?: string;
+  searchQuery?: string;
+  totalJobs?: number;
+  selectedJobs?: number;
+}
+
+const { 
+  availableStatuses = ['all', 'processing', 'completed', 'failed', 'queued'],
+  currentFilter = 'all',
+  currentSort = 'newest',
+  searchQuery = '',
+  totalJobs = 0,
+  selectedJobs = 0
+} = Astro.props;
+
+// SOLID: Single source of truth for filter configurations
+const FILTER_CONFIG = {
+  all: { label: 'All', icon: '📋' },
+  processing: { label: 'Processing', icon: '⚡' },
+  completed: { label: 'Completed', icon: '✅' },
+  failed: { label: 'Failed', icon: '❌' },
+  queued: { label: 'Pending', icon: '⏳' }
+} as const;
+
+// SOLID: Single source of truth for sort options
+const SORT_OPTIONS = [
+  { value: 'newest', label: 'Newest First' },
+  { value: 'oldest', label: 'Oldest First' },
+  { value: 'status', label: 'By Status' },
+  { value: 'progress', label: 'By Progress' }
+] as const;
+
+// Function to check if a filter should be disabled
+const isFilterDisabled = (filterKey: string): boolean => {
+  if (filterKey === 'all') return false;
+  return !availableStatuses.includes(filterKey);
+};
+---
+
+<!-- Filter Panel Component (DRY/SOLID) -->
+<div class="glass-card p-6" data-component="filter-panel">
+  <div class="flex items-center justify-between flex-wrap gap-4">
+    
+    <!-- Status Filters -->
+    <div class="flex items-center space-x-2">
+      <span class="text-white/70 text-sm font-medium">Filter:</span>
+      <div class="flex space-x-2" data-filter-group="status">
+        {Object.entries(FILTER_CONFIG).map(([key, config]) => (
+          <button 
+            id={`filter-${key}`}
+            class:list={[
+              'filter-btn px-3 py-1 text-xs rounded-full transition-all duration-200',
+              currentFilter === key ? 'active' : '',
+              isFilterDisabled(key) ? 'disabled' : ''
+            ]}
+            data-filter={key}
+            disabled={isFilterDisabled(key)}
+            title={isFilterDisabled(key) ? `No ${config.label.toLowerCase()} jobs available` : `Show ${config.label.toLowerCase()} jobs`}
+            aria-label={`Filter by ${config.label.toLowerCase()} jobs`}
+          >
+            <span class="filter-icon" aria-hidden="true">{config.icon}</span>
+            <span class="filter-label">{config.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+    
+    <!-- Sort & Search Controls -->
+    <div class="flex items-center space-x-4">
+      <!-- Sort Selector -->
+      <div class="flex items-center space-x-2">
+        <label for="sort-select" class="text-white/70 text-sm">Sort:</label>
+        <select 
+          id="sort-select" 
+          class="glass-input text-sm px-3 py-1 min-w-0"
+          data-sort-control
+          aria-label="Sort jobs by"
+        >
+          {SORT_OPTIONS.map((option) => (
+            <option 
+              value={option.value}
+              selected={currentSort === option.value}
+            >
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      
+      <!-- Search Input -->
+      <div class="flex items-center space-x-2">
+        <svg class="w-4 h-4 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input 
+          id="search-input" 
+          type="text" 
+          placeholder="Search jobs..." 
+          class="glass-input text-sm px-3 py-1 w-48"
+          value={searchQuery}
+          data-search-control
+          aria-label="Search jobs"
+        />
+      </div>
+      
+      <!-- Batch Actions -->
+      <div class="flex items-center space-x-2" data-batch-actions>
+        <button 
+          id="select-all-btn" 
+          class="glass-button px-3 py-1 text-xs text-white/90 hover:text-white"
+          data-action="select-all"
+          aria-label="Select or deselect all jobs"
+        >
+          {selectedJobs === totalJobs ? 'Select None' : 'Select All'}
+        </button>
+        <button 
+          id="delete-selected-btn" 
+          class="glass-button px-3 py-1 text-xs text-red-400/80 hover:text-red-400"
+          class:list={[selectedJobs === 0 ? 'disabled:opacity-50' : '']}
+          disabled={selectedJobs === 0}
+          data-action="delete-selected"
+          aria-label={`Delete ${selectedJobs} selected jobs`}
+        >
+          Delete Selected
+          {selectedJobs > 0 && (
+            <span class="ml-1 bg-red-500/20 px-1 rounded-full text-xs">
+              {selectedJobs}
+            </span>
+          )}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Enhanced Client-side Script for Filter Panel (DRY/SOLID) -->
+<script define:vars={{ availableStatuses, currentFilter }}>
+  // =============================================================================
+  // FILTER PANEL CLIENT-SIDE ENHANCEMENT
+  // Following DRY/SOLID principles established in health monitoring components
+  // =============================================================================
+  
+  class FilterPanelManager {
+    constructor() {
+      this.currentFilter = currentFilter;
+      this.availableStatuses = availableStatuses;
+      this.init();
+    }
+    
+    init() {
+      // Initialize filter button states
+      this.updateFilterStates();
+      
+      // Emit initial filter state
+      this.emitFilterUpdate();
+    }
+    
+    // SOLID: Single method responsibility for updating filter button states
+    updateFilterStates() {
+      const filterButtons = document.querySelectorAll('[data-filter]');
+      
+      filterButtons.forEach(button => {
+        const filter = button.dataset.filter;
+        const isDisabled = filter !== 'all' && !this.availableStatuses.includes(filter);
+        
+        // Update disabled state
+        button.disabled = isDisabled;
+        
+        // Update visual styling
+        if (isDisabled) {
+          button.classList.add('opacity-50', 'cursor-not-allowed');
+          button.classList.remove('hover:bg-white/20');
+        } else {
+          button.classList.remove('opacity-50', 'cursor-not-allowed');
+          button.classList.add('hover:bg-white/20');
+        }
+        
+        // Update active state
+        if (filter === this.currentFilter) {
+          button.classList.add('bg-blue-500/50', 'text-blue-300');
+        } else {
+          button.classList.remove('bg-blue-500/50', 'text-blue-300');
+        }
+      });
+    }
+    
+    // SOLID: Single method responsibility for emitting filter updates
+    emitFilterUpdate() {
+      const filterUpdateEvent = new CustomEvent('filterUpdate', {
+        detail: {
+          filter: this.currentFilter,
+          availableStatuses: this.availableStatuses,
+          timestamp: Date.now()
+        }
+      });
+      
+      console.log('🎛️ FilterPanel: Emitting filterUpdate event', filterUpdateEvent.detail);
+      window.dispatchEvent(filterUpdateEvent);
+    }
+    
+    // SOLID: Single method responsibility for handling filter changes
+    setCurrentFilter(newFilter) {
+      if (this.currentFilter !== newFilter) {
+        this.currentFilter = newFilter;
+        this.updateFilterStates();
+        this.emitFilterUpdate();
+      }
+    }
+    
+    // SOLID: Single method responsibility for updating available statuses
+    updateAvailableStatuses(statuses) {
+      this.availableStatuses = statuses;
+      this.updateFilterStates();
+    }
+  }
+  
+  // Initialize Filter Panel Manager
+  const filterPanel = new FilterPanelManager();
+  
+  // Listen for job data updates to update available statuses
+  window.addEventListener('jobsDataUpdate', (event) => {
+    const { jobs } = event.detail;
+    const availableStatuses = ['all', ...new Set(jobs.map(job => job.status))];
+    filterPanel.updateAvailableStatuses(availableStatuses);
+  });
+  
+  // Expose filter panel for external control
+  window.filterPanelManager = filterPanel;
+  
+  console.log('🎛️ FilterPanel enhanced with intelligent filter state management');
+</script>
+
+<!-- Filter Panel Styles -->
+<style>
+  .filter-btn {
+    @apply bg-white/10 text-white/70;
+  }
+  
+  .filter-btn:hover:not(:disabled) {
+    @apply bg-white/20 text-white;
+  }
+  
+  .filter-btn.active {
+    @apply bg-blue-500/50 text-blue-300 border-blue-400/30;
+  }
+  
+  .filter-btn:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+  
+  .filter-btn:disabled:hover {
+    @apply bg-white/10 text-white/70;
+  }
+  
+  .filter-icon {
+    @apply inline-block mr-1;
+  }
+  
+  .glass-input {
+    @apply bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50;
+    @apply focus:bg-white/20 focus:border-white/40 focus:outline-none;
+  }
+  
+  .glass-button {
+    @apply bg-white/10 border border-white/20 rounded-lg;
+    @apply hover:bg-white/20 hover:border-white/40;
+    @apply transition-all duration-200;
+  }
+  
+  .glass-button:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+  
+  .glass-button:disabled:hover {
+    @apply bg-white/10 border-white/20;
+  }
+</style>

@@ -1,7 +1,8 @@
 /**
  * Authentication Context - Docker Backend Only
- * Simple context that calls Docker backend directly at http://localhost:8000
+ * Simple context that calls Docker backend directly
  * Following CLAUDE.md: NO LOCAL SERVICES RULE
+ * DRY/SOLID: Uses centralized API configuration
  */
 
 import React, { 
@@ -11,9 +12,10 @@ import React, {
   useEffect, 
   useCallback 
 } from 'react';
+import { getApiBaseUrl } from '../constants/api.js';
 
-// Docker backend URL
-const API_BASE = 'http://localhost:8000';
+// DRY/SOLID: Use centralized API base URL
+const getApiBase = () => getApiBaseUrl();
 
 // Type definitions matching Docker backend
 interface AuthTokens {
@@ -91,8 +93,9 @@ const initialState: AuthState = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 // Simple API helpers - direct fetch calls to Docker backend
+// DRY/SOLID: Use centralized API base URL
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
-  const response = await fetch(`${API_BASE}${endpoint}`, {
+  const response = await fetch(`${getApiBase()}${endpoint}`, {
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,
@@ -220,7 +223,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       formData.append('username', credentials.username);
       formData.append('password', credentials.password);
       
-      const tokens = await fetch(`${API_BASE}/auth/token`, {
+      const tokens = await fetch(`${getApiBase()}/auth/token`, {
         method: 'POST',
         body: formData,
       }).then(async (res) => {
@@ -314,9 +317,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
     
     try {
-      const loginUrl = await apiRequest(`/auth/oauth/login?provider=${provider}`);
-      // Redirect to OAuth provider
-      window.location.href = loginUrl.url;
+      // Store provider in sessionStorage for callback page
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('oauth_provider', provider);
+      }
+      
+      // POST request with provider and redirect_uri in body
+      const response = await apiRequest('/auth/oauth/login', {
+        method: 'POST',
+        body: JSON.stringify({
+          provider: provider,
+          redirect_uri: `${window.location.origin}/auth/callback`
+        }),
+      });
+      
+      // Redirect to OAuth provider URL
+      if (response.authorization_url) {
+        window.location.href = response.authorization_url;
+      } else {
+        throw new Error('No authorization URL returned from server');
+      }
     } catch (error) {
       setState(prev => ({
         ...prev,
@@ -491,4 +511,16 @@ export function useOAuth() {
 export function useWebAuthn() {
   const { webauthnSupported, isLoading, error, registerPasskey, authenticateWithPasskey, clearError } = useAuth();
   return { webauthnSupported, isLoading, error, registerPasskey, authenticateWithPasskey, clearError };
+}
+
+export function useUserProfile() {
+  const { user, isLoading, error, clearError } = useAuth();
+  
+  const updateProfile = async (profileData: Partial<UserProfile>) => {
+    // TODO: Implement profile update call to Docker backend
+    console.warn('Profile update not implemented yet');
+    throw new Error('Profile update functionality not implemented');
+  };
+  
+  return { user, isLoading, error, updateProfile, clearError };
 }

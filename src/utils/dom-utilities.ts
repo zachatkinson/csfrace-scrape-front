@@ -179,7 +179,7 @@ export class DomManager {
   }
 
   /**
-   * DRY: High-level metric update pattern (eliminates client-side-metrics repetition)
+   * DRY: High-level metric update pattern (used by RealtimeHealthEnhancer)
    */
   updateMetrics(metrics: Record<string, string | number>): void {
     const updates: Record<string, string | number> = {};

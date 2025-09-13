@@ -1,0 +1,95 @@
+---
+// =============================================================================
+// DASHBOARD JOBS - Server Island Implementation
+// =============================================================================
+// Server Island for initial job data loading following Astro MCP best practices
+// Uses server:defer for optimal performance with fallback content
+// =============================================================================
+
+import { getJobs } from '../../utils/dashboard/apiClient.js';
+import { convertBackendJob, calculateJobStats } from '../../utils/dashboard/jobUtils.js';
+import JobCard from './JobCard.astro';
+
+// Server-side data fetching - will be deferred
+let initialJobs = [];
+let stats = {
+  total: 0,
+  active: 0, 
+  completed: 0,
+  failed: 0,
+  queued: 0
+};
+
+try {
+  // Fetch initial job data on server
+  const response = await getJobs({
+    page: 1,
+    page_size: 20
+  });
+  
+  initialJobs = response.jobs.map(convertBackendJob);
+  stats = calculateJobStats(initialJobs);
+} catch (error) {
+  console.error('Failed to load initial jobs:', error);
+}
+---
+
+<!-- Jobs List Container -->
+<div class="glass-card p-6" data-component="jobs-list">
+  <div class="space-y-4" id="jobs-container">
+    {initialJobs.length > 0 ? (
+      <!-- Render initial jobs using JobCard component -->
+      {initialJobs.map(job => (
+        <JobCard job={job} />
+      ))}
+    ) : (
+      <!-- No jobs state -->
+      <div class="text-center py-12">
+        <div class="w-16 h-16 mx-auto mb-4 bg-gray-800 rounded-full flex items-center justify-center">
+          <svg class="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        <h3 class="text-white font-medium mb-2">No jobs found</h3>
+        <p class="text-gray-300 text-sm">Your conversion jobs will appear here</p>
+      </div>
+    )}
+  </div>
+  
+  <!-- Pagination -->
+  <div class="border-t border-gray-700 pt-6 mt-6" data-pagination>
+    <div class="flex items-center justify-between">
+      <div class="text-gray-300 text-sm">
+        Showing <span id="showing-count">{initialJobs.length}</span> of <span id="total-count">{stats.total}</span> jobs
+      </div>
+      <div class="flex items-center space-x-2">
+        <button 
+          id="prev-page" 
+          class="glass-button px-3 py-2 text-gray-200 hover:text-white disabled:opacity-50" 
+          disabled
+          aria-label="Previous page"
+        >
+          Previous
+        </button>
+        <div class="flex space-x-1" id="page-numbers" role="navigation" aria-label="Pagination">
+          <button class="glass-button px-3 py-2 bg-blue-800 text-blue-400">1</button>
+        </div>
+        <button 
+          id="next-page" 
+          class="glass-button px-3 py-2 text-gray-200 hover:text-white"
+          aria-label="Next page"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Pass initial data to client component -->
+<script define:vars={{ initialJobs, stats }}>
+  // Emit initial data for client-side enhancement
+  window.dispatchEvent(new CustomEvent('dashboardDataLoaded', {
+    detail: { jobs: initialJobs, stats }
+  }));
+</script>

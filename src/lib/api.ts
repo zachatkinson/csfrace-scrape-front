@@ -7,6 +7,7 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios';
 import { getApiBaseUrl, API_CONFIG } from '../constants/api.ts';
 import { TIMING_CONSTANTS } from '../constants/timing.ts';
+import { logger, logApiCall, logApiResponse, logError, logDebug } from '../utils/logger.ts';
 import type { 
   ApiResponse, 
   ConversionJob, 
@@ -105,7 +106,7 @@ class ApiClient {
           const delay = TIMING_CONSTANTS.HELPERS.exponentialBackoff(originalRequest._retryCount, this.config.retryDelay);
           await new Promise(resolve => setTimeout(resolve, delay));
           
-          console.warn(`Retrying request (attempt ${originalRequest._retryCount}/${this.config.retryAttempts})`);
+          logger.warn(`Retrying request (attempt ${originalRequest._retryCount}/${this.config.retryAttempts})`);
           
           return this.client(originalRequest);
         }
@@ -133,7 +134,7 @@ class ApiClient {
       const response: AxiosResponse<ApiResponse<T>> = await this.client(config);
       return response.data;
     } catch (error: unknown) {
-      console.error('API request failed:', error);
+      logError('API request failed', error);
       
       // Format error response
       if (error && typeof error === 'object' && 'response' in error) {

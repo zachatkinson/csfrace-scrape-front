@@ -163,20 +163,18 @@ class AuthAPI {
     state: string,
     codeVerifier?: string
   ): Promise<AuthLoginResponse> {
-    const callbackData = {
+    // Build query parameters for GET request
+    const params = new URLSearchParams({
       code,
       state,
-      provider,
       ...(codeVerifier && { code_verifier: codeVerifier })
-    };
+    });
 
-    const response = await fetch(`${this.baseClient['baseURL']}/auth/oauth/${provider}/callback`, {
-      method: 'POST',
+    const response = await fetch(`${this.baseClient['baseURL']}/auth/oauth/${provider}/callback?${params}`, {
+      method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/json',
       },
-      body: JSON.stringify(callbackData),
     });
 
     if (!response.ok) {

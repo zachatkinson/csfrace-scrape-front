@@ -1,0 +1,231 @@
+/**
+ * Job Manager Module - Following Astro Best Practices
+ * Handles job loading, polling, and UI updates for the homepage
+ * This is a separate module that gets bundled and optimized by Astro
+ */
+
+import { TIMING_CONSTANTS } from '../constants/timing';
+import type { ConversionJob } from '../types/job';
+
+// Types
+interface JobManagerConfig {
+  apiBaseUrl: string;
+  container: HTMLElement;
+  pollingInterval?: number;
+}
+
+export class JobManager {
+  private apiBaseUrl: string;
+  private container: HTMLElement;
+  private pollingInterval: number;
+  private updateInterval: ReturnType<typeof setInterval> | null = null;
+  private isFirstLoad = true;
+
+  constructor(config: JobManagerConfig) {
+    this.apiBaseUrl = config.apiBaseUrl;
+    this.container = config.container;
+    this.pollingInterval = config.pollingInterval || TIMING_CONSTANTS.MONITORING.HEALTH_CHECK_INTERVAL;
+  }
+
+  /**
+   * Initialize the job manager
+   */
+  async init() {
+    await this.loadJobs(false);
+    this.startRealTimeUpdates();
+    this.setupVisibilityHandling();
+  }
+
+  /**
+   * Load jobs from the API
+   */
+  async loadJobs(showLoading = false) {
+    const loadingEl = this.container.querySelector('#jobs-loading') as HTMLElement;
+    const listEl = this.container.querySelector('#jobs-list') as HTMLElement;
+    const emptyEl = this.container.querySelector('#jobs-empty') as HTMLElement;
+    const errorEl = this.container.querySelector('#jobs-error') as HTMLElement;
+
+    // Only show loading state if explicitly requested or if we have jobs visible
+    if (showLoading && !this.isFirstLoad) {
+      loadingEl?.classList.remove('hidden');
+      listEl?.classList.add('hidden');
+      emptyEl?.classList.add('hidden');
+    }
+
+    try {
+      const response = await fetch(`${this.apiBaseUrl}/jobs/?page=1&page_size=10`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          // API endpoint doesn't exist yet
+          this.showEmptyState(loadingEl, emptyEl);
+          return;
+        }
+        throw new Error(`API request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const jobs = data.jobs || [];
+
+      loadingEl?.classList.add('hidden');
+
+      if (jobs.length === 0) {
+        this.showEmptyState(loadingEl, emptyEl, listEl);
+      } else {
+        this.showJobs(jobs, emptyEl, listEl);
+      }
+
+      this.isFirstLoad = false;
+    } catch (error) {
+      console.error('Failed to load jobs:', error);
+      loadingEl?.classList.add('hidden');
+      
+      if (!listEl?.classList.contains('hidden')) {
+        // Keep showing existing jobs
+      } else {
+        emptyEl?.classList.remove('hidden');
+      }
+      
+      errorEl?.classList.remove('hidden');
+    }
+  }
+
+  /**
+   * Show empty state
+   */
+  private showEmptyState(loadingEl: HTMLElement | null, emptyEl: HTMLElement | null, listEl?: HTMLElement | null) {
+    loadingEl?.classList.add('hidden');
+    emptyEl?.classList.remove('hidden');
+    emptyEl?.classList.add('opacity-100');
+    listEl?.classList.add('hidden');
+  }
+
+  /**
+   * Show jobs with animation
+   */
+  private showJobs(jobs: ConversionJob[], emptyEl: HTMLElement | null, listEl: HTMLElement | null) {
+    if (!emptyEl?.classList.contains('hidden')) {
+      // Fade out "no jobs" message
+      emptyEl?.classList.add('opacity-0');
+      setTimeout(() => {
+        emptyEl?.classList.add('hidden');
+        
+        // Slide in jobs from bottom
+        if (listEl) {
+          listEl.classList.remove('hidden');
+          listEl.style.transform = 'translateY(20px)';
+          listEl.style.opacity = '0';
+          
+          this.renderJobs(jobs, listEl);
+          
+          requestAnimationFrame(() => {
+            listEl.style.transition = 'transform 0.5s ease-out, opacity 0.5s ease-out';
+            listEl.style.transform = 'translateY(0)';
+            listEl.style.opacity = '1';
+          });
+        }
+      }, 300);
+    } else {
+      // Jobs already visible, just update
+      listEl?.classList.remove('hidden');
+      if (listEl) {
+        this.renderJobs(jobs, listEl);
+      }
+    }
+  }
+
+  /**
+   * Render jobs to the DOM
+   */
+  private renderJobs(jobs: ConversionJob[], listEl: HTMLElement) {
+    listEl.innerHTML = '';
+    jobs.forEach(job => {
+      const jobEl = this.createJobElement(job);
+      listEl.appendChild(jobEl);
+    });
+  }
+
+  /**
+   * Create a job element
+   */
+  private createJobElement(job: ConversionJob): HTMLElement {
+    const statusConfig = {
+      pending: { color: 'yellow', icon: '⏳', text: 'Pending' },
+      running: { color: 'blue', icon: '🔄', text: 'Processing' },
+      completed: { color: 'green', icon: '✅', text: 'Completed' },
+      failed: { color: 'red', icon: '❌', text: 'Failed' },
+      error: { color: 'red', icon: '⚠️', text: 'Error' },
+      cancelled: { color: 'gray', icon: '🚫', text: 'Cancelled' }
+    };
+
+    const config = statusConfig[job.status] || statusConfig.pending;
+    
+    const jobEl = document.createElement('div');
+    jobEl.className = 'glass-card p-4 hover:bg-white/5 transition-all duration-200';
+    jobEl.setAttribute('data-status', job.status);
+    jobEl.setAttribute('data-job-id', job.id);
+    
+    jobEl.innerHTML = `
+      <div class="flex items-start justify-between mb-3">
+        <div class="flex items-center space-x-3">
+          <div class="w-3 h-3 rounded-full bg-${config.color}-500"></div>
+          <div>
+            <h4 class="text-white font-medium">Job #${job.id.slice(0, 8)}</h4>
+            <p class="text-white/60 text-xs">${job.url}</p>
+          </div>
+        </div>
+        <span class="glass-status text-${config.color}-400 px-3 py-1 rounded-full">
+          ${config.icon} <span>${config.text}</span>
+        </span>
+      </div>
+    `;
+    
+    return jobEl;
+  }
+
+  /**
+   * Start real-time updates
+   */
+  private startRealTimeUpdates() {
+    this.updateInterval = setInterval(() => {
+      const hasRunningJobs = this.container.querySelectorAll('[data-status="running"], [data-status="pending"]').length > 0;
+      const hasVisibleJobs = !this.container.querySelector('#jobs-list')?.classList.contains('hidden');
+      
+      if (hasRunningJobs || hasVisibleJobs) {
+        this.loadJobs(false);
+      }
+    }, this.pollingInterval);
+  }
+
+  /**
+   * Stop real-time updates
+   */
+  private stopRealTimeUpdates() {
+    if (this.updateInterval) {
+      clearInterval(this.updateInterval);
+      this.updateInterval = null;
+    }
+  }
+
+  /**
+   * Setup visibility handling
+   */
+  private setupVisibilityHandling() {
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        this.stopRealTimeUpdates();
+      } else {
+        this.startRealTimeUpdates();
+      }
+    });
+
+    window.addEventListener('beforeunload', () => this.stopRealTimeUpdates());
+  }
+
+  /**
+   * Refresh jobs (public method for form submissions)
+   */
+  async refresh(showLoading = true) {
+    await this.loadJobs(showLoading);
+  }
+}

@@ -1,7 +1,7 @@
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
-import netlify from '@astrojs/netlify';
-import tailwindcss from '@tailwindcss/vite';
+import node from '@astrojs/node';
+import tailwind from '@tailwindcss/vite';
 import { readFileSync } from 'fs';
 
 // =============================================================================
@@ -28,8 +28,8 @@ export default defineConfig({
     }),
   ],
   output: 'server',
-  adapter: netlify({
-    edgeMiddleware: true
+  adapter: node({
+    mode: 'standalone'
   }),
   server: {
     port: 3000,
@@ -41,7 +41,7 @@ export default defineConfig({
   },
   // Vite configuration for Liquid Glass optimization
   vite: {
-    plugins: [tailwindcss()],
+    plugins: [tailwind()],
     // ASTRO 2025: Inject build-time constants (zero runtime overhead)
     define: {
       'import.meta.env.VITE_ASTRO_VERSION': JSON.stringify(astroVersion),
