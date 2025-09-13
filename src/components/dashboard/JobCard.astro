@@ -7,6 +7,7 @@
 // =============================================================================
 
 import type { IJobData } from '../../types/job.ts';
+import { formatDateTime } from '../../utils/timezone.js';
 
 export interface Props {
   job: IJobData;
@@ -116,7 +117,7 @@ const statusConfig = JOB_STATUS_CONFIG[job.status] || JOB_STATUS_CONFIG.queued;
           
           <!-- Job Metadata -->
           <div class="flex items-center space-x-4 mt-2 text-xs text-white/50 job-metadata">
-            <span class="job-time" title={job.createdAt.toLocaleString()}>
+            <span class="job-time" title={formatDateTime(job.createdAt)}>
               {formatRelativeTime(job.createdAt)}
             </span>
             <span class="job-id">ID: {job.id}</span>

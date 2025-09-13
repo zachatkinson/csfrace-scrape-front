@@ -119,10 +119,10 @@ export interface IDOMUtils {
   removeClass(element: Element, className: string): void;
   toggleClass(element: Element, className: string): void;
   setAttribute(element: Element, name: string, value: string): void;
-  addEventListener<K extends keyof HTMLElementEventMap>(
+  addEventListener(
     element: Element,
-    type: K,
-    listener: (event: HTMLElementEventMap[K]) => void
+    type: string,
+    listener: EventListener
   ): void;
 }
 

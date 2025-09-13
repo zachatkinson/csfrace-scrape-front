@@ -1,0 +1,37 @@
+---
+/**
+ * IconArrowLeft - DRY Icon Component
+ * Reusable arrow left icon following DRY principles
+ */
+
+export interface Props {
+  class?: string;
+  size?: 'sm' | 'md' | 'lg';
+}
+
+const { 
+  class: className = '',
+  size = 'md'
+} = Astro.props;
+
+const sizeClasses = {
+  sm: 'w-3 h-3',
+  md: 'w-4 h-4', 
+  lg: 'w-5 h-5'
+};
+---
+
+<svg 
+  class={`${sizeClasses[size]} ${className}`}
+  viewBox="0 0 24 24" 
+  stroke="currentColor" 
+  aria-hidden="true"
+  fill="none"
+>
+  <path 
+    stroke-linecap="round" 
+    stroke-linejoin="round" 
+    stroke-width="2" 
+    d="M10 19l-7-7m0 0l7-7m-7 7h18" 
+  />
+</svg>

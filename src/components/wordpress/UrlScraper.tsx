@@ -4,7 +4,7 @@
  * Simple fetch() calls as per Astro + CLAUDE.md guidelines
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useScrapingForm } from '../../hooks/useScrapingForm.ts';
 import { ModeSwitcher } from '../scraping/Modeswitcher.tsx';
 import { SingleUrlForm } from '../scraping/SingleUrlForm.tsx';
@@ -37,16 +37,13 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
   className = '',
 }) => {
   const authenticated = isAuthenticated();
-
-  // Simple form state management
-  const { state, actions, computed } = useScrapingForm();
+  const { state, actions } = useScrapingForm();
   
-  // Simple job submission using direct API calls - NO SERVICE ABSTRACTION!
-  const handleJobSubmit = async (url: string, options: any = {}) => {
+  // Direct API job submission - NO SERVICE ABSTRACTION!
+  const submitSingleJob = async (url: string, options: any = {}) => {
     try {
       actions.setLoading(true);
 
-      // Direct call to Docker backend - following CLAUDE.md best practices
       const job = await fetch(`${getApiBaseUrl()}/jobs`, {
         method: 'POST',
         headers: {
@@ -61,7 +58,6 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
         return response.json();
       });
 
-      // Create UI job object
       const uiJob: ScrapingJobUI = {
         id: job.id,
         url: job.url,
@@ -79,12 +75,11 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
     }
   };
 
-  // Simple batch submission using direct API calls
-  const handleBatchSubmit = async (urls: string[], options: any = {}) => {
+  // Direct API batch submission - NO SERVICE ABSTRACTION!
+  const submitBatchJobs = async (urls: string[], options: any = {}) => {
     try {
       actions.setLoading(true);
 
-      // Direct call to Docker backend - following CLAUDE.md best practices
       const batch = await fetch(`${getApiBaseUrl()}/batches`, {
         method: 'POST',
         headers: {
@@ -112,29 +107,14 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
     }
   };
 
-  const handleJobUpdate = (job: ScrapingJobUI) => {
-    onJobUpdate?.(job);
-  };
-  
-  const handleBatchSubmitted = (jobs: ScrapingJobUI[]) => {
-    jobs.forEach(job => onJobSubmit?.(job));
-    actions.setSuccess(`Batch created successfully: ${jobs.length} jobs`);
-  };
-  
-  const handleJobError = (job: ScrapingJobUI, error: string) => {
-    actions.setError(`Job failed: ${error}`);
-  };
-
-  // Event handlers using service-oriented architecture
+  // Form handlers
   const handleSingleUrlSubmit = async () => {
     actions.setSubmitting(true);
     actions.clearMessages();
     
     try {
-      const job = await jobService.submitJob(state.url);
-      if (job) {
-        actions.clearUrl();
-      }
+      await submitSingleJob(state.url);
+      actions.clearUrl();
     } catch (error) {
       actions.setError(error instanceof Error ? error.message : 'Job submission failed');
     } finally {
@@ -148,11 +128,9 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
     
     try {
       const urls = actions.getBatchUrlList();
-      const jobs = await jobService.submitBatch(urls);
-      if (jobs) {
-        actions.clearBatchUrls();
-        actions.setBatchMode(false);
-      }
+      await submitBatchJobs(urls);
+      actions.clearBatchUrls();
+      actions.setBatchMode(false);
     } catch (error) {
       actions.setError(error instanceof Error ? error.message : 'Batch submission failed');
     } finally {
@@ -186,7 +164,7 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
           validationResult={state.validationResult}
           isValidating={state.isValidating}
           isSubmitting={state.isSubmitting}
-          isAuthenticated={isAuthenticated}
+          isAuthenticated={authenticated}
         />
       ) : (
         <BatchUrlForm
@@ -196,7 +174,7 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
           onSubmit={handleBatchFormSubmit}
           onClear={actions.clearBatchUrls}
           isSubmitting={state.isBatchSubmitting}
-          isAuthenticated={isAuthenticated}
+          isAuthenticated={authenticated}
         />
       )}
       

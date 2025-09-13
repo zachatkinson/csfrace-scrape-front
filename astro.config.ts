@@ -2,6 +2,8 @@ import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import node from '@astrojs/node';
 import { readFileSync } from 'fs';
+
+
 import tailwindcss from '@tailwindcss/vite';
 
 
@@ -52,9 +54,11 @@ export default defineConfig({
       'import.meta.env.VITE_BACKEND_VERSION': JSON.stringify(backendVersion),
       'import.meta.env.VITE_BACKEND_DEFAULT_UPTIME': JSON.stringify(backendDefaultUptime),
     },
+
     optimizeDeps: {
       include: ['react', 'react-dom', 'dompurify', 'crypto-js'],
     },
+
     build: {
       // Bundle optimization
       rollupOptions: {
@@ -82,11 +86,13 @@ export default defineConfig({
       // Chunk size warnings
       chunkSizeWarningLimit: 1000,
     },
+
     css: {
       postcss: {
         plugins: [],
       },
     },
+
     plugins: [tailwindcss()]
   },
   // Environment variables configuration

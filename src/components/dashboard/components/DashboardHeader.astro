@@ -1,0 +1,101 @@
+---
+/**
+ * DashboardHeader - SOLID Component Implementation
+ * Single Responsibility: Display dashboard header with navigation and stats
+ * Following Astro MCP best practices with proper separation of concerns
+ */
+
+// =============================================================================
+// IMPORTS & TYPES (TypeScript strict mode)
+// =============================================================================
+import type { IDashboardHeaderProps } from '../types/dashboard.types';
+import { DASHBOARD_CSS_CLASSES } from '../types/dashboard.types';
+import IconArrowLeft from '../../icons/IconArrowLeft.astro';
+import StatusIndicator from './StatusIndicator.astro';
+
+// =============================================================================
+// COMPONENT PROPS (Interface Segregation Principle)
+// =============================================================================
+export interface Props extends IDashboardHeaderProps {}
+
+const {
+  stats,
+  connectionStatus = 'connected',
+  lastUpdated
+} = Astro.props;
+
+// =============================================================================
+// SERVER-SIDE LOGIC (DRY Principle)
+// =============================================================================
+
+// Generate stats display data
+const statsDisplay = [
+  { label: 'Jobs', value: stats.total, id: 'total-jobs' },
+  { label: 'Active', value: stats.active, id: 'active-jobs' }
+];
+
+// Generate connection status text
+const getStatusText = (status: string): string => {
+  switch (status) {
+    case 'connected': return 'Connected';
+    case 'disconnected': return 'Disconnected';
+    case 'reconnecting': return 'Reconnecting...';
+    default: return 'Unknown';
+  }
+};
+
+const statusText = getStatusText(connectionStatus);
+---
+
+<!-- =============================================================================
+     DASHBOARD HEADER (Single Responsibility - DRY/SOLID)
+     Clean component structure with data attributes for client enhancement
+     ============================================================================= -->
+
+<div class={DASHBOARD_CSS_CLASSES.HEADER_CONTAINER} data-component="dashboard-header">
+  <div class="flex items-center justify-between">
+    
+    <!-- =================================================================
+         NAVIGATION SECTION (Single Responsibility)
+         ================================================================= -->
+    <div class="flex items-center space-x-4">
+      <a 
+        href="/" 
+        class={DASHBOARD_CSS_CLASSES.NAV_BUTTON}
+        title="Return to converter page"
+        data-nav="back-to-converter"
+      >
+        <IconArrowLeft />
+        <span>Back to Converter</span>
+      </a>
+      
+      <div class="h-6 w-px bg-white/20" aria-hidden="true"></div>
+      
+      <div>
+        <h1 class="text-3xl font-bold text-white">Job Dashboard</h1>
+        <p class="text-white/70">Manage and monitor all your conversion jobs</p>
+      </div>
+    </div>
+    
+    <!-- =================================================================
+         STATUS & STATS SECTION (Single Responsibility)
+         ================================================================= -->
+    <div class="flex items-center space-x-6">
+      <!-- Connection Status -->
+      <StatusIndicator 
+        status={connectionStatus}
+        text={statusText}
+        lastUpdated={lastUpdated}
+      />
+      
+      <!-- Job Statistics -->
+      <div class="text-right" data-job-stats>
+        {statsDisplay.map(({ label, value, id }) => (
+          <div class={DASHBOARD_CSS_CLASSES.STATS_VALUE} id={id}>
+            {value} {label}
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</div>

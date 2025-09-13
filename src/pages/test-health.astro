@@ -47,7 +47,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
           Loading system status from persistent health data...
         </div>
         <div id="overall-last-checked" class="text-center text-white/40 text-sm italic mt-1">
-          Last Checked at: Loading...
+          Last Checked at: Never
         </div>
       </div>
       
@@ -1792,35 +1792,34 @@ import MainLayout from '../components/layout/MainLayout.astro';
     }
 
     private checkForExistingHealthData(): void {
-      // Look for existing consolidated health data that may have been
-      // set by the persistent health system on other pages
-      const healthService = (window as any).healthStatusService;
-      if (healthService && typeof healthService.getCurrentHealthData === 'function') {
-        const existingData = healthService.getCurrentHealthData();
-        if (existingData && existingData.services) {
-          console.log('🎯 HealthDashboard: Found existing persistent health data on page load', existingData);
-          this.updateFromGlobalHealthData(existingData);
-          return;
-        }
+      // Check for the most recent consolidated health data
+      // This should be immediately available if user navigated from another page
+      const latestHealthData = (window as any).__latestConsolidatedHealthData;
+
+      if (latestHealthData && latestHealthData.services) {
+        console.log('🎯 HealthDashboard: Found existing consolidated health data on page load', latestHealthData);
+        this.updateFromGlobalHealthData(latestHealthData);
+        return;
       }
 
-      // Fallback: Try to get data from window state (used by CompactHealthStatus)
+      // Fallback: Check for persistent timestamp at least
       const healthState = (window as any).__healthStatusState;
       if (healthState && healthState.lastHealthTimestamp) {
-        // We have a timestamp but may not have full service data
-        // Update the timestamp at least
         const lastCheckedEl = document.getElementById('overall-last-checked');
         if (lastCheckedEl) {
           try {
             const timeString = new Date(healthState.lastHealthTimestamp).toLocaleTimeString();
             lastCheckedEl.textContent = `Last Checked at: ${timeString}`;
+            console.log('🎯 HealthDashboard: Found persistent timestamp, updating display while waiting for service data');
           } catch (error) {
-            // Keep default loading text
+            console.warn('🚨 HealthDashboard: Failed to format persistent timestamp');
           }
         }
+        return;
       }
 
-      console.log('🎯 HealthDashboard: No existing persistent health data found, waiting for first update');
+      console.log('🎯 HealthDashboard: No persistent health data found - this appears to be initial page load');
+      console.log('🎯 HealthDashboard: Keeping "Last Checked at: Never" until first poll data arrives');
     }
     
     private updateFromGlobalHealthData(healthData: any): void {

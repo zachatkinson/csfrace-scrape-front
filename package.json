@@ -4,6 +4,7 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "astro dev",
+    "dev:docker": "astro dev --config astro.config.docker.mjs",
     "build": "astro check && astro build",
     "preview": "astro preview",
     "astro": "astro",

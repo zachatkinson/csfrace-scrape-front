@@ -9,6 +9,7 @@
 // =============================================================================
 
 import type { IServiceResult } from '../../utils/serviceCheckers.js';
+import { formatTimestamp } from '../../utils/timezone.js';
 
 export interface Props {
   serviceName: string;
@@ -94,8 +95,8 @@ const responseTime = serviceResult.metrics.responseTime;
     
     <div>
       <span class="text-white/60">Last Check:</span>
-      <span class="ml-2 text-white font-mono">
-        {new Date(serviceResult.timestamp).toLocaleTimeString()}
+      <span class="ml-2 text-white font-mono" id={`last-check-${serviceName.toLowerCase().replace(/\s+/g, '-')}`}>
+        {formatTimestamp(new Date(serviceResult.timestamp))}
       </span>
     </div>
 
@@ -116,3 +117,24 @@ const responseTime = serviceResult.metrics.responseTime;
     </div>
   )}
 </div>
+
+<script define:vars={{ serviceName, serviceResult }}>
+  // Import timezone utility for reactive timestamp updates
+  import { formatTimestamp, onTimezoneChange } from '../../utils/timezone.js';
+
+  // Update timestamp display when timezone settings change
+  const timestampElementId = `last-check-${serviceName.toLowerCase().replace(/\s+/g, '-')}`;
+
+  // Listen for timezone setting changes
+  const cleanupTimezoneListener = onTimezoneChange(() => {
+    const timestampElement = document.getElementById(timestampElementId);
+    if (timestampElement && serviceResult.timestamp) {
+      timestampElement.textContent = formatTimestamp(new Date(serviceResult.timestamp));
+    }
+  });
+
+  // Cleanup on page unload
+  window.addEventListener('beforeunload', () => {
+    cleanupTimezoneListener();
+  });
+</script>

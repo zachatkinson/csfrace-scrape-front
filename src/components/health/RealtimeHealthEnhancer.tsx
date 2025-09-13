@@ -116,6 +116,11 @@ const RealtimeHealthEnhancer: React.FC<RealtimeHealthEnhancerProps> = ({
       isPolling,
       isVisible
     };
+
+    // Store the latest consolidated health data globally for immediate access
+    // This allows any page (like test-health) to immediately use persistent data
+    (window as any).__latestConsolidatedHealthData = eventDetail;
+
     console.log('🎯 RealtimeHealthEnhancer: Emitting consolidatedHealthUpdate event', eventDetail);
     window.dispatchEvent(new CustomEvent('consolidatedHealthUpdate', {
       detail: eventDetail

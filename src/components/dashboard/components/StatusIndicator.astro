@@ -1,0 +1,110 @@
+---
+/**
+ * StatusIndicator - SOLID Component Implementation
+ * Single Responsibility: Display connection status with visual indicator
+ * Following DRY principles with reusable status display
+ */
+
+// =============================================================================
+// IMPORTS & TYPES
+// =============================================================================
+import { DASHBOARD_CSS_CLASSES } from '../types/dashboard.types';
+import { formatTimestamp } from '../../../utils/timezone.js';
+
+// =============================================================================
+// COMPONENT PROPS
+// =============================================================================
+export interface Props {
+  status: 'connected' | 'disconnected' | 'reconnecting';
+  text: string;
+  lastUpdated?: Date;
+}
+
+const {
+  status,
+  text,
+  lastUpdated
+} = Astro.props;
+
+// =============================================================================
+// SERVER-SIDE LOGIC (DRY Principle)
+// =============================================================================
+
+// Status-specific CSS classes
+const getStatusClasses = (status: string): string => {
+  const baseClasses = DASHBOARD_CSS_CLASSES.STATUS_INDICATOR;
+  
+  switch (status) {
+    case 'connected':
+      return `${baseClasses} ${DASHBOARD_CSS_CLASSES.STATUS_CONNECTED}`;
+    case 'disconnected':
+      return `${baseClasses} ${DASHBOARD_CSS_CLASSES.STATUS_DISCONNECTED}`;
+    case 'reconnecting':
+      return `${baseClasses} ${DASHBOARD_CSS_CLASSES.STATUS_RECONNECTING}`;
+    default:
+      return `${baseClasses} bg-gray-400`;
+  }
+};
+
+const statusClasses = getStatusClasses(status);
+
+// Format last updated time using timezone utility
+const formatLastUpdated = (date?: Date): string => {
+  if (!date) return '';
+  return formatTimestamp(date);
+};
+---
+
+<!-- =============================================================================
+     STATUS INDICATOR (Single Responsibility)
+     ============================================================================= -->
+
+<div 
+  class="flex items-center space-x-2" 
+  data-connection-status
+  data-status={status}
+>
+  <div 
+    id="connection-indicator" 
+    class={statusClasses}
+    data-status-indicator={status}
+  ></div>
+  
+  <div class="flex flex-col">
+    <span 
+      class="text-white/70 text-sm" 
+      id="connection-text"
+      data-status-text
+    >
+      {text}
+    </span>
+    
+    {lastUpdated && (
+      <span class="text-white/50 text-xs" data-last-updated>
+        Updated: {formatLastUpdated(lastUpdated)}
+      </span>
+    )}
+  </div>
+</div>
+
+<script define:vars={{ lastUpdated }}>
+  // Import timezone utility for reactive timestamp updates
+  import { formatTimestamp, onTimezoneChange } from '../../../utils/timezone.js';
+
+  // Update timestamp display when timezone settings change
+  if (lastUpdated) {
+    const timestampElement = document.querySelector('[data-last-updated]');
+
+    // Listen for timezone setting changes
+    const cleanupTimezoneListener = onTimezoneChange(() => {
+      if (timestampElement) {
+        timestampElement.textContent = `Updated: ${formatTimestamp(new Date(lastUpdated))}`;
+      }
+    });
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      cleanupTimezoneListener();
+    });
+  }
+</script>

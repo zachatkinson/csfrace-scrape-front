@@ -1,0 +1,37 @@
+---
+/**
+ * IconClose - DRY Icon Component
+ * Reusable close/x icon following DRY principles
+ */
+
+export interface Props {
+  class?: string;
+  size?: 'sm' | 'md' | 'lg';
+}
+
+const { 
+  class: className = '',
+  size = 'md'
+} = Astro.props;
+
+const sizeClasses = {
+  sm: 'w-4 h-4',
+  md: 'w-5 h-5', 
+  lg: 'w-6 h-6'
+};
+---
+
+<svg 
+  class={`${sizeClasses[size]} ${className}`}
+  viewBox="0 0 24 24" 
+  stroke="currentColor" 
+  aria-hidden="true"
+  fill="none"
+>
+  <path 
+    stroke-linecap="round" 
+    stroke-linejoin="round" 
+    stroke-width="2" 
+    d="M6 18L18 6M6 6l12 12" 
+  />
+</svg>

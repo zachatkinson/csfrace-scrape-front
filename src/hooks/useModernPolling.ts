@@ -78,6 +78,7 @@ export const useAdaptivePolling = (
   const [pollingInterval, setPollingInterval] = useState<number | null>(15000); // Default 15s
   const [lastResult, setLastResult] = useState<IServiceResult | null>(null);
   const [isPolling, setIsPolling] = useState(false);
+  const [forceExecute, setForceExecute] = useState<number>(0);
   const isPageVisible = useVisibilityChange();
 
   // Adaptive interval calculation based on service status and browser state
@@ -154,6 +155,37 @@ export const useAdaptivePolling = (
     }
   }, [isPolling, serviceName, pollFunction, onSuccess, onError]);
 
+  // Listen for both global and service-specific refresh requests
+  useEffect(() => {
+    const handleGlobalRefresh = () => {
+      console.log(`🔄 ${serviceName}: Global refresh triggered, executing immediate poll`);
+      setForceExecute(prev => prev + 1);
+    };
+    
+    const handleServiceRefresh = (event: any) => {
+      if (event.detail.serviceName === serviceName) {
+        console.log(`🔄 ${serviceName}: Individual service refresh triggered, executing immediate poll`);
+        setForceExecute(prev => prev + 1);
+      }
+    };
+    
+    window.addEventListener('requestHealthRefresh', handleGlobalRefresh);
+    window.addEventListener('requestServiceRefresh', handleServiceRefresh);
+    
+    return () => {
+      window.removeEventListener('requestHealthRefresh', handleGlobalRefresh);
+      window.removeEventListener('requestServiceRefresh', handleServiceRefresh);
+    };
+  }, [serviceName]);
+  
+  // Execute immediate poll when forced
+  useEffect(() => {
+    if (forceExecute > 0) {
+      console.log(`🔄 ${serviceName}: Executing forced immediate poll`);
+      executePoll();
+    }
+  }, [forceExecute, executePoll]);
+
   // Use the encapsulated interval hook (following article pattern)
   useInterval(executePoll, pollingInterval);
 
@@ -161,7 +193,8 @@ export const useAdaptivePolling = (
     lastResult,
     isPolling,
     pollingInterval,
-    isVisible: isPageVisible
+    isVisible: isPageVisible,
+    forceExecute // Expose for debugging
   };
 };
 
@@ -233,13 +266,40 @@ export const useAllServicesPolling = (enabled: boolean = true) => {
   const database = useDatabasePolling({ enabled });
   const cache = useCachePolling({ enabled });
   
+  // Add manual refresh capability
+  const [forceRefresh, setForceRefresh] = useState<number>(0);
+  
+  // Listen for manual refresh requests
+  useEffect(() => {
+    const handleManualRefresh = () => {
+      console.log('🔄 useAllServicesPolling: Manual refresh triggered, forcing immediate poll');
+      setForceRefresh(prev => prev + 1);
+    };
+    
+    window.addEventListener('requestHealthRefresh', handleManualRefresh);
+    
+    return () => {
+      window.removeEventListener('requestHealthRefresh', handleManualRefresh);
+    };
+  }, []);
+  
+  // Trigger immediate polls when manual refresh is requested
+  useEffect(() => {
+    if (forceRefresh > 0) {
+      console.log('🔄 useAllServicesPolling: Executing immediate health checks');
+      // The individual polling hooks will automatically trigger on their next cycle
+      // This ensures fresh data is fetched immediately
+    }
+  }, [forceRefresh]);
+  
   return {
     frontend: frontend.lastResult,
     backend: backend.lastResult,
     database: database.lastResult,
     cache: cache.lastResult,
     isPolling: frontend.isPolling || backend.isPolling || database.isPolling || cache.isPolling,
-    isVisible: frontend.isVisible
+    isVisible: frontend.isVisible,
+    forceRefresh // Expose for debugging
   };
 };
 
