@@ -3,6 +3,50 @@
 ## Project Overview
 This is an Astro-based frontend application for scraping and displaying content from URLs, built with React components and Tailwind CSS.
 
+## 🚨 CRITICAL: DOCKER LIGHTNINGCSS FIX 🚨
+
+**MANDATORY DOCKER LIGHTNINGCSS ARM64 SOLUTION - NEVER FORGET THIS!**
+
+If you EVER see this error in Docker containers:
+```
+Cannot find module '../pkg'
+Require stack:
+- /app/node_modules/lightningcss/node/index.js
+```
+
+**IMMEDIATE SOLUTION - Copy this EXACT Dockerfile configuration:**
+
+```dockerfile
+# CRITICAL: Use AMD64 platform + WASM fallback for lightningcss
+FROM --platform=linux/amd64 node:latest AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+# MANDATORY: Install WASM package to fix missing ../pkg directory
+RUN npm install lightningcss-wasm --save-optional
+# MANDATORY: Create the missing pkg directory with WASM fallback
+RUN mkdir -p node_modules/lightningcss/pkg && \
+    cp -r node_modules/lightningcss-wasm/* node_modules/lightningcss/pkg/ || true
+COPY . .
+```
+
+**This fixes the fundamental ARM64 + Docker + lightningcss incompatibility issue.**
+
+**Root Cause**: lightningcss native binaries don't work properly in ARM64 Docker environments, causing the `../pkg` directory to be missing, which breaks Tailwind 4 CSS processing.
+
+**Why This Works**:
+1. `--platform=linux/amd64` forces AMD64 emulation (works on ARM64 Macs)
+2. `lightningcss-wasm` provides WASM fallback when native binaries fail
+3. Manual `pkg` directory creation bridges the gap between native and WASM versions
+
+**NEVER try these failed approaches again:**
+- ❌ Environment variables (CSS_TRANSFORMER_WASM=1) - doesn't work
+- ❌ Architecture-specific npm install flags - doesn't work
+- ❌ Manual binary downloads - too complex and fragile
+- ❌ Downgrading to Tailwind 3 - absolutely forbidden
+
+**If this happens again: Copy the Dockerfile section above EXACTLY.**
+
 ## 🚨 CRITICAL: NO LOCAL SERVICES RULE 🚨
 
 **NEVER CREATE LOCAL AUTHENTICATION OR API SERVICES IN THE FRONTEND**

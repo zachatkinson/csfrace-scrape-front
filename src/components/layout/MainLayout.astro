@@ -11,10 +11,8 @@ import { getApiBaseUrl } from '../../constants/api.ts';
 import { TIMING_CONSTANTS } from '../../constants/timing.ts';
 // Import Astro View Transitions for SPA-like navigation
 import { ViewTransitions } from 'astro:transitions';
-// Import DRY/SOLID Server Island component for health status
-import CompactHealthStatus from '../health/CompactHealthStatus.astro';
-// Import React component for real-time enhancements (client:idle)
-import RealtimeHealthEnhancer from '../../components/health/RealtimeHealthEnhancer.tsx';
+// Import pure UI component for health status (Astro MCP best practice)
+import { EventDrivenFooterStatus } from '../health/EventDrivenFooterStatus'; // nanostore → UI
 // Import DRY/SOLID Auth Modal Component
 import AuthModal from '../auth/AuthModal.astro';
 // Import DRY/SOLID Settings Panel Component
@@ -129,9 +127,8 @@ const {
               
               <!-- Server Island for Real-time Health Status (DRY/SOLID) -->
               <div class="space-y-3">
-                <!-- Persistent Health Status - Optimized SPA Implementation -->
-                <!-- Best Practice: Single initialization + persistent heartbeat updates -->
-                <CompactHealthStatus transition:persist="health-status" />
+                <!-- Pure UI Component - Reads from nanostore (ASTRO MCP BEST PRACTICE) -->
+                <EventDrivenFooterStatus client:load />
               </div>
               
               <!-- Troubleshooting Link -->
@@ -189,11 +186,8 @@ const {
     <!-- DRY/SOLID Settings Panel Component -->
     <SettingsPanel />
 
-    <!-- HYBRID ENHANCEMENT: React Island for Real-time Updates -->
-    <!-- Following Astro best practice: client:idle for minimal impact -->
-    {enableRealTimeUpdates && (
-      <RealtimeHealthEnhancer client:load showIndicator={false} />
-    )}
+    <!-- ASTRO MCP BEST PRACTICE: Health system initialization now handled directly in CompactHealthStatus.astro -->
+    <!-- Following SOLID Single Responsibility Principle: health initialization within health component -->
 
     <!-- Responsive Background Image Styling (Modern 2025 Best Practices) -->
     <style>
@@ -264,6 +258,300 @@ const {
 
       // Settings panel functionality now handled by SettingsPanel.astro custom element
       // All modal behavior moved to BaseModalManager for DRY/SOLID architecture
+    </script>
+
+    <!-- ASTRO MCP BEST PRACTICE: Global SSE Service in MainLayout -->
+    <script>
+      import { formatTimestamp } from '/src/utils/timezone.js';
+
+      // SINGLETON PATTERN: Global health SSE service (Astro MCP best practice)
+      if (!window.__healthSSEService) {
+        console.log('🚀 MainLayout: Creating global SSE health service');
+
+        window.__healthSSEService = {
+          eventSource: null,
+          isConnected: false,
+          retryCount: 0,
+          maxRetries: 5,
+          retryDelay: 5000,
+
+          async connect() {
+            if (this.eventSource && this.isConnected) {
+              console.log('✅ SSEService: Already connected, skipping');
+              return;
+            }
+
+            try {
+              const backendUrl = import.meta.env.PUBLIC_BACKEND_SSE_URL || 'http://localhost:8000';
+              const sseUrl = `${backendUrl}/health/stream`;
+              console.log('🔗 SSEService: Establishing connection to:', sseUrl);
+              this.eventSource = new EventSource(sseUrl);
+
+              this.eventSource.onopen = () => {
+                this.isConnected = true;
+                this.retryCount = 0;
+                console.log('✅ SSEService: Connection established');
+              };
+
+              this.eventSource.addEventListener('service-update', async (event) => {
+                try {
+                  const serviceUpdate = JSON.parse(event.data);
+                  console.log('🎯 SSEService: Service update received:', serviceUpdate);
+
+                  // Update nanostore (Astro MCP pattern)
+                  const { updateHealthData, getCurrentHealthData } = await import('/src/stores/healthStore.js');
+                  const updateTime = new Date(serviceUpdate.timestamp || Date.now());
+
+                  let services = {};
+
+                  if (serviceUpdate.services) {
+                    services = serviceUpdate.services;
+                  } else if (serviceUpdate.service && serviceUpdate.status) {
+                    const currentData = getCurrentHealthData();
+                    services = { ...currentData.services };
+
+                    services[serviceUpdate.service] = {
+                      status: serviceUpdate.status === 'healthy' ? 'up' : serviceUpdate.status,
+                      message: `${serviceUpdate.service} service updated`,
+                      metrics: {
+                        responseTime: serviceUpdate.data?.response_time_ms || 0,
+                        ...serviceUpdate.data
+                      },
+                      timestamp: updateTime
+                    };
+                  }
+
+                  const healthData = {
+                    services,
+                    overallStatus: {
+                      status: 'up',
+                      text: 'Services Updated',
+                      summary: 'Services updated via SSE',
+                      color: 'bg-green-500'
+                    },
+                    metadata: {
+                      timestamp: updateTime.getTime(),
+                      isPolling: false,
+                      isVisible: true,
+                      lastUpdateFormatted: formatTimestamp(updateTime)
+                    }
+                  };
+
+                  updateHealthData(healthData);
+                } catch (error) {
+                  console.error('❌ SSEService: Error processing update:', error);
+                }
+              });
+
+              this.eventSource.onerror = (error) => {
+                this.isConnected = false;
+                console.error('❌ SSEService: Connection error:', error);
+                this.handleRetry();
+              };
+
+            } catch (error) {
+              console.error('💥 SSEService: Failed to create connection:', error);
+              this.handleRetry();
+            }
+          },
+
+          handleRetry() {
+            if (this.retryCount < this.maxRetries) {
+              const delay = this.retryDelay * Math.pow(2, this.retryCount);
+              this.retryCount++;
+              console.log(`🔄 SSEService: Retrying in ${delay}ms (${this.retryCount}/${this.maxRetries})`);
+              setTimeout(() => this.connect(), delay);
+            }
+          },
+
+          disconnect() {
+            if (this.eventSource) {
+              this.eventSource.close();
+              this.eventSource = null;
+            }
+            this.isConnected = false;
+          }
+        };
+
+        // Initialize SSE service
+        document.addEventListener('DOMContentLoaded', () => {
+          window.__healthSSEService.connect();
+        });
+
+        // Cleanup on unload
+        window.addEventListener('beforeunload', () => {
+          window.__healthSSEService.disconnect();
+        });
+      }
+    </script>
+
+    <!-- ASTRO MCP BEST PRACTICE: Health Status Initialization -->
+    <!-- Following DRY/SOLID: Single EventDrivenFooterStatus component with SSE -->
+    <script>
+      import { createRoot } from 'react-dom/client';
+
+
+      // Initialize React component for health status (Astro MCP compliant)
+      document.addEventListener('DOMContentLoaded', () => {
+        const container = document.getElementById('health-status-container');
+        if (container && !container.dataset.initialized) {
+          console.log('🚀 MainLayout: Initializing EventDrivenFooterStatus React component');
+          const root = createRoot(container);
+          root.render(EventDrivenFooterStatus());
+          container.dataset.initialized = 'true';
+        }
+      });
+
+      // SINGLETON PATTERN: Global health system manager (DRY principle)
+      // OLD SSE SERVICE REMOVED - keeping only __healthSSEService to follow DRY principle
+      if (false) {
+          eventSource: null,
+          isConnected: false,
+          retryCount: 0,
+          maxRetries: 5,
+          retryDelay: 5000,
+
+          async connect() {
+            if (this.eventSource && this.isConnected) {
+              console.log('✅ HealthSystem: Already connected, skipping');
+              return;
+            }
+
+            try {
+              const backendUrl = import.meta.env.PUBLIC_BACKEND_SSE_URL || 'http://localhost:8000';
+              const sseUrl = `${backendUrl}/health/stream`;
+              console.log('🔗 HealthSystem: Establishing SSE connection to:', sseUrl);
+              this.eventSource = new EventSource(sseUrl);
+
+              this.eventSource.onopen = () => {
+                this.isConnected = true;
+                this.retryCount = 0;
+                console.log('✅ HealthSystem: SSE connection established');
+              };
+
+              this.eventSource.onmessage = (event) => {
+                try {
+                  const data = JSON.parse(event.data);
+                  if (data.type === 'connection') {
+                    console.log('🔗 HealthSystem: Connection confirmed:', data.message);
+                    return;
+                  }
+                  console.log('📨 HealthSystem: Message received:', data);
+                } catch (error) {
+                  console.warn('⚠️ HealthSystem: Error parsing message:', error);
+                }
+              };
+
+              this.eventSource.addEventListener('service-update', (event) => {
+                try {
+                  const serviceUpdate = JSON.parse(event.data);
+                  console.log('🎯 HealthSystem: Service update received:', serviceUpdate);
+
+                  // Handle both batch updates and individual service updates
+                  import('/src/stores/healthStore.js').then(({ updateHealthData, getCurrentHealthData }) => {
+                    const updateTime = new Date(serviceUpdate.timestamp || Date.now());
+
+                    let services = {};
+
+                    if (serviceUpdate.services) {
+                      // Batch update - use all services
+                      services = serviceUpdate.services;
+                      console.log('🎯 HealthSystem: Processing batch service update');
+                    } else if (serviceUpdate.service && serviceUpdate.status) {
+                      // Individual service update - merge with existing data
+                      const currentData = getCurrentHealthData();
+                      services = { ...currentData.services };
+
+                      // Update individual service
+                      services[serviceUpdate.service] = {
+                        status: serviceUpdate.status === 'healthy' ? 'up' : serviceUpdate.status,
+                        message: `${serviceUpdate.service} service updated`,
+                        metrics: {
+                          responseTime: serviceUpdate.data?.response_time_ms || 0,
+                          ...serviceUpdate.data
+                        },
+                        timestamp: updateTime
+                      };
+
+                      console.log('🎯 HealthSystem: Processing individual service update for:', serviceUpdate.service);
+                    } else {
+                      console.warn('⚠️ HealthSystem: Unknown service update format:', serviceUpdate);
+                      return;
+                    }
+
+                    // Transform to store format
+                    const healthData = {
+                      services,
+                      overallStatus: {
+                        status: 'up', // Will be computed automatically
+                        text: 'Services Updated',
+                        summary: 'Services updated via SSE',
+                        color: 'bg-green-500'
+                      },
+                      metadata: {
+                        timestamp: updateTime.getTime(),
+                        isPolling: false,
+                        isVisible: true,
+                        lastUpdateFormatted: import('/src/utils/timezone.js').then(({ formatTimestamp }) => formatTimestamp(updateTime))
+                      }
+                    };
+
+                    console.log('🎯 HealthSystem: Updating store with:', healthData);
+                    updateHealthData(healthData);
+                  });
+                } catch (error) {
+                  console.error('❌ HealthSystem: Error processing service update:', error);
+                }
+              });
+
+              this.eventSource.onerror = (error) => {
+                this.isConnected = false;
+                console.error('❌ HealthSystem: SSE connection error:', error);
+                this.handleRetry();
+              };
+
+            } catch (error) {
+              console.error('💥 HealthSystem: Failed to create SSE connection:', error);
+              this.handleRetry();
+            }
+          },
+
+          handleRetry() {
+            if (this.retryCount < this.maxRetries) {
+              const delay = this.retryDelay * Math.pow(2, this.retryCount);
+              this.retryCount++;
+
+              console.log(`🔄 HealthSystem: Will retry in ${delay}ms (attempt ${this.retryCount}/${this.maxRetries})`);
+
+              setTimeout(() => {
+                console.log('🔄 HealthSystem: Retrying connection...');
+                this.connect();
+              }, delay);
+            } else {
+              console.log('💥 HealthSystem: Max retries exceeded');
+            }
+          },
+
+          disconnect() {
+            console.log('🛑 HealthSystem: Disconnecting');
+            if (this.eventSource) {
+              this.eventSource.close();
+              this.eventSource = null;
+            }
+            this.isConnected = false;
+          }
+        };
+
+        // Initialize connection
+        document.addEventListener('DOMContentLoaded', () => {
+          window.__healthSystemManager.connect();
+        });
+
+        // Setup cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+          window.__healthSystemManager.disconnect();
+        });
+      }
     </script>
   </body>
 </html>

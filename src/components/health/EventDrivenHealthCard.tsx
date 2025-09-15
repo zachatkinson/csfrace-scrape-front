@@ -1,10 +1,12 @@
 // =============================================================================
-// EVENT-DRIVEN HEALTH CARD COMPONENT
-// Listens to consolidatedHealthUpdate events and updates specific service data
+// NANO STORE HEALTH CARD COMPONENT - ASTRO MCP COMPLIANT
+// Uses Nano Stores for reactive health data following Astro best practices
 // =============================================================================
 
 import { useState, useEffect } from 'react';
-import { getStatusColor, getStatusBorderClass } from './RealtimeHealthEnhancer.js';
+import { useStore } from '@nanostores/react';
+import { $healthData } from '../../stores/healthStore.js';
+import { getStatusColor, getStatusBorderClass } from '../../utils/health-ui-utilities.js';
 import type { IServiceResult } from '../../utils/serviceCheckers.js';
 import { formatTimestamp, onTimezoneChange } from '../../utils/timezone.js';
 
@@ -23,31 +25,24 @@ export const EventDrivenHealthCard: React.FC<EventDrivenHealthCardProps> = ({
   icon,
   description
 }) => {
-  const [serviceData, setServiceData] = useState<IServiceResult | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  // Use Nano Stores for reactive health data (Astro MCP best practice)
+  const healthData = useStore($healthData);
+  const serviceData = healthData.services[serviceName];
+  const isLoading = !serviceData;
+
   const [lastRefreshedFormatted, setLastRefreshedFormatted] = useState<string>('Loading...');
 
   useEffect(() => {
-    const handleHealthUpdate = (event: CustomEvent) => {
-      console.log(`🔧 EventDrivenHealthCard (${serviceName}): Received consolidatedHealthUpdate`);
+    // Update formatted timestamp when service data changes
+    if (serviceData) {
+      console.log(`🔧 EventDrivenHealthCard (${serviceName}): Using Nano Store data:`, serviceData);
 
-      const { services } = event.detail;
-      const serviceResult = services[serviceName];
+      const timestamp = serviceData.timestamp || new Date(healthData.metadata.timestamp);
+      setLastRefreshedFormatted(formatTimestamp(timestamp));
 
-      if (serviceResult) {
-        console.log(`🔧 EventDrivenHealthCard (${serviceName}): Updating with data:`, serviceResult);
-        setServiceData(serviceResult);
-        setIsLoading(false);
-
-        const now = new Date();
-        setLastRefreshed(now);
-        setLastRefreshedFormatted(formatTimestamp(now));
-
-        // Update DOM elements for backward compatibility with existing scripts
-        updateDOMElements(serviceResult);
-      }
-    };
+      // Update DOM elements for backward compatibility with existing scripts
+      updateDOMElements(serviceData);
+    }
 
     // Update DOM elements for backward compatibility
     const updateDOMElements = (result: IServiceResult) => {
@@ -130,23 +125,20 @@ export const EventDrivenHealthCard: React.FC<EventDrivenHealthCardProps> = ({
       });
     };
 
-    // Listen for health updates
-    window.addEventListener('consolidatedHealthUpdate', handleHealthUpdate);
 
     // Listen for timezone changes
     const cleanupTimezoneListener = onTimezoneChange(() => {
-      if (lastRefreshed) {
-        setLastRefreshedFormatted(formatTimestamp(lastRefreshed));
+      if (serviceData?.timestamp) {
+        setLastRefreshedFormatted(formatTimestamp(serviceData.timestamp));
       }
     });
 
-    console.log(`🔧 EventDrivenHealthCard (${serviceName}): Event listeners attached`);
+    console.log(`🔧 EventDrivenHealthCard (${serviceName}): Using Nano Store reactive data`);
 
     return () => {
-      window.removeEventListener('consolidatedHealthUpdate', handleHealthUpdate);
       cleanupTimezoneListener();
     };
-  }, [serviceName, domPrefix, lastRefreshed]);
+  }, [serviceData, serviceName, domPrefix]);
 
   // Loading state
   if (isLoading || !serviceData) {

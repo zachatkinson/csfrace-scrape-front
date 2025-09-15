@@ -1,9 +1,11 @@
 // =============================================================================
-// EVENT-DRIVEN FOOTER STATUS COMPONENT
-// Listens to consolidatedHealthUpdate events instead of making API calls
+// NANO STORE FOOTER STATUS COMPONENT - ASTRO MCP COMPLIANT
+// Uses Nano Stores for reactive health data following Astro best practices
 // =============================================================================
 
 import { useState, useEffect } from 'react';
+import { useStore } from '@nanostores/react';
+import { $healthData, $serviceMetrics } from '../../stores/healthStore.js';
 import type { IServiceResult } from '../../utils/serviceCheckers.js';
 import { formatTimestamp, onTimezoneChange } from '../../utils/timezone.js';
 
@@ -28,53 +30,49 @@ interface FooterStatusData {
 }
 
 export const EventDrivenFooterStatus: React.FC = () => {
-  const [statusData, setStatusData] = useState<FooterStatusData | null>(null);
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  // Use Nano Stores for reactive health data (Astro MCP best practice)
+  const healthData = useStore($healthData);
+  const serviceMetrics = useStore($serviceMetrics);
+
   const [lastUpdateFormatted, setLastUpdateFormatted] = useState<string>('Loading...');
+  const [isClient, setIsClient] = useState(false);
 
+  // Fix hydration mismatch by detecting client-side rendering
   useEffect(() => {
-    const handleHealthUpdate = (event: CustomEvent) => {
-      console.log('🏁 EventDrivenFooterStatus: Received consolidatedHealthUpdate', event.detail);
+    setIsClient(true);
+  }, []);
 
-      const { services, overallStatus, timestamp } = event.detail;
-
-      // Calculate service counts
-      const serviceList = Object.values(services).filter(Boolean);
-      const upCount = serviceList.filter((s: any) => s.status === 'up').length;
-      const totalCount = 4;
-
-      setStatusData({
-        services,
-        overallStatus,
-        timestamp,
-        upCount,
-        totalCount
-      });
-
-      const now = new Date();
-      setLastUpdate(now);
-      setLastUpdateFormatted(formatTimestamp(now));
+  // Update formatted timestamp when health data changes or timezone changes
+  useEffect(() => {
+    const updateFormatted = () => {
+      if (healthData.metadata.timestamp > 0) {
+        const timestamp = new Date(healthData.metadata.timestamp);
+        setLastUpdateFormatted(formatTimestamp(timestamp));
+      } else {
+        setLastUpdateFormatted('Loading...');
+      }
     };
 
-    // Listen for health updates
-    window.addEventListener('consolidatedHealthUpdate', handleHealthUpdate);
+    updateFormatted();
 
     // Listen for timezone changes
     const cleanupTimezoneListener = onTimezoneChange(() => {
-      if (lastUpdate) {
-        setLastUpdateFormatted(formatTimestamp(lastUpdate));
-      }
+      updateFormatted();
     });
 
-    console.log('🏁 EventDrivenFooterStatus: Event listeners attached');
+    console.log('🏁 EventDrivenFooterStatus: Using Nano Store data', {
+      services: serviceMetrics.loaded,
+      up: serviceMetrics.up,
+      total: serviceMetrics.total
+    });
 
     return () => {
-      window.removeEventListener('consolidatedHealthUpdate', handleHealthUpdate);
       cleanupTimezoneListener();
     };
-  }, [lastUpdate]);
+  }, [healthData.metadata.timestamp]);
 
-  if (!statusData) {
+  // Fix hydration mismatch by always showing loading state during SSR
+  if (!isClient || !serviceMetrics.hasAnyData) {
     return (
       <div className="flex items-center space-x-4 footer-health-status">
         <div className="flex items-center space-x-2">
@@ -87,7 +85,9 @@ export const EventDrivenFooterStatus: React.FC = () => {
     );
   }
 
-  const { services, overallStatus, upCount, totalCount } = statusData;
+  // Use data directly from Nano Stores (reactive and efficient)
+  const { services, overallStatus } = healthData;
+  const { up: upCount, total: totalCount } = serviceMetrics;
 
   // Service mappings for display
   const serviceDisplay = [

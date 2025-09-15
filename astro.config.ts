@@ -1,4 +1,4 @@
-import { defineConfig } from 'astro/config';
+import { defineConfig, envField } from 'astro/config';
 import react from '@astrojs/react';
 import node from '@astrojs/node';
 import { readFileSync } from 'fs';
@@ -24,6 +24,109 @@ const backendDefaultUptime = '< 1 hour'; // Fallback when backend is offline
 
 // https://astro.build/config
 export default defineConfig({
+  // Type-safe environment variables schema (Astro 5.0+ best practice)
+  env: {
+    schema: {
+      // Server-side environment variables for backend communication
+      SERVER_API_BASE_URL: envField.string({
+        context: 'server',
+        access: 'public',
+        default: 'http://localhost:8000',
+        optional: true
+      }),
+
+      // Client-side environment variable for SSE connection
+      PUBLIC_BACKEND_SSE_URL: envField.string({
+        context: 'client',
+        access: 'public',
+        default: 'http://localhost:8000',
+        optional: true
+      }),
+
+      // Client-side environment variables for frontend functionality
+      PUBLIC_ASTRO_VERSION: envField.string({
+        context: 'client',
+        access: 'public',
+        default: astroVersion,
+        optional: true
+      }),
+      PUBLIC_BUILD_TIME: envField.string({
+        context: 'client',
+        access: 'public',
+        default: buildTime,
+        optional: true
+      }),
+      PUBLIC_SERVER_PORT: envField.number({
+        context: 'client',
+        access: 'public',
+        default: serverPort,
+        optional: true
+      }),
+      PUBLIC_BACKEND_FRAMEWORK: envField.string({
+        context: 'client',
+        access: 'public',
+        default: backendFramework,
+        optional: true
+      }),
+      PUBLIC_BACKEND_PORT: envField.number({
+        context: 'client',
+        access: 'public',
+        default: expectedBackendPort,
+        optional: true
+      }),
+      PUBLIC_BACKEND_VERSION: envField.string({
+        context: 'client',
+        access: 'public',
+        default: backendVersion,
+        optional: true
+      }),
+
+      // SSE Performance Configuration (Astro 5.0+ best practice)
+      SSE_POLLING_INTERVAL_MS: envField.number({
+        context: 'server',
+        access: 'public',
+        default: 30000, // 30 seconds - industry standard for health monitoring
+        optional: true
+      }),
+      SSE_POLLING_INTERVAL_UNHEALTHY_MS: envField.number({
+        context: 'server',
+        access: 'public',
+        default: 15000, // 15 seconds when problems detected
+        optional: true
+      }),
+      SSE_POLLING_INTERVAL_STABLE_MS: envField.number({
+        context: 'server',
+        access: 'public',
+        default: 60000, // 60 seconds when all systems stable
+        optional: true
+      }),
+      SSE_DEBOUNCE_DELAY_MS: envField.number({
+        context: 'server',
+        access: 'public',
+        default: 2000, // 2 second debounce for rapid changes
+        optional: true
+      }),
+      SSE_RESPONSE_TIME_THRESHOLD_MS: envField.number({
+        context: 'server',
+        access: 'public',
+        default: 10, // Ignore response time changes < 10ms
+        optional: true
+      }),
+      SSE_CONNECTION_COUNT_THRESHOLD: envField.number({
+        context: 'server',
+        access: 'public',
+        default: 5, // Ignore connection count changes < 5
+        optional: true
+      }),
+      SSE_MAX_CONCURRENT_CONNECTIONS: envField.number({
+        context: 'server',
+        access: 'public',
+        default: 10, // Max concurrent SSE connections
+        optional: true
+      }),
+    }
+  },
+
   integrations: [
     react({
       // Enable React components in .astro files

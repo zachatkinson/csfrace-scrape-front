@@ -1841,6 +1841,9 @@ import MainLayout from '../components/layout/MainLayout.astro';
 
       // Update overall status display based on persistent health data
       this.updateOverallStatusFromPersistentData(services, timestamp);
+
+      // Update system-wide "Last updated" with most recent service timestamp
+      this.updateSystemLastUpdated();
     }
 
     private updateOverallStatusFromPersistentData(services: any, timestamp?: number): void {
@@ -2029,10 +2032,48 @@ import MainLayout from '../components/layout/MainLayout.astro';
       // Trigger global health refresh instead of individual service calls
       this.healthDataConsumer.requestRefresh();
 
-      // Update last refresh time immediately
-      TimestampUpdater.updateLastRefresh('last-update-time');
+      // DO NOT update last refresh time immediately - wait for actual service data
+      // The timestamp will be updated in updateFromGlobalHealthData() when services respond
 
       console.log('🔄 HealthDashboard: Manual refresh request sent to global health system');
+    }
+
+    private updateSystemLastUpdated(): void {
+      // Find the most recent timestamp from the 4 service "Last checked" elements
+      const serviceTimestampIds = [
+        'frontend-last-refreshed',
+        'backend-last-refreshed',
+        'postgres-last-refreshed',
+        'redis-last-refreshed'
+      ];
+
+      let mostRecentTime = '';
+      let mostRecentTimestamp = 0;
+
+      serviceTimestampIds.forEach(id => {
+        const element = document.getElementById(id);
+        if (element && element.textContent) {
+          const text = element.textContent.trim();
+          // Extract time from "Last checked: HH:MM:SS" format
+          const timeMatch = text.match(/(\d{1,2}:\d{2}:\d{2})/);
+          if (timeMatch) {
+            const timeStr = timeMatch[1];
+            // Convert to today's date for comparison
+            const today = new Date().toDateString();
+            const fullTimestamp = new Date(`${today} ${timeStr}`).getTime();
+
+            if (fullTimestamp > mostRecentTimestamp) {
+              mostRecentTimestamp = fullTimestamp;
+              mostRecentTime = timeStr;
+            }
+          }
+        }
+      });
+
+      // Update system-wide "Last updated" with most recent service time
+      if (mostRecentTime) {
+        UIUpdater.updateTextElement('last-update-time', mostRecentTime);
+      }
     }
 
     private updateOverallStatus(): void {

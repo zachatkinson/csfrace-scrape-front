@@ -111,13 +111,15 @@ console.log('🚀 Health results:', healthResults.map(hr => ({
 <!-- ASTRO BEST PRACTICE: Using data attributes instead of define:vars -->
 <script>
   // =============================================================================
-  // HYBRID ASTRO OPTIMIZATION: Server Islands + Event-Driven Real-Time Updates
-  // Combines Astro best practices (data attributes) with heartbeat event handling
+  // NANO STORE REACTIVE CLIENT - ASTRO MCP COMPLIANT
+  // Subscribes to Nano Store updates for real-time health status changes
+  // Following Astro best practices for reactive client-side components
   // =============================================================================
 
   import { formatTimestamp, onTimezoneChange } from '../../utils/timezone.js';
+  import { $healthData, $serviceMetrics } from '../../stores/healthStore.js';
 
-  console.log('🚀 OptimizedCompactHealthStatus: SPA-aware initialization with persistent state');
+  console.log('🚀 CompactHealthStatus: Subscribing to Nano Store for real-time updates');
 
   // Function to update timestamp display with user's timezone preference
   function updateTimestamp(healthTimestamp) {
@@ -133,180 +135,293 @@ console.log('🚀 Health results:', healthResults.map(hr => ({
     }
   }
 
-  // Process health data and emit events (DRY function for both data sources)
-  function processHealthData(healthResults, overallHealth, source = 'unknown') {
-    console.log(`🚀 HybridCompactHealthStatus: Processing ${source} data`, {
-      resultsCount: healthResults.length,
-      overallHealth
-    });
+  // Update UI based on Nano Store data (Astro MCP best practice)
+  function updateHealthIndicators(healthData) {
+    console.log('🎯 CompactHealthStatus: Updating UI from Nano Store', healthData);
 
-    // Transform data to expected format
-    const serviceData = {};
-    healthResults.forEach(({ service, result }) => {
-      serviceData[service] = {
-        status: result.status,
-        message: result.message,
-        metrics: result.metrics,
-        timestamp: new Date().toISOString()
-      };
-    });
+    const { services, metadata } = healthData;
 
-    // Emit consolidated health update event
-    const consolidatedEvent = new CustomEvent('consolidatedHealthUpdate', {
-      detail: {
-        services: serviceData,
-        overallStatus: overallHealth,
-        timestamp: Date.now(),
-        isPolling: source === 'heartbeat',
-        isVisible: true,
-        optimized: true,
-        source
-      }
-    });
-
-    window.dispatchEvent(consolidatedEvent);
-    console.log(`🚀 HybridCompactHealthStatus: ${source} data emitted`, serviceData);
-
-    // Update timestamp display with actual health check time
-    const healthTimestamp = Date.now();
-    state.lastHealthTimestamp = healthTimestamp;
-    updateTimestamp(healthTimestamp);
-  }
-
-  // INITIAL LOAD: Read server-side data from data attributes (Astro best practice)
-  const healthStatusComponent = document.querySelector('[data-component="health-status"]');
-
-  if (healthStatusComponent) {
-    const healthResultsData = healthStatusComponent.dataset.healthResults;
-    const overallHealthData = healthStatusComponent.dataset.overallHealth;
-
-    if (healthResultsData && overallHealthData) {
-      try {
-        const healthResults = JSON.parse(healthResultsData);
-        const overallHealth = overallHealthData;
-        processHealthData(healthResults, overallHealth, 'server-initial');
-      } catch (error) {
-        console.error('🚨 HybridCompactHealthStatus: Failed to parse initial health data', error);
-      }
-    }
-  }
-
-  // REAL-TIME UPDATES: Listen for heartbeat events with fresh health data
-  function handleHeartbeatUpdate(event) {
-    console.log('🔄 HybridCompactHealthStatus: Received heartbeat update', event.detail);
-
-    // Only update timestamp for real service updates (not clock/summary updates)
-    const realServices = ['frontend', 'backend', 'database', 'cache'];
-    const hasRealServiceData = event.detail?.services &&
-      Object.keys(event.detail.services).some(service => realServices.includes(service));
-
-    if (hasRealServiceData) {
-      // Update timestamp with the actual timestamp from health data
-      const healthTimestamp = event.detail?.timestamp || Date.now();
-      state.lastHealthTimestamp = healthTimestamp;
-      updateTimestamp(healthTimestamp);
-      console.log('🕐 HybridCompactHealthStatus: Updated timestamp for real service data');
-    } else {
-      console.log('🚫 HybridCompactHealthStatus: Skipping timestamp update - no real service data');
-    }
-
-    // Update service indicators based on heartbeat data
-    updateServiceIndicators(event.detail.services);
-
-    // The heartbeat system emits consolidatedHealthUpdate events
-    // Timestamp is updated only for real service data, not clock/summary updates
-  }
-
-  // Update individual service indicators based on real-time data
-  function updateServiceIndicators(services) {
-    if (!services) return;
-
-    // Only update indicators for the four real services
-    const realServices = ['frontend', 'backend', 'database', 'cache'];
-
-    Object.entries(services).forEach(([serviceName, serviceData]) => {
-      // Skip non-real services (like summary, clock, etc.)
-      if (!realServices.includes(serviceName)) {
-        console.log(`🚫 Skipping indicator update for non-service: ${serviceName}`);
-        return;
-      }
-
+    // Update each service indicator
+    ['frontend', 'backend', 'database', 'cache'].forEach(serviceName => {
+      const serviceData = services[serviceName];
       const indicator = document.querySelector(`[data-service-name="${serviceName}"]`);
-      if (indicator) {
-        // Determine status: null/undefined = loading, actual status = use it
-        const status = serviceData === null || serviceData === undefined ? 'loading' : serviceData.status;
 
-        // Update visual state with default logic
-        indicator.className = `w-2 h-2 rounded-full transition-all duration-300 ${
-          status === 'up' ? 'bg-green-400' :
-          status === 'degraded' ? 'bg-yellow-400' :
-          status === 'loading' ? 'bg-yellow-400 animate-pulse' :
-          status === 'down' ? 'bg-red-400' :
-          // Default states: frontend green (site is live), others pulsing yellow
-          serviceName === 'frontend' ? 'bg-green-400' : 'bg-yellow-400 animate-pulse'
-        }`;
+      if (indicator && serviceData) {
+        // Remove all status classes
+        indicator.className = 'w-2 h-2 rounded-full transition-all duration-300';
 
-        indicator.setAttribute('data-status', status);
-        console.log(`🚦 Updated ${serviceName} indicator to:`, status);
+        // Add appropriate status class
+        if (serviceData.status === 'up') {
+          indicator.classList.add('bg-green-400');
+        } else if (serviceData.status === 'down' || serviceData.status === 'error') {
+          indicator.classList.add('bg-red-400');
+        } else if (serviceData.status === 'degraded') {
+          indicator.classList.add('bg-yellow-400');
+        } else {
+          indicator.classList.add('bg-yellow-400', 'animate-pulse');
+        }
+
+        indicator.setAttribute('data-status', serviceData.status);
+
+        // Update tooltip
+        const tooltip = indicator.parentElement?.querySelector('.service-tooltip');
+        if (tooltip) {
+          const icon = {
+            frontend: '🌐',
+            backend: '🔧',
+            database: '🐘',
+            cache: '⚡'
+          }[serviceName];
+
+          const name = serviceName.charAt(0).toUpperCase() + serviceName.slice(1);
+          let tooltipText = `${icon} ${name}: ${serviceData.status.toUpperCase()}`;
+
+          // Handle response time from either direct property or metrics object
+          const responseTime = serviceData.responseTime || serviceData.metrics?.responseTime;
+          if (responseTime !== undefined && responseTime !== null) {
+            tooltipText += ` | ${responseTime}ms`;
+          }
+
+          tooltip.textContent = tooltipText;
+        }
       }
     });
+
+    // Update timestamp
+    if (metadata.timestamp > 0) {
+      updateTimestamp(new Date(metadata.timestamp));
+    }
   }
 
-  // Store state in window object to persist across script re-runs
-  window.__healthStatusState = window.__healthStatusState || {
-    lastHealthTimestamp: null,
-    isInitialized: false
-  };
+  // ASTRO MCP BEST PRACTICE: Self-contained client-side health system
+  // Following Single Responsibility Principle - this script ONLY handles client-side health initialization
+  // Using inline approach to avoid ES module import issues in client scripts
 
-  // Use references to the persistent state
-  const state = window.__healthStatusState;
+  // SINGLETON PATTERN: Global health system manager (DRY principle)
+  // DISABLED: SSE now handled in MainLayout following Astro MCP best practices
+  if (false && !window.__healthSystemManager) {
+    console.log('🚀 CompactHealthStatus: Creating singleton health system manager');
 
-  function initializeTimestamp() {
-    // With transition:persist, this script can run multiple times during navigation
-    // Restore timestamp on every script run (for navigation)
-    const timestampElement = document.getElementById('health-timestamp');
-    if (timestampElement && state.lastHealthTimestamp) {
-      // Restore the timestamp display immediately
-      const restoredTimestamp = formatTimestamp(new Date(state.lastHealthTimestamp));
-      timestampElement.textContent = restoredTimestamp;
-      console.log('🔄 OptimizedCompactHealthStatus: Restored timestamp:', restoredTimestamp);
-    }
+    // Create singleton health connection manager
+    window.__healthSystemManager = {
+      eventSource: null,
+      isConnected: false,
+      retryCount: 0,
+      maxRetries: 5,
+      retryDelay: 5000,
 
-    // Only initialize event listeners once to avoid duplicates
-    if (state.isInitialized) {
-      console.log('🔄 OptimizedCompactHealthStatus: Skipping re-initialization (persistent state)');
-      return;
-    }
+      async connect() {
+        if (this.eventSource && this.isConnected) {
+          console.log('✅ HealthSystem: Already connected, skipping');
+          return;
+        }
 
-    console.log('🎯 OptimizedCompactHealthStatus: First-time initialization');
-    state.isInitialized = true;
+        try {
+          const backendUrl = import.meta.env.PUBLIC_BACKEND_SSE_URL || 'http://localhost:8000';
+          const sseUrl = `${backendUrl}/health/stream`;
+          console.log('🔗 HealthSystem: Establishing SSE connection to:', sseUrl);
+          this.eventSource = new EventSource(sseUrl);
 
-    // Listen for timezone setting changes - reformat with same health data timestamp
-    const cleanupTimezoneListener = onTimezoneChange(() => {
-      if (state.lastHealthTimestamp) {
-        updateTimestamp(state.lastHealthTimestamp);
+          this.eventSource.onopen = () => {
+            this.isConnected = true;
+            this.retryCount = 0;
+            console.log('✅ HealthSystem: SSE connection established');
+          };
+
+          this.eventSource.onmessage = (event) => {
+            try {
+              const data = JSON.parse(event.data);
+              if (data.type === 'connection') {
+                console.log('🔗 HealthSystem: Connection confirmed:', data.message);
+                return;
+              }
+              console.log('📨 HealthSystem: Message received:', data);
+            } catch (error) {
+              console.warn('⚠️ HealthSystem: Error parsing message:', error);
+            }
+          };
+
+          this.eventSource.addEventListener('service-update', (event) => {
+            try {
+              const serviceUpdate = JSON.parse(event.data);
+              console.log('🎯 HealthSystem: Service update received:', serviceUpdate);
+
+              // Handle both batch updates and individual service updates
+              import('/src/stores/healthStore.js').then(({ updateHealthData, getCurrentHealthData }) => {
+                const updateTime = new Date(serviceUpdate.timestamp || Date.now());
+
+                let services = {};
+
+                if (serviceUpdate.services) {
+                  // Batch update - use all services
+                  services = serviceUpdate.services;
+                  console.log('🎯 HealthSystem: Processing batch service update');
+                } else if (serviceUpdate.service && serviceUpdate.status) {
+                  // Individual service update - merge with existing data
+                  const currentData = getCurrentHealthData();
+                  services = { ...currentData.services };
+
+                  // Update individual service
+                  services[serviceUpdate.service] = {
+                    status: serviceUpdate.status === 'healthy' ? 'up' : serviceUpdate.status,
+                    message: `${serviceUpdate.service} service updated`,
+                    metrics: {
+                      responseTime: serviceUpdate.data?.response_time_ms || 0,
+                      ...serviceUpdate.data
+                    },
+                    timestamp: updateTime
+                  };
+
+                  console.log('🎯 HealthSystem: Processing individual service update for:', serviceUpdate.service);
+                } else {
+                  console.warn('⚠️ HealthSystem: Unknown service update format:', serviceUpdate);
+                  return;
+                }
+
+                // Transform to store format
+                const healthData = {
+                  services,
+                  overallStatus: {
+                    status: 'up', // Will be computed automatically
+                    text: 'Services Updated',
+                    summary: 'Services updated via SSE',
+                    color: 'bg-green-500'
+                  },
+                  metadata: {
+                    timestamp: updateTime.getTime(),
+                    isPolling: false,
+                    isVisible: true,
+                    lastUpdateFormatted: formatTimestamp(updateTime)
+                  }
+                };
+
+                console.log('🎯 HealthSystem: Updating store with:', healthData);
+                updateHealthData(healthData);
+              });
+            } catch (error) {
+              console.error('❌ HealthSystem: Error processing service update:', error);
+            }
+          });
+
+          this.eventSource.addEventListener('service-error', (event) => {
+            try {
+              const errorData = JSON.parse(event.data);
+              console.log('❌ HealthSystem: Service error received:', errorData);
+
+              if (errorData.service && errorData.error) {
+                // Update store with error state
+                import('/src/stores/healthStore.js').then(({ updateHealthData }) => {
+                  const errorTimestamp = new Date(errorData.timestamp || Date.now());
+                  const updatedServices = {};
+                  updatedServices[errorData.service] = {
+                    status: 'down',
+                    message: errorData.error,
+                    metrics: null
+                  };
+
+                  const healthData = {
+                    services: updatedServices,
+                    overallStatus: {
+                      status: 'degraded',
+                      text: 'Service Error Detected',
+                      summary: `${errorData.service} service error`,
+                      color: 'bg-red-500'
+                    },
+                    metadata: {
+                      timestamp: errorTimestamp.getTime(),
+                      isPolling: false,
+                      isVisible: true,
+                      lastUpdateFormatted: formatTimestamp(errorTimestamp)
+                    }
+                  };
+
+                  console.log('❌ HealthSystem: Updating store with error:', healthData);
+                  updateHealthData(healthData);
+                });
+              }
+            } catch (error) {
+              console.warn('⚠️ HealthSystem: Could not parse error event data');
+            }
+          });
+
+          this.eventSource.onerror = (error) => {
+            this.isConnected = false;
+            console.error('❌ HealthSystem: SSE connection error:', error);
+            this.handleRetry();
+          };
+
+        } catch (error) {
+          console.error('💥 HealthSystem: Failed to create SSE connection:', error);
+          this.handleRetry();
+        }
+      },
+
+      handleRetry() {
+        if (this.retryCount < this.maxRetries) {
+          const delay = this.retryDelay * Math.pow(2, this.retryCount);
+          this.retryCount++;
+
+          console.log(`🔄 HealthSystem: Will retry in ${delay}ms (attempt ${this.retryCount}/${this.maxRetries})`);
+
+          setTimeout(() => {
+            console.log('🔄 HealthSystem: Retrying connection...');
+            this.connect();
+          }, delay);
+        } else {
+          console.log('💥 HealthSystem: Max retries exceeded');
+        }
+      },
+
+      disconnect() {
+        console.log('🛑 HealthSystem: Disconnecting');
+        if (this.eventSource) {
+          this.eventSource.close();
+          this.eventSource = null;
+        }
+        this.isConnected = false;
       }
-      // NO fallback to current time - only update when we have actual health data
-      // This prevents timezone changes from triggering fake "system status updates"
-    });
+    };
 
-    // Listen for heartbeat health updates
-    window.addEventListener('consolidatedHealthUpdate', handleHeartbeatUpdate);
+    // Initialize connection
+    window.__healthSystemManager.connect();
 
-    // Cleanup only on actual page unload (not view transitions)
+    // Setup cleanup on page unload
     window.addEventListener('beforeunload', () => {
-      cleanupTimezoneListener();
-      window.removeEventListener('consolidatedHealthUpdate', handleHeartbeatUpdate);
-      state.isInitialized = false; // Reset for next actual page load
-      state.lastHealthTimestamp = null; // Clear timestamp on full page unload
+      window.__healthSystemManager.disconnect();
     });
   }
 
-  // Initialize immediately if DOM is ready, otherwise wait for DOMContentLoaded
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeTimestamp);
-  } else {
-    // DOM is already ready, initialize immediately
-    initializeTimestamp();
-  }
+  // NANO STORE SUBSCRIPTION: Subscribe to updates (using dynamic import for client-side)
+  import('/src/stores/healthStore.js').then(({ $healthData }) => {
+    console.log('📡 CompactHealthStatus: Setting up Nano Store subscription');
+
+    const unsubscribe = $healthData.subscribe(healthData => {
+      console.log('📡 CompactHealthStatus: Nano Store update received', healthData);
+      updateHealthIndicators(healthData);
+    });
+
+    // Initial update with current store data
+    const initialData = $healthData.get();
+    if (initialData) {
+      updateHealthIndicators(initialData);
+    }
+
+    // Store cleanup function
+    window.__healthStatusCleanup = unsubscribe;
+  });
+
+
+  // Listen for timezone changes
+  const cleanupTimezone = onTimezoneChange(() => {
+    const currentData = $healthData.get();
+    if (currentData?.metadata?.timestamp) {
+      updateTimestamp(new Date(currentData.metadata.timestamp));
+    }
+  });
+
+  // Cleanup on page unload (though Astro usually handles this)
+  window.addEventListener('beforeunload', () => {
+    unsubscribe();
+    cleanupTimezone();
+  });
 </script>
