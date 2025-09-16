@@ -21,7 +21,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   
   // Add rate limit headers
   const remaining = RateLimiter.getRemainingRequests(identifier);
-  context.locals.rateLimitRemaining = remaining;
+  (context.locals as any).rateLimitRemaining = remaining;
   
   // Apply security middleware
   return await SecurityMiddleware.handle(context, next);

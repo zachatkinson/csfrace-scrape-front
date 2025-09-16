@@ -1,42 +1,102 @@
 ---
-// =============================================================================
-// DASHBOARD JOBS - Server Island Implementation
-// =============================================================================
-// Server Island for initial job data loading following Astro MCP best practices
-// Uses server:defer for optimal performance with fallback content
-// =============================================================================
+/**
+ * DashboardJobs - Perfect Astro Islands Server Island Implementation
+ * Following Astro MCP best practices with NO define:vars anti-pattern
+ * Using data attributes for client-side enhancement instead
+ */
 
+// =============================================================================
+// IMPORTS & TYPES (TypeScript strict mode)
+// =============================================================================
+import type { IDashboardStats, IJobData } from './types/dashboard.types';
+import { DASHBOARD_CONFIG } from './types/dashboard.types';
 import { getJobs } from '../../utils/dashboard/apiClient.js';
 import { convertBackendJob, calculateJobStats } from '../../utils/dashboard/jobUtils.js';
 import JobCard from './JobCard.astro';
 
-// Server-side data fetching - will be deferred
-let initialJobs = [];
-let stats = {
+// =============================================================================
+// SERVER-SIDE DATA FETCHING (Server Island Pattern)
+// =============================================================================
+
+let initialJobs: IJobData[] = [];
+let stats: IDashboardStats = {
   total: 0,
-  active: 0, 
+  active: 0,
   completed: 0,
   failed: 0,
-  queued: 0
+  queued: 0,
+  processing: 0
 };
 
 try {
-  // Fetch initial job data on server
+  // Server-side data fetching - will be deferred with server:defer
+  console.log('🏝️ DashboardJobs Server Island: Fetching initial data');
+
+  // Real API call integration
   const response = await getJobs({
     page: 1,
-    page_size: 20
+    page_size: DASHBOARD_CONFIG.defaultPageSize
   });
-  
+
+  // Convert backend jobs to frontend format
   initialJobs = response.jobs.map(convertBackendJob);
+
+  // Calculate stats from actual job data
   stats = calculateJobStats(initialJobs);
+
 } catch (error) {
-  console.error('Failed to load initial jobs:', error);
+  console.error('🏝️ DashboardJobs Server Island: Failed to load initial jobs:', error);
 }
+
+// =============================================================================
+// SERVER-SIDE LOGIC (DRY Principle)
+// =============================================================================
+
+// Generate pagination data
+const currentPage = 1;
+const totalPages = Math.ceil(stats.total / DASHBOARD_CONFIG.defaultPageSize);
+const showingCount = Math.min(initialJobs.length, DASHBOARD_CONFIG.defaultPageSize);
+
+// Generate page numbers for pagination
+const generatePageNumbers = (current: number, total: number): number[] => {
+  const pages: number[] = [];
+  const maxVisible = 5;
+  
+  let start = Math.max(1, current - Math.floor(maxVisible / 2));
+  let end = Math.min(total, start + maxVisible - 1);
+  
+  if (end - start < maxVisible - 1) {
+    start = Math.max(1, end - maxVisible + 1);
+  }
+  
+  for (let i = start; i <= end; i++) {
+    pages.push(i);
+  }
+  
+  return pages;
+};
+
+const pageNumbers = generatePageNumbers(currentPage, totalPages);
 ---
 
-<!-- Jobs List Container -->
-<div class="glass-card p-6" data-component="jobs-list">
-  <div class="space-y-4" id="jobs-container">
+<!-- =============================================================================
+     JOBS LIST CONTAINER (Server Island - NO define:vars)
+     Using data attributes for client-side enhancement
+     ============================================================================= -->
+
+<div 
+  class="glass-card p-6" 
+  data-component="jobs-list"
+  data-initial-jobs={JSON.stringify(initialJobs)}
+  data-initial-stats={JSON.stringify(stats)}
+  data-current-page={currentPage}
+  data-total-pages={totalPages}
+>
+  
+  <!-- =================================================================
+       JOBS DISPLAY SECTION (Single Responsibility)
+       ================================================================= -->
+  <div class="space-y-4" id="jobs-container" data-jobs-container>
     {initialJobs.length > 0 ? (
       <!-- Render initial jobs using JobCard component -->
       {initialJobs.map(job => (
@@ -44,40 +104,67 @@ try {
       ))}
     ) : (
       <!-- No jobs state -->
-      <div class="text-center py-12">
+      <div class="text-center py-12" data-empty-state>
         <div class="w-16 h-16 mx-auto mb-4 bg-gray-800 rounded-full flex items-center justify-center">
-          <svg class="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg class="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
         <h3 class="text-white font-medium mb-2">No jobs found</h3>
-        <p class="text-gray-300 text-sm">Your conversion jobs will appear here</p>
+        <p class="text-white/60 text-sm">Your conversion jobs will appear here</p>
       </div>
     )}
   </div>
   
-  <!-- Pagination -->
+  <!-- =================================================================
+       PAGINATION SECTION (Single Responsibility)
+       ================================================================= -->
   <div class="border-t border-gray-700 pt-6 mt-6" data-pagination>
     <div class="flex items-center justify-between">
-      <div class="text-gray-300 text-sm">
-        Showing <span id="showing-count">{initialJobs.length}</span> of <span id="total-count">{stats.total}</span> jobs
+      
+      <!-- Results Summary -->
+      <div class="text-gray-300 text-sm" data-results-summary>
+        Showing <span id="showing-count" data-showing-count>{showingCount}</span> 
+        of <span id="total-count" data-total-count>{stats.total}</span> jobs
       </div>
-      <div class="flex items-center space-x-2">
+      
+      <!-- Pagination Controls -->
+      <div class="flex items-center space-x-2" data-pagination-controls>
         <button 
           id="prev-page" 
           class="glass-button px-3 py-2 text-gray-200 hover:text-white disabled:opacity-50" 
-          disabled
+          disabled={currentPage <= 1}
           aria-label="Previous page"
+          data-action="previous-page"
+          data-page={currentPage - 1}
+          type="button"
         >
           Previous
         </button>
+        
         <div class="flex space-x-1" id="page-numbers" role="navigation" aria-label="Pagination">
-          <button class="glass-button px-3 py-2 bg-blue-800 text-blue-400">1</button>
+          {pageNumbers.map(pageNum => (
+            <button 
+              class={`glass-button px-3 py-2 ${pageNum === currentPage ? 'bg-blue-800 text-blue-400' : 'text-gray-200 hover:text-white'}`}
+              data-action="goto-page"
+              data-page={pageNum}
+              aria-label={`Go to page ${pageNum}`}
+              aria-current={pageNum === currentPage ? 'page' : undefined}
+              type="button"
+            >
+              {pageNum}
+            </button>
+          ))}
         </div>
+        
         <button 
           id="next-page" 
-          class="glass-button px-3 py-2 text-gray-200 hover:text-white"
+          class="glass-button px-3 py-2 text-gray-200 hover:text-white disabled:opacity-50"
+          disabled={currentPage >= totalPages}
           aria-label="Next page"
+          data-action="next-page"
+          data-page={currentPage + 1}
+          type="button"
         >
           Next
         </button>
@@ -86,10 +173,36 @@ try {
   </div>
 </div>
 
-<!-- Pass initial data to client component -->
-<script define:vars={{ initialJobs, stats }}>
-  // Emit initial data for client-side enhancement
-  window.dispatchEvent(new CustomEvent('dashboardDataLoaded', {
-    detail: { jobs: initialJobs, stats }
-  }));
+<!-- =============================================================================
+     ASTRO ISLANDS ARCHITECTURE (Perfect Implementation)
+     NO define:vars - using data attributes and proper Islands pattern
+     ============================================================================= -->
+
+<!-- =============================================================================
+     SERVER ISLAND DATA EMISSION (Proper Pattern)
+     Emitting initial data for client-side enhancement without define:vars
+     ============================================================================= -->
+<script>
+  // Emit initial data using proper event system (not define:vars)
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('🏝️ DashboardJobs Server Island: Emitting initial data');
+    
+    // Get data from DOM attributes (avoiding define:vars)
+    const jobsList = document.querySelector('[data-component="jobs-list"]');
+    if (jobsList) {
+      const initialJobs = JSON.parse(jobsList.getAttribute('data-initial-jobs') || '[]');
+      const initialStats = JSON.parse(jobsList.getAttribute('data-initial-stats') || '{}');
+      
+      // Emit data loaded event
+      window.dispatchEvent(new CustomEvent('dashboardDataLoaded', {
+        detail: { 
+          jobs: initialJobs, 
+          stats: initialStats,
+          timestamp: Date.now()
+        }
+      }));
+      
+      console.log('🏝️ DashboardJobs Server Island: Data emitted successfully');
+    }
+  });
 </script>

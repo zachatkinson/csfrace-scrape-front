@@ -183,6 +183,52 @@ svg.w-16 { width: 4rem !important; height: 4rem !important; }
 /* Glass Component Variants */
 
 @layer components {
+  /* Ultra-Stable Header - Override any potential transitions */
+  header[transition\\:persist="app-header"] {
+    /* Force no transitions on backdrop-filter */
+    transition: none !important;
+    animation: none !important;
+    /* Force stable backdrop-filter */
+    backdrop-filter: blur(30px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(30px) saturate(180%) !important;
+  }
+
+  header[transition\\:persist="app-header"] * {
+    /* Ensure child elements don't trigger parent reflows */
+    transition-property: transform, opacity, color !important;
+  }
+
+  /* Additional ultra-stable header rules using attribute selector */
+  header[transition\\:persist] {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  /* Persistent Header Glass - Stable backdrop-filter for View Transitions */
+  .glass-header-persistent {
+    background: rgba(0, 0, 0, 0.4) !important;
+    /* Use will-change to hint browser to optimize backdrop-filter */
+    will-change: backdrop-filter;
+    /* Apply backdrop-filter with GPU acceleration hint */
+    backdrop-filter: blur(30px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(30px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 12px;
+
+    /* Enhanced shadow for header elevation */
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+
+    /* Prevent transition flicker by maintaining transform context */
+    transform: translateZ(0);
+    transform-style: preserve-3d;
+
+    /* Stable transition only for non-filter properties */
+    transition: box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
   /* Card Glass - UPDATED TO USE DARKER BACKGROUND */
   .glass-card-backup {
     background: rgba(0, 0, 0, 0.4) !important;
