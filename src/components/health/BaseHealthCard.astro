@@ -8,8 +8,8 @@
 // Dependency Inversion: Depends on IServiceResult abstraction
 // =============================================================================
 
-import type { IServiceResult } from '../../utils/serviceCheckers.js';
-import { formatTimestamp } from '../../utils/timezone.js';
+import type { IServiceResult } from '../../utils/serviceCheckers.ts';
+import { formatTimestamp } from '../../utils/timezone.ts';
 
 export interface Props {
   serviceName: string;
@@ -120,7 +120,7 @@ const responseTime = serviceResult.metrics.responseTime;
 
 <script define:vars={{ serviceName, serviceResult }}>
   // Import timezone utility for reactive timestamp updates
-  import { formatTimestamp, onTimezoneChange } from '../../utils/timezone.js';
+  import { formatTimestamp, onTimezoneChange } from '../../utils/timezone.ts';
 
   // Update timestamp display when timezone settings change
   const timestampElementId = `last-check-${serviceName.toLowerCase().replace(/\s+/g, '-')}`;

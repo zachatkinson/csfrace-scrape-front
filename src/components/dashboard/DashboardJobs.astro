@@ -11,8 +11,8 @@
 import type { IDashboardStats } from './types/dashboard.types';
 import type { IJobData } from '../../types/job.ts';
 import { DASHBOARD_CONFIG } from './types/dashboard.types';
-import { getJobs } from '../../utils/dashboard/apiClient.js';
-import { convertBackendJob, calculateJobStats } from '../../utils/dashboard/jobUtils.js';
+import { getJobs } from '../../utils/dashboard/apiClient.ts';
+import { convertBackendJob, calculateJobStats } from '../../utils/dashboard/jobUtils.ts';
 import JobCard from './JobCard.astro';
 
 // =============================================================================

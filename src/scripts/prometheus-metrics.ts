@@ -5,7 +5,7 @@
 // Following same efficient pattern as other services
 // =============================================================================
 
-import { PrometheusServiceChecker } from '../utils/serviceCheckers.js';
+import { PrometheusServiceChecker } from '../utils/serviceCheckers.ts';
 
 interface PrometheusMetrics {
   version: string;

@@ -173,7 +173,7 @@ export class ModalManager {
         
         <div>
           <label class="text-white/70 text-sm">URL</label>
-          <p class="text-white break-all">${job.url}</p>
+          <p class="text-white break-all">${job.source_url}</p>
         </div>
         
         <div>

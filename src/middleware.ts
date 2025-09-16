@@ -1,5 +1,5 @@
 import { defineMiddleware } from 'astro:middleware';
-import { SecurityMiddleware, RateLimiter } from './middleware/security.js';
+import { SecurityMiddleware, RateLimiter } from './middleware/security.ts';
 
 export const onRequest = defineMiddleware(async (context, next) => {
   // Apply rate limiting
@@ -28,4 +28,4 @@ export const onRequest = defineMiddleware(async (context, next) => {
 });
 
 // Export types for use in other files
-export type { IRateLimitConfig } from './middleware/security.js';
+export type { IRateLimitConfig } from './middleware/security.ts';

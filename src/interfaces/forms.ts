@@ -49,36 +49,77 @@ export interface FormSubmissionResult<T = unknown> {
 // FORM COMPONENT INTERFACES
 // =============================================================================
 
+// =============================================================================
+// SEGREGATED FORM INTERFACES - Following Interface Segregation Principle
+// =============================================================================
+
 /**
- * Base Form Props
- * Common props that all form components should accept
+ * Core Form Data Props
+ * SOLID: ISP - Only data handling concerns
  */
-export interface BaseFormProps {
-  // Submission handling
-  onSubmit?: (data: unknown) => Promise<FormSubmissionResult> | FormSubmissionResult;
-  onSuccess?: (data?: unknown) => void;
-  onError?: (error: string, fieldErrors?: Record<string, string>) => void;
-  
-  // State callbacks
-  onStateChange?: (state: BaseFormState) => void;
-  
-  // Validation
-  validateOnChange?: boolean;
-  validateOnBlur?: boolean;
-  
-  // UI customization
-  className?: string;
-  title?: string;
-  subtitle?: string;
-  disabled?: boolean;
-  
-  // Loading states
-  isLoading?: boolean; // External loading state
-  
-  // Auto behaviors
-  autoFocus?: boolean;
-  resetOnSuccess?: boolean;
+export interface FormDataProps<TData = unknown> {
+  onSubmit?: ((data: TData) => Promise<FormSubmissionResult> | FormSubmissionResult) | undefined;
 }
+
+/**
+ * Form Event Handlers
+ * SOLID: ISP - Only event handling concerns
+ */
+export interface FormEventProps<TData = unknown> {
+  onSuccess?: ((data?: TData) => void) | undefined;
+  onError?: ((error: string, fieldErrors?: Record<string, string>) => void) | undefined;
+  onStateChange?: ((state: BaseFormState) => void) | undefined;
+}
+
+/**
+ * Form Validation Props
+ * SOLID: ISP - Only validation concerns
+ */
+export interface FormValidationProps {
+  validateOnChange?: boolean | undefined;
+  validateOnBlur?: boolean | undefined;
+}
+
+/**
+ * Form UI Props
+ * SOLID: ISP - Only UI/presentation concerns
+ */
+export interface FormUIProps {
+  className?: string | undefined;
+  title?: string | undefined;
+  subtitle?: string | undefined;
+  disabled?: boolean | undefined;
+}
+
+/**
+ * Form State Props
+ * SOLID: ISP - Only state management concerns
+ */
+export interface FormStateProps {
+  isLoading?: boolean | undefined;
+}
+
+/**
+ * Form Behavior Props
+ * SOLID: ISP - Only behavior configuration concerns
+ */
+export interface FormBehaviorProps {
+  autoFocus?: boolean | undefined;
+  resetOnSuccess?: boolean | undefined;
+}
+
+/**
+ * Complete Form Props
+ * SOLID: ISP - Composed from segregated interfaces
+ * Only use when you need ALL form capabilities
+ */
+export interface BaseFormProps<TData = unknown>
+  extends FormDataProps<TData>,
+          FormEventProps<TData>,
+          FormValidationProps,
+          FormUIProps,
+          FormStateProps,
+          FormBehaviorProps {}
 
 /**
  * Form Component Interface
@@ -287,7 +328,7 @@ export interface ApiConfigSettings {
 /**
  * Form Component Props with Generic Data Type
  */
-export interface FormComponentProps<TData = unknown> extends BaseFormProps {
+export interface FormComponentProps<TData = unknown> extends BaseFormProps<TData> {
   initialData?: Partial<TData> | undefined;
   validationSchema?: FormValidationSchema<TData> | undefined;
   children?: ReactNode | ((formHook: FormHookReturn<TData>) => ReactNode) | undefined;

@@ -60,7 +60,7 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
 
       const uiJob: ScrapingJobUI = {
         id: job.id,
-        url: job.url,
+        url: job.source_url,
         status: job.status,
         result: job.result,
         error: job.error,

@@ -6,27 +6,25 @@
 // Frontend only manages browser state and makes simple API calls
 // =============================================================================
 
-import type { IJobsResponse, IJobQueryParams, IBackendJob } from '../../types/job.js';
-
-const API_BASE_URL = 'http://localhost:8000';
+import type { IJobsResponse, IJobQueryParams, IBackendJob } from '../../types/job.ts';
+import { apiFetch } from '../api-utils.ts';
+import { getApiBaseUrl } from '../../constants/api.ts';
 
 /**
- * Simple fetch wrapper with error handling - NOT a service class
+ * Simple API call wrapper using shared utilities - NOT a service class
+ * SOLID: DRY - Uses centralized fetch patterns from api-utils
  */
 const apiCall = async (endpoint: string, options: RequestInit = {}): Promise<any> => {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const apiBaseUrl = getApiBaseUrl();
+  return apiFetch(`${apiBaseUrl}${endpoint}`, {
+    method: (options.method as any) || 'GET',
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,
     },
-    ...options,
+    body: options.body as string | FormData,
+    signal: options.signal,
   });
-
-  if (!response.ok) {
-    throw new Error(`API call failed: ${response.status} ${response.statusText}`);
-  }
-
-  return response.json();
 };
 
 // =============================================================================
@@ -49,7 +47,7 @@ export const getJobs = async (params: IJobQueryParams = {}): Promise<IJobsRespon
   if (params.sort_by) searchParams.set('sort_by', params.sort_by);
   if (params.sort_order) searchParams.set('sort_order', params.sort_order);
 
-  const endpoint = `/api/jobs${searchParams.toString() ? `?${searchParams}` : ''}`;
+  const endpoint = `/jobs${searchParams.toString() ? `?${searchParams}` : ''}`;
   return apiCall(endpoint);
 };
 
@@ -57,14 +55,14 @@ export const getJobs = async (params: IJobQueryParams = {}): Promise<IJobsRespon
  * Get single job details from backend API
  */
 export const getJob = async (jobId: number): Promise<IBackendJob> => {
-  return apiCall(`/api/jobs/${jobId}`);
+  return apiCall(`/jobs/${jobId}`);
 };
 
 /**
  * Delete job via backend API
  */
 export const deleteJob = async (jobId: number): Promise<void> => {
-  await apiCall(`/api/jobs/${jobId}`, {
+  await apiCall(`/jobs/${jobId}`, {
     method: 'DELETE',
   });
 };
@@ -73,7 +71,7 @@ export const deleteJob = async (jobId: number): Promise<void> => {
  * Retry failed job via backend API
  */
 export const retryJob = async (jobId: number): Promise<void> => {
-  await apiCall(`/api/jobs/${jobId}/retry`, {
+  await apiCall(`/jobs/${jobId}/retry`, {
     method: 'POST',
   });
 };
@@ -82,7 +80,7 @@ export const retryJob = async (jobId: number): Promise<void> => {
  * Cancel running job via backend API
  */
 export const cancelJob = async (jobId: number): Promise<void> => {
-  await apiCall(`/api/jobs/${jobId}/cancel`, {
+  await apiCall(`/jobs/${jobId}/cancel`, {
     method: 'POST',
   });
 };
@@ -91,12 +89,13 @@ export const cancelJob = async (jobId: number): Promise<void> => {
  * Get job result/download content via backend API
  */
 export const downloadJobContent = async (jobId: number): Promise<string> => {
-  const response = await fetch(`${API_BASE_URL}/api/jobs/${jobId}/download`);
-  
+  const apiBaseUrl = getApiBaseUrl();
+  const response = await fetch(`${apiBaseUrl}/jobs/${jobId}/download`);
+
   if (!response.ok) {
     throw new Error(`Download failed: ${response.status} ${response.statusText}`);
   }
-  
+
   return response.text();
 };
 

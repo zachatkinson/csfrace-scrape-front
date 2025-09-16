@@ -3,8 +3,8 @@
  * Type definitions for WordPress to Shopify conversion system
  */
 
-// Job Status Types
-export type JobStatus = 'pending' | 'validating' | 'scraping' | 'completed' | 'error' | 'cancelled';
+// Re-export JobStatus from job.ts to maintain backwards compatibility
+export type { JobStatus } from './job.ts';
 
 // Content Types
 export type ContentType = 'post' | 'page' | 'product' | 'category' | 'tag';
@@ -18,95 +18,11 @@ export interface ApiResponse<T = unknown> {
   timestamp: string;
 }
 
-// WordPress Content Structure
-export interface WordPressContent {
-  id: string;
-  title: string;
-  content: string;
-  excerpt?: string;
-  slug: string;
-  type: ContentType;
-  status: 'publish' | 'draft' | 'private';
-  author: {
-    id: string;
-    name: string;
-    email?: string;
-  };
-  publishedAt: string;
-  modifiedAt: string;
-  featuredImage?: {
-    url: string;
-    alt?: string;
-    caption?: string;
-  };
-  categories: string[];
-  tags: string[];
-  metadata: Record<string, string | number | boolean | null>;
-}
+// Re-export content types from job.ts to maintain backwards compatibility
+export type { WordPressContent, ShopifyContent } from './job.ts';
 
-// Shopify Content Structure
-export interface ShopifyContent {
-  handle: string;
-  title: string;
-  bodyHtml: string;
-  excerpt?: string;
-  vendor?: string;
-  productType?: string;
-  tags: string[];
-  images: {
-    src: string;
-    alt?: string;
-    position: number;
-  }[];
-  variants?: {
-    title: string;
-    price: string;
-    sku?: string;
-    inventoryQuantity?: number;
-  }[];
-  seo: {
-    title?: string;
-    description?: string;
-  };
-  publishedAt?: string;
-}
-
-// Conversion Job
-export interface ConversionJob {
-  id: string;
-  url: string;
-  status: JobStatus;
-  progress: number;
-  
-  // Input data
-  wordpressContent?: WordPressContent;
-  
-  // Output data
-  shopifyContent?: ShopifyContent;
-  convertedHtml?: string;
-  extractedImages?: string[];
-  
-  // Metadata
-  metadata: {
-    title?: string;
-    type?: ContentType;
-    wordCount?: number;
-    imageCount?: number;
-    estimatedSize?: string;
-    processingTime?: number;
-  };
-  
-  // Status information
-  error?: string;
-  warnings?: string[];
-  createdAt: Date;
-  startedAt?: Date;
-  completedAt?: Date;
-  estimatedTimeRemaining?: number;
-  
-  // Configuration
-  options: ConversionOptions;
-}
+// Re-export ConversionJob from job.ts to maintain backwards compatibility
+export type { ConversionJob } from './job.ts';
 
 // Conversion Configuration
 export interface ConversionOptions {

@@ -6,7 +6,7 @@
 
 import { BaseModalManager } from './baseModalManager';
 import type { BaseModalConfig } from './baseModalManager';
-import { getApiBaseUrl } from '../constants/api.js';
+import { getApiBaseUrl } from '../constants/api.ts';
 
 export interface SettingsData {
   // API Configuration

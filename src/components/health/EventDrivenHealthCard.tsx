@@ -5,10 +5,10 @@
 
 import { useState, useEffect } from 'react';
 import { useStore } from '@nanostores/react';
-import { $healthData } from '../../stores/healthStore.js';
-import { getStatusColor, getStatusBorderClass } from '../../utils/health-ui-utilities.js';
-import type { IServiceResult } from '../../utils/serviceCheckers.js';
-import { formatTimestamp, onTimezoneChange } from '../../utils/timezone.js';
+import { $healthData } from '../../stores/healthStore.ts';
+import { getStatusColor, getStatusBorderClass } from '../../utils/health-ui-utilities.ts';
+import type { IServiceResult } from '../../utils/serviceCheckers.ts';
+import { formatTimestamp, onTimezoneChange } from '../../utils/timezone.ts';
 
 interface EventDrivenHealthCardProps {
   serviceName: 'frontend' | 'backend' | 'database' | 'cache';

@@ -14,8 +14,8 @@ import {
   DatabaseServiceChecker,
   CacheServiceChecker,
   FrontendServiceChecker
-} from '../../utils/serviceCheckers.js';
-import { formatTimestamp } from '../../utils/timezone.js';
+} from '../../utils/serviceCheckers.ts';
+import { formatTimestamp } from '../../utils/timezone.ts';
 
 // CACHE-BUSTING: Add timestamp to prevent excessive caching of health data
 // Health checks should be relatively fresh, not heavily cached
@@ -115,8 +115,8 @@ console.log('🚀 Health results:', healthResults.map(hr => ({
   // Following Astro best practices for reactive client-side components
   // =============================================================================
 
-  import { formatTimestamp, onTimezoneChange } from '../../utils/timezone.js';
-  import { $healthData, $serviceMetrics } from '../../stores/healthStore.js';
+  import { formatTimestamp, onTimezoneChange } from '../../utils/timezone.ts';
+  import { $healthData, $serviceMetrics } from '../../stores/healthStore.ts';
 
   console.log('🚀 CompactHealthStatus: Subscribing to Nano Store for real-time updates');
 
@@ -216,7 +216,8 @@ console.log('🚀 Health results:', healthResults.map(hr => ({
         }
 
         try {
-          const backendUrl = import.meta.env.PUBLIC_BACKEND_SSE_URL || 'http://localhost:8000';
+          import { getApiBaseUrl } from '../../constants/api.ts';
+          const backendUrl = import.meta.env.PUBLIC_BACKEND_SSE_URL || getApiBaseUrl();
           const sseUrl = `${backendUrl}/health/stream`;
           console.log('🔗 HealthSystem: Establishing SSE connection to:', sseUrl);
           this.eventSource = new EventSource(sseUrl);
@@ -246,7 +247,7 @@ console.log('🚀 Health results:', healthResults.map(hr => ({
               console.log('🎯 HealthSystem: Service update received:', serviceUpdate);
 
               // Handle both batch updates and individual service updates
-              import('/src/stores/healthStore.js').then(({ updateHealthData, getCurrentHealthData }) => {
+              import('/src/stores/healthStore.ts').then(({ updateHealthData, getCurrentHealthData }) => {
                 const updateTime = new Date(serviceUpdate.timestamp || Date.now());
 
                 let services = {};
@@ -309,7 +310,7 @@ console.log('🚀 Health results:', healthResults.map(hr => ({
 
               if (errorData.service && errorData.error) {
                 // Update store with error state
-                import('/src/stores/healthStore.js').then(({ updateHealthData }) => {
+                import('/src/stores/healthStore.ts').then(({ updateHealthData }) => {
                   const errorTimestamp = new Date(errorData.timestamp || Date.now());
                   const updatedServices = {};
                   updatedServices[errorData.service] = {
@@ -391,7 +392,7 @@ console.log('🚀 Health results:', healthResults.map(hr => ({
   }
 
   // NANO STORE SUBSCRIPTION: Subscribe to updates (using dynamic import for client-side)
-  import('/src/stores/healthStore.js').then(({ $healthData }) => {
+  import('/src/stores/healthStore.ts').then(({ $healthData }) => {
     console.log('📡 CompactHealthStatus: Setting up Nano Store subscription');
 
     const unsubscribe = $healthData.subscribe(healthData => {

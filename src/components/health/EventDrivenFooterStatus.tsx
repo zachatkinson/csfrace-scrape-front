@@ -5,9 +5,9 @@
 
 import { useState, useEffect } from 'react';
 import { useStore } from '@nanostores/react';
-import { $healthData, $serviceMetrics } from '../../stores/healthStore.js';
-import type { IServiceResult } from '../../utils/serviceCheckers.js';
-import { formatTimestamp, onTimezoneChange } from '../../utils/timezone.js';
+import { $healthData, $serviceMetrics } from '../../stores/healthStore.ts';
+import type { IServiceResult } from '../../utils/serviceCheckers.ts';
+import { formatTimestamp, onTimezoneChange } from '../../utils/timezone.ts';
 
 interface ServiceStatuses {
   frontend: IServiceResult | null;

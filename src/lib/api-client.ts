@@ -4,27 +4,18 @@
  */
 
 import { getApiBaseUrl } from '../constants/api.ts';
+import type { JobStatus } from '../types/job.ts';
+import {
+  EnhancedApiClient,
+  EnhancedApiError,
+  type EnhancedApiClientConfig
+} from '../utils/api-utils.ts';
 
-// Configuration types
-export interface ConverterConfig {
-  format?: 'html' | 'markdown' | 'json';
-  includeImages?: boolean;
-  imageQuality?: 'low' | 'medium' | 'high';
-  customCSS?: string;
-  preserveStyles?: boolean;
-  stripScripts?: boolean;
-  stripForms?: boolean;
-}
-
-export interface ProcessingOptions {
-  timeout?: number;
-  maxRetries?: number;
-  skipExisting?: boolean;
-  outputDirectory?: string;
-  compression?: boolean;
-  removeMetadata?: boolean;
-  customHeaders?: Record<string, string>;
-}
+// Re-export configuration types from centralized location
+export type {
+  JobConverterConfig as ConverterConfig,
+  JobProcessingOptions as ProcessingOptions
+} from '../types/job.ts';
 
 export interface BatchConfig {
   maxConcurrent?: number;
@@ -135,93 +126,24 @@ export interface ContextData {
   additionalInfo?: Record<string, string | number | boolean>;
 }
 
-export class ApiError extends Error {
-  public readonly errorCode?: string;
-  public readonly timestamp?: string;
-  public readonly validationErrors?: Record<string, string[]>;
-  public readonly statusCode?: number;
+// Re-export enhanced error class for backwards compatibility
+export { EnhancedApiError as ApiError } from '../utils/api-utils.ts';
 
-  constructor(
-    message: string,
-    errorCode?: string,
-    timestamp?: string,
-    validationErrors?: Record<string, string[]>,
-    statusCode?: number
-  ) {
-    super(message);
-    this.name = 'ApiError';
-    this.errorCode = errorCode;
-    this.timestamp = timestamp;
-    this.validationErrors = validationErrors;
-    this.statusCode = statusCode;
-    Object.setPrototypeOf(this, ApiError.prototype);
-  }
-}
-
-// Types matching backend models
-export interface Job {
-  id: number;
-  url: string;
-  domain: string;
-  slug?: string;
-  status: JobStatus;
-  priority: JobPriority;
-  created_at: string;
-  started_at?: string;
-  completed_at?: string;
-  next_retry_at?: string;
-  retry_count: number;
-  max_retries: number;
-  timeout_seconds: number;
-  output_directory: string;
-  custom_slug?: string;
-  skip_existing: boolean;
-  error_message?: string;
-  error_type?: string;
-  success: boolean;
-  start_time?: number;
-  end_time?: number;
-  duration_seconds?: number;
-  content_size_bytes?: number;
-  images_downloaded: number;
-  archive_path?: string;
-  archive_size_bytes?: number;
-  batch_id?: number;
-  converter_config?: ConverterConfig;
-  processing_options?: ProcessingOptions;
-}
-
-export type JobStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped' | 'cancelled' | 'partial';
-export type JobPriority = 'low' | 'normal' | 'high' | 'urgent';
-
-export interface JobListResponse {
-  jobs: Job[];
-  total: number;
-  page: number;
-  page_size: number;
-  total_pages: number;
-}
-
-export interface JobCreate {
-  url: string;
-  slug?: string;
-  custom_slug?: string;
-  priority?: JobPriority;
-  output_directory?: string;
-  max_retries?: number;
-  timeout_seconds?: number;
-  skip_existing?: boolean;
-  converter_config?: ConverterConfig;
-  processing_options?: ProcessingOptions;
-}
+// Re-export unified types from centralized location
+export type {
+  BackendJob as Job,
+  JobPriority,
+  BackendJobListResponse as JobListResponse,
+  JobCreateRequest as JobCreate
+} from '../types/job.ts';
 
 export interface JobUpdate {
-  priority?: JobPriority;
-  max_retries?: number;
-  timeout_seconds?: number;
-  skip_existing?: boolean;
-  converter_config?: ConverterConfig;
-  processing_options?: ProcessingOptions;
+  priority?: JobPriority | undefined;
+  max_retries?: number | undefined;
+  timeout_seconds?: number | undefined;
+  skip_existing?: boolean | undefined;
+  converter_config?: ConverterConfig | undefined;
+  processing_options?: ProcessingOptions | undefined;
 }
 
 export interface Batch {
@@ -329,78 +251,29 @@ export interface APIError {
   validation_errors?: Record<string, string[]>;
 }
 
-class APIClient {
-  private baseURL: string;
-  private apiKey?: string;
-
+/**
+ * Enhanced API Client using DRY/SOLID principles
+ * SOLID: Single Responsibility - HTTP client operations with sophisticated error handling
+ * DRY: Eliminates duplicate error handling patterns using shared utilities
+ */
+class APIClient extends EnhancedApiClient {
   constructor(baseURL?: string, apiKey?: string) {
-    this.baseURL = baseURL ?? getApiBaseUrl();
-    if (apiKey != null) {
-      this.apiKey = apiKey;
-    }
+    const config: EnhancedApiClientConfig = {
+      baseURL: baseURL ?? getApiBaseUrl(),
+      apiKey: apiKey || undefined,
+      useStructuredErrors: true, // Enable sophisticated error handling
+      retryConfig: {
+        maxAttempts: 3,
+        baseDelayMs: 1000,
+        maxDelayMs: 10000,
+        backoffMultiplier: 2
+      }
+    };
+    super(config);
   }
 
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const url = `${this.baseURL}${endpoint}`;
-    
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    };
-
-    if (this.apiKey) {
-      (headers as Record<string, string>)['Authorization'] = `Bearer ${this.apiKey}`;
-    }
-
-    const config: RequestInit = {
-      ...options,
-      headers,
-    };
-
-    try {
-      const response = await fetch(url, config);
-      
-      if (!response.ok) {
-        let errorData: APIError;
-        try {
-          errorData = await response.json();
-        } catch {
-          errorData = {
-            detail: `HTTP ${response.status}: ${response.statusText}`,
-            timestamp: new Date().toISOString(),
-          };
-        }
-        
-        // Create enhanced error with validation details
-        const errorMessage = errorData.detail || 'Request failed';
-        const error = new Error(errorMessage);
-        
-        // Create proper API error
-        throw new ApiError(
-          error.message,
-          errorData.error_code,
-          errorData.timestamp,
-          errorData.validation_errors,
-          response.status
-        );
-      }
-
-      // Handle 204 No Content responses
-      if (response.status === 204) {
-        return {} as T;
-      }
-
-      return await response.json();
-    } catch (error) {
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error('Network request failed');
-    }
-  }
+  // All sophisticated error handling now inherited from EnhancedApiClient
+  // No need for duplicate request method - DRY principle applied!
 
   // Jobs API
   async getJobs(params?: {
@@ -419,47 +292,47 @@ class APIClient {
     const query = searchParams.toString();
     const endpoint = `/jobs${query ? `?${query}` : ''}`;
     
-    return this.request<JobListResponse>(endpoint);
+    return this.get<JobListResponse>(endpoint);
   }
 
   async getJob(id: number): Promise<Job> {
-    return this.request<Job>(`/jobs/${id}`);
+    return this.get<Job>(`/jobs/${id}`);
   }
 
   async createJob(jobData: JobCreate): Promise<Job> {
-    return this.request<Job>('/jobs', {
+    return this.get<Job>('/jobs', {
       method: 'POST',
       body: JSON.stringify(jobData),
     });
   }
 
   async updateJob(id: number, jobData: JobUpdate): Promise<Job> {
-    return this.request<Job>(`/jobs/${id}`, {
+    return this.get<Job>(`/jobs/${id}`, {
       method: 'PUT',
       body: JSON.stringify(jobData),
     });
   }
 
   async deleteJob(id: number): Promise<void> {
-    return this.request<void>(`/jobs/${id}`, {
+    return this.get<void>(`/jobs/${id}`, {
       method: 'DELETE',
     });
   }
 
   async startJob(id: number): Promise<Job> {
-    return this.request<Job>(`/jobs/${id}/start`, {
+    return this.get<Job>(`/jobs/${id}/start`, {
       method: 'POST',
     });
   }
 
   async cancelJob(id: number): Promise<Job> {
-    return this.request<Job>(`/jobs/${id}/cancel`, {
+    return this.get<Job>(`/jobs/${id}/cancel`, {
       method: 'POST',
     });
   }
 
   async retryJob(id: number): Promise<Job> {
-    return this.request<Job>(`/jobs/${id}/retry`, {
+    return this.get<Job>(`/jobs/${id}/retry`, {
       method: 'POST',
     });
   }
@@ -477,15 +350,15 @@ class APIClient {
     const query = searchParams.toString();
     const endpoint = `/batches${query ? `?${query}` : ''}`;
     
-    return this.request<BatchListResponse>(endpoint);
+    return this.get<BatchListResponse>(endpoint);
   }
 
   async getBatch(id: number): Promise<BatchWithJobs> {
-    return this.request<BatchWithJobs>(`/batches/${id}`);
+    return this.get<BatchWithJobs>(`/batches/${id}`);
   }
 
   async createBatch(batchData: BatchCreate): Promise<Batch> {
-    return this.request<Batch>('/batches', {
+    return this.get<Batch>('/batches', {
       method: 'POST',
       body: JSON.stringify(batchData),
     });
@@ -493,19 +366,19 @@ class APIClient {
 
   // Health check and monitoring
   async getHealth(): Promise<HealthCheck> {
-    return this.request<HealthCheck>('/health');
+    return this.get<HealthCheck>('/health');
   }
 
   async getMetrics(): Promise<MetricsResponse> {
-    return this.request<MetricsResponse>('/health/metrics');
+    return this.get<MetricsResponse>('/health/metrics');
   }
 
   async getLiveness(): Promise<{status: string}> {
-    return this.request<{status: string}>('/health/live');
+    return this.get<{status: string}>('/health/live');
   }
 
   async getReadiness(): Promise<{status: string}> {
-    return this.request<{status: string}>('/health/ready');
+    return this.get<{status: string}>('/health/ready');
   }
 
   async getPrometheusMetrics(): Promise<string> {
@@ -527,11 +400,11 @@ class APIClient {
 
   // Content results (if backend implements these endpoints)
   async getJobResults(jobId: number): Promise<ContentResult[]> {
-    return this.request<ContentResult[]>(`/jobs/${jobId}/results`);
+    return this.get<ContentResult[]>(`/jobs/${jobId}/results`);
   }
 
   async getJobResult(jobId: number, resultId: number): Promise<ContentResult> {
-    return this.request<ContentResult>(`/jobs/${jobId}/results/${resultId}`);
+    return this.get<ContentResult>(`/jobs/${jobId}/results/${resultId}`);
   }
 
   // Job logs (if backend implements these endpoints)
@@ -554,7 +427,7 @@ class APIClient {
     const query = searchParams.toString();
     const endpoint = `/jobs/${jobId}/logs${query ? `?${query}` : ''}`;
     
-    return this.request<JobLog[]>(endpoint);
+    return this.get<JobLog[]>(endpoint);
   }
 
   // Utility methods
@@ -681,25 +554,16 @@ export function getRelativeTime(dateString: string): string {
 }
 
 // Enhanced error handling utilities
-export function isAPIError(error: unknown): error is Error & {
-  errorCode?: string;
-  timestamp?: string;
-  validationErrors?: Record<string, string[]>;
-  statusCode?: number;
-} {
-  return error instanceof Error && 'statusCode' in error;
-}
-
-export function getValidationErrorMessage(error: unknown): string | null {
-  if (isAPIError(error) && error.validationErrors) {
-    const messages: string[] = [];
-    for (const [field, errors] of Object.entries(error.validationErrors)) {
-      messages.push(`${field}: ${errors.join(', ')}`);
-    }
-    return messages.join('; ');
-  }
-  return null;
-}
+// Re-export enhanced error utilities for backwards compatibility
+// SOLID: Dependency Inversion - Depend on abstractions from shared utilities
+// DRY: Eliminate duplicate error handling functions
+export {
+  isEnhancedApiError as isAPIError,
+  getValidationErrorMessage,
+  getFormValidationErrors,
+  hasValidationErrors,
+  isRetryableError
+} from '../utils/api-utils.ts';
 
 // Content result utilities
 export function getContentSummary(result: ContentResult): string {

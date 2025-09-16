@@ -4,7 +4,7 @@
 // =============================================================================
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { adaptivePoller, type IServiceResult } from '../utils/serviceCheckers.js';
+import { adaptivePoller, type IServiceResult } from '../utils/serviceCheckers.ts';
 
 // =============================================================================
 // 1. ENCAPSULATED INTERVAL HOOK (Following article pattern)
@@ -204,7 +204,7 @@ export const useAdaptivePolling = (
 export const useBackendPolling = (options: Omit<UseAdaptivePollingOptions, 'serviceName'> = {}) => {
   return useAdaptivePolling(
     async () => {
-      const { BackendServiceChecker } = await import('../utils/serviceCheckers.js');
+      const { BackendServiceChecker } = await import('../utils/serviceCheckers.ts');
       return BackendServiceChecker.checkHealth();
     },
     { ...options, serviceName: 'backend' }
@@ -214,7 +214,7 @@ export const useBackendPolling = (options: Omit<UseAdaptivePollingOptions, 'serv
 export const useDatabasePolling = (options: Omit<UseAdaptivePollingOptions, 'serviceName'> = {}) => {
   return useAdaptivePolling(
     async () => {
-      const { DatabaseServiceChecker } = await import('../utils/serviceCheckers.js');
+      const { DatabaseServiceChecker } = await import('../utils/serviceCheckers.ts');
       return DatabaseServiceChecker.checkHealth();
     },
     { ...options, serviceName: 'database' }
@@ -224,7 +224,7 @@ export const useDatabasePolling = (options: Omit<UseAdaptivePollingOptions, 'ser
 export const useCachePolling = (options: Omit<UseAdaptivePollingOptions, 'serviceName'> = {}) => {
   return useAdaptivePolling(
     async () => {
-      const { CacheServiceChecker } = await import('../utils/serviceCheckers.js');
+      const { CacheServiceChecker } = await import('../utils/serviceCheckers.ts');
       return CacheServiceChecker.checkHealth();
     },
     { ...options, serviceName: 'cache' }
@@ -234,7 +234,7 @@ export const useCachePolling = (options: Omit<UseAdaptivePollingOptions, 'servic
 export const useFrontendPolling = (options: Omit<UseAdaptivePollingOptions, 'serviceName'> = {}) => {
   return useAdaptivePolling(
     async () => {
-      const { PerformanceMetrics, FrameworkDetector } = await import('../utils/serviceCheckers.js');
+      const { PerformanceMetrics, FrameworkDetector } = await import('../utils/serviceCheckers.ts');
       
       // Frontend runs in browser - create status based on client-side metrics
       const pageLoadTime = PerformanceMetrics.getPageLoadTime();

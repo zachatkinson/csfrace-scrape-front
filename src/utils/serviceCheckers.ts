@@ -3,7 +3,7 @@
 // Single source of truth for all health status checking across the application
 // =============================================================================
 
-import { getApiBaseUrl } from '../constants/api.js';
+import { getApiBaseUrl } from '../constants/api.ts';
 
 // =============================================================================
 // MODERN 2025 POLLING CONFIGURATION - ADAPTIVE & EFFICIENT
@@ -242,7 +242,7 @@ export class PerformanceMetrics {
       const memory = (performance as any).memory;
       const usedJSHeapSize = memory.usedJSHeapSize;
       const totalJSHeapSize = memory.totalJSHeapSize;
-      const jsHeapSizeLimit = memory.jsHeapSizeLimit;
+      const jsHeapSizeLimit = memory.tsHeapSizeLimit;
       
       // Convert bytes to MB for readability
       const usedMB = Math.round(usedJSHeapSize / 1024 / 1024 * 100) / 100;
@@ -282,7 +282,7 @@ export class PerformanceMetrics {
       const resources = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
       
       resources.forEach(resource => {
-        if (resource.name.includes('.js') || resource.name.includes('.css')) {
+        if (resource.name.includes('.ts') || resource.name.includes('.css')) {
           totalSize += resource.transferSize || resource.encodedBodySize || 0;
         }
       });
@@ -324,7 +324,7 @@ export class FrameworkDetector {
   static getFrameworkInfo(): string {
     if (EnvironmentDetector.isServerSide()) return 'Astro (Server-side)';
     
-    // ASTRO 2025 ULTIMATE EFFICIENCY: Build-time version injection from package.json
+    // ASTRO 2025 ULTIMATE EFFICIENCY: Build-time version injection from package.tson
     const astroVersion = import.meta.env.VITE_ASTRO_VERSION || '5.13.5';
     const buildTime = import.meta.env.VITE_BUILD_TIME;
     
@@ -671,7 +671,7 @@ export class BackendServiceChecker {
       const responseTime = Date.now() - startTime;
       
       if (response.ok) {
-        const data = await response.json();
+        const data = await response.tson();
         console.log('🔍 Raw backend health response:', data); // DEBUG
         const status = StatusMapper.mapBackendStatus(data.status);
         
@@ -806,7 +806,7 @@ export class DatabaseServiceChecker {
       const responseTime = Date.now() - startTime;
       
       if (response.ok) {
-        const data = await response.json();
+        const data = await response.tson();
         const dbStatus = data.database?.status;
         
         // SINGLE SOURCE OF TRUTH: Use shared StatusMapper
@@ -847,7 +847,7 @@ export class CacheServiceChecker {
       const responseTime = Date.now() - startTime;
       
       if (response.ok) {
-        const data = await response.json();
+        const data = await response.tson();
         const cacheData = data.cache;
         
         // SINGLE SOURCE OF TRUTH: Use shared StatusMapper
@@ -908,7 +908,7 @@ export class PrometheusServiceChecker {
       const responseTime = Date.now() - startTime;
       
       if (response.ok) {
-        const healthData = await response.json();
+        const healthData = await response.tson();
         const monitoring = healthData.monitoring || {};
         
         // Check if backend monitors external services (future enhancement)
@@ -1030,7 +1030,7 @@ export class GrafanaServiceChecker {
       const responseTime = Date.now() - startTime;
       
       if (response.ok) {
-        const healthData = await response.json();
+        const healthData = await response.tson();
         const monitoring = healthData.monitoring || {};
         
         // Check if backend monitors external services (future enhancement)

@@ -565,8 +565,10 @@ import MainLayout from '../components/layout/MainLayout.astro';
   const ENVIRONMENT = import.meta.env.MODE || import.meta.env.NODE_ENV || 'development';
   const IS_PRODUCTION = ENVIRONMENT === 'production';
 
+  import { getApiBaseUrl } from '../constants/api.ts';
+
   const CONFIG = {
-    API_BASE_URL: import.meta.env.PUBLIC_API_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000',
+    API_BASE_URL: import.meta.env.PUBLIC_API_URL || import.meta.env.VITE_API_URL || getApiBaseUrl(),
     REQUEST_TIMEOUT: IS_PRODUCTION ? 6000 : 15000, // More generous timeout for development
     // Development vs Production timing configuration:
     // - Development: 60 seconds - more relaxed for debugging and testing
@@ -729,7 +731,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
     formatRelativeTime,
     getTimezoneAbbreviation,
     getTimezoneInfo
-  } from '../utils/timezone.js';
+  } from '../utils/timezone.ts';
 
   // =============================================================================
   // GLOBAL HEALTH DATA CONSUMER (Single Responsibility + DRY Principle)
@@ -857,7 +859,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
         const responseTime = Date.now() - startTime;
         
         if (response.ok) {
-          const data = await response.json();
+          const data = await response.tson();
           return this.createResult(
             data.status === 'healthy' ? 'up' : 'degraded',
             `Backend ${data.status}`,
@@ -920,7 +922,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
         const responseTime = Date.now() - startTime;
         
         if (response.ok) {
-          const data = await response.json();
+          const data = await response.tson();
           const dbData = data.database || {};
           
           return this.createResult(
@@ -984,7 +986,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
         const responseTime = Date.now() - startTime;
         
         if (response.ok) {
-          const data = await response.json();
+          const data = await response.tson();
           const cacheData = data.cache || {};
           
           return this.createResult(
@@ -1372,7 +1374,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
         const responseTime = Date.now() - startTime;
         
         if (response.ok) {
-          const data = await response.json();
+          const data = await response.tson();
           return { success: true, data, responseTime };
         } else {
           return { success: false, error: `HTTP ${response.status}: ${response.statusText}`, responseTime };
@@ -1707,7 +1709,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       
       const a = document.createElement('a');
       a.href = url;
-      a.download = `health-report-${Date.now()}.json`;
+      a.download = `health-report-${Date.now()}.tson`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

@@ -70,7 +70,7 @@ export interface IJobData {
   readonly id: string;
   readonly status: string;
   readonly title?: string;
-  readonly url?: string;
+  readonly source_url?: string;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }

@@ -12,7 +12,7 @@ import React, {
   useEffect,
   useCallback
 } from 'react';
-import { getApiBaseUrl } from '../constants/api.js';
+import { getApiBaseUrl } from '../constants/api.ts';
 import type {
   User,
   AuthTokens,

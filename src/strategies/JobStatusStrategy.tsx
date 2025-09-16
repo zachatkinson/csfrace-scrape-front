@@ -5,12 +5,11 @@
  */
 
 import type { ReactNode } from 'react';
+import type { JobStatus } from '../types/job.ts';
 
 // =============================================================================
 // JOB STATUS INTERFACES
 // =============================================================================
-
-export type JobStatus = 'pending' | 'validating' | 'scraping' | 'completed' | 'error' | 'cancelled';
 
 export interface JobStatusDisplay {
   label: string;

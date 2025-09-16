@@ -99,7 +99,7 @@ export class FilterUtils {
       const query = filterState.searchQuery.toLowerCase();
       filteredJobs = filteredJobs.filter(job => 
         job.title?.toLowerCase().includes(query) ||
-        job.url?.toLowerCase().includes(query) ||
+        job.source_url?.toLowerCase().includes(query) ||
         job.id.toLowerCase().includes(query)
       );
     }
@@ -294,7 +294,7 @@ export class ValidationUtils {
       id: job.id,
       status: job.status,
       title: typeof job.title === 'string' ? job.title : undefined,
-      url: typeof job.url === 'string' ? job.url : undefined,
+      url: typeof job.source_url === 'string' ? job.source_url : undefined,
       createdAt: job.createdAt instanceof Date ? job.createdAt : new Date(),
       updatedAt: job.updatedAt instanceof Date ? job.updatedAt : new Date()
     }));

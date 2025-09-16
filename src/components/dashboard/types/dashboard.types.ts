@@ -71,7 +71,7 @@ export interface IConnectionStatusEvent {
 // =============================================================================
 
 // Import centralized job type following DRY principle
-import type { IJobData } from '../../types/job.ts';
+import type { IJobData } from '../../../types/job.ts';
 
 // =============================================================================
 // CONFIGURATION CONSTANTS

@@ -225,7 +225,7 @@ csfrace-scrape-front/
 │   ├── types/               # TypeScript type definitions
 │   └── utils/               # Utility functions
 ├── astro.config.ts          # Astro configuration
-├── tailwind.config.js       # Tailwind CSS configuration
+├── tailwind.config.ts       # Tailwind CSS configuration
 ├── tsconfig.json            # TypeScript configuration
 ├── package.json             # Dependencies and scripts
 ├── docker-compose.yml       # Docker configuration

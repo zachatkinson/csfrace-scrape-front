@@ -75,7 +75,7 @@ class JobsListIntegration {
       const query = search.toLowerCase();
       filtered = filtered.filter(job => 
         job.title?.toLowerCase().includes(query) ||
-        job.url?.toLowerCase().includes(query) ||
+        job.source_url?.toLowerCase().includes(query) ||
         job.id.toLowerCase().includes(query)
       );
     }
@@ -157,7 +157,7 @@ class JobsListIntegration {
  * Example API service that feeds data to FilterPanel
  */
 class JobsApiService {
-  private apiUrl: string = '/api/jobs';
+  private apiUrl: string = '/jobs';
 
   /**
    * Fetch jobs from API and update FilterPanel
@@ -172,7 +172,7 @@ class JobsApiService {
         id: job.id,
         status: job.status,
         title: job.title,
-        url: job.url,
+        url: job.source_url,
         createdAt: new Date(job.created_at),
         updatedAt: new Date(job.updated_at)
       })) || [];

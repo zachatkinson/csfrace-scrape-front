@@ -12,7 +12,7 @@ import type {
   JobFilter, 
   JobSort,
   JobConverter 
-} from '../../types/job.js';
+} from '../../types/job.ts';
 
 // =============================================================================
 // JOB DATA CONVERSION UTILITIES
@@ -126,8 +126,8 @@ export const convertBackendJob: JobConverter = (backendJob: IBackendJob): IJobDa
   return {
     // Basic job info
     id: backendJob.id,
-    title: extractTitleFromUrl(backendJob.url),
-    url: backendJob.url,
+    title: extractTitleFromUrl(backendJob.source_url),
+    source_url: backendJob.source_url,
     domain: backendJob.domain,
     
     // Status and progress
@@ -191,7 +191,7 @@ export const filterJobs = (
       const query = searchQuery.toLowerCase();
       return (
         job.title.toLowerCase().includes(query) ||
-        job.url.toLowerCase().includes(query) ||
+        job.source_url.toLowerCase().includes(query) ||
         job.domain?.toLowerCase().includes(query) ||
         job.id.toString().includes(query)
       );
@@ -306,7 +306,7 @@ export const validateJobData = (job: any): job is IJobData => {
     job !== null &&
     typeof job.id === 'number' &&
     typeof job.title === 'string' &&
-    typeof job.url === 'string' &&
+    typeof job.source_url === 'string' &&
     typeof job.status === 'string' &&
     typeof job.progress === 'number' &&
     job.createdAt instanceof Date

@@ -12,7 +12,7 @@ import { TIMING_CONSTANTS } from '../../constants/timing.ts';
 // Import Astro View Transitions for SPA-like navigation
 import { ViewTransitions } from 'astro:transitions';
 // Import pure UI component for health status (Astro MCP best practice)
-import { EventDrivenFooterStatus } from '../health/EventDrivenFooterStatus'; // nanostore → UI
+import { EventDrivenFooterStatus } from '../health/EventDrivenFooterStatus.tsx'; // nanostore → UI
 // Import DRY/SOLID Auth Modal Component
 import AuthModal from '../auth/AuthModal.astro';
 // Import DRY/SOLID Settings Panel Component
@@ -51,9 +51,9 @@ const {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     
     <!-- Preload critical background images - modern AVIF with JPG fallback -->
-    <link rel="preload" as="image" href="/scrape_bg_mobile.avif" type="image/avif" media="(max-width: 768px)">
-    <link rel="preload" as="image" href="/scrape_bg_tablet.avif" type="image/avif" media="(min-width: 769px) and (max-width: 1024px)">
-    <link rel="preload" as="image" href="/scrape_bg_desktop.avif" type="image/avif" media="(min-width: 1025px)">
+    <link rel="preload" as="image" href="/scrape_bg_mobile.avif" type="image/avif" media="(max-width: 767px)">
+    <link rel="preload" as="image" href="/scrape_bg_tablet.avif" type="image/avif" media="(min-width: 768px) and (max-width: 1023px)">
+    <link rel="preload" as="image" href="/scrape_bg_desktop.avif" type="image/avif" media="(min-width: 1024px)">
   </head>
   
   <body class="h-full overflow-x-hidden">
@@ -261,7 +261,8 @@ const {
 
     <!-- ASTRO MCP BEST PRACTICE: Global SSE Service in MainLayout -->
     <script>
-      import { formatTimestamp } from '/src/utils/timezone.js';
+      import { formatTimestamp } from '/src/utils/timezone.ts';
+      import { getApiBaseUrl } from '../../constants/api.ts';
 
       // SINGLETON PATTERN: Global health SSE service (Astro MCP best practice)
       if (!window.__healthSSEService) {
@@ -281,7 +282,7 @@ const {
             }
 
             try {
-              const backendUrl = import.meta.env.PUBLIC_BACKEND_SSE_URL || 'http://localhost:8000';
+              const backendUrl = import.meta.env.PUBLIC_BACKEND_SSE_URL || getApiBaseUrl();
               const sseUrl = `${backendUrl}/health/stream`;
               console.log('🔗 SSEService: Establishing connection to:', sseUrl);
               this.eventSource = new EventSource(sseUrl);
@@ -298,7 +299,7 @@ const {
                   console.log('🎯 SSEService: Service update received:', serviceUpdate);
 
                   // Update nanostore (Astro MCP pattern)
-                  const { updateHealthData, getCurrentHealthData } = await import('/src/stores/healthStore.js');
+                  const { updateHealthData, getCurrentHealthData } = await import('/src/stores/healthStore.ts');
                   const updateTime = new Date(serviceUpdate.timestamp || Date.now());
 
                   let services = {};
@@ -384,11 +385,108 @@ const {
       }
     </script>
 
+    <!-- ASTRO MCP BEST PRACTICE: Global Job SSE Service in MainLayout (DRY pattern) -->
+    <script>
+      import { getApiBaseUrl } from '../../constants/api.ts';
+
+      // SINGLETON PATTERN: Global job SSE service (following same pattern as health SSE)
+      if (!window.__jobSSEService) {
+        console.log('🚀 MainLayout: Creating global SSE job service');
+
+        window.__jobSSEService = {
+          eventSource: null,
+          isConnected: false,
+          retryCount: 0,
+          maxRetries: 5,
+          retryDelay: 5000,
+
+          async connect() {
+            if (this.eventSource && this.isConnected) {
+              console.log('✅ JobSSEService: Already connected, skipping');
+              return;
+            }
+
+            try {
+              const backendUrl = import.meta.env.PUBLIC_BACKEND_SSE_URL || getApiBaseUrl();
+              const sseUrl = `${backendUrl}/jobs/stream`;
+              console.log('🔗 JobSSEService: Establishing connection to:', sseUrl);
+              this.eventSource = new EventSource(sseUrl);
+
+              this.eventSource.onopen = () => {
+                this.isConnected = true;
+                this.retryCount = 0;
+                console.log('✅ JobSSEService: Connection established');
+              };
+
+              this.eventSource.addEventListener('job-update', async (event) => {
+                try {
+                  const jobUpdate = JSON.parse(event.data);
+                  console.log('🎯 JobSSEService: Job update received:', jobUpdate);
+
+                  // Dispatch custom event for React components to listen to
+                  const jobUpdateEvent = new CustomEvent('jobSSEUpdate', {
+                    detail: { jobUpdate }
+                  });
+                  window.dispatchEvent(jobUpdateEvent);
+
+                  // Also dispatch traditional jobsDataUpdate for existing components
+                  const refreshEvent = new CustomEvent('jobsDataRefresh', {
+                    detail: { source: 'sse', jobUpdate }
+                  });
+                  window.dispatchEvent(refreshEvent);
+
+                } catch (error) {
+                  console.error('❌ JobSSEService: Error processing job update:', error);
+                }
+              });
+
+              this.eventSource.onerror = (error) => {
+                this.isConnected = false;
+                console.error('❌ JobSSEService: Connection error:', error);
+                this.handleRetry();
+              };
+
+            } catch (error) {
+              console.error('💥 JobSSEService: Failed to create connection:', error);
+              this.handleRetry();
+            }
+          },
+
+          handleRetry() {
+            if (this.retryCount < this.maxRetries) {
+              const delay = this.retryDelay * Math.pow(2, this.retryCount);
+              this.retryCount++;
+              console.log(`🔄 JobSSEService: Retrying in ${delay}ms (${this.retryCount}/${this.maxRetries})`);
+              setTimeout(() => this.connect(), delay);
+            }
+          },
+
+          disconnect() {
+            if (this.eventSource) {
+              this.eventSource.close();
+              this.eventSource = null;
+            }
+            this.isConnected = false;
+          }
+        };
+
+        // Initialize job SSE service
+        document.addEventListener('DOMContentLoaded', () => {
+          window.__jobSSEService.connect();
+        });
+
+        // Cleanup on unload
+        window.addEventListener('beforeunload', () => {
+          window.__jobSSEService.disconnect();
+        });
+      }
+    </script>
+
     <!-- ASTRO MCP BEST PRACTICE: Health Status Initialization -->
     <!-- Following DRY/SOLID: Single EventDrivenFooterStatus component with SSE -->
     <script>
       import { createRoot } from 'react-dom/client';
-
+      import { EventDrivenFooterStatus } from '../health/EventDrivenFooterStatus.tsx';
 
       // Initialize React component for health status (Astro MCP compliant)
       document.addEventListener('DOMContentLoaded', () => {

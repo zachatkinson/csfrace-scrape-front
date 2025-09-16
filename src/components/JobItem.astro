@@ -4,7 +4,7 @@ export interface Props {
   job: {
     id: number;
     title: string;
-    url: string;
+    source_url: string;
     status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
     progress?: number;
     error_message?: string;
@@ -69,7 +69,7 @@ const config = statusConfig[job.status];
     <div class={config.indicatorClass}></div>
     <div>
       <h4 class="text-white font-medium">{job.title}</h4>
-      <p class="text-white/60 text-sm">{job.url}</p>
+      <p class="text-white/60 text-sm">{job.source_url}</p>
     </div>
   </div>
   

@@ -5,7 +5,7 @@
 
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import { EventDrivenHealthCard } from './EventDrivenHealthCard.js';
+import { EventDrivenHealthCard } from './EventDrivenHealthCard.ts';
 
 export function initializeEventDrivenCards() {
   console.log('🔧 Initializing event-driven health cards...');

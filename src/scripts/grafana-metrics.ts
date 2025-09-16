@@ -5,7 +5,7 @@
 // Following same efficient pattern as other services
 // =============================================================================
 
-import { GrafanaServiceChecker } from '../utils/serviceCheckers.js';
+import { GrafanaServiceChecker } from '../utils/serviceCheckers.ts';
 
 interface GrafanaMetrics {
   version: string;

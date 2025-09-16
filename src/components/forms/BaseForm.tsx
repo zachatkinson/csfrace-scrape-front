@@ -23,21 +23,21 @@ import type {
  * Following Liskov Substitution Principle
  */
 export const BaseForm = forwardRef<
-  HTMLFormElement, 
-  FormComponentProps & {
+  HTMLFormElement,
+  FormComponentProps<any> & {
     // Common form structure
-    renderFields: (formHook: ReturnType<typeof useBaseForm>) => React.ReactNode;
-    renderActions?: (formHook: ReturnType<typeof useBaseForm>) => React.ReactNode;
+    renderFields: (formHook: ReturnType<typeof useBaseForm<any>>) => React.ReactNode;
+    renderActions?: ((formHook: ReturnType<typeof useBaseForm<any>>) => React.ReactNode) | undefined;
     
     // Form configuration
-    showTitle?: boolean;
-    showReset?: boolean;
-    submitButtonText?: string;
-    resetButtonText?: string;
-    
+    showTitle?: boolean | undefined;
+    showReset?: boolean | undefined;
+    submitButtonText?: string | undefined;
+    resetButtonText?: string | undefined;
+
     // Card styling
-    cardClassName?: string;
-    formClassName?: string;
+    cardClassName?: string | undefined;
+    formClassName?: string | undefined;
   }
 >(({
   // Base form props
@@ -229,8 +229,8 @@ BaseForm.displayName = 'BaseForm';
  */
 export const FormField: React.FC<{
   children: React.ReactNode;
-  error?: string;
-  className?: string;
+  error?: string | undefined;
+  className?: string | undefined;
 }> = ({ children, error, className = '' }) => (
   <div className={`form-field ${className}`.trim()}>
     {children}

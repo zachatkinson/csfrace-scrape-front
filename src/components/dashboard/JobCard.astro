@@ -7,7 +7,7 @@
 // =============================================================================
 
 import type { IJobData } from '../../types/job.ts';
-import { formatDateTime } from '../../utils/timezone.js';
+import { formatDateTime } from '../../utils/timezone.ts';
 
 export interface Props {
   job: IJobData;
@@ -112,8 +112,8 @@ const statusConfig = JOB_STATUS_CONFIG[job.status as keyof typeof JOB_STATUS_CON
           </h3>
           
           <!-- Job URL -->
-          <p class="text-white/60 text-sm truncate max-w-md job-url" title={job.url}>
-            {job.url}
+          <p class="text-white/60 text-sm truncate max-w-md job-url" title={job.source_url}>
+            {job.source_url}
           </p>
           
           <!-- Job Metadata -->

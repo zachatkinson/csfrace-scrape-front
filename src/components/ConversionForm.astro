@@ -7,7 +7,8 @@
  */
 
 // For client-side components, always use PUBLIC_API_BASE_URL (browser-accessible)
-const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL || 'http://localhost:8000';
+import { getApiBaseUrl } from '../constants/api.ts';
+const apiBaseUrl = getApiBaseUrl();
 ---
 
 <!-- Custom element wrapper with data attributes (Astro best practice) -->
@@ -126,7 +127,7 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL || 'http://localhost:8000
   // Custom element following Astro best practices
   // This script is bundled, optimized, and deduplicated by Astro
   import { ConversionFormManager } from '../scripts/conversionFormManager';
-  import { getApiBaseUrl } from '../constants/api.js';
+  import { getApiBaseUrl } from '../constants/api.ts';
   
   class ConversionForm extends HTMLElement {
     private formManager: ConversionFormManager | null = null;

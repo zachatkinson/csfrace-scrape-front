@@ -9,7 +9,7 @@
 // IMPORTS & TYPES
 // =============================================================================
 import { DASHBOARD_CSS_CLASSES } from '../types/dashboard.types';
-import { formatTimestamp } from '../../../utils/timezone.js';
+import { formatTimestamp } from '../../../utils/timezone.ts';
 
 // =============================================================================
 // COMPONENT PROPS
@@ -89,7 +89,7 @@ const formatLastUpdated = (date?: Date): string => {
 
 <script define:vars={{ lastUpdated }}>
   // Import timezone utility for reactive timestamp updates
-  import { formatTimestamp, onTimezoneChange } from '../../../utils/timezone.js';
+  import { formatTimestamp, onTimezoneChange } from '../../../utils/timezone.ts';
 
   // Update timestamp display when timezone settings change
   if (lastUpdated) {

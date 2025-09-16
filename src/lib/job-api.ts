@@ -4,29 +4,10 @@
 
 import { getApiBaseUrl } from '../constants/api.ts';
 import { TIMING_CONSTANTS } from '../constants/timing.ts';
-
-export interface Job {
-  id: number;
-  title: string;
-  url: string;
-  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
-  progress?: number;
-  error_message?: string;
-  error_type?: string;
-  created_at: string;
-  started_at?: string;
-  completed_at?: string;
-  retry_count?: number;
-  max_retries?: number;
-}
-
-export interface JobListResponse {
-  jobs: Job[];
-  total: number;
-  page: number;
-  page_size: number;
-  total_pages: number;
-}
+import type {
+  SimpleJob as Job,
+  SimpleJobListResponse as JobListResponse
+} from '../types/job.ts';
 
 class JobAPI {
   private baseUrl: string;
@@ -183,7 +164,7 @@ export function formatJobTitle(job: Job): string {
   }
   
   try {
-    const url = new URL(job.url);
+    const url = new URL(job.source_url);
     const pathname = url.pathname;
     const segments = pathname.split('/').filter(Boolean);
     
@@ -200,7 +181,7 @@ export function formatJobTitle(job: Job): string {
       .replace(/[-_]/g, ' ')
       .replace(/\b\w/g, l => l.toUpperCase());
   } catch {
-    return job.url;
+    return job.source_url;
   }
 }
 

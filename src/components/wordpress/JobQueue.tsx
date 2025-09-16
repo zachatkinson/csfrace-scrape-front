@@ -13,7 +13,7 @@ import type { JobStatus } from '../../strategies/JobStatusStrategy.tsx';
 // Job interface
 interface Job {
   id: string;
-  url: string;
+  source_url: string;
   status: JobStatus;
   progress: number;
   result?: {
@@ -287,7 +287,7 @@ export const JobQueue: React.FC<JobQueueProps> = ({
                           <h3 className="font-medium text-white truncate">
                             {job.result?.metadata?.title || 'WordPress Content'}
                           </h3>
-                          <p className="text-sm text-white/60 truncate">{job.url}</p>
+                          <p className="text-sm text-white/60 truncate">{job.source_url}</p>
                         </div>
                         
                         {/* Progress Bar - Strategy Pattern determines visibility */}

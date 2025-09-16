@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { AppSettings, ApiConfigSettings } from '../interfaces/forms.ts';
-import { getApiBaseUrl } from '../constants/api.js';
+import { getApiBaseUrl } from '../constants/api.ts';
 
 // =============================================================================
 // SETTINGS STORAGE KEYS

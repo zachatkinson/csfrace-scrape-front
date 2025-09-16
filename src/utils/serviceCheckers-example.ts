@@ -2,7 +2,7 @@
 // EXAMPLE: HOW TO REPLACE CONSOLE.LOG WITH ENVIRONMENT-BASED LOGGING
 // =============================================================================
 
-import { logger, logHealth, logDebug, logError, logApiResponse } from './logger.js';
+import { logger, logHealth, logDebug, logError, logApiResponse } from './logger.ts';
 
 // =============================================================================
 // ❌ BEFORE: Direct console.log (shows in all environments)
@@ -71,7 +71,7 @@ async function exampleHealthCheck() {
     const responseTime = Date.now() - startTime;
     
     if (response.ok) {
-      const data = await response.json();
+      const data = await response.tson();
       
       // 🎯 Clean, structured logging
       logApiResponse(response.status, '/health', data);

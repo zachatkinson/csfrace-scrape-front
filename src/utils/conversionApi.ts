@@ -8,19 +8,9 @@
 
 import { getApiBaseUrl } from '../constants/api';
 import { getAuthHeaders } from './authApi';
+import { handleApiResponse } from './api-utils.ts';
 
 const API_BASE = getApiBaseUrl();
-
-/**
- * Simple response handler for DRY error handling
- */
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(error || `HTTP ${response.status}`);
-  }
-  return response.json();
-}
 
 /**
  * Create a single conversion job - Direct call to Docker backend
@@ -46,7 +36,7 @@ export async function createJob(url: string, options: {
     }),
   });
   
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -74,7 +64,7 @@ export async function createBatch(urls: string[], options: {
     }),
   });
   
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -85,7 +75,7 @@ export async function getJob(jobId: string) {
     headers: getAuthHeaders(),
   });
   
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -106,7 +96,7 @@ export async function getJobs(params: {
     headers: getAuthHeaders(),
   });
   
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -117,7 +107,7 @@ export async function getBatch(batchId: string) {
     headers: getAuthHeaders(),
   });
   
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -136,7 +126,7 @@ export async function getBatches(params: {
     headers: getAuthHeaders(),
   });
   
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -148,7 +138,7 @@ export async function cancelJob(jobId: string) {
     headers: getAuthHeaders(),
   });
   
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -160,7 +150,7 @@ export async function deleteJob(jobId: string) {
     headers: getAuthHeaders(),
   });
   
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -168,7 +158,7 @@ export async function deleteJob(jobId: string) {
  */
 export async function healthCheck() {
   const response = await fetch(`${API_BASE}/health`);
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**

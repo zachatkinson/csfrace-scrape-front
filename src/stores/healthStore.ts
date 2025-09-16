@@ -11,7 +11,7 @@
  */
 
 import { atom, map, computed } from 'nanostores';
-import type { IServiceResult } from '../utils/serviceCheckers.js';
+import type { IServiceResult } from '../utils/serviceCheckers.ts';
 
 // =============================================================================
 // TYPE DEFINITIONS

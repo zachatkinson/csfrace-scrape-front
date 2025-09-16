@@ -7,19 +7,9 @@
  */
 
 import { getApiBaseUrl } from '../constants/api';
+import { handleApiResponse } from './api-utils.ts';
 
 const API_BASE = getApiBaseUrl();
-
-/**
- * Simple response handler for DRY error handling
- */
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(error || `HTTP ${response.status}`);
-  }
-  return response.json();
-}
 
 /**
  * Login with email/password - Direct call to Docker backend
@@ -34,7 +24,7 @@ export async function login(email: string, password: string) {
     body: formData,
   });
   
-  const data = await handleResponse<{
+  const data = await handleApiResponse<{
     access_token: string;
     refresh_token: string;
     token_type: string;
@@ -61,7 +51,7 @@ export async function register(email: string, password: string, fullName?: strin
     }),
   });
   
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -89,10 +79,10 @@ export async function getCurrentUser() {
       },
     });
     
-    return handleResponse(retryResponse);
+    return handleApiResponse(retryResponse);
   }
   
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -109,7 +99,7 @@ export async function refreshToken() {
       body: JSON.stringify({ refresh_token: refresh }),
     });
     
-    const data = await handleResponse<{
+    const data = await handleApiResponse<{
       access_token: string;
       refresh_token: string;
     }>(response);
@@ -159,7 +149,7 @@ export async function registerPasskey() {
     },
   });
   
-  const options = await handleResponse(beginResponse);
+  const options = await handleApiResponse(beginResponse);
   
   // Step 2: Create credential using WebAuthn API
   const credential = await navigator.credentials.create(options);
@@ -174,7 +164,7 @@ export async function registerPasskey() {
     body: JSON.stringify(credential),
   });
   
-  return handleResponse(completeResponse);
+  return handleApiResponse(completeResponse);
 }
 
 /**
@@ -187,7 +177,7 @@ export async function authenticateWithPasskey() {
     headers: { 'Content-Type': 'application/json' },
   });
   
-  const options = await handleResponse(beginResponse);
+  const options = await handleApiResponse(beginResponse);
   
   // Step 2: Get credential using WebAuthn API
   const credential = await navigator.credentials.get(options);
@@ -199,7 +189,7 @@ export async function authenticateWithPasskey() {
     body: JSON.stringify(credential),
   });
   
-  const data = await handleResponse<{
+  const data = await handleApiResponse<{
     access_token: string;
     refresh_token: string;
   }>(completeResponse);
