@@ -105,7 +105,7 @@ class SearchManager implements ISearchManager {
     });
 
     // Handle Enter key for immediate search
-    domUtils.addEventListener(this.searchInput, 'keydown', (event) => {
+    domUtils.addEventListener(this.searchInput, 'keydown', (event: KeyboardEvent) => {
       if (event.key === 'Enter') {
         event.preventDefault();
         const target = event.target as HTMLInputElement;
@@ -114,7 +114,7 @@ class SearchManager implements ISearchManager {
     });
 
     // Handle Escape key to clear search
-    domUtils.addEventListener(this.searchInput, 'keydown', (event) => {
+    domUtils.addEventListener(this.searchInput, 'keydown', (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
         this.clearSearch();

@@ -48,7 +48,7 @@ export class ModalManager {
     }
 
     // Escape key close
-    domUtils.addEventListener(document, 'keydown', (event) => {
+    document.addEventListener('keydown', (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         this.closeModal();
       }

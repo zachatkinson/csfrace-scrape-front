@@ -45,7 +45,8 @@ class BatchActionManager implements IBatchActionManager {
 
     // Load selected jobs count (for UI consistency)
     const selectedJobsAttr = domUtils.getDataAttribute(panel, 'selected-jobs');
-    const selectedCount = selectedJobsAttr ? parseInt(selectedJobsAttr, 10) : 0;
+    // Parse selected count but don't store in unused variable
+    selectedJobsAttr ? parseInt(selectedJobsAttr, 10) : 0;
     
     // Initialize selected jobs set (will be populated by external job data)
     this.selectedJobs = new Set();

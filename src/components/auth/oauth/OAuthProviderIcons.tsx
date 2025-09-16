@@ -82,5 +82,7 @@ export const createProviderIcon = (providerId: OAuthProviderId, className?: stri
   };
 
   const IconComponent = iconMap[providerId];
-  return IconComponent ? <IconComponent className={className} /> : null;
+  return IconComponent ? (
+    <IconComponent {...(className !== undefined && { className })} />
+  ) : null;
 };

@@ -98,14 +98,14 @@ class SortManager implements ISortManager {
     });
 
     // Keyboard navigation enhancement
-    domUtils.addEventListener(this.sortSelect, 'keydown', (event) => {
+    domUtils.addEventListener(this.sortSelect, 'keydown', (event: KeyboardEvent) => {
       // Handle Enter key
       if (event.key === 'Enter') {
         event.preventDefault();
         const target = event.target as HTMLSelectElement;
         this.setCurrentSort(target.value);
       }
-      
+
       // Handle Escape key to revert selection
       if (event.key === 'Escape') {
         event.preventDefault();
@@ -255,7 +255,10 @@ class SortUtilities {
    */
   static parseCompoundSortKey(key: string): { primary: string; secondary: string } {
     const [primary, secondary = 'newest'] = key.split(':');
-    return { primary, secondary };
+    return {
+      primary: primary || 'newest',
+      secondary: secondary
+    };
   }
 }
 

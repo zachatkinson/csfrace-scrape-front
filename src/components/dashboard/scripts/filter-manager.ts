@@ -3,7 +3,7 @@
  * Following SOLID principles and Astro Islands Architecture
  */
 
-import type { IFilterManager, IFilterState } from '../types/filter.types';
+import type { IFilterManager } from '../types/filter.types';
 import { FilterUtils, EventUtils } from '../utils/filter.utils';
 import { domUtils, waitForDOM } from '../utils/dom.utils';
 

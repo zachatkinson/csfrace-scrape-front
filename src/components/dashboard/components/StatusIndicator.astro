@@ -17,7 +17,7 @@ import { formatTimestamp } from '../../../utils/timezone.js';
 export interface Props {
   status: 'connected' | 'disconnected' | 'reconnecting';
   text: string;
-  lastUpdated?: Date;
+  lastUpdated?: Date | undefined;
 }
 
 const {

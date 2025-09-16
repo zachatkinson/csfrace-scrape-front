@@ -58,8 +58,8 @@ export class DashboardCoordinator {
     if (!dashboardElement) return;
 
     try {
-      // Load configuration
-      const configData = dashboardElement.getAttribute('data-config');
+      // Load configuration (available for future use)
+      dashboardElement.getAttribute('data-config');
       const statsData = dashboardElement.getAttribute('data-initial-stats');
 
       if (statsData) {

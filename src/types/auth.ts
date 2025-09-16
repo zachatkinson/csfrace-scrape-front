@@ -10,27 +10,27 @@ export interface User {
   is_active: boolean;
   is_verified: boolean;
   created_at: string;
-  last_login_at?: string;
-  profile?: UserProfile;
-  permissions?: string[];
-  roles?: string[];
+  last_login_at?: string | undefined;
+  profile?: UserProfile | undefined;
+  permissions?: string[] | undefined;
+  roles?: string[] | undefined;
 }
 
 export interface UserProfile {
-  first_name?: string;
-  last_name?: string;
-  display_name?: string;
-  avatar_url?: string;
-  bio?: string;
-  timezone?: string;
-  language?: string;
+  first_name?: string | undefined;
+  last_name?: string | undefined;
+  display_name?: string | undefined;
+  avatar_url?: string | undefined;
+  bio?: string | undefined;
+  timezone?: string | undefined;
+  language?: string | undefined;
 }
 
 export interface AuthTokens {
   access_token: string;
   token_type: string;
   expires_in: number;
-  refresh_token?: string;
+  refresh_token?: string | undefined;
   expires_at: number; // Calculated expiry timestamp
 }
 

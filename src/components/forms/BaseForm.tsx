@@ -7,10 +7,9 @@
 import React, { forwardRef } from 'react';
 import { LiquidCard, LiquidButton } from '../liquid-glass';
 import { useBaseForm } from '../../hooks/useBaseForm.ts';
-import type { 
-  FormComponentProps, 
+import type {
+  FormComponentProps,
   StandardFormComponent,
-  BaseFormState,
   FormValidationSchema
 } from '../../interfaces/forms.ts';
 
@@ -288,7 +287,7 @@ export function createFormComponent<TData extends Record<string, unknown>>(
     defaultSubtitle?: string;
     validationSchema?: FormValidationSchema<TData>;
     renderFields: (formHook: ReturnType<typeof useBaseForm<TData>>) => React.ReactNode;
-    renderActions?: (formHook: ReturnType<typeof useBaseForm<TData>>) => React.ReactNode;
+    renderActions?: ((formHook: ReturnType<typeof useBaseForm<TData>>) => React.ReactNode) | undefined;
   }
 ): StandardFormComponent<TData> {
   

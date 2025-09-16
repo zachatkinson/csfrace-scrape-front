@@ -106,14 +106,14 @@ export const calculateJobDuration = (job: IBackendJob): string => {
  */
 export const mapBackendStatus = (backendStatus: string): JobStatus => {
   const statusMap: Record<string, JobStatus> = {
-    'pending': 'queued' as const,
-    'running': 'processing' as const,
+    'pending': 'pending' as const,
+    'running': 'running' as const,
     'completed': 'completed' as const,
     'failed': 'failed' as const,
     'error': 'failed' as const,
     'cancelled': 'cancelled' as const,
-    'skipped': 'skipped' as const,
-    'partial': 'partial' as const
+    'validating': 'validating' as const,
+    'scraping': 'scraping' as const
   };
   
   return statusMap[backendStatus] || (backendStatus as JobStatus);
@@ -142,8 +142,7 @@ export const convertBackendJob: JobConverter = (backendJob: IBackendJob): IJobDa
     // Duration and error info
     duration: calculateJobDuration(backendJob),
     error: backendJob.error_message,
-    errorType: backendJob.error_type,
-    success: backendJob.success,
+    error_type: backendJob.error_type,
     
     // Retry and priority info
     retryCount: backendJob.retry_count,
@@ -211,10 +210,10 @@ export const sortJobs = (jobs: IJobData[], sortBy: JobSort): IJobData[] => {
   sortedJobs.sort((a, b) => {
     switch (sortBy) {
       case 'newest':
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      
+        return (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0);
+
       case 'oldest':
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        return (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0);
       
       case 'status':
         return a.status.localeCompare(b.status);
@@ -249,10 +248,11 @@ export const getAvailableStatuses = (jobs: IJobData[]): JobFilter[] => {
 export const calculateJobStats = (jobs: IJobData[]) => {
   return {
     total: jobs.length,
-    active: jobs.filter(job => job.status === 'processing').length,
+    active: jobs.filter(job => ['running', 'validating', 'scraping'].includes(job.status)).length,
     completed: jobs.filter(job => job.status === 'completed').length,
-    failed: jobs.filter(job => job.status === 'failed').length,
-    queued: jobs.filter(job => job.status === 'queued').length
+    failed: jobs.filter(job => ['failed', 'error'].includes(job.status)).length,
+    queued: jobs.filter(job => job.status === 'pending').length,
+    processing: jobs.filter(job => job.status === 'running').length
   };
 };
 

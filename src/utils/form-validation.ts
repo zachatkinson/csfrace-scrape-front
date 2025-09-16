@@ -10,13 +10,13 @@ import { TIMING_CONSTANTS } from '../constants/timing.ts';
 export interface ValidationResult {
   isValid: boolean;
   errors: string[];
-  warnings?: string[];
+  warnings?: string[] | undefined;
 }
 
 export interface FieldValidationResult {
   isValid: boolean;
-  error?: string;
-  warning?: string;
+  error?: string | undefined;
+  warning?: string | undefined;
 }
 
 // Field validation rules

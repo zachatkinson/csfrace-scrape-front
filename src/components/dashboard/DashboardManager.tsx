@@ -7,16 +7,16 @@
 // =============================================================================
 
 import React, { useState, useEffect, useCallback } from 'react';
-import type { 
-  IJobData, 
-  IDashboardState, 
-  JobFilter, 
-  JobSort 
+import type {
+  IJobData,
+  IDashboardState,
+  JobFilter
 } from '../../types/job.js';
 
 // Import utilities following CLAUDE.md NO LOCAL SERVICES RULE
 import * as apiClient from '../../utils/dashboard/apiClient.js';
 import * as jobUtils from '../../utils/dashboard/jobUtils.js';
+import { formatErrorMessage, logError } from '../../utils/errorHandler.js';
 
 interface DashboardManagerProps {
   initialJobs?: IJobData[];
@@ -92,7 +92,8 @@ const DashboardManager: React.FC<DashboardManagerProps> = ({
       alert('Job retry initiated successfully');
     } catch (error) {
       console.error('Retry failed:', error);
-      alert(`Retry failed: ${error.message}`);
+      logError(error, 'Job Retry');
+      alert(formatErrorMessage(error, 'Retry failed'));
     }
   }, [loadJobs]);
 
@@ -103,7 +104,8 @@ const DashboardManager: React.FC<DashboardManagerProps> = ({
       alert('Job cancelled successfully');
     } catch (error) {
       console.error('Cancel failed:', error);
-      alert(`Cancel failed: ${error.message}`);
+      logError(error, 'Job Cancel');
+      alert(formatErrorMessage(error, 'Cancel failed'));
     }
   }, [loadJobs]);
 
@@ -114,7 +116,8 @@ const DashboardManager: React.FC<DashboardManagerProps> = ({
         await loadJobs(); // Refresh list
       } catch (error) {
         console.error('Delete failed:', error);
-        alert(`Delete failed: ${error.message}`);
+        logError(error, 'Job Delete');
+        alert(formatErrorMessage(error, 'Delete failed'));
       }
     }
   }, [loadJobs]);
@@ -140,7 +143,8 @@ const DashboardManager: React.FC<DashboardManagerProps> = ({
       
     } catch (error) {
       console.error('Download failed:', error);
-      alert(`Download failed: ${error.message}`);
+      logError(error, 'File Download');
+      alert(formatErrorMessage(error, 'Download failed'));
     }
   }, [state.jobs]);
 
@@ -152,13 +156,6 @@ const DashboardManager: React.FC<DashboardManagerProps> = ({
     setState(prev => ({ ...prev, currentFilter: newFilter, currentPage: 1 }));
   }, []);
 
-  const handleSortChange = useCallback((newSort: JobSort) => {
-    setState(prev => ({ ...prev, currentSort: newSort }));
-  }, []);
-
-  const handleSearchChange = useCallback((query: string) => {
-    setState(prev => ({ ...prev, searchQuery: query }));
-  }, []);
 
   const handleJobSelection = useCallback((jobId: number, selected: boolean) => {
     setState(prev => {
@@ -248,158 +245,6 @@ const DashboardManager: React.FC<DashboardManagerProps> = ({
   // RENDER FUNCTIONS
   // =============================================================================
 
-  const renderJobCard = useCallback((job: IJobData) => {
-    const isSelected = state.selectedJobs.has(job.id);
-    
-    return (
-      <div 
-        key={job.id}
-        className={`job-card p-4 rounded-lg border-l-4 bg-white/5 hover:bg-white/10 transition-all duration-200 ${
-          isSelected ? 'selected bg-blue-500/10 border-blue-400' : 'border-gray-400/30'
-        }`}
-        data-job-id={job.id}
-      >
-        <div className="flex items-start justify-between">
-          {/* Selection and Info */}
-          <div className="flex items-start space-x-4 flex-1">
-            <input 
-              type="checkbox" 
-              className="job-checkbox mt-1" 
-              checked={isSelected}
-              onChange={(e) => handleJobSelection(job.id, e.target.checked)}
-            />
-            
-            <div className="flex items-center space-x-3 flex-1">
-              {/* Status Icon */}
-              <div 
-                className="status-icon"
-                dangerouslySetInnerHTML={{ __html: getStatusIcon(job.status) }}
-              />
-              
-              {/* Job Details */}
-              <div className="flex-1">
-                <h3 
-                  className="text-white font-medium cursor-pointer hover:text-blue-400 transition-colors"
-                  onClick={() => handleJobAction('view-details', job.id)}
-                >
-                  {job.title}
-                </h3>
-                <p className="text-white/60 text-sm truncate max-w-md" title={job.url}>
-                  {job.url}
-                </p>
-                <div className="flex items-center space-x-4 mt-2 text-xs text-white/50">
-                  <span title={jobUtils.formatFullTimestamp(job.createdAt)}>
-                    {jobUtils.formatRelativeTime(job.createdAt)}
-                  </span>
-                  <span>ID: {job.id}</span>
-                  {job.domain && <span>{job.domain}</span>}
-                  {job.wordCount > 0 && <span>{job.wordCount.toLocaleString()} words</span>}
-                  {job.imageCount > 0 && <span>{job.imageCount} images</span>}
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Status and Progress */}
-          <div className="flex items-center space-x-4">
-            {job.status === 'processing' && job.progress > 0 && (
-              <div className="flex items-center space-x-2">
-                <div className="w-24 h-2 bg-white/20 rounded-full">
-                  <div 
-                    className="bg-blue-400 h-full rounded-full transition-all duration-1000"
-                    style={{ width: `${job.progress}%` }}
-                  />
-                </div>
-                <span className="text-white/70 text-xs">{job.progress}%</span>
-              </div>
-            )}
-            
-            <div className={`status-badge px-3 py-1 rounded-full border ${getStatusColorClass(job.status)}`}>
-              <span className="text-xs font-medium">{job.status.toUpperCase()}</span>
-            </div>
-          </div>
-        </div>
-        
-        {/* Error Display */}
-        {job.error && (
-          <div className="mt-4 ml-7">
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-              <p className="text-red-400 text-xs font-medium mb-1">
-                ⚠️ Error{job.errorType ? ` (${job.errorType})` : ''}
-              </p>
-              <p className="text-red-300/80 text-xs">{job.error}</p>
-            </div>
-          </div>
-        )}
-        
-        {/* Action Buttons */}
-        <div className="flex items-center justify-between mt-4">
-          {/* Priority and Batch Tags */}
-          <div className="flex items-center space-x-2">
-            {job.priority && job.priority !== 'normal' && (
-              <span className="text-white/50 text-xs bg-white/10 px-2 py-1 rounded-full">
-                🔥 {job.priority.toUpperCase()}
-              </span>
-            )}
-            {job.batchId && (
-              <span className="text-white/50 text-xs bg-white/10 px-2 py-1 rounded-full">
-                📦 Batch {job.batchId}
-              </span>
-            )}
-          </div>
-          
-          {/* Action Buttons */}
-          <div className="flex items-center space-x-2 ml-auto">
-            <button 
-              className="glass-button px-3 py-1 text-xs text-white/90 hover:text-white"
-              onClick={() => handleJobAction('view-details', job.id)}
-              title="View job details"
-            >
-              👁️ View
-            </button>
-            
-            {job.status === 'completed' && (
-              <button 
-                className="glass-button px-3 py-1 text-xs text-white/90 hover:text-white"
-                onClick={() => handleJobAction('download', job.id)}
-                title="Download converted content"
-              >
-                📥 Download
-              </button>
-            )}
-            
-            {job.status === 'processing' && (
-              <button 
-                className="glass-button px-3 py-1 text-xs text-yellow-400/80 hover:text-yellow-400"
-                onClick={() => handleJobAction('cancel', job.id)}
-                title="Cancel job"
-              >
-                ⏹️ Cancel
-              </button>
-            )}
-            
-            {job.status === 'failed' && job.retryCount < job.maxRetries && (
-              <button 
-                className="glass-button px-3 py-1 text-xs text-blue-400/80 hover:text-blue-400"
-                onClick={() => handleJobAction('retry', job.id)}
-                title="Retry job"
-              >
-                🔄 Retry
-              </button>
-            )}
-            
-            <button 
-              className="glass-button px-3 py-1 text-xs text-red-400/80 hover:text-red-400"
-              onClick={() => handleJobAction('delete', job.id)}
-              title="Delete job"
-            >
-              🗑️ Delete
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }, [state.selectedJobs, handleJobSelection]);
 
   const handleJobAction = useCallback(async (action: string, jobId: number) => {
     try {
@@ -502,7 +347,7 @@ const DashboardManager: React.FC<DashboardManagerProps> = ({
                   </h3>
                   <p class="text-white/60 text-sm truncate max-w-md" title="${job.url}">${job.url}</p>
                   <div class="flex items-center space-x-4 mt-2 text-xs text-white/50">
-                    <span title="${jobUtils.formatFullTimestamp(job.createdAt)}">${jobUtils.formatRelativeTime(job.createdAt)}</span>
+                    <span title="${job.createdAt ? jobUtils.formatFullTimestamp(job.createdAt) : 'No date'}">${job.createdAt ? jobUtils.formatRelativeTime(job.createdAt) : 'No date'}</span>
                     <span>ID: ${job.id}</span>
                     ${job.domain ? `<span>${job.domain}</span>` : ''}
                     ${job.wordCount > 0 ? `<span>${job.wordCount.toLocaleString()} words</span>` : ''}
@@ -512,7 +357,7 @@ const DashboardManager: React.FC<DashboardManagerProps> = ({
               </div>
             </div>
             <div class="flex items-center space-x-4">
-              ${job.status === 'processing' && job.progress > 0 ? `
+              ${job.status === 'running' && job.progress > 0 ? `
                 <div class="flex items-center space-x-2">
                   <div class="w-24 h-2 bg-white/20 rounded-full">
                     <div class="bg-blue-400 h-full rounded-full transition-all duration-1000" style="width: ${job.progress}%"></div>
@@ -528,7 +373,7 @@ const DashboardManager: React.FC<DashboardManagerProps> = ({
           ${job.error ? `
             <div class="mt-4 ml-7">
               <div class="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-                <p class="text-red-400 text-xs font-medium mb-1">⚠️ Error${job.errorType ? ` (${job.errorType})` : ''}</p>
+                <p class="text-red-400 text-xs font-medium mb-1">⚠️ Error${job.error_type ? ` (${job.error_type})` : ''}</p>
                 <p class="text-red-300/80 text-xs">${job.error}</p>
               </div>
             </div>
@@ -541,7 +386,7 @@ const DashboardManager: React.FC<DashboardManagerProps> = ({
             <div class="flex items-center space-x-2 ml-auto">
               <button class="glass-button px-3 py-1 text-xs text-white/90 hover:text-white" data-action="view-details" data-job-id="${job.id}">👁️ View</button>
               ${job.status === 'completed' ? `<button class="glass-button px-3 py-1 text-xs text-white/90 hover:text-white" data-action="download" data-job-id="${job.id}">📥 Download</button>` : ''}
-              ${job.status === 'processing' ? `<button class="glass-button px-3 py-1 text-xs text-yellow-400/80 hover:text-yellow-400" data-action="cancel" data-job-id="${job.id}">⏹️ Cancel</button>` : ''}
+              ${job.status === 'running' ? `<button class="glass-button px-3 py-1 text-xs text-yellow-400/80 hover:text-yellow-400" data-action="cancel" data-job-id="${job.id}">⏹️ Cancel</button>` : ''}
               ${job.status === 'failed' && job.retryCount < job.maxRetries ? `<button class="glass-button px-3 py-1 text-xs text-blue-400/80 hover:text-blue-400" data-action="retry" data-job-id="${job.id}">🔄 Retry</button>` : ''}
               <button class="glass-button px-3 py-1 text-xs text-red-400/80 hover:text-red-400" data-action="delete" data-job-id="${job.id}">🗑️ Delete</button>
             </div>

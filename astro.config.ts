@@ -196,7 +196,7 @@ export default defineConfig({
       },
     },
 
-    plugins: [tailwindcss()]
+    plugins: tailwindcss()
   },
   // Environment variables configuration
   // Backend API URLs should be defined in .env files as:

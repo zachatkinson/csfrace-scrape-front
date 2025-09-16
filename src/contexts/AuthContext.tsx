@@ -5,49 +5,27 @@
  * DRY/SOLID: Uses centralized API configuration
  */
 
-import React, { 
-  createContext, 
-  useContext, 
-  useState, 
-  useEffect, 
-  useCallback 
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback
 } from 'react';
 import { getApiBaseUrl } from '../constants/api.js';
+import type {
+  User,
+  AuthTokens,
+  LoginCredentials,
+  RegisterData
+} from '../types/auth.ts';
 
 // DRY/SOLID: Use centralized API base URL
 const getApiBase = () => getApiBaseUrl();
 
-// Type definitions matching Docker backend
-interface AuthTokens {
-  access_token: string;
-  refresh_token: string;
-  token_type: string;
-  expires_in: number;
-}
-
-interface UserProfile {
-  id: string;
-  email: string;
-  name?: string;
-  avatar_url?: string;
-  is_verified: boolean;
-  created_at: string;
-}
-
-interface LoginCredentials {
-  username: string;
-  password: string;
-}
-
-interface RegisterData {
-  email: string;
-  password: string;
-  name?: string;
-}
-
 // Simple auth state
 interface AuthState {
-  user: UserProfile | null;
+  user: User | null;
   tokens: AuthTokens | null;
   isAuthenticated: boolean;
   isLoading: boolean;

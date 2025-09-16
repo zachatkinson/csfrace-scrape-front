@@ -49,7 +49,6 @@ export type {
   // Validation Types
   FieldValidationRule,
   IFieldValidationRules,
-  IValidationResult,
   IAsyncValidator
 } from './FormFieldTypes';
 

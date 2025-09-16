@@ -34,7 +34,7 @@ class JobsListIntegration {
     });
 
     // Listen for select all requests
-    window.addEventListener('filterPanel:requestSelectAll', (event) => {
+    window.addEventListener('filterPanel:requestSelectAll', () => {
       const allJobIds = this.filteredJobs.map(job => job.id);
       this.updateFilterPanelSelection(allJobIds);
     });
@@ -216,11 +216,10 @@ class JobsApiService {
  * Example Dashboard page that uses FilterPanel
  */
 class DashboardPageIntegration {
-  private jobsList: JobsListIntegration;
   private apiService: JobsApiService;
 
   constructor() {
-    this.jobsList = new JobsListIntegration();
+    new JobsListIntegration(); // Initialize without storing reference
     this.apiService = new JobsApiService();
     this.init();
   }

@@ -7,31 +7,31 @@
 export interface WordPressContent {
   title: string;
   content: string;
-  excerpt?: string;
-  featuredImage?: string;
-  categories?: string[];
-  tags?: string[];
-  publishedAt?: string;
-  author?: string;
-  metadata?: Record<string, unknown>;
+  excerpt?: string | undefined;
+  featuredImage?: string | undefined;
+  categories?: string[] | undefined;
+  tags?: string[] | undefined;
+  publishedAt?: string | undefined;
+  author?: string | undefined;
+  metadata?: Record<string, unknown> | undefined;
 }
 
 export interface ShopifyContent {
   handle: string;
   title: string;
   bodyHtml: string;
-  excerpt?: string;
+  excerpt?: string | undefined;
   image?: {
     src: string;
-    alt?: string;
-  };
+    alt?: string | undefined;
+  } | undefined;
   tags: string[];
-  publishedAt?: string;
+  publishedAt?: string | undefined;
   seo?: {
-    title?: string;
-    description?: string;
-  };
-  metadata?: Record<string, unknown>;
+    title?: string | undefined;
+    description?: string | undefined;
+  } | undefined;
+  metadata?: Record<string, unknown> | undefined;
 }
 
 export interface ConversionJob {
@@ -39,24 +39,24 @@ export interface ConversionJob {
   url: string;
   status: 'pending' | 'validating' | 'scraping' | 'running' | 'completed' | 'error' | 'failed' | 'cancelled';
   progress: number;
-  wordpressContent?: WordPressContent;
-  shopifyContent?: ShopifyContent;
-  convertedHtml?: string;
-  extractedImages?: string[];
-  error?: string;
-  error_message?: string;
-  error_type?: string;
+  wordpressContent?: WordPressContent | undefined;
+  shopifyContent?: ShopifyContent | undefined;
+  convertedHtml?: string | undefined;
+  extractedImages?: string[] | undefined;
+  error?: string | undefined;
+  error_message?: string | undefined;
+  error_type?: string | undefined;
   metadata?: {
-    title?: string;
-    type?: string;
-    wordCount?: number;
-    imageCount?: number;
-    estimatedSize?: string;
-    processingTime?: number;
-  };
-  createdAt?: Date;
-  startedAt?: Date;
-  completedAt?: Date;
+    title?: string | undefined;
+    type?: string | undefined;
+    wordCount?: number | undefined;
+    imageCount?: number | undefined;
+    estimatedSize?: string | undefined;
+    processingTime?: number | undefined;
+  } | undefined;
+  createdAt?: Date | undefined;
+  startedAt?: Date | undefined;
+  completedAt?: Date | undefined;
 }
 
 export type JobStatus = ConversionJob['status'];
@@ -74,17 +74,17 @@ export type JobStatus = ConversionJob['status'];
 export interface IJobData extends ConversionJob {
   id: number; // Override string with number for API compatibility
   title: string;
-  domain?: string;
-  duration?: string;
+  domain?: string | undefined;
+  duration?: string | undefined;
   retryCount: number;
   maxRetries: number;
   priority: JobPriority;
-  contentSize?: number;
-  imagesDownloaded?: number;
-  batchId?: string;
+  contentSize?: number | undefined;
+  imagesDownloaded?: number | undefined;
+  batchId?: string | undefined;
   wordCount: number;
   imageCount: number;
-  fileSize?: string;
+  fileSize?: string | undefined;
 }
 
 /**
@@ -174,12 +174,12 @@ export interface IJobsResponse {
  * Job API query parameters
  */
 export interface IJobQueryParams {
-  page?: number;
-  page_size?: number;
-  status_filter?: string;
-  search?: string;
-  sort_by?: string;
-  sort_order?: 'asc' | 'desc';
+  page?: number | undefined;
+  page_size?: number | undefined;
+  status_filter?: string | undefined;
+  search?: string | undefined;
+  sort_by?: string | undefined;
+  sort_order?: 'asc' | 'desc' | undefined;
 }
 
 /**

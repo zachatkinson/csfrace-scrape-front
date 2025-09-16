@@ -9,6 +9,11 @@ import { logger, logHealth, logDebug, logError, logApiResponse } from './logger.
 // =============================================================================
 
 function oldApproach() {
+  // Example variables for demonstration
+  const data = {};
+  const metricsData = {};
+  const result = {};
+
   // This shows in both dev AND production
   console.log('🔍 Raw backend health response:', data); // DEBUG
   console.log('🔍 Building metrics from data:', metricsData);
@@ -20,6 +25,12 @@ function oldApproach() {
 // =============================================================================
 
 function newApproach() {
+  // Example variables for demonstration
+  const data = {};
+  const metricsData = {};
+  const result = {};
+  const response = { status: 200 };
+
   // Option 1: Use the logger instance
   logger.debug('Raw backend health response', data);
   logger.metrics('backend', metricsData);

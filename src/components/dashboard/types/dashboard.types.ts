@@ -35,19 +35,19 @@ export interface IDashboardState {
 // =============================================================================
 
 export interface IDashboardPageProps {
-  initialStats?: IDashboardStats;
-  config?: Partial<IDashboardConfig>;
+  initialStats?: IDashboardStats | undefined;
+  config?: Partial<IDashboardConfig> | undefined;
 }
 
 export interface IDashboardHeaderProps {
   stats: IDashboardStats;
   connectionStatus: 'connected' | 'disconnected' | 'reconnecting';
-  lastUpdated?: Date;
+  lastUpdated?: Date | undefined;
 }
 
 export interface IJobModalProps {
   isOpen: boolean;
-  jobId?: string;
+  jobId?: string | undefined;
   onClose: () => void;
 }
 
@@ -70,17 +70,8 @@ export interface IConnectionStatusEvent {
 // UTILITY INTERFACES
 // =============================================================================
 
-export interface IJobData {
-  readonly id: string;
-  readonly status: string;
-  readonly title?: string;
-  readonly url?: string;
-  readonly progress?: number;
-  readonly createdAt: Date;
-  readonly updatedAt: Date;
-  readonly completedAt?: Date;
-  readonly error?: string;
-}
+// Import centralized job type following DRY principle
+import type { IJobData } from '../../types/job.ts';
 
 // =============================================================================
 // CONFIGURATION CONSTANTS

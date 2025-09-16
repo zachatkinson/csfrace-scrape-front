@@ -39,16 +39,16 @@ const loginValidationSchema = createFormSchema<LoginFormFields>({
 // =============================================================================
 
 export interface StandardizedLoginFormProps {
-  onSuccess?: () => void;
-  onSwitchToRegister?: () => void;
-  onForgotPassword?: () => void;
-  className?: string;
-  
+  onSuccess?: (() => void) | undefined;
+  onSwitchToRegister?: (() => void) | undefined;
+  onForgotPassword?: (() => void) | undefined;
+  className?: string | undefined;
+
   // Optional form customization (inherited from BaseForm)
-  title?: string;
-  subtitle?: string;
-  showTitle?: boolean;
-  autoFocus?: boolean;
+  title?: string | undefined;
+  subtitle?: string | undefined;
+  showTitle?: boolean | undefined;
+  autoFocus?: boolean | undefined;
 }
 
 // =============================================================================

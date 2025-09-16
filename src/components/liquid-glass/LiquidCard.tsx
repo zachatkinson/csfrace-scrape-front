@@ -12,20 +12,20 @@ export interface LiquidCardProps extends Omit<LiquidGlassProps, 'variant'> {
   children: ReactNode;
   
   // Card-specific properties
-  title?: string;
-  subtitle?: string;
-  header?: ReactNode;
-  footer?: ReactNode;
-  
+  title?: string | undefined;
+  subtitle?: string | undefined;
+  header?: ReactNode | undefined;
+  footer?: ReactNode | undefined;
+
   // Layout options
-  padding?: 'sm' | 'md' | 'lg' | 'xl';
-  spacing?: 'tight' | 'normal' | 'relaxed';
-  
+  padding?: 'sm' | 'md' | 'lg' | 'xl' | undefined;
+  spacing?: 'tight' | 'normal' | 'relaxed' | undefined;
+
   // Visual hierarchy
-  elevation?: 'low' | 'medium' | 'high';
+  elevation?: 'low' | 'medium' | 'high' | undefined;
   
   // Status indication
-  status?: 'default' | 'success' | 'warning' | 'error' | 'info' | 'processing';
+  status?: 'default' | 'success' | 'warning' | 'error' | 'info' | 'processing' | undefined;
 }
 
 /**

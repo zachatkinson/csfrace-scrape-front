@@ -101,7 +101,7 @@ class OAuthProviderRegistryImpl implements IOAuthProviderRegistry {
       const enabledIds = enabledProvidersEnv
         .split(',')
         .map((id: string) => id.trim() as OAuthProviderId)
-        .filter(id => this.providers.has(id));
+        .filter((id: OAuthProviderId) => this.providers.has(id));
       
       return new Set(enabledIds);
     }

@@ -172,10 +172,12 @@ import BaseModal from '../common/BaseModal.astro';
   Following the authentication patterns from Astro docs
 -->
 <script>
-  import { AuthModalManager } from '../../scripts/authModalManager';
-  import { getApiBaseUrl } from '../../constants/api.js';
+  // import { AuthModalManager } from '../../scripts/authModalManager';
+  // import { getApiBaseUrl } from '../../constants/api.js';
 
   // Auth functionality following Astro best practices
+  // TODO: Implement AuthController integration with Astro components
+  /*
   class AuthController {
     private modalManager: AuthModalManager;
     private webauthnSupported: boolean = false;
@@ -362,9 +364,10 @@ import BaseModal from '../common/BaseModal.astro';
       this.modalManager.close();
     }
   }
+  */
 
   // Initialize auth controller following Astro best practices
-  const authController = new AuthController();
+  // const authController = new AuthController(); // TODO: Implement auth controller usage
 </script>
 
 <style>

@@ -5,8 +5,8 @@
 
 import React, { useState } from 'react';
 import { useBasicAuth } from '../../contexts/AuthContext.tsx';
-import { AuthModal } from './AuthModal.tsx';
-import type { UserProfile } from '../../types/auth.ts';
+import AuthModal from './AuthModal.astro';
+import type { User } from '../../types/auth.ts';
 
 export interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -164,7 +164,7 @@ export function useRouteProtection(
 ): {
   isAuthorized: boolean;
   isLoading: boolean;
-  user: UserProfile | null;
+  user: User | null;
   missingRoles: string[];
   missingPermissions: string[];
 } {

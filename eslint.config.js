@@ -117,6 +117,7 @@ export default [
       'dist/**',
       'node_modules/**',
       '.astro/**',
+      '.vite/**',
       'public/**',
       '*.config.js',
       '*.config.mjs',

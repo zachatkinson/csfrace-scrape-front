@@ -4,5 +4,5 @@
 
 export { LoginForm } from './LoginForm.tsx';
 export { RegisterForm } from './RegisterForm.tsx';
-export { AuthModal } from './AuthModal.tsx';
+export { default as AuthModal } from './AuthModal.astro';
 export { ProtectedRoute } from './ProtectedRoute.tsx';

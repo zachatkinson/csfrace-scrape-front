@@ -409,7 +409,7 @@ export class FrameworkDetector {
     }
 
     // Check for Astro HMR
-    if (!!(window as any).__ASTRO_HMR_CLIENT__) {
+    if ((window as any).__ASTRO_HMR_CLIENT__) {
       return true;
     }
 

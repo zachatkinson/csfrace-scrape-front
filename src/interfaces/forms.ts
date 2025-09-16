@@ -31,7 +31,7 @@ export interface BaseFormState {
 export interface FormValidationResult {
   isValid: boolean;
   fieldErrors: Record<string, string>;
-  globalError?: string;
+  globalError?: string | undefined;
 }
 
 /**
@@ -40,9 +40,9 @@ export interface FormValidationResult {
  */
 export interface FormSubmissionResult<T = unknown> {
   success: boolean;
-  data?: T;
-  error?: string;
-  fieldErrors?: Record<string, string>;
+  data?: T | undefined;
+  error?: string | undefined;
+  fieldErrors?: Record<string, string> | undefined;
 }
 
 // =============================================================================
@@ -111,12 +111,12 @@ export interface IFormComponent<TData = unknown> {
  * Form Hook Configuration
  */
 export interface FormHookConfig<TData = unknown> {
-  initialData?: Partial<TData>;
-  validationSchema?: FormValidationSchema<TData>;
-  onSubmit?: (data: TData) => Promise<FormSubmissionResult> | FormSubmissionResult;
-  validateOnChange?: boolean;
-  validateOnBlur?: boolean;
-  resetOnSuccess?: boolean;
+  initialData?: Partial<TData> | undefined;
+  validationSchema?: FormValidationSchema<TData> | undefined;
+  onSubmit?: ((data: TData) => Promise<FormSubmissionResult> | FormSubmissionResult) | undefined;
+  validateOnChange?: boolean | undefined;
+  validateOnBlur?: boolean | undefined;
+  resetOnSuccess?: boolean | undefined;
 }
 
 /**
@@ -288,9 +288,9 @@ export interface ApiConfigSettings {
  * Form Component Props with Generic Data Type
  */
 export interface FormComponentProps<TData = unknown> extends BaseFormProps {
-  initialData?: Partial<TData>;
-  validationSchema?: FormValidationSchema<TData>;
-  children?: ReactNode | ((formHook: FormHookReturn<TData>) => ReactNode);
+  initialData?: Partial<TData> | undefined;
+  validationSchema?: FormValidationSchema<TData> | undefined;
+  children?: ReactNode | ((formHook: FormHookReturn<TData>) => ReactNode) | undefined;
 }
 
 /**

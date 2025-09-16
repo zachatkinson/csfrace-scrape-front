@@ -68,17 +68,27 @@ export class DOMUtils implements IDOMUtils {
   }
 
   /**
-   * Add event listener with error handling
+   * Add event listener with error handling (generic event support)
    */
+  addEventListener<K extends keyof HTMLElementEventMap>(
+    element: Element,
+    type: K,
+    listener: (this: Element, ev: HTMLElementEventMap[K]) => any
+  ): void;
   addEventListener(
     element: Element,
     type: string,
     listener: EventListener
+  ): void;
+  addEventListener(
+    element: Element,
+    type: string,
+    listener: EventListener | ((this: Element, ev: Event) => any)
   ): void {
     if (!element || !type || !listener) return;
-    
+
     try {
-      element.addEventListener(type, listener);
+      element.addEventListener(type, listener as EventListener);
     } catch (error) {
       console.warn(`Failed to add event listener: ${type}`, error);
     }
