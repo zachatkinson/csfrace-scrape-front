@@ -125,7 +125,9 @@ const apiBaseUrl = getApiBaseUrl();
 
 <script type="module">
   // Custom element following Astro best practices
-  // This script is bundled, optimized, and deduplicated by Astro
+  // Import TypeScript modules without .ts extension per Astro docs
+  import { ConversionFormManager } from '../scripts/conversionFormManager';
+  import { getApiBaseUrl } from '../constants/api';
 
   class ConversionForm extends HTMLElement {
     constructor() {
@@ -133,11 +135,7 @@ const apiBaseUrl = getApiBaseUrl();
       this.formManager = null;
     }
 
-    async connectedCallback() {
-      // Dynamically import modules to avoid TypeScript execution errors in browser
-      const { ConversionFormManager } = await import('/src/scripts/conversionFormManager');
-      const { getApiBaseUrl } = await import('/src/constants/api');
-
+    connectedCallback() {
       // Read configuration from data attributes (Astro best practice)
       const apiUrl = this.dataset.apiUrl || getApiBaseUrl();
       const defaultMode = this.dataset.defaultMode || 'bulk';
@@ -154,11 +152,11 @@ const apiBaseUrl = getApiBaseUrl();
       
       // Set up job dashboard integration
       this.setupJobDashboardIntegration();
-      
+
       // Set up dynamic greeting functionality
       this.setupGreeting();
     }
-    
+
     disconnectedCallback() {
       // Cleanup when element is removed
       this.formManager = null;
