@@ -125,9 +125,9 @@ const apiBaseUrl = getApiBaseUrl();
 
 <script type="module">
   // Custom element following Astro best practices
-  // Import TypeScript modules without .ts extension per Astro docs
-  import { ConversionFormManager } from '../scripts/conversionFormManager';
-  import { getApiBaseUrl } from '../constants/api';
+  // Import TypeScript modules with absolute paths for browser compatibility
+  import { ConversionFormManager } from '/src/scripts/conversionFormManager';
+  import { getApiBaseUrl } from '/src/constants/api';
 
   class ConversionForm extends HTMLElement {
     constructor() {
