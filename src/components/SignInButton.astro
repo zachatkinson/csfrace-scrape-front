@@ -25,15 +25,17 @@
 <script type="module">
   // Custom element following Astro best practices
   // This script is bundled, optimized, and deduplicated by Astro
-  import { SignInButtonManager } from '/src/scripts/signInButtonManager';
-  
+
   class SignInButton extends HTMLElement {
     constructor() {
       super();
       this.signInButtonManager = null;
     }
 
-    connectedCallback() {
+    async connectedCallback() {
+      // Dynamically import the manager to avoid TypeScript issues
+      const { SignInButtonManager } = await import('/src/scripts/signInButtonManager');
+
       // Initialize sign-in button manager
       this.signInButtonManager = new SignInButtonManager({
         container: this,

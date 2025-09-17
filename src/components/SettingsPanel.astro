@@ -256,15 +256,17 @@ import BaseModal from './common/BaseModal.astro';
 <script type="module">
   // Custom element following Astro best practices
   // This script is bundled, optimized, and deduplicated by Astro
-  import { SettingsManager } from '/src/scripts/settingsManager';
-  
+
   class SettingsPanel extends HTMLElement {
     constructor() {
       super();
       this.settingsManager = null;
     }
 
-    connectedCallback() {
+    async connectedCallback() {
+      // Dynamically import the manager to avoid TypeScript issues
+      const { SettingsManager } = await import('/src/scripts/settingsManager');
+
       // Initialize settings manager
       this.settingsManager = new SettingsManager({
         modalId: 'settings-modal',
