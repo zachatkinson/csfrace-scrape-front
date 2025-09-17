@@ -172,11 +172,25 @@ import BaseModal from '../common/BaseModal.astro';
   Following the authentication patterns from Astro docs
 -->
 <script type="module">
-  // Clean Astro Islands script - no commented TypeScript
-  console.log('🔐 AuthModal: Islands script loaded (minimal implementation)');
-  
-  // Future: Load external AuthModal manager script here
-  // import('/src/scripts/auth-modal-manager.js');
+  // Clean Astro Islands script - Initialize AuthModal functionality
+  console.log('🔐 AuthModal: Islands script loaded');
+
+  // Initialize AuthModal manager to handle openAuthModal events
+  (async () => {
+    try {
+      const { AuthModalManager } = await import('/src/scripts/authModalManager');
+      const authModalManager = new AuthModalManager({
+        onAuthSuccess: () => {
+          console.log('🎉 AuthModal: Authentication successful');
+          // Handle successful authentication
+        }
+      });
+      authModalManager.init();
+      console.log('✅ AuthModal: Manager initialized successfully');
+    } catch (error) {
+      console.error('❌ AuthModal: Failed to load manager:', error);
+    }
+  })();
 </script>
 
 <style>
