@@ -34,44 +34,46 @@ import MainLayout from '../components/layout/MainLayout.astro';
   </div>
 </MainLayout>
 
-<script>
+<script type="module">
   import { LoginForm } from '../components/auth/LoginForm.tsx';
   import { RegisterForm } from '../components/auth/RegisterForm.tsx';
   import { AuthModal } from '../components/auth/AuthModal.tsx';
   import React from 'react';
+
+  // ASTRO MCP BEST PRACTICE: Static imports following Astro guidelines
   import { createRoot } from 'react-dom/client';
 
-  // Test LoginForm
-  const loginContainer = document.getElementById('login-form-container');
-  if (loginContainer) {
-    const loginRoot = createRoot(loginContainer);
-    loginRoot.render(
-      React.createElement(LoginForm, {
-        onSuccess: () => console.log('Login success!'),
-        onSwitchToRegister: () => console.log('Switch to register'),
-      })
-    );
-  }
+  document.addEventListener('DOMContentLoaded', () => {
 
-  // Test RegisterForm
-  const registerContainer = document.getElementById('register-form-container');
-  if (registerContainer) {
-    const registerRoot = createRoot(registerContainer);
-    registerRoot.render(
-      React.createElement(RegisterForm, {
-        onSuccess: () => console.log('Register success!'),
-        onSwitchToLogin: () => console.log('Switch to login'),
-      })
-    );
-  }
+    // DRY Principle: Reusable component initialization function
+    const initializeReactComponent = (containerId, Component, props) => {
+      const container = document.getElementById(containerId);
+      if (container && !container.dataset.initialized) {
+        const root = createRoot(container);
+        root.render(React.createElement(Component, props));
+        container.dataset.initialized = 'true';
+      }
+    };
 
-  // Test AuthModal
-  const modalContainer = document.getElementById('auth-modal-container');
-  const modalButton = document.getElementById('open-auth-modal');
-  
-  if (modalContainer && modalButton) {
-    const modalRoot = createRoot(modalContainer);
-    let isModalOpen = false;
+    // Test LoginForm (Single Responsibility)
+    initializeReactComponent('login-form-container', LoginForm, {
+      onSuccess: () => console.log('Login success!'),
+      onSwitchToRegister: () => console.log('Switch to register'),
+    });
+
+    // Test RegisterForm (Single Responsibility)
+    initializeReactComponent('register-form-container', RegisterForm, {
+      onSuccess: () => console.log('Register success!'),
+      onSwitchToLogin: () => console.log('Switch to login'),
+    });
+
+    // Test AuthModal (Following Astro MCP patterns)
+    const modalContainer = document.getElementById('auth-modal-container');
+    const modalButton = document.getElementById('open-auth-modal');
+
+    if (modalContainer && modalButton && !modalContainer.dataset.initialized) {
+      const modalRoot = createRoot(modalContainer);
+      let isModalOpen = false;
     
     const updateModal = () => {
       modalRoot.render(
@@ -91,12 +93,14 @@ import MainLayout from '../components/layout/MainLayout.astro';
       );
     };
     
-    modalButton.addEventListener('click', () => {
-      isModalOpen = true;
+      modalButton.addEventListener('click', () => {
+        isModalOpen = true;
+        updateModal();
+      });
+
+      // Initial render
       updateModal();
-    });
-    
-    // Initial render
-    updateModal();
-  }
+      modalContainer.dataset.initialized = 'true';
+    }
+  });
 </script>

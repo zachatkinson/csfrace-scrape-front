@@ -7,7 +7,7 @@
  */
 
 // For client-side components, always use PUBLIC_API_BASE_URL (browser-accessible)
-import { getApiBaseUrl } from '../constants/api.ts';
+import { getApiBaseUrl } from '/src/constants/api.ts';
 const apiBaseUrl = getApiBaseUrl();
 ---
 
@@ -123,19 +123,22 @@ const apiBaseUrl = getApiBaseUrl();
   </div>
 </conversion-form>
 
-<script>
+<script type="module">
   // Custom element following Astro best practices
   // This script is bundled, optimized, and deduplicated by Astro
-  import { ConversionFormManager } from '../scripts/conversionFormManager';
-  import { getApiBaseUrl } from '../constants/api.ts';
+  import { ConversionFormManager } from '/src/scripts/conversionFormManager.ts';
+  import { getApiBaseUrl } from '/src/constants/api.ts';
   
   class ConversionForm extends HTMLElement {
-    private formManager: ConversionFormManager | null = null;
-    
+    constructor() {
+      super();
+      this.formManager = null;
+    }
+
     connectedCallback() {
       // Read configuration from data attributes (Astro best practice)
       const apiUrl = this.dataset.apiUrl || getApiBaseUrl();
-      const defaultMode = (this.dataset.defaultMode as 'bulk' | 'single') || 'bulk';
+      const defaultMode = this.dataset.defaultMode || 'bulk';
       
       // Initialize form manager
       this.formManager = new ConversionFormManager({
@@ -162,14 +165,14 @@ const apiBaseUrl = getApiBaseUrl();
     /**
      * Set up integration with JobDashboard component
      */
-    private setupJobDashboardIntegration() {
+    setupJobDashboardIntegration() {
       // Listen for job submissions and refresh the job dashboard
-      window.addEventListener('conversionJobSubmitted', (event: Event) => {
-        const customEvent = event as CustomEvent;
+      window.addEventListener('conversionJobSubmitted', (event) => {
+        const customEvent = event;
         console.log('Form submitted, refreshing job dashboard:', customEvent.detail);
         
         // Find JobDashboard component and refresh it
-        const jobDashboard = document.querySelector('job-dashboard') as any;
+        const jobDashboard = document.querySelector('job-dashboard');
         if (jobDashboard && typeof jobDashboard.refresh === 'function') {
           // Small delay to allow the API call to process
           setTimeout(() => {
@@ -184,7 +187,7 @@ const apiBaseUrl = getApiBaseUrl();
      * Following DRY principle - moved from index.astro but kept minimal here
      * TODO: Could be extracted to a separate GreetingManager if it grows
      */
-    private setupGreeting() {
+    setupGreeting() {
       const getTimezoneFromSettings = () => {
         try {
           const settings = JSON.parse(localStorage.getItem('csfrace-settings') || '{}');
@@ -259,12 +262,12 @@ const apiBaseUrl = getApiBaseUrl();
     }
     
     // Public method for external control
-    switchMode(mode: 'bulk' | 'single') {
+    switchMode(mode) {
       this.formManager?.switchMode(mode);
     }
     
     // Public method to get current mode
-    getCurrentMode(): 'bulk' | 'single' | null {
+    getCurrentMode() {
       return this.formManager?.getCurrentMode() || null;
     }
   }

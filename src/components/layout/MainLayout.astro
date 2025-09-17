@@ -7,7 +7,7 @@
 
 // Import global styles (includes Tailwind + Liquid Glass)
 import '../../styles/global.css';
-import { getApiBaseUrl } from '../../constants/api.ts';
+import { getApiBaseUrl } from '/src/constants/api.ts';
 import { TIMING_CONSTANTS } from '../../constants/timing.ts';
 // Import Astro View Transitions for SPA-like navigation
 import { ViewTransitions } from 'astro:transitions';
@@ -260,9 +260,9 @@ const {
     </script>
 
     <!-- ASTRO MCP BEST PRACTICE: Global SSE Service in MainLayout -->
-    <script>
+    <script type="module">
       import { formatTimestamp } from '/src/utils/timezone.ts';
-      import { getApiBaseUrl } from '../../constants/api.ts';
+      import { getApiBaseUrl } from '/src/constants/api.ts';
 
       // SINGLETON PATTERN: Global health SSE service (Astro MCP best practice)
       if (!window.__healthSSEService) {
@@ -282,7 +282,7 @@ const {
             }
 
             try {
-              const backendUrl = import.meta.env.PUBLIC_BACKEND_SSE_URL || getApiBaseUrl();
+              const backendUrl = getApiBaseUrl();
               const sseUrl = `${backendUrl}/health/stream`;
               console.log('🔗 SSEService: Establishing connection to:', sseUrl);
               this.eventSource = new EventSource(sseUrl);
@@ -386,8 +386,8 @@ const {
     </script>
 
     <!-- ASTRO MCP BEST PRACTICE: Global Job SSE Service in MainLayout (DRY pattern) -->
-    <script>
-      import { getApiBaseUrl } from '../../constants/api.ts';
+    <script type="module">
+      import { getApiBaseUrl } from '/src/constants/api.ts';
 
       // SINGLETON PATTERN: Global job SSE service (following same pattern as health SSE)
       if (!window.__jobSSEService) {
@@ -407,7 +407,7 @@ const {
             }
 
             try {
-              const backendUrl = import.meta.env.PUBLIC_BACKEND_SSE_URL || getApiBaseUrl();
+              const backendUrl = getApiBaseUrl();
               const sseUrl = `${backendUrl}/jobs/stream`;
               console.log('🔗 JobSSEService: Establishing connection to:', sseUrl);
               this.eventSource = new EventSource(sseUrl);
@@ -484,11 +484,13 @@ const {
 
     <!-- ASTRO MCP BEST PRACTICE: Health Status Initialization -->
     <!-- Following DRY/SOLID: Single EventDrivenFooterStatus component with SSE -->
-    <script>
-      import { createRoot } from 'react-dom/client';
-      import { EventDrivenFooterStatus } from '../health/EventDrivenFooterStatus.tsx';
+    <script type="module">
+      import { EventDrivenFooterStatus } from '/src/components/health/EventDrivenFooterStatus.tsx';
 
       // Initialize React component for health status (Astro MCP compliant)
+      // Static imports work better than dynamic imports in Astro client scripts
+      import { createRoot } from 'react-dom/client';
+
       document.addEventListener('DOMContentLoaded', () => {
         const container = document.getElementById('health-status-container');
         if (container && !container.dataset.initialized) {

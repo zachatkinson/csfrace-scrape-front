@@ -33,7 +33,7 @@ try {
   // Server-side data fetching - will be deferred with server:defer
   console.log('🏝️ DashboardJobs Server Island: Fetching initial data');
 
-  // Real API call integration
+  // Real API call integration with timeout
   const response = await getJobs({
     page: 1,
     page_size: DASHBOARD_CONFIG.defaultPageSize
@@ -45,8 +45,24 @@ try {
   // Calculate stats from actual job data
   stats = calculateJobStats(initialJobs);
 
+  console.log(`🏝️ DashboardJobs Server Island: Successfully loaded ${initialJobs.length} jobs`);
+
 } catch (error) {
   console.error('🏝️ DashboardJobs Server Island: Failed to load initial jobs:', error);
+
+  // Graceful degradation: Initialize with empty state
+  initialJobs = [];
+  stats = {
+    total: 0,
+    active: 0,
+    completed: 0,
+    failed: 0,
+    queued: 0,
+    processing: 0
+  };
+
+  // Note: Component will still render with empty state and fallback content
+  console.log('🏝️ DashboardJobs Server Island: Using empty state fallback');
 }
 
 // =============================================================================

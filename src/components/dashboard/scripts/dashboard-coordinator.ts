@@ -7,8 +7,8 @@
  * =============================================================================
  */
 
-import { domUtils, waitForDOM } from '../utils/dom.utils';
-import type { IDashboardState, IDashboardStats } from '../types/dashboard.types';
+import { domUtils, waitForDOM } from '../utils/dom.utils.js';
+import type { IDashboardState, IDashboardStats } from '../types/dashboard.types.js';
 
 // =============================================================================
 // DASHBOARD COORDINATOR CLASS (Single Responsibility Principle)
@@ -366,24 +366,12 @@ export class DashboardCoordinator {
 }
 
 // =============================================================================
-// INITIALIZE ON DOM READY (Astro Islands Pattern)
+// EXPORT FOR ASTRO ISLANDS PATTERN
 // =============================================================================
-
-const dashboardCoordinator = new DashboardCoordinator();
-
-// Initialize when DOM is ready
-dashboardCoordinator.initialize().catch(console.error);
-
-// Cleanup on page unload
-window.addEventListener('beforeunload', () => {
-  dashboardCoordinator.destroy();
-});
 
 // Export for potential external use
 declare global {
   interface Window {
-    dashboardCoordinator: DashboardCoordinator;
+    dashboardCoordinator?: DashboardCoordinator;
   }
 }
-
-window.dashboardCoordinator = dashboardCoordinator;

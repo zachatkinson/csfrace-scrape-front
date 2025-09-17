@@ -3,7 +3,7 @@
  * Reusable DOM manipulation functions following SOLID principles
  */
 
-import type { IDOMUtils } from '../types/filter.types';
+import type { IDOMUtils } from '../types/filter.types.js';
 
 // =============================================================================
 // DOM UTILITIES CLASS (Single Responsibility Principle)

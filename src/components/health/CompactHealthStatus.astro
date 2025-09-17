@@ -108,7 +108,7 @@ console.log('🚀 Health results:', healthResults.map(hr => ({
 </div>
 
 <!-- ASTRO BEST PRACTICE: Using data attributes instead of define:vars -->
-<script>
+<script type="module">
   // =============================================================================
   // NANO STORE REACTIVE CLIENT - ASTRO MCP COMPLIANT
   // Subscribes to Nano Store updates for real-time health status changes
@@ -217,7 +217,7 @@ console.log('🚀 Health results:', healthResults.map(hr => ({
 
         try {
           import { getApiBaseUrl } from '../../constants/api.ts';
-          const backendUrl = import.meta.env.PUBLIC_BACKEND_SSE_URL || getApiBaseUrl();
+          const backendUrl = getApiBaseUrl();
           const sseUrl = `${backendUrl}/health/stream`;
           console.log('🔗 HealthSystem: Establishing SSE connection to:', sseUrl);
           this.eventSource = new EventSource(sseUrl);

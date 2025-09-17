@@ -138,7 +138,37 @@ const modalProps = {
      ASTRO ISLANDS ARCHITECTURE (Perfect Implementation)
      Central coordination script with proper event system
      ============================================================================= -->
-<script src="../components/dashboard/scripts/dashboard-coordinator.ts"></script>
+<script type="module">
+// Use dynamic import for client-side module loading (Astro best practice)
+async function initializeDashboard() {
+  try {
+    const { DashboardCoordinator } = await import('/src/components/dashboard/scripts/dashboard-coordinator.js');
+
+    // Initialize dashboard coordinator when DOM is ready
+    const dashboardCoordinator = new DashboardCoordinator();
+    await dashboardCoordinator.initialize();
+
+    // Store instance globally for cleanup
+    window.dashboardCoordinator = dashboardCoordinator;
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      dashboardCoordinator.destroy();
+    });
+
+    console.log('🎯 Dashboard initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize dashboard:', error);
+  }
+}
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeDashboard);
+} else {
+  initializeDashboard();
+}
+</script>
 
 <!-- =============================================================================
      COMPONENT STYLES (DRY Principle)

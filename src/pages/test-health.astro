@@ -595,7 +595,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
   // =============================================================================
 
   class ButtonFactory {
-    static createGlassButton(type: 'copy' | 'clear', id: string, title: string): string {
+    static createGlassButton(type: 'copy' | 'clear', id: string, title: string) {
       const colors = type === 'copy' 
         ? 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30'
         : 'bg-red-500/20 text-red-300 hover:bg-red-500/30';
@@ -622,7 +622,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
   // =============================================================================
 
   class UIUpdater {
-    static updateElement(elementId: string, content: string, className?: string): void {
+    static updateElement(elementId: string, content: string, className?: string) {
       const element = document.getElementById(elementId);
       if (!element) return;
       
@@ -632,7 +632,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       }
     }
 
-    static updateTextElement(elementId: string, text: string, status?: ServiceStatus): void {
+    static updateTextElement(elementId: string, text: string, status?: ServiceStatus) {
       const element = document.getElementById(elementId);
       if (!element) return;
       
@@ -643,7 +643,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       }
     }
 
-    static updateStatusIndicator(elementId: string, status: ServiceStatus): void {
+    static updateStatusIndicator(elementId: string, status: ServiceStatus) {
       const element = document.getElementById(elementId);
       if (!element) return;
       
@@ -663,11 +663,11 @@ import MainLayout from '../components/layout/MainLayout.astro';
   // =============================================================================
   
   class TimestampUpdater {
-    static updateLastRefresh(elementId: string): void {
+    static updateLastRefresh(elementId: string) {
       UIUpdater.updateTextElement(elementId, new Date().toLocaleTimeString());
     }
 
-    static formatTimestamp(timestamp: Date): string {
+    static formatTimestamp(timestamp: Date) {
       return timestamp.toLocaleTimeString();
     }
   }
@@ -683,7 +683,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       CACHE: { excellent: 1, good: 5, poor: 20 }         // Backend ↔ Cache (Redis)
     };
 
-    static getLatencyStatus(latencyMs: number, type: 'API' | 'DATABASE' | 'CACHE'): string {
+    static getLatencyStatus(latencyMs: number, type: 'API' | 'DATABASE' | 'CACHE') {
       const thresholds = this.THRESHOLDS[type];
       
       if (latencyMs <= thresholds.excellent) return 'up';        // Green
@@ -691,7 +691,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       return 'error';                                            // Red
     }
 
-    static updateLatencyElement(elementId: string, latencyText: string, latencyMs: number, type: 'API' | 'DATABASE' | 'CACHE'): void {
+    static updateLatencyElement(elementId: string, latencyText: string, latencyMs: number, type: 'API' | 'DATABASE' | 'CACHE') {
       const status = this.getLatencyStatus(latencyMs, type);
       UIUpdater.updateTextElement(elementId, latencyText, status);
       
@@ -699,7 +699,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
     }
 
     // DRY: Single method to update all latency displays from health data
-    static updateAllLatencyFromHealthData(healthData: any, apiLatency: number): void {
+    static updateAllLatencyFromHealthData(healthData: any, apiLatency: number) {
       // Frontend ↔ Backend API latency
       this.updateLatencyElement('fe-be-latency', `${apiLatency}ms`, apiLatency, 'API');
       
@@ -751,7 +751,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       this.attachEventListener();
     }
 
-    private attachEventListener(): void {
+    private attachEventListener() {
       if (this.eventListenerAttached) return;
       
       // Listen to the global health updates from RealtimeHealthEnhancer
@@ -768,7 +768,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
     }
 
     // Request manual refresh by triggering global health refresh
-    requestRefresh(): void {
+    requestRefresh() {
       // Dispatch event to request global health refresh
       window.dispatchEvent(new CustomEvent('requestHealthRefresh'));
     }
@@ -785,7 +785,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
     // Dependency Injection: Accept health data consumer to eliminate duplicate fetches
     constructor(protected healthDataConsumer?: IHealthDataConsumer) {}
 
-    protected async fetchWithTimeout(url: string, timeout: number = CONFIG.REQUEST_TIMEOUT): Promise<Response> {
+    protected async fetchWithTimeout(url: string, timeout: number = CONFIG.REQUEST_TIMEOUT) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeout);
       
@@ -873,7 +873,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       }
     }
 
-    updateUI(result: IServiceResult): void {
+    updateUI(result: IServiceResult) {
       UIUpdater.updateStatusIndicator('backend-status-indicator', result.status);
       UIUpdater.updateTextElement('backend-status-text', result.message, result.status);
       
@@ -945,7 +945,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       }
     }
 
-    updateUI(result: IServiceResult): void {
+    updateUI(result: IServiceResult) {
       UIUpdater.updateStatusIndicator('postgres-status-indicator', result.status);
       UIUpdater.updateTextElement('postgres-status-text', result.message, result.status);
       
@@ -1007,7 +1007,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       }
     }
 
-    updateUI(result: IServiceResult): void {
+    updateUI(result: IServiceResult) {
       UIUpdater.updateStatusIndicator('redis-status-indicator', result.status);
       UIUpdater.updateTextElement('redis-status-text', result.message, result.status);
       
@@ -1055,7 +1055,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       );
     }
 
-    updateUI(result: IServiceResult): void {
+    updateUI(result: IServiceResult) {
       UIUpdater.updateStatusIndicator('frontend-status-indicator', result.status);
       UIUpdater.updateTextElement('frontend-status-text', result.message, result.status);
       UIUpdater.updateTextElement('frontend-load-time', `${result.metrics.responseTime}ms`);
@@ -1079,15 +1079,17 @@ import MainLayout from '../components/layout/MainLayout.astro';
   // =============================================================================
 
   class PerformanceMonitor {
-    private performanceHistory: IPerformanceData[] = [];
-    private systemStats: ISystemStats = {
-      totalRequests: 0,
-      avgResponseTime: 0,
-      errorRate: 0,
-      uptime: '0s'
-    };
+    constructor() {
+      this.performanceHistory = [];
+      this.systemStats = {
+        totalRequests: 0,
+        avgResponseTime: 0,
+        errorRate: 0,
+        uptime: '0s'
+      };
+    }
 
-    addPerformanceData(data: IPerformanceData): void {
+    addPerformanceData(data: IPerformanceData) {
       this.performanceHistory.push(data);
       if (this.performanceHistory.length > CONFIG.PERFORMANCE_HISTORY_LIMIT) {
         this.performanceHistory.shift();
@@ -1096,7 +1098,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       this.updatePerformanceChart();
     }
 
-    private updateSystemStats(): void {
+    private updateSystemStats() {
       const history = this.performanceHistory;
       if (history.length === 0) return;
 
@@ -1119,7 +1121,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       UIUpdater.updateTextElement('error-rate', `${this.systemStats.errorRate}%`);
     }
 
-    private updatePerformanceChart(): void {
+    private updatePerformanceChart() {
       const chartElement = document.getElementById('performance-chart');
       if (!chartElement) return;
 
@@ -1143,7 +1145,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       chartElement.innerHTML = bars || '<div class="text-white/40 text-center w-full">Performance data will appear here after tests</div>';
     }
 
-    getHistoricalData(): string {
+    getHistoricalData() {
       const historyWithTimezone = {
         timezone: getCurrentTimezone(),
         timezoneAbbreviation: getTimezoneAbbreviation(),
@@ -1157,7 +1159,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       return JSON.stringify(historyWithTimezone, null, 2);
     }
 
-    clearData(): void {
+    clearData() {
       this.performanceHistory = [];
       this.systemStats = { totalRequests: 0, avgResponseTime: 0, errorRate: 0, uptime: '0s' };
       this.updateSystemStats();
@@ -1165,7 +1167,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
     }
 
     // Alias for clearData - used by the clear historical data button
-    clearHistory(): void {
+    clearHistory() {
       this.clearData();
     }
   }
@@ -1177,7 +1179,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
   class DebugLogger {
     private static logs: string[] = [];
 
-    static log(message: string, type: 'info' | 'success' | 'error' | 'warning' = 'info'): void {
+    static log(message: string, type: 'info' | 'success' | 'error' | 'warning' = 'info') {
       const timestamp = new Date().toLocaleTimeString();
       const icon = type === 'success' ? '✅' : 
                    type === 'error' ? '❌' : 
@@ -1196,7 +1198,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       this.updateDebugContent();
     }
 
-    static clear(): void {
+    static clear() {
       this.logs = [];
       this.updateDebugContent();
       
@@ -1211,7 +1213,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       return [...this.logs]; // Return copy to prevent mutation
     }
 
-    private static updateDebugContent(): void {
+    private static updateDebugContent() {
       const debugContent = document.getElementById('debug-content');
       if (debugContent) {
         if (this.logs.length === 0) {
@@ -1228,12 +1230,12 @@ import MainLayout from '../components/layout/MainLayout.astro';
       }
     }
 
-    static logFetchAttempt(method: string, url: string, headers?: HeadersInit): void {
+    static logFetchAttempt(method: string, url: string, headers?: HeadersInit) {
       const headerStr = headers ? JSON.stringify(headers, null, 2) : 'none';
       this.log(`🌐 FETCH: ${method} ${url}\n   Headers: ${headerStr}`, 'info');
     }
 
-    static logFetchResponse(response: Response, latency?: number): void {
+    static logFetchResponse(response: Response, latency?: number) {
       const latencyStr = latency ? ` (${latency}ms)` : '';
       if (response.ok) {
         this.log(`✅ RESPONSE: ${response.status} ${response.statusText}${latencyStr}`, 'success');
@@ -1242,7 +1244,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       }
     }
 
-    static logFetchError(error: any): void {
+    static logFetchError(error: any) {
       this.log(`🚫 FETCH ERROR: ${error.message || error}`, 'error');
     }
   }
@@ -1260,7 +1262,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       this.healthDashboard = healthDashboard;
     }
 
-    toggle(): void {
+    toggle() {
       if (this.isEnabled) {
         this.disable();
       } else {
@@ -1268,7 +1270,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       }
     }
 
-    private enable(): void {
+    private enable() {
       this.isEnabled = true;
       
       // Only auto-refresh system performance metrics - connectivity tests are on-demand only
@@ -1279,7 +1281,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       UIUpdater.updateTextElement('toggle-auto-refresh', '⏹️ Disable Auto-Refresh');
     }
 
-    private disable(): void {
+    private disable() {
       this.isEnabled = false;
       
       // Clear main services interval
@@ -1322,7 +1324,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
     }
 
     // Single responsibility: CORS status message generation (DRY principle)
-    private getCORSStatusMessage(serviceName: string, corsAllowed: boolean, expectedBlocked: boolean): string {
+    private getCORSStatusMessage(serviceName: string, corsAllowed: boolean, expectedBlocked: boolean) {
       // Use comprehensive messaging that matches testCORSPolicies() for consistency (DRY principle)
       if (serviceName === 'Backend API') {
         // Backend API should allow CORS for frontend communication
@@ -1693,7 +1695,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       this.healthDashboard = healthDashboard;
     }
 
-    exportHealthReport(): void {
+    exportHealthReport() {
       const reportData = {
         timestamp: formatTimestamp(new Date()),
         timezone: getCurrentTimezone(),
@@ -1716,7 +1718,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       URL.revokeObjectURL(url);
     }
 
-    copyRawData(): void {
+    copyRawData() {
       const data = this.performanceMonitor.getHistoricalData();
       navigator.clipboard.writeText(data).then(() => {
         UIUpdater.updateTextElement('copy-data', '✅ Copied');
@@ -1764,7 +1766,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       this.startInitialChecks();
     }
 
-    private initializeServiceCheckers(): void {
+    private initializeServiceCheckers() {
       // Use global health data consumer instead of individual API calls (eliminates rate limiting)
       this.serviceCheckers.set('frontend', new FrontendServiceChecker(this.healthDataConsumer));
       this.serviceCheckers.set('backend', new BackendServiceChecker(this.healthDataConsumer));
@@ -1773,7 +1775,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       // Grafana and Prometheus monitoring moved to Backend service sub-components
     }
 
-    private connectToGlobalHealthUpdates(): void {
+    private connectToGlobalHealthUpdates() {
       // Listen for global health updates from RealtimeHealthEnhancer
       window.addEventListener('consolidatedHealthUpdate', (event: any) => {
         console.log('🎯 HealthDashboard: Received global health update', event.detail);
@@ -1793,7 +1795,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       }, 100); // Small delay to ensure health system is initialized
     }
 
-    private checkForExistingHealthData(): void {
+    private checkForExistingHealthData() {
       // Check for the most recent consolidated health data
       // This should be immediately available if user navigated from another page
       const latestHealthData = (window as any).__latestConsolidatedHealthData;
@@ -1824,7 +1826,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       console.log('🎯 HealthDashboard: Keeping "Last Checked at: Never" until first poll data arrives');
     }
     
-    private updateFromGlobalHealthData(healthData: any): void {
+    private updateFromGlobalHealthData(healthData: any) {
       if (!healthData || !healthData.services) return;
 
       const { services, timestamp } = healthData;
@@ -1848,7 +1850,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       this.updateSystemLastUpdated();
     }
 
-    private updateOverallStatusFromPersistentData(services: any, timestamp?: number): void {
+    private updateOverallStatusFromPersistentData(services: any, timestamp?: number) {
       // Count services (frontend, backend, database, cache)
       const serviceList = ['frontend', 'backend', 'database', 'cache'];
       const loadedServices = serviceList.filter(service => services[service] && services[service].status);
@@ -1909,7 +1911,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       });
     }
 
-    private bindEventListeners(): void {
+    private bindEventListeners() {
       // Global controls
       document.getElementById('refresh-all')?.addEventListener('click', () => this.refreshAllServices());
       document.getElementById('toggle-auto-refresh')?.addEventListener('click', () => this.autoRefreshManager.toggle());
@@ -1955,7 +1957,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       document.getElementById('toggle-footer-polling')?.addEventListener('click', () => this.toggleFooterPolling());
     }
 
-    private initializeLiveClock(): void {
+    private initializeLiveClock() {
       // Initialize timezone display
       const updateTimezoneInfo = () => {
         const timezone = getCurrentTimezone();
@@ -2040,7 +2042,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       console.log('🔄 HealthDashboard: Manual refresh request sent to global health system');
     }
 
-    private updateSystemLastUpdated(): void {
+    private updateSystemLastUpdated() {
       // Find the most recent timestamp from the 4 service "Last checked" elements
       const serviceTimestampIds = [
         'frontend-last-refreshed',
@@ -2078,7 +2080,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       }
     }
 
-    private updateOverallStatus(): void {
+    private updateOverallStatus() {
       const results = Array.from(this.latestResults.values());
       if (results.length === 0) return;
 
@@ -2113,7 +2115,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       UIUpdater.updateTextElement('overall-last-checked', `Last Checked at: ${timeString}`);
     }
 
-    private updateHealthSummary(): void {
+    private updateHealthSummary() {
       const summary = {
         timestamp: formatTimestamp(new Date()),
         timezone: getTimezoneAbbreviation(),
@@ -2133,7 +2135,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       UIUpdater.updateElement('historical-data', this.performanceMonitor.getHistoricalData());
     }
 
-    private toggleFooterPolling(): void {
+    private toggleFooterPolling() {
       // Placeholder for footer polling integration
       const isEnabled = document.getElementById('toggle-footer-polling')?.textContent?.includes('Enable');
       
@@ -2151,7 +2153,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
     }
 
     // NEW: Card-based monitoring system (DRY + Single Source of Truth)
-    private initializeCardBasedMonitoring(): void {
+    private initializeCardBasedMonitoring() {
       // Listen for custom events from service card scripts
       window.addEventListener('serviceCardComplete', ((event: CustomEvent) => {
         const { serviceName, result } = event.detail;
@@ -2166,7 +2168,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       }, 1000); // Give cards time to initialize
     }
 
-    private startCardBasedMonitoring(): void {
+    private startCardBasedMonitoring() {
       this.cardLoadingStarted = true;
       console.log('🔄 Starting card-based monitoring - header shows MEASURING...');
       
@@ -2174,7 +2176,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       // Cards will emit events as they complete
     }
 
-    private onServiceCardComplete(serviceName: string, result: IServiceResult): void {
+    private onServiceCardComplete(serviceName: string, result: IServiceResult) {
       console.log(`📊 Service card complete: ${serviceName}`, result);
       this.cardResults.set(serviceName.toLowerCase(), result);
       
@@ -2182,7 +2184,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       this.updateHeaderFromCardResults();
     }
 
-    private updateHeaderFromCardResults(): void {
+    private updateHeaderFromCardResults() {
       const completedServices = Array.from(this.cardResults.keys());
       const totalExpected = this.expectedCardServices.length;
       const completed = completedServices.length;
@@ -2233,7 +2235,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       }
     }
 
-    private startInitialChecks(): void {
+    private startInitialChecks() {
       // Start with a small delay to ensure DOM is ready
       setTimeout(() => {
         // Load both system performance metrics AND initial connectivity status
@@ -2249,7 +2251,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
     }
 
     // Historical data management methods
-    copyDebugOutput(): void {
+    copyDebugOutput() {
       // Get debug logs from DebugLogger
       const debugLogs = DebugLogger.getAllLogs();
       const debugText = debugLogs.length > 0 
@@ -2295,7 +2297,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       });
     }
 
-    copyHistoricalData(): void {
+    copyHistoricalData() {
       const historicalDataElement = document.getElementById('historical-data');
       const data = historicalDataElement?.textContent || 'No historical data available';
       
@@ -2339,7 +2341,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       });
     }
 
-    clearHistoricalData(): void {
+    clearHistoricalData() {
       // Show confirmation dialog
       const confirmed = confirm('Are you sure you want to clear all historical data? This action cannot be undone.');
       
@@ -2370,7 +2372,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       }
     }
 
-    showServiceDetails(serviceName: string): void {
+    showServiceDetails(serviceName: string) {
       const result = this.latestResults.get(serviceName);
       if (!result) {
         alert(`No data available for ${serviceName} service. Please refresh the service first.`);
@@ -2483,7 +2485,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       });
     }
 
-    private getServiceIcon(serviceName: string): string {
+    private getServiceIcon(serviceName: string) {
       const icons: Record<string, string> = {
         frontend: '🌐',
         backend: '⚙️',
@@ -2495,7 +2497,7 @@ import MainLayout from '../components/layout/MainLayout.astro';
       return icons[serviceName] || '🔧';
     }
 
-    private getStatusColor(status: string): string {
+    private getStatusColor(status: string) {
       const colors: Record<string, string> = {
         up: 'text-green-400',
         degraded: 'text-yellow-400',

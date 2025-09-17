@@ -60,6 +60,8 @@ const responseTime = serviceResult.metrics.responseTime;
     serviceResult.status === 'down' ? 'bg-red-500/5' : 'bg-orange-500/5'
   ]}
   data-service={serviceName.toLowerCase().includes('frontend') ? 'frontend' : serviceName.toLowerCase().replace(/\s+/g, '-')}
+  data-service-name={serviceName}
+  data-service-result={JSON.stringify(serviceResult)}
 >
   <!-- Header -->
   <div class="flex items-center justify-between mb-4">
@@ -118,23 +120,37 @@ const responseTime = serviceResult.metrics.responseTime;
   )}
 </div>
 
-<script define:vars={{ serviceName, serviceResult }}>
-  // Import timezone utility for reactive timestamp updates
+<script type="module">
+  // =============================================================================
+  // ASTRO MCP BEST PRACTICE: Using data attributes instead of define:vars
+  // No anti-patterns: Proper event-driven architecture with data attributes
+  // =============================================================================
+
   import { formatTimestamp, onTimezoneChange } from '../../utils/timezone.ts';
 
-  // Update timestamp display when timezone settings change
-  const timestampElementId = `last-check-${serviceName.toLowerCase().replace(/\s+/g, '-')}`;
+  // ASTRO MCP COMPLIANT: Get data from DOM attributes (not define:vars)
+  document.addEventListener('DOMContentLoaded', () => {
+    const healthCards = document.querySelectorAll('[data-service-name]');
 
-  // Listen for timezone setting changes
-  const cleanupTimezoneListener = onTimezoneChange(() => {
-    const timestampElement = document.getElementById(timestampElementId);
-    if (timestampElement && serviceResult.timestamp) {
-      timestampElement.textContent = formatTimestamp(new Date(serviceResult.timestamp));
-    }
-  });
+    healthCards.forEach(card => {
+      const serviceName = card.getAttribute('data-service-name');
+      const serviceResult = JSON.parse(card.getAttribute('data-service-result') || '{}');
 
-  // Cleanup on page unload
-  window.addEventListener('beforeunload', () => {
-    cleanupTimezoneListener();
+      const timestampElementId = `last-check-${serviceName.toLowerCase().replace(/\s+/g, '-')}`;
+
+      // Listen for timezone setting changes (following DRY/SOLID)
+      const cleanupTimezoneListener = onTimezoneChange(() => {
+        const timestampElement = document.getElementById(timestampElementId);
+        if (timestampElement && serviceResult.timestamp) {
+          timestampElement.textContent = formatTimestamp(new Date(serviceResult.timestamp));
+        }
+      });
+
+      // Store cleanup function for proper memory management
+      if (card.dataset.cleanupRegistered !== 'true') {
+        window.addEventListener('beforeunload', cleanupTimezoneListener);
+        card.dataset.cleanupRegistered = 'true';
+      }
+    });
   });
 </script>

@@ -77,8 +77,11 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL || 'http://localhost:8000
   import * as jobUtils from '../utils/dashboard/jobUtils.ts';
 
   class JobDashboard extends HTMLElement {
-    private apiBaseUrl: string = '';
-    private jobs: any[] = [];
+    constructor() {
+      super();
+      this.apiBaseUrl = '';
+      this.jobs = [];
+    }
 
     connectedCallback() {
       // Read configuration from data attributes (Astro best practice)
@@ -108,13 +111,13 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL || 'http://localhost:8000
     // SSE Event Handling (DRY: follows same pattern as MainLayout)
     // ===================================================================
 
-    private setupSSEListeners() {
+    setupSSEListeners() {
       // Listen for real-time job updates from MainLayout SSE service
       window.addEventListener('jobSSEUpdate', this.handleJobSSEUpdate.bind(this) as EventListener);
       window.addEventListener('jobsDataRefresh', this.handleJobsDataRefresh.bind(this) as EventListener);
     }
 
-    private handleJobSSEUpdate = (event: Event) => {
+    handleJobSSEUpdate = (event: Event) => {
       const customEvent = event as CustomEvent;
       const { jobUpdate } = customEvent.detail;
       console.log('🎯 JobDashboard: Processing SSE job update:', jobUpdate);
@@ -135,7 +138,7 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL || 'http://localhost:8000
       }
     };
 
-    private handleJobsDataRefresh = (event: Event) => {
+    handleJobsDataRefresh = (event: Event) => {
       const customEvent = event as CustomEvent;
       const { source } = customEvent.detail;
       if (source === 'sse') {
@@ -148,7 +151,7 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL || 'http://localhost:8000
     // Job Loading and Rendering (SOLID: Single Responsibility)
     // ===================================================================
 
-    private async loadInitialJobs() {
+    async loadInitialJobs() {
       try {
         this.showLoading();
         this.hideError();
@@ -172,7 +175,7 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL || 'http://localhost:8000
       }
     }
 
-    private renderJobs() {
+    renderJobs() {
       const jobsList = this.querySelector('#jobs-list');
       const emptyState = this.querySelector('#jobs-empty');
 
@@ -191,7 +194,7 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL || 'http://localhost:8000
       emptyState.classList.add('hidden');
     }
 
-    private renderJobItem(job: any): string {
+    renderJobItem(job) {
       const statusColor = this.getStatusColor(job.status);
       const timeAgo = jobUtils.formatRelativeTime(job.createdAt);
 
@@ -232,7 +235,7 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL || 'http://localhost:8000
     // UI State Management (SOLID: Single Responsibility)
     // ===================================================================
 
-    private showLoading() {
+    showLoading() {
       const loading = this.querySelector('#jobs-loading');
       const jobsList = this.querySelector('#jobs-list');
       const emptyState = this.querySelector('#jobs-empty');
@@ -242,12 +245,12 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL || 'http://localhost:8000
       emptyState?.classList.add('hidden');
     }
 
-    private hideLoading() {
+    hideLoading() {
       const loading = this.querySelector('#jobs-loading');
       loading?.classList.add('hidden');
     }
 
-    private showEmptyState() {
+    showEmptyState() {
       const jobsList = this.querySelector('#jobs-list');
       const emptyState = this.querySelector('#jobs-empty');
 
@@ -255,18 +258,18 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL || 'http://localhost:8000
       emptyState?.classList.remove('hidden');
     }
 
-    private showError() {
+    showError() {
       const errorEl = this.querySelector('#jobs-error');
       errorEl?.classList.remove('hidden');
     }
 
-    private hideError() {
+    hideError() {
       const errorEl = this.querySelector('#jobs-error');
       errorEl?.classList.add('hidden');
     }
 
-    private getStatusColor(status: string): string {
-      const colors: Record<string, string> = {
+    getStatusColor(status) {
+      const colors = {
         'pending': 'bg-gray-500/20 text-gray-300',
         'running': 'bg-blue-500/20 text-blue-300',
         'completed': 'bg-green-500/20 text-green-300',

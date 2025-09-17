@@ -22,14 +22,17 @@
   </button>
 </sign-in-button>
 
-<script>
+<script type="module">
   // Custom element following Astro best practices
   // This script is bundled, optimized, and deduplicated by Astro
-  import { SignInButtonManager } from '../scripts/signInButtonManager';
+  import { SignInButtonManager } from '/src/scripts/signInButtonManager.ts';
   
   class SignInButton extends HTMLElement {
-    private signInButtonManager: SignInButtonManager | null = null;
-    
+    constructor() {
+      super();
+      this.signInButtonManager = null;
+    }
+
     connectedCallback() {
       // Initialize sign-in button manager
       this.signInButtonManager = new SignInButtonManager({
@@ -39,16 +42,16 @@
           console.log('Sign-in button clicked');
         }
       });
-      
+
       // Initialize the sign-in functionality
       this.signInButtonManager.init();
     }
-    
+
     disconnectedCallback() {
       // Cleanup when element is removed
       this.signInButtonManager = null;
     }
-    
+
     // Public method for external control
     triggerSignIn() {
       this.signInButtonManager?.triggerSignIn();
