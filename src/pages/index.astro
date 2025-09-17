@@ -6,13 +6,9 @@ import JobDashboard from '../components/JobDashboard.astro';
 
 <MainLayout title="CSFrace Scrape - WordPress to Shopify Converter">
   <section class="text-center py-16">
-    <div class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-8 lg:gap-12 lg:items-start">
-      <div>
-        <ConversionForm />
-      </div>
-      <div class="lg:sticky lg:top-8 lg:h-[calc(100vh-8rem)]">
-        <JobDashboard />
-      </div>
+    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 grid-rows-auto lg:grid-rows-1">
+      <ConversionForm />
+      <JobDashboard />
     </div>
   </section>
 </MainLayout>
