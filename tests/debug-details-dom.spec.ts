@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test } from '@playwright/test';
 
 test('debug details DOM structure', async ({ page }) => {
   console.log('🔍 Debugging the Details button DOM structure...');

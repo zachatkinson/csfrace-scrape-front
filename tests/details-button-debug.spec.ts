@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Details Button Debug', () => {
-  test('capture details button behavior with video and screenshots', async ({ page, context }) => {
+  test('capture details button behavior with video and screenshots', async ({ page }) => {
     // Enable video recording
     const videoPath = await page.video()?.path();
     console.log('Video will be saved to:', videoPath);

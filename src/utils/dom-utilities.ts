@@ -58,7 +58,6 @@ export class SafeDomAccessor implements IDomValidator {
 // SINGLE RESPONSIBILITY: Text Content Updates
 // =============================================================================
 export class DomTextUpdater implements IDomUpdater {
-  private validator = new SafeDomAccessor();
 
   /**
    * DRY: Update single element text content

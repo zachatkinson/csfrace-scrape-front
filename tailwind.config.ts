@@ -1,6 +1,6 @@
 import type { Config } from 'tailwindcss';
 
-export default {
+const config: Config = {
   content: ['./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}'],
   theme: {
     container: {
@@ -148,7 +148,7 @@ export default {
     require('@tailwindcss/typography'),
     
     // Custom Liquid Glass Plugin
-    function({ addUtilities, theme }) {
+    function({ addUtilities, theme }: { addUtilities: any; theme: any }) {
       const newUtilities = {
         // Base Liquid Glass Material
         '.liquid-glass': {
@@ -214,4 +214,6 @@ export default {
       addUtilities(newUtilities)
     },
   ],
-}
+};
+
+export default config;

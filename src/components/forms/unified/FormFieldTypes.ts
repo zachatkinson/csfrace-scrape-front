@@ -226,6 +226,16 @@ export interface IFieldValidationRules {
 }
 
 /**
+ * Async Validator Interface
+ * Single Responsibility: Defines contract for async validation
+ */
+export interface IAsyncValidator {
+  readonly validate: (value: any) => Promise<{ errors: string[]; warnings: string[] }>;
+  readonly name: string;
+  readonly priority?: number;
+}
+
+/**
  * Field Component Props
  * Interface Segregation: Clean component interface
  */
@@ -245,4 +255,70 @@ export interface IFieldErrorConfig {
   readonly showTooltip?: boolean;
   readonly position?: 'bottom' | 'top' | 'right' | 'left';
   readonly className?: string;
+}
+
+/**
+ * Unified Form Configuration
+ * Single Responsibility: Overall form configuration and behavior
+ */
+export interface IUnifiedFormConfig {
+  readonly id?: string;
+  readonly title?: string;
+  readonly subtitle?: string;
+  readonly validateOnChange?: boolean;
+  readonly validateOnBlur?: boolean;
+  readonly validateOnSubmit?: boolean;
+  readonly submitOnEnter?: boolean;
+  readonly showErrorSummary?: boolean;
+  readonly preventSubmitOnError?: boolean;
+  readonly resetOnSuccess?: boolean;
+  readonly autoFocus?: boolean;
+  readonly className?: string;
+  readonly fields?: readonly IUnifiedFieldConfig[];
+}
+
+/**
+ * Unified Form State
+ * Single Responsibility: Manages overall form state
+ */
+export interface IUnifiedFormState<T = Record<string, unknown>> {
+  readonly data: T;
+  readonly errors: Record<keyof T, string | undefined>;
+  readonly isValid: boolean;
+  readonly isSubmitting: boolean;
+  readonly isLoading: boolean;
+  readonly isDirty: boolean;
+  readonly touched: Record<keyof T, boolean>;
+  readonly submitCount: number;
+}
+
+/**
+ * Unified Form Handlers
+ * Single Responsibility: Form interaction methods
+ */
+export interface IUnifiedFormHandlers<T = Record<string, unknown>> {
+  readonly handleSubmit: (onSubmit: (data: T) => void | Promise<void>) => (e?: React.FormEvent) => Promise<void>;
+  readonly handleReset: () => void;
+  readonly handleFieldChange: <K extends keyof T>(field: K) => (value: T[K]) => void;
+  readonly handleFieldBlur: <K extends keyof T>(field: K) => () => void;
+  readonly setFieldValue: <K extends keyof T>(field: K, value: T[K]) => void;
+  readonly setFieldError: <K extends keyof T>(field: K, error: string | undefined) => void;
+  readonly clearErrors: () => void;
+  readonly validateField: <K extends keyof T>(field: K) => Promise<boolean>;
+  readonly validateForm: () => Promise<boolean>;
+}
+
+/**
+ * Unified Form Builder Props
+ * Single Responsibility: Props for the form builder component
+ */
+export interface IUnifiedFormBuilderProps<T = Record<string, unknown>> {
+  readonly id: string;
+  readonly config?: IUnifiedFormConfig;
+  readonly fields: Record<keyof T, IUnifiedFieldConfig>;
+  readonly initialData?: Partial<T>;
+  readonly onSubmit?: (data: T) => void | Promise<void>;
+  readonly onValidationError?: (errors: Record<keyof T, string>) => void;
+  readonly className?: string;
+  readonly children?: React.ReactNode;
 }

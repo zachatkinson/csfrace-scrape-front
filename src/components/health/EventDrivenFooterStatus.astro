@@ -4,7 +4,7 @@
 // Pure Astro implementation using Islands Architecture
 // =============================================================================
 
-import { formatTimestamp } from '/src/utils/timezone';
+// Removed unused imports for TypeScript compliance
 
 // Server-side props (if any needed)
 export interface Props {
@@ -19,12 +19,7 @@ const {
   initialTotal = 4 
 } = Astro.props;
 
-// Server-side default state
-const defaultStatus = {
-  status: 'loading',
-  text: 'Loading system status...',
-  color: 'gray'
-};
+// Removed unused defaultStatus variable for TypeScript compliance
 ---
 
 <!-- =============================================================================
@@ -104,12 +99,17 @@ const defaultStatus = {
 <!-- =============================================================================
      ASTRO ISLANDS SCRIPT (DRY/SOLID/Astro MCP Best Practices)
      ============================================================================= -->
-<script type="module">
+<script>
   // Import nano stores for reactive health data (Astro MCP best practice)
   import { $healthData, $serviceMetrics } from '/src/stores/healthStore';
   import { formatTimestamp, onTimezoneChange } from '/src/utils/timezone';
+  import type { IConsolidatedHealthData, IHealthServiceStatuses } from '/src/types/health';
 
   class AstroFooterStatusManager {
+    isInitialized: boolean;
+    elements: Record<string, any>;
+    cleanupCallbacks: Array<() => void>;
+
     constructor() {
       this.isInitialized = false;
       this.elements = {};
@@ -148,7 +148,7 @@ const defaultStatus = {
       }
 
       // Subscribe to health data changes
-      const unsubscribeHealth = $healthData.subscribe((healthData) => {
+      const unsubscribeHealth = $healthData.subscribe((healthData: any) => {
         this.updateHealthDisplay(healthData);
       });
 
@@ -163,13 +163,13 @@ const defaultStatus = {
     setupTimezoneListener() {
       if (typeof onTimezoneChange === 'function') {
         const cleanup = onTimezoneChange(() => {
-          this.updateTimestamp();
+          this.updateTimestamp(undefined);
         });
         this.cleanupCallbacks.push(cleanup);
       }
     }
 
-    updateHealthDisplay(healthData) {
+    updateHealthDisplay(healthData: IConsolidatedHealthData): void {
       if (!this.elements.container || !healthData) return;
 
       const { services, overallStatus } = healthData;
@@ -190,7 +190,7 @@ const defaultStatus = {
       });
     }
 
-    updateMetricsDisplay(serviceMetrics) {
+    updateMetricsDisplay(serviceMetrics: any): void {
       if (!this.elements.overallText || !serviceMetrics) return;
 
       const { up, total, hasAnyData } = serviceMetrics;
@@ -203,7 +203,7 @@ const defaultStatus = {
       }
     }
 
-    updateServiceIndicators(services) {
+    updateServiceIndicators(services: IHealthServiceStatuses): void {
       if (!services || !this.elements.serviceIndicators) return;
 
       const serviceDisplay = [
@@ -213,7 +213,7 @@ const defaultStatus = {
         { key: 'cache', name: 'Cache', icon: '⚡' }
       ];
 
-      serviceDisplay.forEach((item, index) => {
+      serviceDisplay.forEach((item) => {
         const serviceElement = this.elements.serviceIndicators.querySelector(`[data-service="${item.key}"]`);
         const service = services[item.key];
 
@@ -235,10 +235,10 @@ const defaultStatus = {
       });
     }
 
-    updateTimestamp(timestamp) {
+    updateTimestamp(timestamp: string | number | undefined): void {
       if (!this.elements.timestamp) return;
 
-      if (timestamp && timestamp > 0) {
+      if (timestamp && typeof timestamp === 'number' && timestamp > 0) {
         const date = new Date(timestamp);
         const formatted = typeof formatTimestamp === 'function' ? formatTimestamp(date) : date.toLocaleString();
         this.elements.timestamp.textContent = `Updated: ${formatted}`;
@@ -247,7 +247,7 @@ const defaultStatus = {
       }
     }
 
-    getStatusColorClass(status) {
+    getStatusColorClass(status: string): string {
       switch (status) {
         case 'up':
         case 'healthy': return 'bg-green-500';
@@ -259,7 +259,7 @@ const defaultStatus = {
     }
 
     destroy() {
-      this.cleanupCallbacks.forEach(cleanup => {
+      this.cleanupCallbacks.forEach((cleanup: () => void) => {
         if (typeof cleanup === 'function') {
           cleanup();
         }
@@ -273,7 +273,7 @@ const defaultStatus = {
 
   // Global cleanup for page transitions
   if (typeof window !== 'undefined') {
-    window.astroFooterStatusManager = footerStatusManager;
+    (window as any).astroFooterStatusManager = footerStatusManager;
   }
 </script>
 

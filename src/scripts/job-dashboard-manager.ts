@@ -210,7 +210,7 @@ class JobDashboard extends HTMLElement {
       'failed': 'bg-red-500/20 text-red-300',
       'cancelled': 'bg-orange-500/20 text-orange-300'
     };
-    return colors[status] || 'bg-gray-500/20 text-gray-300';
+    return colors[status as keyof typeof colors] || 'bg-gray-500/20 text-gray-300';
   }
 
   // Public method for other components to trigger refresh

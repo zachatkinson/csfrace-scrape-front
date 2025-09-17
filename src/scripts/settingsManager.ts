@@ -1,290 +1,487 @@
 /**
- * Settings Manager - Following Astro Best Practices & SOLID Principles
- * Extends BaseModalManager for DRY modal behavior
- * Single Responsibility: Manages application settings state and UI interactions
+ * SettingsManager - SOLID Implementation
+ * Single Responsibility: Manage application settings and preferences
+ * Open/Closed: Extensible for new setting types without modification
+ * Interface Segregation: Clean separation of settings concerns
+ * Dependency Inversion: Depends on storage abstractions, not concrete implementations
  */
 
-import { BaseModalManager } from './baseModalManager';
-import type { BaseModalConfig } from './baseModalManager';
-import { getApiBaseUrl } from '../constants/api.ts';
+// =============================================================================
+// TYPES & INTERFACES
+// =============================================================================
 
-export interface SettingsData {
-  // API Configuration
-  apiUrl: string;
-  apiTimeout: number;
-  refreshInterval: number;
-  
-  // Job Defaults
-  defaultPriority: 'Low' | 'Normal' | 'High' | 'Urgent';
-  maxRetries: number;
-  jobTimeout: number;
-  
-  // Display Options
-  darkMode: boolean;
-  showJobIds: boolean;
-  compactMode: boolean;
-  jobsPerPage: number;
+export interface AppSettings {
+  theme: 'light' | 'dark' | 'auto';
   timezone: string;
-  
-  // Notifications
-  completionAlerts: boolean;
-  errorNotifications: boolean;
-  browserNotifications: boolean;
-}
-
-interface SettingsManagerConfig extends BaseModalConfig {
-  onSettingsChange?: (settings: SettingsData) => void;
-}
-
-export class SettingsManager extends BaseModalManager {
-  private onSettingsChange?: (settings: SettingsData) => void;
-  
-  // Settings-specific elements
-  private toggleBtn: HTMLElement | null = null;
-  private closeBtn: HTMLElement | null = null;
-  private cancelBtn: HTMLElement | null = null;
-  private saveBtn: HTMLElement | null = null;
-  private resetBtn: HTMLElement | null = null;
-  
-  // Default settings
-  private readonly defaultSettings: SettingsData = {
-    // API Configuration
-    apiUrl: getApiBaseUrl(),
-    apiTimeout: 30,
-    refreshInterval: 10,
-    
-    // Job Defaults
-    defaultPriority: 'Normal',
-    maxRetries: 3,
-    jobTimeout: 30,
-    
-    // Display Options
-    darkMode: true,
-    showJobIds: true,
-    compactMode: false,
-    jobsPerPage: 10,
-    timezone: 'auto',
-    
-    // Notifications
-    completionAlerts: true,
-    errorNotifications: true,
-    browserNotifications: false
+  dateFormat: 'short' | 'medium' | 'long' | 'full';
+  notifications: {
+    jobComplete: boolean;
+    errors: boolean;
+    system: boolean;
   };
+  ui: {
+    compactMode: boolean;
+    showAdvanced: boolean;
+    autoRefresh: boolean;
+    refreshInterval: number; // seconds
+  };
+  conversion: {
+    defaultOutputFormat: 'html' | 'markdown' | 'json';
+    preserveImages: boolean;
+    preserveStyles: boolean;
+    timeoutDuration: number; // seconds
+  };
+}
 
-  constructor(config: SettingsManagerConfig) {
-    super({
-      modalId: 'settings-panel',
-      ...config
-    });
-    this.onSettingsChange = config.onSettingsChange;
+export interface SettingsChangeEvent {
+  key: string;
+  oldValue: any;
+  newValue: any;
+  timestamp: number;
+}
+
+export interface SettingsChangeListener {
+  (event: SettingsChangeEvent): void;
+}
+
+export interface SettingsManagerConfig {
+  container?: HTMLElement;
+  onSettingsChange?: (settings: AppSettings) => void;
+}
+
+// =============================================================================
+// CONSTANTS
+// =============================================================================
+
+const SETTINGS_STORAGE_KEY = 'app_settings';
+const SETTINGS_CHANGE_EVENT = 'settingsChanged';
+
+const DEFAULT_SETTINGS: AppSettings = {
+  theme: 'auto',
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  dateFormat: 'medium',
+  notifications: {
+    jobComplete: true,
+    errors: true,
+    system: false,
+  },
+  ui: {
+    compactMode: false,
+    showAdvanced: false,
+    autoRefresh: true,
+    refreshInterval: 30,
+  },
+  conversion: {
+    defaultOutputFormat: 'html',
+    preserveImages: true,
+    preserveStyles: true,
+    timeoutDuration: 30,
+  },
+};
+
+// =============================================================================
+// SETTINGS MANAGER CLASS
+// =============================================================================
+
+export class SettingsManager {
+  private settings: AppSettings;
+  private listeners: Set<SettingsChangeListener> = new Set();
+  private storageAvailable: boolean = false;
+  private config: SettingsManagerConfig;
+
+  constructor(config: SettingsManagerConfig = {}) {
+    this.config = config;
+    this.storageAvailable = this.checkStorageAvailability();
+    this.settings = this.loadSettings();
+    this.initializeTheme();
+
+    // Set up change listener if provided
+    if (this.config.onSettingsChange) {
+      this.listeners.add((_event: SettingsChangeEvent) => {
+        this.config.onSettingsChange!(this.settings);
+      });
+    }
   }
 
   /**
-   * Initialize the settings manager  
+   * Check if localStorage is available
+   * @returns True if localStorage is available, false otherwise
    */
-  init() {
-    super.init(); // Initialize base modal behavior
-    this.loadSettings();
+  private checkStorageAvailability(): boolean {
+    try {
+      const test = '__storage_test__';
+      localStorage.setItem(test, 'test');
+      localStorage.removeItem(test);
+      return true;
+    } catch {
+      console.warn('SettingsManager: localStorage not available, using memory storage');
+      return false;
+    }
   }
 
   /**
-   * Settings-specific event handlers (required by BaseModalManager)
+   * Load settings from storage or use defaults
+   * @returns Loaded settings
    */
-  protected setupModalSpecificHandlers() {
-    const container = this.config.container || document;
-    
-    // Cache settings-specific elements
-    this.toggleBtn = document.querySelector('#settings-toggle');
-    this.closeBtn = container.querySelector('#settings-close');
-    this.cancelBtn = container.querySelector('#cancel-settings');
-    this.saveBtn = container.querySelector('#save-settings');
-    this.resetBtn = container.querySelector('#reset-settings');
-    
-    // Setup settings-specific event listeners
-    this.toggleBtn?.addEventListener('click', () => this.open());
-    this.closeBtn?.addEventListener('click', () => this.close());
-    this.cancelBtn?.addEventListener('click', () => this.close());
-    this.saveBtn?.addEventListener('click', () => this.saveSettings());
-    this.resetBtn?.addEventListener('click', () => this.resetSettings());
+  private loadSettings(): AppSettings {
+    if (!this.storageAvailable) {
+      return { ...DEFAULT_SETTINGS };
+    }
+
+    try {
+      const stored = localStorage.getItem(SETTINGS_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return this.mergeWithDefaults(parsed);
+      }
+    } catch (error) {
+      console.error('SettingsManager: Error loading settings:', error);
+    }
+
+    return { ...DEFAULT_SETTINGS };
   }
 
   /**
-   * Override open to load settings on open
+   * Merge loaded settings with defaults to handle new settings
+   * @param loaded - Loaded settings from storage
+   * @returns Merged settings with defaults
    */
-  open() {
-    super.open();
-    this.loadSettings();
-  }
-
-  /**
-   * Load settings from localStorage into form elements
-   */
-  private loadSettings() {
-    const settings = this.getStoredSettings();
-    const container = this.config.container || document;
+  private mergeWithDefaults(loaded: any): AppSettings {
+    const merged = { ...DEFAULT_SETTINGS };
     
-    // API Configuration
-    this.setFormValue(container, 'api-url', settings.apiUrl);
-    this.setFormValue(container, 'api-timeout', settings.apiTimeout.toString());
-    this.setFormValue(container, 'refresh-interval', settings.refreshInterval.toString());
-    
-    // Job Defaults
-    this.setFormValue(container, 'default-priority', settings.defaultPriority);
-    this.setFormValue(container, 'max-retries', settings.maxRetries.toString());
-    this.setFormValue(container, 'job-timeout', settings.jobTimeout.toString());
-    
-    // Display Options
-    this.setFormValue(container, 'dark-mode', settings.darkMode);
-    this.setFormValue(container, 'show-job-ids', settings.showJobIds);
-    this.setFormValue(container, 'compact-mode', settings.compactMode);
-    this.setFormValue(container, 'jobs-per-page', settings.jobsPerPage.toString());
-    this.setFormValue(container, 'timezone', settings.timezone);
-    
-    // Notifications
-    this.setFormValue(container, 'completion-alerts', settings.completionAlerts);
-    this.setFormValue(container, 'error-notifications', settings.errorNotifications);
-    this.setFormValue(container, 'browser-notifications', settings.browserNotifications);
-  }
-
-  /**
-   * Save settings to localStorage and apply them
-   */
-  private saveSettings() {
-    const container = this.config.container || document;
-    
-    const settings: SettingsData = {
-      // API Configuration
-      apiUrl: this.getFormValue(container, 'api-url') as string,
-      apiTimeout: parseInt(this.getFormValue(container, 'api-timeout') as string),
-      refreshInterval: parseInt(this.getFormValue(container, 'refresh-interval') as string),
+    if (loaded && typeof loaded === 'object') {
+      // Safely merge each section
+      if (loaded.theme && ['light', 'dark', 'auto'].includes(loaded.theme)) {
+        merged.theme = loaded.theme;
+      }
       
-      // Job Defaults
-      defaultPriority: this.getFormValue(container, 'default-priority') as SettingsData['defaultPriority'],
-      maxRetries: parseInt(this.getFormValue(container, 'max-retries') as string),
-      jobTimeout: parseInt(this.getFormValue(container, 'job-timeout') as string),
+      if (typeof loaded.timezone === 'string') {
+        merged.timezone = loaded.timezone;
+      }
       
-      // Display Options
-      darkMode: this.getFormValue(container, 'dark-mode') as boolean,
-      showJobIds: this.getFormValue(container, 'show-job-ids') as boolean,
-      compactMode: this.getFormValue(container, 'compact-mode') as boolean,
-      jobsPerPage: parseInt(this.getFormValue(container, 'jobs-per-page') as string),
-      timezone: this.getFormValue(container, 'timezone') as string,
+      if (loaded.dateFormat && ['short', 'medium', 'long', 'full'].includes(loaded.dateFormat)) {
+        merged.dateFormat = loaded.dateFormat;
+      }
       
-      // Notifications
-      completionAlerts: this.getFormValue(container, 'completion-alerts') as boolean,
-      errorNotifications: this.getFormValue(container, 'error-notifications') as boolean,
-      browserNotifications: this.getFormValue(container, 'browser-notifications') as boolean
+      if (loaded.notifications && typeof loaded.notifications === 'object') {
+        merged.notifications = { ...merged.notifications, ...loaded.notifications };
+      }
+      
+      if (loaded.ui && typeof loaded.ui === 'object') {
+        merged.ui = { ...merged.ui, ...loaded.ui };
+      }
+      
+      if (loaded.conversion && typeof loaded.conversion === 'object') {
+        merged.conversion = { ...merged.conversion, ...loaded.conversion };
+      }
+    }
+
+    return merged;
+  }
+
+  /**
+   * Save settings to storage
+   */
+  private saveSettings(): void {
+    if (!this.storageAvailable) return;
+
+    try {
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(this.settings));
+    } catch (error) {
+      console.error('SettingsManager: Error saving settings:', error);
+    }
+  }
+
+  /**
+   * Initialize theme based on current settings
+   */
+  private initializeTheme(): void {
+    const theme = this.getTheme();
+    document.documentElement.setAttribute('data-theme', theme);
+    
+    // Apply theme class for CSS
+    document.documentElement.classList.remove('light', 'dark');
+    document.documentElement.classList.add(theme);
+  }
+
+  /**
+   * Get current theme (resolving 'auto' to actual theme)
+   * @returns Current theme ('light' or 'dark')
+   */
+  private getTheme(): 'light' | 'dark' {
+    if (this.settings.theme === 'auto') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.settings.theme;
+  }
+
+  /**
+   * Emit settings change event
+   * @param key - Setting key that changed
+   * @param oldValue - Previous value
+   * @param newValue - New value
+   */
+  private emitChange(key: string, oldValue: any, newValue: any): void {
+    const event: SettingsChangeEvent = {
+      key,
+      oldValue,
+      newValue,
+      timestamp: Date.now(),
     };
+
+    // Notify all listeners
+    this.listeners.forEach(listener => {
+      try {
+        listener(event);
+      } catch (error) {
+        console.error('SettingsManager: Error in change listener:', error);
+      }
+    });
+
+    // Emit DOM event for components that can't access the manager directly
+    window.dispatchEvent(new CustomEvent(SETTINGS_CHANGE_EVENT, {
+      detail: event
+    }));
+  }
+
+  // =============================================================================
+  // PUBLIC API
+  // =============================================================================
+
+  /**
+   * Get all settings
+   * @returns Copy of current settings
+   */
+  getSettings(): AppSettings {
+    return { ...this.settings };
+  }
+
+  /**
+   * Get a specific setting value
+   * @param key - Dot-notation key (e.g., 'ui.compactMode')
+   * @returns Setting value
+   */
+  getSetting(key: string): any {
+    const keys = key.split('.');
+    let value: any = this.settings;
     
-    localStorage.setItem('csfrace-settings', JSON.stringify(settings));
+    for (const k of keys) {
+      value = value?.[k];
+      if (value === undefined) break;
+    }
     
-    // Apply settings immediately
-    this.applySettings(settings);
+    return value;
+  }
+
+  /**
+   * Set a specific setting value
+   * @param key - Dot-notation key (e.g., 'ui.compactMode')
+   * @param value - New value
+   */
+  setSetting(key: string, value: any): void {
+    const keys = key.split('.');
+    const lastKey = keys.pop();
+    if (!lastKey) return;
+
+    // Navigate to the parent object
+    let target: any = this.settings;
+    for (const k of keys) {
+      if (!(k in target)) {
+        target[k] = {};
+      }
+      target = target[k];
+    }
+
+    const oldValue = target[lastKey];
+    target[lastKey] = value;
+
+    // Handle special settings
+    if (key === 'theme') {
+      this.initializeTheme();
+    }
+
+    this.saveSettings();
+    this.emitChange(key, oldValue, value);
+  }
+
+  /**
+   * Update multiple settings at once
+   * @param updates - Object with setting updates
+   */
+  updateSettings(updates: Partial<AppSettings>): void {
+    const oldSettings = { ...this.settings };
+    this.settings = this.mergeWithDefaults({ ...this.settings, ...updates });
     
-    // Notify other components
-    this.onSettingsChange?.(settings);
-    window.dispatchEvent(new CustomEvent('settingsChanged', { detail: settings }));
-    
-    // Show success feedback
-    this.showSaveSuccess();
-    
-    // Close panel using base class method
-    this.close();
+    // Handle theme changes
+    if ('theme' in updates) {
+      this.initializeTheme();
+    }
+
+    this.saveSettings();
+
+    // Emit change events for all updated keys
+    Object.keys(updates).forEach(key => {
+      this.emitChange(key, oldSettings[key as keyof AppSettings], this.settings[key as keyof AppSettings]);
+    });
   }
 
   /**
    * Reset settings to defaults
    */
-  private resetSettings() {
-    if (confirm('Reset all settings to defaults? This cannot be undone.')) {
-      localStorage.removeItem('csfrace-settings');
-      this.loadSettings();
-      
-      // Show confirmation
-      if (this.resetBtn) {
-        const originalText = this.resetBtn.textContent;
-        this.resetBtn.textContent = 'Reset Complete!';
-        setTimeout(() => {
-          this.resetBtn!.textContent = originalText;
-        }, 2000);
-      }
-    }
+  resetSettings(): void {
+    const oldSettings = { ...this.settings };
+    this.settings = { ...DEFAULT_SETTINGS };
+    this.initializeTheme();
+    this.saveSettings();
+    
+    this.emitChange('*', oldSettings, this.settings);
   }
 
   /**
-   * Get stored settings with defaults
+   * Reset a specific setting to default
+   * @param key - Setting key to reset
    */
-  private getStoredSettings(): SettingsData {
+  resetSetting(key: string): void {
+    const defaultValue = this.getSetting.call({ settings: DEFAULT_SETTINGS }, key);
+    this.setSetting(key, defaultValue);
+  }
+
+  /**
+   * Add a settings change listener
+   * @param listener - Function to call when settings change
+   * @returns Cleanup function to remove the listener
+   */
+  onChange(listener: SettingsChangeListener): () => void {
+    this.listeners.add(listener);
+    
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  /**
+   * Export settings as JSON string
+   * @returns JSON string of current settings
+   */
+  exportSettings(): string {
+    return JSON.stringify(this.settings, null, 2);
+  }
+
+  /**
+   * Import settings from JSON string
+   * @param json - JSON string to import
+   * @returns True if successful, false otherwise
+   */
+  importSettings(json: string): boolean {
     try {
-      const stored = localStorage.getItem('csfrace-settings');
-      return stored ? { ...this.defaultSettings, ...JSON.parse(stored) } : this.defaultSettings;
-    } catch {
-      return this.defaultSettings;
-    }
-  }
-
-  /**
-   * Apply settings to the application
-   */
-  private applySettings(settings: SettingsData) {
-    // Apply theme changes
-    document.body.classList.toggle('compact-mode', settings.compactMode);
-  }
-
-  /**
-   * Helper to set form values (handles different input types)
-   */
-  private setFormValue(container: HTMLElement | Document, elementId: string, value: string | number | boolean) {
-    const element = container.querySelector(`#${elementId}`) as HTMLInputElement | HTMLSelectElement;
-    if (!element) return;
-    
-    if (element.type === 'checkbox') {
-      (element as HTMLInputElement).checked = Boolean(value);
-    } else {
-      element.value = String(value);
-    }
-  }
-
-  /**
-   * Helper to get form values (handles different input types)
-   */
-  private getFormValue(container: HTMLElement | Document, elementId: string): string | boolean {
-    const element = container.querySelector(`#${elementId}`) as HTMLInputElement | HTMLSelectElement;
-    if (!element) return '';
-    
-    if (element.type === 'checkbox') {
-      return (element as HTMLInputElement).checked;
-    } else {
-      return element.value;
-    }
-  }
-
-  /**
-   * Show save success feedback
-   */
-  private showSaveSuccess() {
-    if (this.saveBtn) {
-      const originalText = this.saveBtn.textContent;
-      this.saveBtn.textContent = 'Settings Saved!';
-      this.saveBtn.classList.add('bg-green-500/20', 'text-green-300', 'border-green-500/50');
+      const imported = JSON.parse(json);
+      const merged = this.mergeWithDefaults(imported);
       
-      setTimeout(() => {
-        this.saveBtn!.textContent = originalText;
-        this.saveBtn!.classList.remove('bg-green-500/20', 'text-green-300', 'border-green-500/50');
-      }, 2000);
+      const oldSettings = { ...this.settings };
+      this.settings = merged;
+      this.initializeTheme();
+      this.saveSettings();
+      
+      this.emitChange('*', oldSettings, this.settings);
+      return true;
+    } catch (error) {
+      console.error('SettingsManager: Error importing settings:', error);
+      return false;
     }
   }
 
   /**
-   * Public method to get current settings
+   * Validate settings object
+   * @param settings - Settings object to validate
+   * @returns True if valid, false otherwise
    */
-  getSettings(): SettingsData {
-    return this.getStoredSettings();
+  validateSettings(settings: any): boolean {
+    if (!settings || typeof settings !== 'object') return false;
+
+    try {
+      // Basic validation - ensure required structure
+      const merged = this.mergeWithDefaults(settings);
+      return merged !== null;
+    } catch {
+      return false;
+    }
   }
 
-  // Public methods inherited from BaseModalManager:
-  // - open(): Opens the modal with unified animation
-  // - close(): Closes the modal with unified animation  
-  // - getIsOpen(): Returns current open state
-  // - toggle(): Toggles modal state
+  /**
+   * Get default settings
+   * @returns Copy of default settings
+   */
+  getDefaults(): AppSettings {
+    return { ...DEFAULT_SETTINGS };
+  }
+
+  /**
+   * Check if a setting has been changed from default
+   * @param key - Setting key to check
+   * @returns True if changed from default, false otherwise
+   */
+  isChangedFromDefault(key: string): boolean {
+    const currentValue = this.getSetting(key);
+    const defaultValue = this.getSetting.call({ settings: DEFAULT_SETTINGS }, key);
+    
+    return JSON.stringify(currentValue) !== JSON.stringify(defaultValue);
+  }
+}
+
+// =============================================================================
+// SINGLETON INSTANCE
+// =============================================================================
+
+// Create singleton instance
+let settingsManagerInstance: SettingsManager | null = null;
+
+/**
+ * Get the singleton settings manager instance
+ * @returns SettingsManager instance
+ */
+export function getSettingsManager(): SettingsManager {
+  if (!settingsManagerInstance) {
+    settingsManagerInstance = new SettingsManager();
+  }
+  return settingsManagerInstance;
+}
+
+// =============================================================================
+// CONVENIENCE FUNCTIONS
+// =============================================================================
+
+/**
+ * Quick access functions for common settings
+ */
+export const Settings = {
+  get theme() { return getSettingsManager().getSetting('theme'); },
+  set theme(value: 'light' | 'dark' | 'auto') { getSettingsManager().setSetting('theme', value); },
+  
+  get timezone() { return getSettingsManager().getSetting('timezone'); },
+  set timezone(value: string) { getSettingsManager().setSetting('timezone', value); },
+  
+  get compactMode() { return getSettingsManager().getSetting('ui.compactMode'); },
+  set compactMode(value: boolean) { getSettingsManager().setSetting('ui.compactMode', value); },
+  
+  get autoRefresh() { return getSettingsManager().getSetting('ui.autoRefresh'); },
+  set autoRefresh(value: boolean) { getSettingsManager().setSetting('ui.autoRefresh', value); },
+  
+  get refreshInterval() { return getSettingsManager().getSetting('ui.refreshInterval'); },
+  set refreshInterval(value: number) { getSettingsManager().setSetting('ui.refreshInterval', value); },
+};
+
+// =============================================================================
+// BROWSER INTEGRATION
+// =============================================================================
+
+// Listen for system theme changes when theme is set to 'auto'
+if (typeof window !== 'undefined') {
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  mediaQuery.addEventListener('change', () => {
+    const manager = getSettingsManager();
+    if (manager.getSetting('theme') === 'auto') {
+      // Re-initialize theme to apply system change
+      manager['initializeTheme']();
+    }
+  });
 }

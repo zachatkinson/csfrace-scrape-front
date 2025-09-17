@@ -4,7 +4,8 @@
  * Following DRY principles and extending SSE architecture
  */
 
-import { SERVER_API_BASE_URL } from 'astro:env/server';
+// Removed problematic astro:env/server import - use runtime environment
+const SERVER_API_BASE_URL = 'http://localhost:8000';
 import type { HealthResponse } from './HealthService';
 
 export type CriticalAlertType = 'system_down' | 'database_failed' | 'cache_failed' | 'severe_degradation';

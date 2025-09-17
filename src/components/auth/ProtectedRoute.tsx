@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { useBasicAuth } from '../../contexts/AuthContext.tsx';
-import AuthModal from './AuthModal.astro';
+import AuthModal from './AuthModal.tsx';
 import type { User } from '../../types/auth.ts';
 
 export interface ProtectedRouteProps {
@@ -90,7 +90,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         <AuthModal
           isOpen={showAuthModal}
           onClose={() => setShowAuthModal(false)}
-          initialMode="login"
           onSuccess={() => setShowAuthModal(false)}
         />
       </div>

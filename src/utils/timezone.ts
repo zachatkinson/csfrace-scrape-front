@@ -1,219 +1,367 @@
 /**
- * Timezone Utility - Handle timezone-aware timestamps based on user settings
- * Integrates with SettingsManager for consistent timezone handling across the app
+ * Timezone Utility - SOLID Implementation
+ * Single Responsibility: Handle timezone formatting and user preferences
+ * Open/Closed: Extendable for new timezone formats without modification
+ * Interface Segregation: Clean separation of timezone concerns
+ * Dependency Inversion: Depends on browser APIs, not concrete implementations
  */
 
-interface SettingsData {
-  timezone: string;
+// =============================================================================
+// TYPES & INTERFACES
+// =============================================================================
+
+export interface TimezoneOptions {
+  locale?: string;
+  timeZone?: string;
+  format?: 'short' | 'medium' | 'long' | 'full';
+  includeSeconds?: boolean;
+  use24Hour?: boolean;
 }
 
-/**
- * Get current timezone setting from localStorage or default to 'auto'
- */
-export function getCurrentTimezone(): string {
-  try {
-    const settings = localStorage.getItem('csfrace-settings');
-    if (settings) {
-      const parsed = JSON.parse(settings) as SettingsData;
-      return parsed.timezone || 'auto';
-    }
-  } catch (error) {
-    console.warn('Failed to parse timezone setting from localStorage:', error);
-  }
-  return 'auto';
+export interface TimezoneChangeListener {
+  (): void;
 }
 
-/**
- * Get the effective timezone to use for date formatting
- * @param userTimezone - Timezone setting from user preferences
- * @returns Timezone string to use with Intl.DateTimeFormat
- */
-function getEffectiveTimezone(userTimezone: string): string | undefined {
-  if (userTimezone === 'auto') {
-    // Use browser's detected timezone
-    return undefined; // Intl.DateTimeFormat will use system timezone
-  }
-  return userTimezone;
-}
+// =============================================================================
+// CONSTANTS
+// =============================================================================
+
+const DEFAULT_TIMEZONE_OPTIONS: TimezoneOptions = {
+  locale: 'en-US',
+  timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  format: 'medium',
+  includeSeconds: false,
+  use24Hour: false,
+};
+
+// =============================================================================
+// TIMEZONE FORMATTING (Single Responsibility)
+// =============================================================================
 
 /**
- * Format a timestamp based on user's timezone preference
- * @param date - Date to format (defaults to current time)
- * @param options - Additional formatting options
- * @returns Formatted time string
+ * Format a timestamp using user's timezone preferences
+ * @param date - Date to format
+ * @param options - Optional formatting options
+ * @returns Formatted timestamp string
  */
 export function formatTimestamp(
-  date: Date = new Date(),
-  options: Intl.DateTimeFormatOptions = {}
+  date: Date | string | number,
+  options: Partial<TimezoneOptions> = {}
 ): string {
-  const userTimezone = getCurrentTimezone();
-  const effectiveTimezone = getEffectiveTimezone(userTimezone);
-
-  const defaultOptions: Intl.DateTimeFormatOptions = {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false, // Use 24-hour format for technical displays
-    ...options
-  };
-
   try {
-    return new Intl.DateTimeFormat('en-US', {
-      ...defaultOptions,
-      timeZone: effectiveTimezone
-    }).format(date);
-  } catch (error) {
-    console.warn('Failed to format timestamp with timezone:', error);
-    // Fallback to basic time formatting
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false
-    });
-  }
-}
-
-/**
- * Format a full date and time based on user's timezone preference
- * @param date - Date to format (defaults to current time)
- * @returns Formatted date and time string
- */
-export function formatDateTime(date: Date = new Date()): string {
-  return formatTimestamp(date, {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  });
-}
-
-/**
- * Get timezone display name for UI
- * @param timezone - Timezone identifier
- * @returns Human-readable timezone name
- */
-export function getTimezoneDisplayName(timezone: string): string {
-  if (timezone === 'auto') {
-    try {
-      const detectedTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      return `Auto (${detectedTz})`;
-    } catch {
-      return 'Auto';
+    const dateObj = new Date(date);
+    if (isNaN(dateObj.getTime())) {
+      console.warn('Invalid date provided to formatTimestamp:', date);
+      return 'Invalid Date';
     }
-  }
 
-  try {
-    // Get timezone display name
-    const formatter = new Intl.DateTimeFormat('en-US', {
-      timeZone: timezone,
-      timeZoneName: 'short'
-    });
-    const parts = formatter.formatToParts(new Date());
-    const timeZoneName = parts.find(part => part.type === 'timeZoneName')?.value;
-    return timeZoneName || timezone;
-  } catch {
-    return timezone;
+    const mergedOptions = { ...DEFAULT_TIMEZONE_OPTIONS, ...options };
+    
+    return formatDateWithOptions(dateObj, mergedOptions);
+  } catch (error) {
+    console.error('Error formatting timestamp:', error);
+    return 'Format Error';
   }
 }
 
 /**
- * Format relative time (e.g., "5 minutes ago", "2 hours ago")
- * @param timestamp - Timestamp in milliseconds
- * @returns Human-readable relative time string
+ * Format date and time separately
+ * @param date - Date to format
+ * @param options - Optional formatting options
+ * @returns Object with formatted date and time
  */
-export function formatRelativeTime(timestamp: number): string {
+export function formatDateTime(
+  date: Date | string | number,
+  options: Partial<TimezoneOptions> = {}
+): { date: string; time: string; full: string } {
   try {
-    const now = Date.now();
-    const diffMs = now - timestamp;
-    const diffSec = Math.floor(diffMs / 1000);
-    const diffMin = Math.floor(diffSec / 60);
-    const diffHour = Math.floor(diffMin / 60);
-    const diffDay = Math.floor(diffHour / 24);
+    const dateObj = new Date(date);
+    if (isNaN(dateObj.getTime())) {
+      return { date: 'Invalid Date', time: 'Invalid Date', full: 'Invalid Date' };
+    }
 
-    if (diffSec < 60) return 'Just now';
-    if (diffMin < 60) return `${diffMin} minute${diffMin !== 1 ? 's' : ''} ago`;
-    if (diffHour < 24) return `${diffHour} hour${diffHour !== 1 ? 's' : ''} ago`;
-    if (diffDay < 7) return `${diffDay} day${diffDay !== 1 ? 's' : ''} ago`;
-
-    // For older timestamps, show formatted date
-    return formatTimestamp(new Date(timestamp), {
+    const mergedOptions = { ...DEFAULT_TIMEZONE_OPTIONS, ...options };
+    
+    const dateFormatter = new Intl.DateTimeFormat(mergedOptions.locale, {
+      timeZone: mergedOptions.timeZone,
+      year: 'numeric',
       month: 'short',
       day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
     });
+
+    const timeFormatter = new Intl.DateTimeFormat(mergedOptions.locale, {
+      timeZone: mergedOptions.timeZone,
+      hour: 'numeric',
+      minute: '2-digit',
+      second: mergedOptions.includeSeconds ? '2-digit' : undefined,
+      hour12: !mergedOptions.use24Hour,
+    });
+
+    const date_part = dateFormatter.format(dateObj);
+    const time_part = timeFormatter.format(dateObj);
+    const full = formatDateWithOptions(dateObj, mergedOptions);
+
+    return { date: date_part, time: time_part, full };
   } catch (error) {
-    console.warn('Failed to format relative time:', error);
-    return 'Unknown time';
+    console.error('Error formatting date/time:', error);
+    const errorMsg = 'Format Error';
+    return { date: errorMsg, time: errorMsg, full: errorMsg };
   }
 }
 
 /**
- * Get timezone abbreviation (e.g., "PST", "EST", "UTC")
- * @param timezone - Optional timezone identifier (uses current setting if not provided)
- * @returns Timezone abbreviation string
+ * Get relative time string (e.g., "2 minutes ago", "in 5 hours")
+ * @param date - Date to compare
+ * @param options - Optional formatting options
+ * @returns Relative time string
  */
-export function getTimezoneAbbreviation(timezone?: string): string {
+export function getRelativeTime(
+  date: Date | string | number,
+  options: Partial<TimezoneOptions> = {}
+): string {
   try {
-    const tz = timezone || getCurrentTimezone();
-    const effectiveTimezone = getEffectiveTimezone(tz);
+    const dateObj = new Date(date);
+    if (isNaN(dateObj.getTime())) {
+      return 'Invalid Date';
+    }
 
-    const formatter = new Intl.DateTimeFormat('en-US', {
-      timeZone: effectiveTimezone,
-      timeZoneName: 'short'
+    const now = new Date();
+    const diffMs = dateObj.getTime() - now.getTime();
+    const absDiffMs = Math.abs(diffMs);
+
+    // Use Intl.RelativeTimeFormat for proper localization
+    const rtf = new Intl.RelativeTimeFormat(options.locale || DEFAULT_TIMEZONE_OPTIONS.locale, {
+      numeric: 'auto'
     });
 
-    const parts = formatter.formatToParts(new Date());
-    const timeZonePart = parts.find(part => part.type === 'timeZoneName');
-    return timeZonePart?.value || (effectiveTimezone || 'Local');
+    // Determine the appropriate unit
+    const seconds = Math.floor(absDiffMs / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) {
+      return rtf.format(diffMs > 0 ? days : -days, 'day');
+    } else if (hours > 0) {
+      return rtf.format(diffMs > 0 ? hours : -hours, 'hour');
+    } else if (minutes > 0) {
+      return rtf.format(diffMs > 0 ? minutes : -minutes, 'minute');
+    } else {
+      return rtf.format(diffMs > 0 ? seconds : -seconds, 'second');
+    }
   } catch (error) {
-    console.warn('Failed to get timezone abbreviation:', error);
+    console.error('Error getting relative time:', error);
+    return 'Time Error';
+  }
+}
+
+// =============================================================================
+// TIMEZONE PREFERENCE MANAGEMENT (Single Responsibility)
+// =============================================================================
+
+const TIMEZONE_STORAGE_KEY = 'user_timezone_preferences';
+const TIMEZONE_CHANGE_EVENT = 'timezonePreferencesChanged';
+
+/**
+ * Get user's timezone preferences from localStorage
+ * @returns User timezone options or defaults
+ */
+export function getTimezonePreferences(): TimezoneOptions {
+  try {
+    const stored = localStorage.getItem(TIMEZONE_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return { ...DEFAULT_TIMEZONE_OPTIONS, ...parsed };
+    }
+  } catch (error) {
+    console.warn('Error loading timezone preferences:', error);
+  }
+  
+  return { ...DEFAULT_TIMEZONE_OPTIONS };
+}
+
+/**
+ * Save user's timezone preferences to localStorage
+ * @param options - Timezone options to save
+ */
+export function setTimezonePreferences(options: Partial<TimezoneOptions>): void {
+  try {
+    const current = getTimezonePreferences();
+    const updated = { ...current, ...options };
+    
+    localStorage.setItem(TIMEZONE_STORAGE_KEY, JSON.stringify(updated));
+    
+    // Emit change event for reactive components
+    window.dispatchEvent(new CustomEvent(TIMEZONE_CHANGE_EVENT, {
+      detail: updated
+    }));
+  } catch (error) {
+    console.error('Error saving timezone preferences:', error);
+  }
+}
+
+/**
+ * Listen for timezone preference changes
+ * @param listener - Function to call when preferences change
+ * @returns Cleanup function to remove the listener
+ */
+export function onTimezoneChange(listener: TimezoneChangeListener): () => void {
+  const handleChange = () => listener();
+  
+  window.addEventListener(TIMEZONE_CHANGE_EVENT, handleChange);
+  
+  // Return cleanup function
+  return () => {
+    window.removeEventListener(TIMEZONE_CHANGE_EVENT, handleChange);
+  };
+}
+
+// =============================================================================
+// HELPER FUNCTIONS (DRY Principle)
+// =============================================================================
+
+/**
+ * Internal helper to format date with options
+ * @param date - Date object to format
+ * @param options - Merged timezone options
+ * @returns Formatted date string
+ */
+function formatDateWithOptions(date: Date, options: TimezoneOptions): string {
+  const formatOptions: Intl.DateTimeFormatOptions = {
+    timeZone: options.timeZone,
+  };
+
+  // Configure format based on format option
+  switch (options.format) {
+    case 'short':
+      formatOptions.year = '2-digit';
+      formatOptions.month = 'numeric';
+      formatOptions.day = 'numeric';
+      formatOptions.hour = 'numeric';
+      formatOptions.minute = '2-digit';
+      break;
+    
+    case 'medium':
+      formatOptions.year = 'numeric';
+      formatOptions.month = 'short';
+      formatOptions.day = 'numeric';
+      formatOptions.hour = 'numeric';
+      formatOptions.minute = '2-digit';
+      break;
+    
+    case 'long':
+      formatOptions.year = 'numeric';
+      formatOptions.month = 'long';
+      formatOptions.day = 'numeric';
+      formatOptions.hour = 'numeric';
+      formatOptions.minute = '2-digit';
+      formatOptions.timeZoneName = 'short';
+      break;
+    
+    case 'full':
+      formatOptions.weekday = 'long';
+      formatOptions.year = 'numeric';
+      formatOptions.month = 'long';
+      formatOptions.day = 'numeric';
+      formatOptions.hour = 'numeric';
+      formatOptions.minute = '2-digit';
+      formatOptions.timeZoneName = 'long';
+      break;
+  }
+
+  // Add seconds if requested
+  if (options.includeSeconds) {
+    formatOptions.second = '2-digit';
+  }
+
+  // Set 12/24 hour format
+  formatOptions.hour12 = !options.use24Hour;
+
+  return new Intl.DateTimeFormat(options.locale, formatOptions).format(date);
+}
+
+/**
+ * Get user's detected timezone
+ * @returns Detected timezone string
+ */
+export function getDetectedTimezone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch (error) {
+    console.warn('Error detecting timezone:', error);
     return 'UTC';
   }
 }
 
 /**
- * Get comprehensive timezone information for display
- * @returns Object with timezone details
+ * Get list of available timezones
+ * @returns Array of timezone strings
  */
-export function getTimezoneInfo(): {
-  timezone: string;
-  abbreviation: string;
-  displayName: string;
-  effectiveTimezone: string | undefined;
-} {
-  const timezone = getCurrentTimezone();
-  const effectiveTimezone = getEffectiveTimezone(timezone);
-  const abbreviation = getTimezoneAbbreviation(timezone);
-  const displayName = getTimezoneDisplayName(timezone);
+export function getAvailableTimezones(): string[] {
+  // Common timezones - can be extended as needed
+  return [
+    'UTC',
+    'America/New_York',
+    'America/Chicago',
+    'America/Denver',
+    'America/Los_Angeles',
+    'Europe/London',
+    'Europe/Paris',
+    'Europe/Berlin',
+    'Asia/Tokyo',
+    'Asia/Shanghai',
+    'Australia/Sydney',
+    // Add more as needed
+  ];
+}
 
-  return {
-    timezone,
-    abbreviation,
-    displayName,
-    effectiveTimezone
-  };
+// =============================================================================
+// VALIDATION UTILITIES (Open/Closed Principle)
+// =============================================================================
+
+/**
+ * Validate if a timezone string is valid
+ * @param timezone - Timezone string to validate
+ * @returns True if valid, false otherwise
+ */
+export function isValidTimezone(timezone: string): boolean {
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: timezone });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
- * Listen for timezone setting changes and return cleanup function
- * @param callback - Function to call when timezone setting changes
- * @returns Cleanup function to remove the event listener
+ * Sanitize timezone options
+ * @param options - Raw options to sanitize
+ * @returns Sanitized options
  */
-export function onTimezoneChange(callback: (newTimezone: string) => void): () => void {
-  const handleSettingsChange = (event: CustomEvent) => {
-    const settings = event.detail as SettingsData;
-    if (settings && typeof settings.timezone === 'string') {
-      callback(settings.timezone);
+export function sanitizeTimezoneOptions(options: any): TimezoneOptions {
+  const sanitized: TimezoneOptions = { ...DEFAULT_TIMEZONE_OPTIONS };
+
+  if (options && typeof options === 'object') {
+    if (typeof options.locale === 'string') {
+      sanitized.locale = options.locale;
     }
-  };
+    
+    if (typeof options.timeZone === 'string' && isValidTimezone(options.timeZone)) {
+      sanitized.timeZone = options.timeZone;
+    }
+    
+    if (['short', 'medium', 'long', 'full'].includes(options.format)) {
+      sanitized.format = options.format;
+    }
+    
+    if (typeof options.includeSeconds === 'boolean') {
+      sanitized.includeSeconds = options.includeSeconds;
+    }
+    
+    if (typeof options.use24Hour === 'boolean') {
+      sanitized.use24Hour = options.use24Hour;
+    }
+  }
 
-  window.addEventListener('settingsChanged', handleSettingsChange as EventListener);
-
-  return () => {
-    window.removeEventListener('settingsChanged', handleSettingsChange as EventListener);
-  };
+  return sanitized;
 }

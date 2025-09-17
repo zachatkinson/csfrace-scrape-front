@@ -23,6 +23,7 @@
     "@astrojs/netlify": "^6.5.10",
     "@astrojs/node": "^9.4.3",
     "@astrojs/react": "^4.3.1",
+    "@astrojs/ts-plugin": "^1.10.4",
     "@headlessui/react": "^2.2.7",
     "@heroicons/react": "^2.2.0",
     "@nanostores/react": "^1.0.0",

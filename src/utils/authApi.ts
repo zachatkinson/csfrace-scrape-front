@@ -149,8 +149,8 @@ export async function registerPasskey() {
     },
   });
   
-  const options = await handleApiResponse(beginResponse);
-  
+  const options = await handleApiResponse(beginResponse) as CredentialCreationOptions;
+
   // Step 2: Create credential using WebAuthn API
   const credential = await navigator.credentials.create(options);
   
@@ -177,8 +177,8 @@ export async function authenticateWithPasskey() {
     headers: { 'Content-Type': 'application/json' },
   });
   
-  const options = await handleApiResponse(beginResponse);
-  
+  const options = await handleApiResponse(beginResponse) as CredentialRequestOptions;
+
   // Step 2: Get credential using WebAuthn API
   const credential = await navigator.credentials.get(options);
   

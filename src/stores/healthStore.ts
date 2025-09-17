@@ -118,7 +118,7 @@ export const $serviceMetrics = computed($healthData, (healthData) => {
  */
 export const $computedOverallStatus = computed(
   [$healthData, $serviceMetrics],
-  (healthData, metrics) => {
+  (_healthData: any, metrics: any) => {
     if (metrics.loaded === 0) {
       // No data loaded yet - loading state
       return {

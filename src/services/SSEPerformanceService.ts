@@ -4,15 +4,14 @@
  * Following DRY principles and Astro 5.0+ best practices
  */
 
-import {
-  SSE_POLLING_INTERVAL_MS,
-  SSE_POLLING_INTERVAL_UNHEALTHY_MS,
-  SSE_POLLING_INTERVAL_STABLE_MS,
-  SSE_DEBOUNCE_DELAY_MS,
-  SSE_RESPONSE_TIME_THRESHOLD_MS,
-  SSE_CONNECTION_COUNT_THRESHOLD,
-  SSE_MAX_CONCURRENT_CONNECTIONS
-} from 'astro:env/server';
+// Removed problematic astro:env/server imports - use runtime constants
+const SSE_POLLING_INTERVAL_MS = 5000;
+const SSE_POLLING_INTERVAL_UNHEALTHY_MS = 3000;
+const SSE_POLLING_INTERVAL_STABLE_MS = 10000;
+const SSE_DEBOUNCE_DELAY_MS = 300;
+const SSE_RESPONSE_TIME_THRESHOLD_MS = 2000;
+const SSE_CONNECTION_COUNT_THRESHOLD = 10;
+const SSE_MAX_CONCURRENT_CONNECTIONS = 50;
 
 import type { HealthResponse } from './HealthService';
 

@@ -122,11 +122,10 @@ export class SSEStreamService {
 
   constructor() {
     // Dependency Inversion: Register handlers (can be injected)
-    this.messageHandlers = new Map([
-      ['connection', new ConnectionMessageHandler()],
-      ['service-update', new ServiceUpdateMessageHandler()],
-      ['error', new ErrorMessageHandler()],
-    ]);
+    this.messageHandlers = new Map<string, SSEMessageHandler>();
+    this.messageHandlers.set('connection', new ConnectionMessageHandler());
+    this.messageHandlers.set('service-update', new ServiceUpdateMessageHandler());
+    this.messageHandlers.set('error', new ErrorMessageHandler());
   }
 
   /**

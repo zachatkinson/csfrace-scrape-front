@@ -7,6 +7,18 @@ declare namespace App {
   }
 }
 
+// Global Window extensions
+declare global {
+  interface Window {
+    __healthSystemManager?: {
+      connect: () => void;
+      disconnect: () => void;
+    };
+    __healthStatusCleanup?: () => void;
+    authenticatedHeader?: any;
+  }
+}
+
 interface HealthStatus {
   service: string;
   status: 'up' | 'down' | 'error';

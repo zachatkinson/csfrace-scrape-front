@@ -22,7 +22,7 @@ const {
 } = Astro.props;
 
 // Generate unique ID for this panel instance
-const panelId = `settings-panel-${Math.random().toString(36).substr(2, 9)}`;
+const panelId = `settings-panel-${Math.random().toString(36).substring(2, 11)}`;
 
 // Settings tabs configuration
 const settingsTabs = [
@@ -53,6 +53,7 @@ const settingsTabs = [
     className
   ]}
   data-component="settings-panel"
+  data-panel-id={panelId}
   data-is-open={isOpen}
   style={isOpen ? '' : 'display: none;'}
   {...htmlProps}
@@ -74,7 +75,7 @@ const settingsTabs = [
             type="button"
             variant="secondary"
             size="sm"
-            class="text-red-300 hover:text-red-200"
+            className="text-red-300 hover:text-red-200"
             data-action="reset-settings"
           >
             Reset All
@@ -97,7 +98,6 @@ const settingsTabs = [
       <div class="flex space-x-1 mb-6" data-component="tab-navigation">
         {settingsTabs.map((tab) => (
           <button
-            key={tab.id}
             class:list={[
               'flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors',
               tab.id === 'app'
@@ -222,12 +222,21 @@ const settingsTabs = [
 </div>
 
 <!-- Astro Islands script for client-side functionality -->
-<script type="module" define:vars={{ panelId }}>
-  // Settings panel management class
+<script>
+  // Settings panel management class - Astro MCP best practice
   class SettingsPanel {
-    constructor(panelId) {
-      this.panelId = panelId;
-      this.panel = document.getElementById(panelId);
+    private panelId: string | undefined;
+    private panel: HTMLElement | null;
+    private isInitialized: boolean;
+    private activeTab: string;
+    private hasUnsavedChanges: boolean;
+    private originalSettings: Record<string, any>;
+
+    constructor() {
+      // Get panelId from data attribute (Astro MCP best practice)
+      const container = document.querySelector('[data-component="settings-panel"]');
+      this.panelId = (container as HTMLElement)?.dataset.panelId;
+      this.panel = document.getElementById(this.panelId || '');
       this.isInitialized = false;
       this.activeTab = 'app';
       this.hasUnsavedChanges = false;
@@ -251,29 +260,31 @@ const settingsTabs = [
 
     setupEventListeners() {
       // Close panel button
-      const closeBtn = this.panel.querySelector('[data-action="close-panel"]');
+      const closeBtn = this.panel?.querySelector('[data-action="close-panel"]');
       if (closeBtn) {
         closeBtn.addEventListener('click', () => this.handleClose());
       }
 
       // Reset settings button
-      const resetBtn = this.panel.querySelector('[data-action="reset-settings"]');
+      const resetBtn = this.panel?.querySelector('[data-action="reset-settings"]');
       if (resetBtn) {
         resetBtn.addEventListener('click', () => this.handleResetSettings());
       }
 
       // Tab navigation
-      const tabButtons = this.panel.querySelectorAll('[data-action="switch-tab"]');
-      tabButtons.forEach(btn => {
+      const tabButtons = this.panel?.querySelectorAll('[data-action="switch-tab"]');
+      tabButtons?.forEach(btn => {
         btn.addEventListener('click', (e) => {
-          const tabId = e.target.closest('[data-tab]').dataset.tab;
-          this.switchTab(tabId);
+          const tabId = ((e.target as HTMLElement)?.closest('[data-tab]') as HTMLElement)?.dataset.tab;
+          if (tabId) {
+            this.switchTab(tabId);
+          }
         });
       });
 
       // Form buttons
-      const saveBtn = this.panel.querySelector('[data-action="save-settings"]');
-      const cancelBtn = this.panel.querySelector('[data-action="cancel-changes"]');
+      const saveBtn = this.panel?.querySelector('[data-action="save-settings"]');
+      const cancelBtn = this.panel?.querySelector('[data-action="cancel-changes"]');
 
       if (saveBtn) {
         saveBtn.addEventListener('click', () => this.handleSaveSettings());
@@ -284,7 +295,7 @@ const settingsTabs = [
       }
 
       // Listen for form changes to track unsaved changes
-      this.panel.addEventListener('input', () => {
+      this.panel?.addEventListener('input', () => {
         this.markAsChanged();
       });
 
@@ -328,18 +339,18 @@ const settingsTabs = [
       };
     }
 
-    applySettingsToForm(settings) {
+    applySettingsToForm(settings: any) {
       // Apply theme setting
-      const themeRadio = this.panel.querySelector(`input[name="theme"][value="${settings.theme}"]`);
+      const themeRadio = this.panel?.querySelector(`input[name="theme"][value="${settings.theme}"]`) as HTMLInputElement;
       if (themeRadio) {
         themeRadio.checked = true;
       }
 
       // Apply notification settings
       if (settings.notifications) {
-        const jobCompletionCheck = this.panel.querySelector('input[type="checkbox"]');
-        const errorAlertsCheck = this.panel.querySelectorAll('input[type="checkbox"]')[1];
-        const weeklySummaryCheck = this.panel.querySelectorAll('input[type="checkbox"]')[2];
+        const jobCompletionCheck = this.panel?.querySelector('input[type="checkbox"]') as HTMLInputElement;
+        const errorAlertsCheck = this.panel?.querySelectorAll('input[type="checkbox"]')[1] as HTMLInputElement;
+        const weeklySummaryCheck = this.panel?.querySelectorAll('input[type="checkbox"]')[2] as HTMLInputElement;
 
         if (jobCompletionCheck) jobCompletionCheck.checked = settings.notifications.jobCompletion;
         if (errorAlertsCheck) errorAlertsCheck.checked = settings.notifications.errorAlerts;
@@ -348,26 +359,27 @@ const settingsTabs = [
     }
 
     getCurrentFormSettings() {
-      const theme = this.panel.querySelector('input[name="theme"]:checked')?.value || 'auto';
-      const checkboxes = this.panel.querySelectorAll('input[type="checkbox"]');
+      const theme = (this.panel?.querySelector('input[name="theme"]:checked') as HTMLInputElement)?.value || 'auto';
+      const checkboxes = this.panel?.querySelectorAll('input[type="checkbox"]');
 
       return {
         theme,
         notifications: {
-          jobCompletion: checkboxes[0]?.checked || false,
-          errorAlerts: checkboxes[1]?.checked || false,
-          weeklySummary: checkboxes[2]?.checked || false
+          jobCompletion: (checkboxes?.[0] as HTMLInputElement)?.checked || false,
+          errorAlerts: (checkboxes?.[1] as HTMLInputElement)?.checked || false,
+          weeklySummary: (checkboxes?.[2] as HTMLInputElement)?.checked || false
         }
       };
     }
 
-    switchTab(tabId) {
+    switchTab(tabId: string) {
       if (this.activeTab === tabId) return;
 
       // Update tab buttons
-      const tabButtons = this.panel.querySelectorAll('[data-tab]');
-      tabButtons.forEach(btn => {
-        const isActive = btn.dataset.tab === tabId;
+      const tabButtons = this.panel?.querySelectorAll('[data-tab]');
+      tabButtons?.forEach(btn => {
+        const htmlBtn = btn as HTMLElement;
+        const isActive = htmlBtn.dataset.tab === tabId;
         btn.className = `flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
           isActive
             ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
@@ -376,9 +388,10 @@ const settingsTabs = [
       });
 
       // Update tab content
-      const tabContents = this.panel.querySelectorAll('.tab-content');
-      tabContents.forEach(content => {
-        content.style.display = content.dataset.tab === tabId ? 'block' : 'none';
+      const tabContents = this.panel?.querySelectorAll('.tab-content');
+      tabContents?.forEach(content => {
+        const htmlContent = content as HTMLElement;
+        htmlContent.style.display = htmlContent.dataset.tab === tabId ? 'block' : 'none';
       });
 
       this.activeTab = tabId;
@@ -459,7 +472,7 @@ const settingsTabs = [
       }
     }
 
-    applyTheme(theme) {
+    applyTheme(theme: string) {
       const root = document.documentElement;
 
       if (theme === 'dark') {
@@ -477,7 +490,7 @@ const settingsTabs = [
       }
     }
 
-    showNotification(message, type = 'info') {
+    showNotification(message: string, type: string = 'info') {
       // Simple notification system - could be enhanced
       const notification = document.createElement('div');
       notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg max-w-sm transition-all duration-300 ${
@@ -538,11 +551,11 @@ const settingsTabs = [
   }
 
   // Initialize the settings panel
-  const settingsPanel = new SettingsPanel(panelId);
+  const settingsPanel = new SettingsPanel();
 
   // Expose for debugging and external access
   if (typeof window !== 'undefined') {
-    window.settingsPanel = settingsPanel;
+    (window as any).settingsPanel = settingsPanel;
   }
 </script>
 

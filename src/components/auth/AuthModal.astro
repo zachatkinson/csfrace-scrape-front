@@ -171,7 +171,7 @@ import BaseModal from '../common/BaseModal.astro';
   Astro Best Practice: Use script tags for interactivity
   Following the authentication patterns from Astro docs
 -->
-<script type="module">
+<script>
   // Clean Astro Islands script - Initialize AuthModal functionality
   console.log('🔐 AuthModal: Islands script loaded');
 
@@ -180,6 +180,7 @@ import BaseModal from '../common/BaseModal.astro';
     try {
       const { AuthModalManager } = await import('/src/scripts/authModalManager');
       const authModalManager = new AuthModalManager({
+        modalId: 'auth-modal',
         onAuthSuccess: () => {
           console.log('🎉 AuthModal: Authentication successful');
           // Handle successful authentication

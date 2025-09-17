@@ -20,10 +20,10 @@ const apiCall = async (endpoint: string, options: RequestInit = {}): Promise<any
     method: (options.method as any) || 'GET',
     headers: {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...(options.headers as Record<string, string> || {}),
     },
     body: options.body as string | FormData,
-    signal: options.signal,
+    signal: options.signal || undefined,
   });
 };
 

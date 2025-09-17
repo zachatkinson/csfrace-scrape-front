@@ -7,8 +7,8 @@
 
 import React, { useState, useCallback, useMemo } from 'react';
 import { LiquidCard, LiquidButton } from '../liquid-glass';
-import { JobStatusManager } from '../../strategies/JobStatusStrategy.tsx';
-import type { JobStatus } from '../../strategies/JobStatusStrategy.tsx';
+import { JobStatusManager } from '../../strategies/JobStatusStrategy';
+import type { JobStatus } from '../../types/job';
 
 // Job interface
 interface Job {

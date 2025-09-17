@@ -75,7 +75,7 @@ export class BackendHealthChecker extends BaseHealthChecker {
     HealthUIHelper.updateLatencyElement(
       'backend-latency',
       `${result.metrics.responseTime}ms`,
-      result.metrics.responseTime,
+      result.metrics.responseTime || 0,
       'API'
     );
     HealthUIHelper.updateLastRefresh('backend-last-updated');

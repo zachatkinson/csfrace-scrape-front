@@ -598,9 +598,9 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const response = await fetch(url, {
     method: options.method || 'GET',
-    headers: options.headers,
-    body: options.body,
-    signal: options.signal
+    ...(options.headers && { headers: options.headers }),
+    ...(options.body && { body: options.body }),
+    ...(options.signal && { signal: options.signal })
   });
 
   return useStructuredErrors

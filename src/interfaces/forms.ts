@@ -177,7 +177,7 @@ export interface FormHookReturn<TData = unknown> {
     clearAllErrors: () => void;
     reset: () => void;
     submit: () => Promise<FormSubmissionResult>;
-    validate: () => FormValidationResult;
+    validate: () => Promise<FormValidationResult>;
   };
   
   // Computed values
@@ -389,26 +389,5 @@ export interface FormContextValue<TData = unknown> {
   handlers: FormHookReturn<TData>['handlers'];
 }
 
-export default {
-  BaseFormState,
-  FormValidationResult,
-  FormSubmissionResult,
-  BaseFormProps,
-  IFormComponent,
-  FormHookConfig,
-  FormHookReturn,
-  FieldValidationRule,
-  FieldValidationSchema,
-  FormValidationSchema,
-  UrlFormData,
-  LoginFormData,
-  RegisterFormData,
-  ProfileFormData,
-  AppSettings,
-  ApiConfigSettings,
-  FormComponentProps,
-  StandardFormComponent,
-  FormEventType,
-  FormEvent,
-  FormContextValue,
-};
+// Note: Default export removed - all types are available as named exports
+// This fixes TypeScript verbatimModuleSyntax compliance (types cannot be used as values)

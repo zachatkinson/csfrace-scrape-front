@@ -6,9 +6,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { LiquidButton } from '../liquid-glass';
-import { StandardizedAppSettingsForm } from '../forms/StandardizedSettingsForms.tsx';
-import { useAppSettings } from '../../hooks/useAppSettings.ts';
-import type { AppSettings, ApiConfigSettings } from '../../interfaces/forms.ts';
+import { StandardizedAppSettingsForm } from '../forms/StandardizedSettingsForms';
+import { useAppSettings } from '../../hooks/useAppSettings';
 
 // =============================================================================
 // SETTINGS PANEL INTERFACE
@@ -80,13 +79,9 @@ export const StandardizedSettingsPanel: React.FC<StandardizedSettingsPanelProps>
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
   // Use settings hook for state management
-  const { 
-    appSettings, 
-    apiSettings,
-    updateAppSettings, 
-    updateApiSettings, 
-    resetToDefaults,
-    applySettings 
+  const {
+    appSettings,
+    resetToDefaults
   } = useAppSettings();
 
   // =============================================================================
@@ -110,23 +105,14 @@ export const StandardizedSettingsPanel: React.FC<StandardizedSettingsPanelProps>
     }
   };
 
-  const handleAppSettingsSuccess = (data: AppSettings) => {
-    updateAppSettings(data);
-    applySettings({ ...data, ...apiSettings });
+  const handleAppSettingsSuccess = () => {
+    // Success callback - component handles data internally
     setHasUnsavedChanges(false);
-    
+
     // Show success feedback
     console.log('App settings saved successfully');
   };
 
-  const handleApiSettingsSuccess = (data: ApiConfigSettings) => {
-    updateApiSettings(data);
-    applySettings({ ...appSettings, ...data });
-    setHasUnsavedChanges(false);
-    
-    // Show success feedback
-    console.log('API settings saved successfully');
-  };
 
   const handleResetToDefaults = async () => {
     const confirmed = window.confirm(
@@ -166,7 +152,7 @@ export const StandardizedSettingsPanel: React.FC<StandardizedSettingsPanelProps>
         return (
           <StandardizedAppSettingsForm
             onSuccess={handleAppSettingsSuccess}
-            onStateChange={(state) => setHasUnsavedChanges(state.isDirty)}
+            onStateChange={(state: any) => setHasUnsavedChanges(state.isDirty)}
             initialData={appSettings}
             title="Application Settings"
             subtitle="Customize your app experience"

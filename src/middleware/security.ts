@@ -93,7 +93,7 @@ export class SecurityMiddleware {
     }
   }
 
-  private static applyCsrfProtection(context: APIContext, response: Response): void {
+  private static applyCsrfProtection(context: APIContext, _response: Response): void {
     const method = context.request.method;
     
     // Generate CSRF token for forms

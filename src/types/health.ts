@@ -37,3 +37,23 @@ export interface IHealthDataConsumer {
   getLatestHealthData(): {services: any, overallStatus: any, timestamp: number} | null;
   requestRefresh(): void;
 }
+
+export interface IHealthServiceStatuses {
+  frontend?: IServiceResult;
+  backend?: IServiceResult;
+  database?: IServiceResult;
+  cache?: IServiceResult;
+  [key: string]: IServiceResult | undefined;
+}
+
+export interface IConsolidatedHealthData {
+  services: IHealthServiceStatuses;
+  overallStatus: {
+    status: ServiceStatus;
+    message: string;
+  };
+  metadata: {
+    timestamp: number;
+    lastCheck: string;
+  };
+}

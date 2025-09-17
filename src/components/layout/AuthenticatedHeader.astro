@@ -19,8 +19,8 @@ const {
 } = Astro.props;
 
 // Generate unique IDs for this header instance
-const headerId = `header-${Math.random().toString(36).substr(2, 9)}`;
-const authPanelId = `auth-panel-${Math.random().toString(36).substr(2, 9)}`;
+const headerId = `header-${Math.random().toString(36).substring(2, 11)}`;
+const authPanelId = `auth-panel-${Math.random().toString(36).substring(2, 11)}`;
 ---
 
 <!-- Header element with data attributes for Islands script -->
@@ -31,6 +31,7 @@ const authPanelId = `auth-panel-${Math.random().toString(36).substr(2, 9)}`;
     className
   ]}
   data-component="authenticated-header"
+  data-header-id={headerId}
   data-auth-panel-id={authPanelId}
   {...htmlProps}
 >
@@ -150,14 +151,24 @@ const authPanelId = `auth-panel-${Math.random().toString(36).substr(2, 9)}`;
 </header>
 
 <!-- Astro Islands script for client-side functionality -->
-<script type="module" define:vars={{ headerId, authPanelId }}>
-  // Header management class for authentication and navigation
+<script>
+  // Header management class for authentication and navigation - Astro MCP best practice
   class AuthenticatedHeader {
-    constructor(headerId, authPanelId) {
-      this.headerId = headerId;
-      this.authPanelId = authPanelId;
-      this.header = document.getElementById(headerId);
-      this.authPanel = document.getElementById(authPanelId);
+    private headerId: string | undefined;
+    private authPanelId: string | undefined;
+    private header: HTMLElement | null;
+    private authPanel: HTMLElement | null;
+    private isInitialized: boolean;
+    private authState: any;
+    private oauthProviders: any[];
+
+    constructor() {
+      // Get IDs from data attributes (Astro MCP best practice)
+      const container = document.querySelector('[data-component="authenticated-header"]') as HTMLElement;
+      this.headerId = container?.dataset.headerId;
+      this.authPanelId = container?.dataset.authPanelId;
+      this.header = document.getElementById(this.headerId || '');
+      this.authPanel = document.getElementById(this.authPanelId || '');
       this.isInitialized = false;
       this.authState = null;
       this.oauthProviders = [];
@@ -202,8 +213,9 @@ const authPanelId = `auth-panel-${Math.random().toString(36).substr(2, 9)}`;
 
       // Close auth panel on outside click
       document.addEventListener('click', (event) => {
-        if (this.authPanel && !this.authPanel.contains(event.target) &&
-            !event.target.closest('[data-action="toggle-auth-panel"]')) {
+        const target = event.target as HTMLElement;
+        if (this.authPanel && !this.authPanel.contains(target) &&
+            !target.closest('[data-action="toggle-auth-panel"]')) {
           this.closeAuthPanel();
         }
       });
@@ -241,10 +253,10 @@ const authPanelId = `auth-panel-${Math.random().toString(36).substr(2, 9)}`;
     }
 
     updateAuthUI() {
-      const authLoading = document.getElementById('auth-loading');
-      const authUser = document.getElementById('auth-user');
-      const authSignin = document.getElementById('auth-signin');
-      const dashboardLink = document.querySelector('[data-auth-required="true"]');
+      const authLoading = document.getElementById('auth-loading') as HTMLElement;
+      const authUser = document.getElementById('auth-user') as HTMLElement;
+      const authSignin = document.getElementById('auth-signin') as HTMLElement;
+      const dashboardLink = document.querySelector('[data-auth-required="true"]') as HTMLElement;
 
       // Hide loading
       if (authLoading) authLoading.style.display = 'none';
@@ -508,16 +520,16 @@ const authPanelId = `auth-panel-${Math.random().toString(36).substr(2, 9)}`;
       `;
     }
 
-    getOAuthButtonClass(provider) {
+    getOAuthButtonClass(provider: string) {
       const classes = {
         google: 'text-red-300 hover:text-red-200 hover:bg-red-500/20',
         github: 'text-gray-300 hover:text-gray-200 hover:bg-gray-500/20',
         microsoft: 'text-blue-300 hover:text-blue-200 hover:bg-blue-500/20'
       };
-      return classes[provider] || 'text-white/80 hover:text-white hover:bg-white/10';
+      return (classes as any)[provider] || 'text-white/80 hover:text-white hover:bg-white/10';
     }
 
-    getOAuthIcon(provider) {
+    getOAuthIcon(provider: string) {
       const icons = {
         google: `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
           <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -532,7 +544,7 @@ const authPanelId = `auth-panel-${Math.random().toString(36).substr(2, 9)}`;
           <path d="M0 0h11v11H0V0zm13 0h11v11H13V0zM0 13h11v11H0V13zm13 0h11v11H13V13z"/>
         </svg>`
       };
-      return icons[provider] || '';
+      return (icons as any)[provider] || '';
     }
 
     setupPanelEventListeners() {
@@ -551,7 +563,8 @@ const authPanelId = `auth-panel-${Math.random().toString(36).substr(2, 9)}`;
       // Auth modal buttons
       document.querySelectorAll('[data-action="show-auth-modal"]').forEach(btn => {
         btn.addEventListener('click', (e) => {
-          const mode = e.target.closest('[data-mode]')?.dataset.mode || 'login';
+          const target = e.target as HTMLElement;
+          const mode = (target.closest('[data-mode]') as HTMLElement)?.dataset.mode || 'login';
           this.showAuthModal(mode);
         });
       });
@@ -559,7 +572,8 @@ const authPanelId = `auth-panel-${Math.random().toString(36).substr(2, 9)}`;
       // OAuth buttons
       document.querySelectorAll('[data-action="oauth-login"]').forEach(btn => {
         btn.addEventListener('click', (e) => {
-          const provider = e.target.closest('[data-provider]')?.dataset.provider;
+          const target = e.target as HTMLElement;
+          const provider = (target.closest('[data-provider]') as HTMLElement)?.dataset.provider;
           if (provider) {
             this.handleOAuthLogin(provider);
           }
@@ -599,7 +613,7 @@ const authPanelId = `auth-panel-${Math.random().toString(36).substr(2, 9)}`;
       }));
     }
 
-    async handleOAuthLogin(provider) {
+    async handleOAuthLogin(provider: string) {
       try {
         // Redirect to OAuth provider
         window.location.href = `/api/auth/oauth/${provider}/login`;
@@ -616,7 +630,7 @@ const authPanelId = `auth-panel-${Math.random().toString(36).substr(2, 9)}`;
   }
 
   // Initialize the header
-  const header = new AuthenticatedHeader(headerId, authPanelId);
+  const header = new AuthenticatedHeader();
 
   // Listen for auth state changes
   window.addEventListener('auth-state-changed', () => {

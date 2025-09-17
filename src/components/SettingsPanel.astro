@@ -253,11 +253,13 @@ import BaseModal from './common/BaseModal.astro';
 
 <!-- CSS animations now handled by BaseModal - DRY implementation -->
 
-<script type="module">
+<script>
   // Custom element following Astro best practices
   // This script is bundled, optimized, and deduplicated by Astro
 
   class SettingsPanel extends HTMLElement {
+    private settingsManager: any = null;
+
     constructor() {
       super();
       this.settingsManager = null;
@@ -270,7 +272,7 @@ import BaseModal from './common/BaseModal.astro';
       // Initialize settings manager
       this.settingsManager = new SettingsManager({
         container: this,
-        onSettingsChange: (settings) => {
+        onSettingsChange: (settings: any) => {
           // Handle settings changes
           console.log('Settings updated:', settings);
         }

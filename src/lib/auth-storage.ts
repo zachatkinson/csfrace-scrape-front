@@ -5,7 +5,7 @@
 
 import { AUTH_STORAGE_KEYS } from '../types/auth.ts';
 import type { User, AuthTokens } from '../types/auth.ts';
-import { SecureStorage, SecurityUtils } from '../utils/security.ts';
+import { SecureStorage } from '../utils/security.ts';
 
 class AuthStorage {
   private readonly isClient = typeof window !== 'undefined';

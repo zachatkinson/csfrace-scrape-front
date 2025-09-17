@@ -7,10 +7,9 @@
 
 // Import global styles (includes Tailwind + Liquid Glass)
 import '../../styles/global.css';
-import { getApiBaseUrl } from '../../constants/api';
-import { TIMING_CONSTANTS } from '../../constants/timing';
-// Import Astro View Transitions for SPA-like navigation
-import { ViewTransitions } from 'astro:transitions';
+// Removed unused imports for TypeScript compliance
+// Note: ViewTransitions from astro:transitions is deprecated
+// Modern Astro uses built-in view transitions via transition:* directives
 // Import pure UI component for health status (Astro MCP best practice)
 import EventDrivenFooterStatus from '../health/EventDrivenFooterStatus.astro'; // Astro native component
 // Import DRY/SOLID Auth Modal Component
@@ -28,8 +27,7 @@ export interface Props {
 
 const { 
   title, 
-  description = "WordPress to Shopify content converter with ultra-modern Liquid Glass UI",
-  enableRealTimeUpdates = true 
+  description = "WordPress to Shopify content converter with ultra-modern Liquid Glass UI"
 } = Astro.props;
 ---
 
@@ -43,8 +41,7 @@ const {
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
 
-    <!-- Enable Astro View Transitions for SPA-like navigation -->
-    <ViewTransitions />
+    <!-- Modern Astro view transitions are built-in via transition:* directives -->
 
     <!-- Performance optimizations -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +234,7 @@ const {
     <!-- Modal and Panel JavaScript -->
     <script>
       // Initialize global timing constants
-      window.CSFRACE_TIMING = {
+      (window as any).CSFRACE_TIMING = {
         JOB: {
           STATUS_CHECK_INTERVAL: 2000,
           TIMEOUT: 300000,
@@ -260,15 +257,15 @@ const {
     </script>
 
     <!-- ASTRO MCP BEST PRACTICE: Global SSE Service in MainLayout -->
-    <script type="module">
+    <script>
       import { formatTimestamp } from '/src/utils/timezone';
       import { getApiBaseUrl } from '/src/constants/api';
 
       // SINGLETON PATTERN: Global health SSE service (Astro MCP best practice)
-      if (!window.__healthSSEService) {
+      if (!(window as any).__healthSSEService) {
         console.log('🚀 MainLayout: Creating global SSE health service');
 
-        window.__healthSSEService = {
+        (window as any).__healthSSEService = {
           eventSource: null,
           isConnected: false,
           retryCount: 0,
@@ -293,7 +290,7 @@ const {
                 console.log('✅ SSEService: Connection established');
               };
 
-              this.eventSource.addEventListener('service-update', async (event) => {
+              this.eventSource.addEventListener('service-update', async (event: any) => {
                 try {
                   const serviceUpdate = JSON.parse(event.data);
                   console.log('🎯 SSEService: Service update received:', serviceUpdate);
@@ -302,7 +299,7 @@ const {
                   const { updateHealthData, getCurrentHealthData } = await import('/src/stores/healthStore');
                   const updateTime = new Date(serviceUpdate.timestamp || Date.now());
 
-                  let services = {};
+                  let services: any = {};
 
                   if (serviceUpdate.services) {
                     services = serviceUpdate.services;
@@ -321,7 +318,7 @@ const {
                     };
                   }
 
-                  const healthData = {
+                  const healthData: any = {
                     services,
                     overallStatus: {
                       status: 'up',
@@ -343,7 +340,7 @@ const {
                 }
               });
 
-              this.eventSource.onerror = (error) => {
+              this.eventSource.onerror = (error: any) => {
                 this.isConnected = false;
                 console.error('❌ SSEService: Connection error:', error);
                 this.handleRetry();
@@ -375,25 +372,25 @@ const {
 
         // Initialize SSE service
         document.addEventListener('DOMContentLoaded', () => {
-          window.__healthSSEService.connect();
+          (window as any).__healthSSEService.connect();
         });
 
         // Cleanup on unload
         window.addEventListener('beforeunload', () => {
-          window.__healthSSEService.disconnect();
+          (window as any).__healthSSEService.disconnect();
         });
       }
     </script>
 
     <!-- ASTRO MCP BEST PRACTICE: Global Job SSE Service in MainLayout (DRY pattern) -->
-    <script type="module">
+    <script>
       import { getApiBaseUrl } from '/src/constants/api';
 
       // SINGLETON PATTERN: Global job SSE service (following same pattern as health SSE)
-      if (!window.__jobSSEService) {
+      if (!(window as any).__jobSSEService) {
         console.log('🚀 MainLayout: Creating global SSE job service');
 
-        window.__jobSSEService = {
+        (window as any).__jobSSEService = {
           eventSource: null,
           isConnected: false,
           retryCount: 0,
@@ -418,7 +415,7 @@ const {
                 console.log('✅ JobSSEService: Connection established');
               };
 
-              this.eventSource.addEventListener('job-update', async (event) => {
+              this.eventSource.addEventListener('job-update', async (event: any) => {
                 try {
                   const jobUpdate = JSON.parse(event.data);
                   console.log('🎯 JobSSEService: Job update received:', jobUpdate);
@@ -440,7 +437,7 @@ const {
                 }
               });
 
-              this.eventSource.onerror = (error) => {
+              this.eventSource.onerror = (error: any) => {
                 this.isConnected = false;
                 console.error('❌ JobSSEService: Connection error:', error);
                 this.handleRetry();
@@ -472,12 +469,12 @@ const {
 
         // Initialize job SSE service
         document.addEventListener('DOMContentLoaded', () => {
-          window.__jobSSEService.connect();
+          (window as any).__jobSSEService?.connect();
         });
 
         // Cleanup on unload
         window.addEventListener('beforeunload', () => {
-          window.__jobSSEService.disconnect();
+          (window as any).__jobSSEService?.disconnect();
         });
       }
     </script>

@@ -33,17 +33,6 @@ export const EventDrivenHealthCard: React.FC<EventDrivenHealthCardProps> = ({
   const [lastRefreshedFormatted, setLastRefreshedFormatted] = useState<string>('Loading...');
 
   useEffect(() => {
-    // Update formatted timestamp when service data changes
-    if (serviceData) {
-      console.log(`🔧 EventDrivenHealthCard (${serviceName}): Using Nano Store data:`, serviceData);
-
-      const timestamp = serviceData.timestamp || new Date(healthData.metadata.timestamp);
-      setLastRefreshedFormatted(formatTimestamp(timestamp));
-
-      // Update DOM elements for backward compatibility with existing scripts
-      updateDOMElements(serviceData);
-    }
-
     // Update DOM elements for backward compatibility
     const updateDOMElements = (result: IServiceResult) => {
       // Update status indicator
@@ -62,7 +51,8 @@ export const EventDrivenHealthCard: React.FC<EventDrivenHealthCardProps> = ({
       // Update last refreshed
       const lastRefreshedElement = document.getElementById(`${domPrefix}-last-refreshed`);
       if (lastRefreshedElement) {
-        lastRefreshedElement.textContent = formatTimestamp();
+        const timestamp = result.timestamp || Date.now();
+        lastRefreshedElement.textContent = formatTimestamp(new Date(timestamp));
       }
 
       // Update detailed metrics based on service type
@@ -125,6 +115,16 @@ export const EventDrivenHealthCard: React.FC<EventDrivenHealthCardProps> = ({
       });
     };
 
+    // Update formatted timestamp when service data changes
+    if (serviceData) {
+      console.log(`🔧 EventDrivenHealthCard (${serviceName}): Using Nano Store data:`, serviceData);
+
+      const timestamp = serviceData.timestamp || new Date(healthData.metadata.timestamp);
+      setLastRefreshedFormatted(formatTimestamp(timestamp));
+
+      // Update DOM elements for backward compatibility with existing scripts
+      updateDOMElements(serviceData);
+    }
 
     // Listen for timezone changes
     const cleanupTimezoneListener = onTimezoneChange(() => {

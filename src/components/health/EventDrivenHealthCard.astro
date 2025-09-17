@@ -6,6 +6,7 @@
  */
 
 import type { HTMLAttributes } from 'astro/types';
+// Temporarily use any type for serviceData parameters to fix import issues
 
 // Component props interface
 export interface Props extends HTMLAttributes<'div'> {
@@ -29,7 +30,7 @@ const {
 } = Astro.props;
 
 // Generate unique ID for this card instance
-const cardId = `health-card-${domPrefix}-${Math.random().toString(36).substr(2, 9)}`;
+const cardId = `health-card-${domPrefix}-${Math.random().toString(36).substring(2, 11)}`;
 ---
 
 <!-- Health card container with data attributes for Islands script -->
@@ -42,6 +43,7 @@ const cardId = `health-card-${domPrefix}-${Math.random().toString(36).substr(2, 
   ]}
   data-service-name={serviceName}
   data-dom-prefix={domPrefix}
+  data-card-id={cardId}
   data-component="health-card"
   {...htmlProps}
 >
@@ -102,18 +104,28 @@ const cardId = `health-card-${domPrefix}-${Math.random().toString(36).substr(2, 
 </div>
 
 <!-- Astro Islands script for client-side reactivity -->
-<script type="module" define:vars={{ cardId, serviceName, domPrefix }}>
+<script>
   import { $healthData } from '/src/stores/healthStore.js';
   import { getStatusColor, getStatusBorderClass } from '/src/utils/health-ui-utilities.js';
   import { formatTimestamp, onTimezoneChange } from '/src/utils/timezone.js';
 
-  // Health card class for managing individual card state
+  // Health card class for managing individual card state - Astro MCP best practice
   class HealthCard {
-    constructor(cardId, serviceName, domPrefix) {
-      this.cardId = cardId;
-      this.serviceName = serviceName;
-      this.domPrefix = domPrefix;
-      this.card = document.getElementById(cardId);
+    private cardId: string | undefined;
+    private serviceName: string | undefined;
+    private domPrefix: string | undefined;
+    private card: HTMLElement | null;
+    private isInitialized: boolean;
+    private cleanupTimezoneListener: (() => void) | null;
+    private unsubscribe: (() => void) | undefined;
+
+    constructor() {
+      // Get values from data attributes (Astro MCP best practice)
+      const container = document.querySelector('[data-component="health-card"]') as HTMLElement;
+      this.cardId = container?.dataset.cardId;
+      this.serviceName = container?.dataset.serviceName;
+      this.domPrefix = container?.dataset.domPrefix;
+      this.card = this.cardId ? document.getElementById(this.cardId) : null;
       this.isInitialized = false;
       this.cleanupTimezoneListener = null;
 
@@ -138,10 +150,10 @@ const cardId = `health-card-${domPrefix}-${Math.random().toString(36).substr(2, 
       console.log(`🏥 HealthCard (${this.serviceName}): Initialized with nano store reactivity`);
     }
 
-    updateCard(healthData) {
+    updateCard(healthData: any) {
       if (!healthData || !this.card) return;
 
-      const serviceData = healthData.services[this.serviceName];
+      const serviceData = healthData.services[this.serviceName as string];
       if (!serviceData) return;
 
       console.log(`🔧 HealthCard (${this.serviceName}): Updating with data:`, serviceData);
@@ -168,15 +180,17 @@ const cardId = `health-card-${domPrefix}-${Math.random().toString(36).substr(2, 
       this.updateMessage(serviceData);
     }
 
-    updateCardAppearance(serviceData) {
+    updateCardAppearance(serviceData: any) {
       const borderClass = getStatusBorderClass(serviceData.status);
-      this.card.className = this.card.className
-        .replace(/border-\w+-\d+/g, '')
-        .replace(/bg-\w+-\d+/g, '') +
-        ` ${borderClass} bg-white`;
+      if (this.card) {
+        this.card.className = this.card.className
+          .replace(/border-\w+-\d+/g, '')
+          .replace(/bg-\w+-\d+/g, '') +
+          ` ${borderClass} bg-white`;
+      }
     }
 
-    updateStatusIndicator(serviceData) {
+    updateStatusIndicator(serviceData: any) {
       const indicator = document.getElementById(`${this.domPrefix}-status-indicator`);
       if (indicator) {
         const statusClass = getStatusColor(serviceData.status);
@@ -184,7 +198,7 @@ const cardId = `health-card-${domPrefix}-${Math.random().toString(36).substr(2, 
       }
     }
 
-    updateStatusText(serviceData) {
+    updateStatusText(serviceData: any) {
       const statusText = document.getElementById(`${this.domPrefix}-status-text`);
       if (statusText) {
         statusText.textContent = serviceData.status.toUpperCase();
@@ -192,16 +206,16 @@ const cardId = `health-card-${domPrefix}-${Math.random().toString(36).substr(2, 
       }
     }
 
-    updateTimestamp(healthData, serviceData = null) {
+    updateTimestamp(healthData: any, serviceData: any = null) {
       const lastRefreshedElement = document.getElementById(`${this.domPrefix}-last-refreshed`);
       if (lastRefreshedElement) {
-        const data = serviceData || healthData.services[this.serviceName];
+        const data = serviceData || healthData.services[this.serviceName as string];
         const timestamp = data?.timestamp || new Date(healthData.metadata.timestamp);
         lastRefreshedElement.textContent = formatTimestamp(timestamp);
       }
     }
 
-    updateResponseTime(serviceData) {
+    updateResponseTime(serviceData: any) {
       const responseTimeElement = document.getElementById(`${this.domPrefix}-response-time`);
       if (responseTimeElement) {
         const responseTime = serviceData.metrics?.responseTime;
@@ -211,7 +225,7 @@ const cardId = `health-card-${domPrefix}-${Math.random().toString(36).substr(2, 
       }
     }
 
-    updateServiceMetrics(serviceData) {
+    updateServiceMetrics(serviceData: any) {
       const metricsContainer = document.getElementById(`${this.domPrefix}-metrics-container`);
       if (!metricsContainer || !serviceData.metrics) return;
 
@@ -265,7 +279,7 @@ const cardId = `health-card-${domPrefix}-${Math.random().toString(36).substr(2, 
       metricsContainer.innerHTML = metricsHTML;
     }
 
-    updateMessage(serviceData) {
+    updateMessage(serviceData: any): void {
       const messageElement = document.getElementById(`${this.domPrefix}-message`);
       if (messageElement) {
         messageElement.textContent = serviceData.message || `${this.serviceName} status updated`;
@@ -285,7 +299,7 @@ const cardId = `health-card-${domPrefix}-${Math.random().toString(36).substr(2, 
   }
 
   // Initialize the health card
-  const healthCard = new HealthCard(cardId, serviceName, domPrefix);
+  const healthCard = new HealthCard();
 
   // Cleanup on page unload
   window.addEventListener('beforeunload', () => {
@@ -294,7 +308,11 @@ const cardId = `health-card-${domPrefix}-${Math.random().toString(36).substr(2, 
 
   // Expose for debugging
   if (typeof window !== 'undefined') {
-    window[`healthCard_${domPrefix}`] = healthCard;
+    const container = document.querySelector('[data-component="health-card"]') as HTMLElement;
+    const domPrefix = container?.dataset.domPrefix;
+    if (domPrefix) {
+      (window as any)[`healthCard_${domPrefix}`] = healthCard;
+    }
   }
 </script>
 

@@ -79,11 +79,38 @@ export interface IUnifiedFormHandlers {
 export interface IUnifiedFormBuilderProps extends IUnifiedFormConfig, IUnifiedFormHandlers {}
 
 /**
+ * Mutable Field Configuration for Builder
+ * Single Responsibility: Internal builder state (no readonly constraints)
+ */
+interface MutableFieldConfig {
+  name?: string;
+  type?: FormFieldType;
+  label?: string;
+  placeholder?: string;
+  helpText?: string;
+  autoComplete?: string;
+  maxLength?: number;
+  minLength?: number;
+  defaultValue?: any;
+  className?: string;
+  options?: readonly IFieldOption[];
+  interaction?: {
+    isRequired?: boolean;
+    isDisabled?: boolean;
+    isFocused?: boolean;
+    isTouched?: boolean;
+    isDirty?: boolean;
+    isReadOnly?: boolean;
+  };
+  validationEngine?: any;
+}
+
+/**
  * Form Field Builder Utility
  * Single Responsibility: Creates form fields with validation
  */
 export class FormFieldBuilder {
-  private config: Partial<IUnifiedFieldConfig> = {};
+  private config: MutableFieldConfig = {};
 
   static create(name: string, type: FormFieldType): FormFieldBuilder {
     const builder = new FormFieldBuilder();
@@ -102,17 +129,17 @@ export class FormFieldBuilder {
   }
 
   required(required = true): this {
-    this.config.interaction = { 
-      ...this.config.interaction, 
-      isRequired: required 
+    this.config.interaction = {
+      ...this.config.interaction,
+      isRequired: required
     };
     return this;
   }
 
   disabled(disabled = true): this {
-    this.config.interaction = { 
-      ...this.config.interaction, 
-      isDisabled: disabled 
+    this.config.interaction = {
+      ...this.config.interaction,
+      isDisabled: disabled
     };
     return this;
   }
@@ -157,7 +184,33 @@ export class FormFieldBuilder {
     if (!this.config.name || !this.config.type) {
       throw new Error('Field name and type are required');
     }
-    return this.config as IUnifiedFieldConfig;
+
+    // Convert mutable config to readonly interface
+    const readonlyConfig: IUnifiedFieldConfig = {
+      name: this.config.name,
+      type: this.config.type,
+      ...(this.config.label && { label: this.config.label }),
+      ...(this.config.placeholder && { placeholder: this.config.placeholder }),
+      ...(this.config.helpText && { helpText: this.config.helpText }),
+      ...(this.config.autoComplete && { autoComplete: this.config.autoComplete }),
+      ...(this.config.maxLength && { maxLength: this.config.maxLength }),
+      ...(this.config.minLength && { minLength: this.config.minLength }),
+      ...(this.config.defaultValue !== undefined && { defaultValue: this.config.defaultValue }),
+      ...(this.config.className && { className: this.config.className }),
+      ...(this.config.options && { options: this.config.options }),
+      ...(this.config.interaction && {
+        interaction: {
+          isFocused: this.config.interaction.isFocused ?? false,
+          isTouched: this.config.interaction.isTouched ?? false,
+          isDirty: this.config.interaction.isDirty ?? false,
+          isDisabled: this.config.interaction.isDisabled ?? false,
+          isReadOnly: this.config.interaction.isReadOnly ?? false,
+          isRequired: this.config.interaction.isRequired ?? false,
+        }
+      }),
+    };
+
+    return readonlyConfig;
   }
 }
 
@@ -359,9 +412,21 @@ export const UnifiedFormBuilder: React.FC<IUnifiedFormBuilderProps> = React.memo
   onStateChange
 }) => {
   const config = useMemo<IUnifiedFormConfig>(() => ({
-    id, title, subtitle, fields, submitLabel, cancelLabel, resetLabel,
-    showReset, showCancel, className, cardClassName, autoFocus,
-    validateOnChange, validateOnBlur, submitOnEnter
+    id,
+    fields,
+    ...(title && { title }),
+    ...(subtitle && { subtitle }),
+    ...(submitLabel && { submitLabel }),
+    ...(cancelLabel && { cancelLabel }),
+    ...(resetLabel && { resetLabel }),
+    ...(showReset !== undefined && { showReset }),
+    ...(showCancel !== undefined && { showCancel }),
+    ...(className && { className }),
+    ...(cardClassName && { cardClassName }),
+    ...(autoFocus !== undefined && { autoFocus }),
+    ...(validateOnChange !== undefined && { validateOnChange }),
+    ...(validateOnBlur !== undefined && { validateOnBlur }),
+    ...(submitOnEnter !== undefined && { submitOnEnter }),
   }), [
     id, title, subtitle, fields, submitLabel, cancelLabel, resetLabel,
     showReset, showCancel, className, cardClassName, autoFocus,
@@ -369,7 +434,12 @@ export const UnifiedFormBuilder: React.FC<IUnifiedFormBuilderProps> = React.memo
   ]);
 
   const handlers = useMemo<IUnifiedFormHandlers>(() => ({
-    onSubmit, onCancel, onReset, onChange, onValidationChange, onStateChange
+    ...(onSubmit && { onSubmit }),
+    ...(onCancel && { onCancel }),
+    ...(onReset && { onReset }),
+    ...(onChange && { onChange }),
+    ...(onValidationChange && { onValidationChange }),
+    ...(onStateChange && { onStateChange }),
   }), [onSubmit, onCancel, onReset, onChange, onValidationChange, onStateChange]);
 
   const { formState, handlers: formHandlers } = useUnifiedForm(config, handlers);
@@ -397,12 +467,14 @@ export const UnifiedFormBuilder: React.FC<IUnifiedFormBuilderProps> = React.memo
             key={field.name}
             {...field}
             value={formState.data[field.name]}
-            validation={formState.validation[field.name]}
+            {...(formState.validation[field.name] && { validation: formState.validation[field.name] })}
             interaction={{
-              ...field.interaction,
+              isFocused: field.interaction?.isFocused ?? false,
               isTouched: formState.touchedFields.has(field.name),
               isDirty: formState.data[field.name] !== (field.defaultValue ?? field.value ?? ''),
-              isDisabled: field.interaction?.isDisabled || formState.isSubmitting
+              isDisabled: field.interaction?.isDisabled || formState.isSubmitting,
+              isReadOnly: field.interaction?.isReadOnly ?? false,
+              isRequired: field.interaction?.isRequired ?? false,
             }}
             autoFocus={autoFocus && index === 0}
             onChange={(value) => formHandlers.handleFieldChange(field.name, value)}
@@ -416,7 +488,7 @@ export const UnifiedFormBuilder: React.FC<IUnifiedFormBuilderProps> = React.memo
         {showReset && (
           <LiquidButton
             type="button"
-            variant="outline"
+            variant="secondary"
             onClick={formHandlers.handleReset}
             disabled={formState.isSubmitting || !formState.isDirty}
           >
@@ -427,7 +499,7 @@ export const UnifiedFormBuilder: React.FC<IUnifiedFormBuilderProps> = React.memo
         {showCancel && (
           <LiquidButton
             type="button"
-            variant="outline"
+            variant="secondary"
             onClick={formHandlers.handleCancel}
             disabled={formState.isSubmitting}
           >

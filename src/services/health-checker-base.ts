@@ -39,7 +39,7 @@ export abstract class BaseHealthChecker implements IServiceChecker {
         responseTime: metrics.responseTime || 0,
         ...metrics
       },
-      error,
+      ...(error !== undefined && { error }),
       timestamp: Date.now()
     };
   }

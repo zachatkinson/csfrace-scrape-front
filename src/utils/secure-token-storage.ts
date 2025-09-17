@@ -153,7 +153,9 @@ export class SecureTokenStorageManager {
   private cookieManager?: IHttpOnlyCookieManager;
 
   constructor(cookieManager?: IHttpOnlyCookieManager) {
-    this.cookieManager = cookieManager;
+    if (cookieManager !== undefined) {
+      this.cookieManager = cookieManager;
+    }
   }
 
   /**
@@ -171,10 +173,13 @@ export class SecureTokenStorageManager {
           break;
 
         case TokenStorageStrategy.ENCRYPTED_STORAGE:
-          SecureStorage.setItem(key, value, {
-            encrypt: config.encrypted,
-            expirationMinutes: config.expirationMinutes
-          });
+          const storageOptions: { encrypt: boolean; expirationMinutes?: number } = {
+            encrypt: config.encrypted
+          };
+          if (config.expirationMinutes !== undefined) {
+            storageOptions.expirationMinutes = config.expirationMinutes;
+          }
+          SecureStorage.setItem(key, value, storageOptions);
           break;
 
         case TokenStorageStrategy.HTTP_ONLY_COOKIE:

@@ -304,7 +304,7 @@ export class AccessibilityTestHelpers {
       
       // Test Tab navigation
       await page.keyboard.press('Tab');
-      const focusedElement = await page.locator(':focus');
+      const focusedElement = page.locator(':focus');
       expect(focusedElement).toBeDefined();
       
       // Test Shift+Tab navigation

@@ -4,13 +4,6 @@
  */
 
 import type { APIRoute } from 'astro';
-import { SERVER_API_BASE_URL } from 'astro:env/server';
-import {
-  PUBLIC_ASTRO_VERSION,
-  PUBLIC_SERVER_PORT,
-  PUBLIC_BACKEND_FRAMEWORK,
-  PUBLIC_BACKEND_PORT
-} from 'astro:env/client';
 
 import {
   HealthService,
@@ -50,7 +43,7 @@ export const GET: APIRoute = async ({ request }) => {
   }
 
   // Initialize services following Dependency Inversion Principle
-  const healthService = new HealthService(SERVER_API_BASE_URL);
+  const healthService = new HealthService(import.meta.env.SERVER_API_BASE_URL);
   const sseService = new SSEStreamService();
 
   // Create a readable stream for SSE
@@ -242,8 +235,8 @@ function createFrontendServiceData(timestamp: string) {
     status: 'healthy', // Frontend is healthy if we can run this code
     timestamp,
     data: {
-      version: PUBLIC_ASTRO_VERSION,
-      port: PUBLIC_SERVER_PORT,
+      version: import.meta.env.PUBLIC_ASTRO_VERSION,
+      port: import.meta.env.PUBLIC_SERVER_PORT,
       framework: 'Astro + React + TypeScript',
       response_time_ms: 0, // Immediate for frontend
     }

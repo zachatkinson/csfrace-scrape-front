@@ -152,7 +152,7 @@ const buttonClasses = [
 <!-- =============================================================================
      ASTRO ISLANDS SCRIPT (Optional Client-Side Enhancement)
      ============================================================================= -->
-<script type="module">
+<script>
   // Optional: Add haptic feedback simulation for enhanced UX
   class LiquidButtonManager {
     constructor() {
@@ -166,7 +166,7 @@ const buttonClasses = [
       });
     }
 
-    handleClick(event) {
+    handleClick(event: any) {
       const button = event.currentTarget;
       
       // Skip if disabled or loading

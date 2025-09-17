@@ -30,6 +30,7 @@ interface BaseUrlFormProps {
 // =============================================================================
 
 interface SingleUrlFormData {
+  [key: string]: unknown;
   url: string;
   options: {
     preserveFormatting: boolean;
@@ -62,6 +63,7 @@ const singleUrlValidationSchema = createFormSchema<SingleUrlFormData>({
       'Please enter a valid URL'
     ),
   ]),
+  options: createFieldSchema([]),
 });
 
 export interface StandardizedSingleUrlFormProps extends BaseUrlFormProps {
@@ -94,7 +96,7 @@ function renderSingleUrlFields(
           }
           required
           autoFocus
-          helpText="Enter the WordPress URL you want to convert to Shopify format"
+          helperText="Enter the WordPress URL you want to convert to Shopify format"
         />
       </FormField>
 
@@ -107,7 +109,7 @@ function renderSingleUrlFields(
                 type="checkbox"
                 checked={data.options?.preserveFormatting ?? true}
                 onChange={(e) => handlers.handleFieldChange('options')({
-                  ...data.options,
+                  ...(data.options || {}),
                   preserveFormatting: e.target.checked
                 })}
                 disabled={state.isSubmitting}
@@ -121,7 +123,7 @@ function renderSingleUrlFields(
                 type="checkbox"
                 checked={data.options?.convertImages ?? true}
                 onChange={(e) => handlers.handleFieldChange('options')({
-                  ...data.options,
+                  ...(data.options || {}),
                   convertImages: e.target.checked
                 })}
                 disabled={state.isSubmitting}
@@ -135,7 +137,7 @@ function renderSingleUrlFields(
                 type="checkbox"
                 checked={data.options?.generateSeoTitle ?? true}
                 onChange={(e) => handlers.handleFieldChange('options')({
-                  ...data.options,
+                  ...(data.options || {}),
                   generateSeoTitle: e.target.checked
                 })}
                 disabled={state.isSubmitting}
@@ -149,7 +151,7 @@ function renderSingleUrlFields(
                 type="checkbox"
                 checked={data.options?.addShopifySpecific ?? true}
                 onChange={(e) => handlers.handleFieldChange('options')({
-                  ...data.options,
+                  ...(data.options || {}),
                   addShopifySpecific: e.target.checked
                 })}
                 disabled={state.isSubmitting}
@@ -243,6 +245,7 @@ export const StandardizedSingleUrlForm: React.FC<StandardizedSingleUrlFormProps>
 // =============================================================================
 
 interface BatchUrlFormData {
+  [key: string]: unknown;
   batchUrls: string;
   file: File | null;
   options: {
@@ -290,6 +293,8 @@ const batchUrlValidationSchema = createFormSchema<BatchUrlFormData>({
       'Please enter valid URLs (max 100, one per line)'
     ),
   ]),
+  file: createFieldSchema([]),
+  options: createFieldSchema([]),
 });
 
 export interface StandardizedBatchUrlFormProps extends BaseUrlFormProps {
@@ -398,7 +403,7 @@ function renderBatchUrlFields(
                 type="checkbox"
                 checked={data.options?.preserveFormatting ?? true}
                 onChange={(e) => handlers.handleFieldChange('options')({
-                  ...data.options,
+                  ...(data.options || {}),
                   preserveFormatting: e.target.checked
                 })}
                 disabled={state.isSubmitting}
@@ -412,7 +417,7 @@ function renderBatchUrlFields(
                 type="checkbox"
                 checked={data.options?.convertImages ?? true}
                 onChange={(e) => handlers.handleFieldChange('options')({
-                  ...data.options,
+                  ...(data.options || {}),
                   convertImages: e.target.checked
                 })}
                 disabled={state.isSubmitting}

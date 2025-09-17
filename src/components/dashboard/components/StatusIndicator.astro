@@ -91,7 +91,7 @@ const formatLastUpdated = (date?: Date): string => {
   </div>
 </div>
 
-<script type="module">
+<script>
   // =============================================================================
   // ASTRO MCP BEST PRACTICE: Using data attributes instead of define:vars
   // No anti-patterns: Proper event-driven architecture with data attributes
@@ -104,18 +104,19 @@ const formatLastUpdated = (date?: Date): string => {
     const timestampElements = document.querySelectorAll('[data-last-updated][data-timestamp]');
 
     timestampElements.forEach(element => {
-      const timestamp = element.getAttribute('data-timestamp');
+      const htmlElement = element as HTMLElement;
+      const timestamp = htmlElement.getAttribute('data-timestamp');
 
       if (timestamp) {
         // Listen for timezone setting changes (following DRY/SOLID)
         const cleanupTimezoneListener = onTimezoneChange(() => {
-          element.textContent = `Updated: ${formatTimestamp(new Date(timestamp))}`;
+          htmlElement.textContent = `Updated: ${formatTimestamp(new Date(timestamp))}`;
         });
 
         // Store cleanup function for proper memory management
-        if (!element.dataset.timezoneListenerRegistered) {
+        if (!htmlElement.dataset.timezoneListenerRegistered) {
           window.addEventListener('beforeunload', cleanupTimezoneListener);
-          element.dataset.timezoneListenerRegistered = 'true';
+          htmlElement.dataset.timezoneListenerRegistered = 'true';
         }
       }
     });

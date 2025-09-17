@@ -8,12 +8,9 @@
  */
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { LiquidInput, LiquidButton } from '../../liquid-glass';
+import { LiquidInput } from '../../liquid-glass';
 import type {
   IUnifiedFieldProps,
-  IFieldValidationState,
-  IFieldInteractionState,
-  FormFieldType,
   IFieldOption,
   IFieldErrorConfig
 } from './FormFieldTypes';
@@ -80,10 +77,8 @@ FieldHelpText.displayName = 'FieldHelpText';
  */
 const SelectOptions: React.FC<{
   options: readonly IFieldOption[];
-  value?: string | number | (string | number)[];
-  multiple?: boolean;
   placeholder?: string;
-}> = React.memo(({ options, value, multiple, placeholder }) => {
+}> = React.memo(({ options, placeholder }) => {
   const groupedOptions = useMemo(() => {
     const groups: Record<string, IFieldOption[]> = {};
     const ungrouped: IFieldOption[] = [];
@@ -91,7 +86,7 @@ const SelectOptions: React.FC<{
     options.forEach(option => {
       if (option.group) {
         if (!groups[option.group]) groups[option.group] = [];
-        groups[option.group].push(option);
+        groups[option.group]?.push(option);
       } else {
         ungrouped.push(option);
       }
@@ -158,7 +153,7 @@ const RadioGroup: React.FC<{
           name={name}
           value={String(option.value)}
           checked={value === option.value}
-          onChange={() => onChange?.(option.value)}
+          onChange={() => onChange?.(typeof option.value === 'boolean' ? String(option.value) : option.value)}
           disabled={disabled || option.disabled}
           className="form-radio h-4 w-4 text-blue-500 border-white/30 bg-black/50 focus:ring-blue-500 focus:ring-offset-0 disabled:opacity-50"
         />
@@ -193,8 +188,6 @@ export const UnifiedFormField: React.FC<IUnifiedFieldProps> = React.memo(({
   helpText,
   leftIcon,
   rightIcon,
-  size = 'md',
-  variant = 'default',
   fullWidth = true,
   className = '',
   autoComplete,
@@ -228,13 +221,10 @@ export const UnifiedFormField: React.FC<IUnifiedFieldProps> = React.memo(({
   'data-testid': testId,
   'aria-label': ariaLabel,
   'aria-describedby': ariaDescribedBy,
-  id,
-  ...props
+  id
 }) => {
   const [internalValue, setInternalValue] = useState(value ?? defaultValue ?? '');
-  const [isFocused, setIsFocused] = useState(interaction.isFocused);
-  const [isTouched, setIsTouched] = useState(interaction.isTouched);
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
   
   // Debounced change handler
   const handleChange = useCallback((newValue: any) => {
@@ -254,13 +244,10 @@ export const UnifiedFormField: React.FC<IUnifiedFieldProps> = React.memo(({
 
   // Focus handlers
   const handleFocus = useCallback(() => {
-    setIsFocused(true);
     onFocus?.();
   }, [onFocus]);
 
   const handleBlur = useCallback(() => {
-    setIsFocused(false);
-    setIsTouched(true);
     onBlur?.();
   }, [onBlur]);
 
@@ -312,17 +299,17 @@ export const UnifiedFormField: React.FC<IUnifiedFieldProps> = React.memo(({
           <LiquidInput
             {...commonProps}
             type={type}
-            label={label}
-            placeholder={placeholder}
+            {...(label && { label })}
+            {...(placeholder && { placeholder })}
             value={String(internalValue)}
             onChange={(e) => handleChange(e.target.value)}
             error={validation.isInvalid}
-            leftIcon={leftIcon}
-            rightIcon={rightIcon}
-            maxLength={maxLength}
-            minLength={minLength}
-            pattern={pattern}
-            className={className}
+            {...(leftIcon && { leftIcon })}
+            {...(rightIcon && { rightIcon })}
+            {...(maxLength && { maxLength })}
+            {...(minLength && { minLength })}
+            {...(pattern && { pattern })}
+            {...(className && { className })}
           />
         );
 
@@ -331,17 +318,17 @@ export const UnifiedFormField: React.FC<IUnifiedFieldProps> = React.memo(({
           <LiquidInput
             {...commonProps}
             type="number"
-            label={label}
-            placeholder={placeholder}
+            {...(label && { label })}
+            {...(placeholder && { placeholder })}
             value={String(internalValue)}
             onChange={(e) => handleChange(parseFloat(e.target.value) || 0)}
             error={validation.isInvalid}
-            leftIcon={leftIcon}
-            rightIcon={rightIcon}
-            step={step}
-            min={min}
-            max={max}
-            className={className}
+            {...(leftIcon && { leftIcon })}
+            {...(rightIcon && { rightIcon })}
+            {...(step !== undefined && { step })}
+            {...(min !== undefined && { min })}
+            {...(max !== undefined && { max })}
+            {...(className && { className })}
           />
         );
 
@@ -390,11 +377,9 @@ export const UnifiedFormField: React.FC<IUnifiedFieldProps> = React.memo(({
               multiple={multiple}
               className={`w-full px-4 py-3 liquid-glass rounded-glass border border-white/20 bg-black/30 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:opacity-50 ${validation.isInvalid ? 'border-red-500' : ''} ${className}`.trim()}
             >
-              <SelectOptions 
-                options={options} 
-                value={internalValue} 
-                multiple={multiple}
-                placeholder={placeholder}
+              <SelectOptions
+                options={options}
+                {...(placeholder && { placeholder })}
               />
             </select>
           </div>
@@ -468,13 +453,13 @@ export const UnifiedFormField: React.FC<IUnifiedFieldProps> = React.memo(({
           <LiquidInput
             {...commonProps}
             type={type}
-            label={label}
+            {...(label && { label })}
             value={String(internalValue)}
             onChange={(e) => handleChange(e.target.value)}
             error={validation.isInvalid}
-            min={min as string}
-            max={max as string}
-            className={className}
+            {...(min && { min: min as string })}
+            {...(max && { max: max as string })}
+            {...(className && { className })}
           />
         );
 
@@ -495,9 +480,9 @@ export const UnifiedFormField: React.FC<IUnifiedFieldProps> = React.memo(({
       
       {/* Error/Warning/Info Messages */}
       <FieldErrorDisplay
-        error={validation.error}
-        warning={validation.warning}
-        info={validation.info}
+        {...(validation.error && { error: validation.error })}
+        {...(validation.warning && { warning: validation.warning })}
+        {...(validation.info && { info: validation.info })}
         config={{ showIcon: true }}
       />
     </div>

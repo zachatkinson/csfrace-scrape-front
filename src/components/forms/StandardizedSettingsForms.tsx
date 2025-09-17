@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { LiquidInput, LiquidButton } from '../liquid-glass';
+import { LiquidInput } from '../liquid-glass';
 import { useUserProfile } from '../../contexts/AuthContext.tsx';
 import { BaseForm, FormField, FormSection } from './BaseForm.tsx';
 import { useBaseForm, ValidationRules, createFieldSchema, createFormSchema } from '../../hooks/useBaseForm.ts';
@@ -16,6 +16,7 @@ import type { ProfileFormData, FormSubmissionResult } from '../../interfaces/for
 // =============================================================================
 
 interface UserProfileFormData extends ProfileFormData {
+  [key: string]: unknown;
   firstName?: string;
   lastName?: string;
   displayName?: string;
@@ -24,6 +25,15 @@ interface UserProfileFormData extends ProfileFormData {
   timezone?: string;
   language?: string;
   avatarUrl?: string;
+  preferences?: {
+    autoSave?: boolean;
+    defaultFormat?: string;
+    theme?: string;
+  };
+  privacy?: {
+    profileVisibility?: string;
+    allowAnalytics?: boolean;
+  };
 }
 
 const profileValidationSchema = createFormSchema<UserProfileFormData>({
@@ -43,6 +53,11 @@ const profileValidationSchema = createFormSchema<UserProfileFormData>({
   bio: createFieldSchema([
     ValidationRules.maxLength(500, 'Bio must be less than 500 characters'),
   ]),
+  timezone: createFieldSchema([]),
+  language: createFieldSchema([]),
+  avatarUrl: createFieldSchema([]),
+  preferences: createFieldSchema([]),
+  privacy: createFieldSchema([]),
 });
 
 export interface StandardizedUserProfileFormProps {
@@ -279,6 +294,7 @@ export const StandardizedUserProfileForm: React.FC<StandardizedUserProfileFormPr
 // =============================================================================
 
 interface AppSettingsFormData {
+  [key: string]: unknown;
   notifications: {
     email: boolean;
     browser: boolean;
@@ -301,9 +317,12 @@ interface AppSettingsFormData {
 export interface StandardizedAppSettingsFormProps {
   onSuccess?: () => void;
   onError?: (error: string) => void;
+  onStateChange?: (state: any) => void;
+  initialData?: any;
   className?: string;
   title?: string;
   subtitle?: string;
+  showTitle?: boolean;
 }
 
 function renderAppSettingsFields(
@@ -322,7 +341,7 @@ function renderAppSettingsFields(
               type="checkbox"
               checked={data.notifications?.email ?? true}
               onChange={(e) => handlers.handleFieldChange('notifications')({
-                ...data.notifications,
+                ...(data.notifications || {}),
                 email: e.target.checked
               })}
               disabled={state.isSubmitting}
@@ -336,7 +355,7 @@ function renderAppSettingsFields(
               type="checkbox"
               checked={data.notifications?.browser ?? false}
               onChange={(e) => handlers.handleFieldChange('notifications')({
-                ...data.notifications,
+                ...(data.notifications || {}),
                 browser: e.target.checked
               })}
               disabled={state.isSubmitting}
@@ -350,7 +369,7 @@ function renderAppSettingsFields(
               type="checkbox"
               checked={data.notifications?.jobComplete ?? true}
               onChange={(e) => handlers.handleFieldChange('notifications')({
-                ...data.notifications,
+                ...(data.notifications || {}),
                 jobComplete: e.target.checked
               })}
               disabled={state.isSubmitting}
@@ -368,7 +387,7 @@ function renderAppSettingsFields(
             <select
               value={data.privacy?.profileVisibility || 'private'}
               onChange={(e) => handlers.handleFieldChange('privacy')({
-                ...data.privacy,
+                ...(data.privacy || {}),
                 profileVisibility: e.target.value as 'public' | 'private'
               })}
               disabled={state.isSubmitting}
@@ -385,7 +404,7 @@ function renderAppSettingsFields(
               type="checkbox"
               checked={data.privacy?.allowAnalytics ?? true}
               onChange={(e) => handlers.handleFieldChange('privacy')({
-                ...data.privacy,
+                ...(data.privacy || {}),
                 allowAnalytics: e.target.checked
               })}
               disabled={state.isSubmitting}
@@ -403,7 +422,7 @@ function renderAppSettingsFields(
             <select
               value={data.preferences?.theme || 'dark'}
               onChange={(e) => handlers.handleFieldChange('preferences')({
-                ...data.preferences,
+                ...(data.preferences || {}),
                 theme: e.target.value as 'dark' | 'light' | 'auto'
               })}
               disabled={state.isSubmitting}
@@ -420,7 +439,7 @@ function renderAppSettingsFields(
             <select
               value={data.preferences?.defaultFormat || 'html'}
               onChange={(e) => handlers.handleFieldChange('preferences')({
-                ...data.preferences,
+                ...(data.preferences || {}),
                 defaultFormat: e.target.value as 'html' | 'json' | 'markdown'
               })}
               disabled={state.isSubmitting}
@@ -438,7 +457,7 @@ function renderAppSettingsFields(
               type="checkbox"
               checked={data.preferences?.autoSave ?? true}
               onChange={(e) => handlers.handleFieldChange('preferences')({
-                ...data.preferences,
+                ...(data.preferences || {}),
                 autoSave: e.target.checked
               })}
               disabled={state.isSubmitting}
@@ -502,13 +521,13 @@ export const StandardizedAppSettingsForm: React.FC<StandardizedAppSettingsFormPr
             profileVisibility: 'private',
             showEmail: false,
             allowAnalytics: true,
-            ...existingSettings.privacy,
+            ...(existingSettings.privacy || {}),
           },
           preferences: {
             theme: 'dark',
             defaultFormat: 'html',
             autoSave: true,
-            ...existingSettings.preferences,
+            ...(existingSettings.preferences || {}),
           },
         }}
         onSubmit={handleSubmit}

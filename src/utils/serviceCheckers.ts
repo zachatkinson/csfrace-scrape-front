@@ -671,7 +671,7 @@ export class BackendServiceChecker {
       const responseTime = Date.now() - startTime;
       
       if (response.ok) {
-        const data = await response.tson();
+        const data = await response.json();
         console.log('🔍 Raw backend health response:', data); // DEBUG
         const status = StatusMapper.mapBackendStatus(data.status);
         
@@ -806,7 +806,7 @@ export class DatabaseServiceChecker {
       const responseTime = Date.now() - startTime;
       
       if (response.ok) {
-        const data = await response.tson();
+        const data = await response.json();
         const dbStatus = data.database?.status;
         
         // SINGLE SOURCE OF TRUTH: Use shared StatusMapper
@@ -847,7 +847,7 @@ export class CacheServiceChecker {
       const responseTime = Date.now() - startTime;
       
       if (response.ok) {
-        const data = await response.tson();
+        const data = await response.json();
         const cacheData = data.cache;
         
         // SINGLE SOURCE OF TRUTH: Use shared StatusMapper
@@ -908,7 +908,7 @@ export class PrometheusServiceChecker {
       const responseTime = Date.now() - startTime;
       
       if (response.ok) {
-        const healthData = await response.tson();
+        const healthData = await response.json();
         const monitoring = healthData.monitoring || {};
         
         // Check if backend monitors external services (future enhancement)
@@ -976,7 +976,7 @@ export class FrontendServiceChecker {
       const response = await HttpClient.fetchWithTimeout(`${CONFIG.API_URL}${ENDPOINTS.HEALTH}`);
       responseTime = Date.now() - startTime;
       apiConnected = response.ok;
-    } catch (error) {
+    } catch {
       responseTime = Date.now() - startTime;
       // API error doesn't make frontend down - just affects API connection status
     }
@@ -1030,7 +1030,7 @@ export class GrafanaServiceChecker {
       const responseTime = Date.now() - startTime;
       
       if (response.ok) {
-        const healthData = await response.tson();
+        const healthData = await response.json();
         const monitoring = healthData.monitoring || {};
         
         // Check if backend monitors external services (future enhancement)

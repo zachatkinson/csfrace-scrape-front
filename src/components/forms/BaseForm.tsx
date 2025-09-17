@@ -10,7 +10,8 @@ import { useBaseForm } from '../../hooks/useBaseForm.ts';
 import type {
   FormComponentProps,
   StandardFormComponent,
-  FormValidationSchema
+  FormValidationSchema,
+  FormSubmissionResult
 } from '../../interfaces/forms.ts';
 
 // =============================================================================
@@ -80,8 +81,10 @@ export const BaseForm = forwardRef<
     validationSchema,
     onSubmit: async (data) => {
       try {
-        const result = onSubmit ? await onSubmit(data) : { success: true, data };
-        
+        const result = onSubmit
+          ? await onSubmit(data)
+          : { success: true, data, error: undefined, fieldErrors: undefined } as FormSubmissionResult<any>;
+
         if (result.success) {
           onSuccess?.(result.data);
         } else {

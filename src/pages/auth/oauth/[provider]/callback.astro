@@ -106,7 +106,7 @@ if (!provider || !validProviders.includes(provider)) {
     <div id="message" style="display: none;"></div>
   </div>
 
-  <script define:vars={{ provider }}>
+  <script define:vars={{ provider }} is:inline>
     // OAuth Callback Handler
     (function() {
       const statusElement = document.getElementById('status');

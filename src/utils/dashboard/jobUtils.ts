@@ -157,14 +157,7 @@ export const convertBackendJob: JobConverter = (backendJob: IBackendJob): IJobDa
     // Estimated values for UI display
     wordCount: Math.floor(Math.random() * 2000) + 500,
     imageCount: backendJob.images_downloaded || Math.floor(Math.random() * 10),
-    fileSize: backendJob.content_size_bytes ? formatFileSize(backendJob.content_size_bytes) : undefined,
-    
-    // Legacy fields from ConversionJob interface
-    convertedHtml: undefined,
-    extractedImages: undefined,
-    wordpressContent: undefined,
-    shopifyContent: undefined,
-    metadata: undefined
+    fileSize: backendJob.content_size_bytes ? formatFileSize(backendJob.content_size_bytes) : undefined
   };
 };
 

@@ -22,11 +22,13 @@
   </button>
 </sign-in-button>
 
-<script type="module">
+<script>
   // Custom element following Astro best practices
   // This script is bundled, optimized, and deduplicated by Astro
 
   class SignInButton extends HTMLElement {
+    private signInButtonManager: any = null;
+
     constructor() {
       super();
       this.signInButtonManager = null;

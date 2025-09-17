@@ -24,6 +24,16 @@ export type { WordPressContent, ShopifyContent } from './job.ts';
 // Re-export ConversionJob from job.ts to maintain backwards compatibility
 export type { ConversionJob } from './job.ts';
 
+// Re-export auth types to maintain backwards compatibility
+export type {
+  PasswordChangeData,
+  PasswordResetRequest,
+  PasswordResetConfirm
+} from './auth.ts';
+
+// Re-export OAuth types to maintain backwards compatibility
+export type { IOAuthProvider as OAuthProvider } from './oauth.ts';
+
 // Conversion Configuration
 export interface ConversionOptions {
   // Content processing
@@ -70,7 +80,7 @@ export interface BatchRequest {
   options: ConversionOptions;
   createdAt: Date;
   status: 'pending' | 'processing' | 'completed' | 'error';
-  jobs: ConversionJob[];
+  jobs: import('./job').ConversionJob[];
   progress: {
     total: number;
     completed: number;
@@ -84,7 +94,7 @@ export interface WebSocketEvent {
   payload: {
     jobId?: string;
     batchId?: string;
-    data?: ConversionJob | BatchRequest | Record<string, unknown>;
+    data?: import('./job').ConversionJob | BatchRequest | Record<string, unknown>;
     timestamp: string;
   };
 }
@@ -192,6 +202,9 @@ export interface EnvironmentConfig {
   debugMode: boolean;
   logLevel: 'debug' | 'info' | 'warn' | 'error';
 }
+
+// Authentication types
+export type { LoginCredentials, RegisterData, User, UserProfile, AuthTokens } from './auth.js';
 
 // Note: Additional type exports would go here when those modules exist
 // export * from './api';

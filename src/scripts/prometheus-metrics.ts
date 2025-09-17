@@ -166,13 +166,7 @@ class PrometheusMetricsUpdater {
   }
 
   // Handle hardcoded Prometheus info in HTML
-  private updateHardcodedElements(): void {
-    // Check if version is hardcoded and update
-    const hardcodedVersion = document.querySelector('[data-hardcoded="prometheus-version"]');
-    if (hardcodedVersion) {
-      // Will be updated by updateMetricsInfo method with dynamic value
-    }
-  }
+  // Note: Method reserved for future hardcoded element updates
 
   // NEW: Emit completion event for header aggregation (DRY + Single Source of Truth)
   private emitServiceCardCompleteEvent(healthResult: any): void {

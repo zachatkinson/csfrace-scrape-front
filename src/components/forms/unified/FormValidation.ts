@@ -6,11 +6,10 @@
  * Dependency Inversion: Depends on validation rule abstractions
  */
 
-import type { 
-  FieldValidationRule, 
-  IFieldValidationState, 
-  IFieldValidationRules,
-  FormFieldType
+import type {
+  FieldValidationRule,
+  IFieldValidationState,
+  IFieldValidationRules
 } from './FormFieldTypes';
 
 /**
@@ -306,7 +305,7 @@ export class FieldValidationEngine {
       isValid: errors.length === 0,
       isInvalid: errors.length > 0,
       isPending: false,
-      error: errors[0], // Show first error
+      ...(errors.length > 0 && { error: errors[0] }),
     };
   }
 
@@ -336,8 +335,8 @@ export class FieldValidationEngine {
       isValid: allErrors.length === 0,
       isInvalid: allErrors.length > 0,
       isPending: false,
-      error: allErrors[0],
-      warning: allWarnings[0],
+      ...(allErrors.length > 0 && { error: allErrors[0] }),
+      ...(allWarnings.length > 0 && { warning: allWarnings[0] }),
     };
   }
 

@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 interface ConsoleMessage {
   type: string;
@@ -97,7 +97,7 @@ test.describe('Health Monitoring System End-to-End Test', () => {
         healthElementFound = true;
         console.log('Found health element with selector: ' + selector);
         break;
-      } catch (e) {
+      } catch {
         // Continue to next selector
       }
     }
@@ -233,7 +233,7 @@ test.describe('Health Monitoring System End-to-End Test', () => {
 
     // Print recent console messages for debugging
     console.log('\nRecent Console Messages (last 10):');
-    consoleMessages.slice(-10).forEach((msg, idx) => {
+    consoleMessages.slice(-10).forEach((msg) => {
       const timeStr = new Date(msg.timestamp).toISOString().substr(11, 8);
       console.log('  ' + timeStr + ' [' + msg.type + '] ' + msg.text.slice(0, 100) + (msg.text.length > 100 ? '...' : ''));
     });

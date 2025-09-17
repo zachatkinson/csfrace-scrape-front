@@ -62,8 +62,8 @@ export const LiquidGlass = forwardRef<HTMLDivElement, LiquidGlassProps>(({
     lensing,
     loading,
     blur,
-    reducedMotion,
-    highContrast,
+    ...(reducedMotion !== undefined && { reducedMotion }),
+    ...(highContrast !== undefined && { highContrast }),
   };
   
   // Get configuration from strategy pattern - extensible without modification!

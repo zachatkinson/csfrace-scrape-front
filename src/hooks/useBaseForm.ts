@@ -26,7 +26,7 @@ export function useBaseForm<TData extends Record<string, unknown>>(
   
   // Initialize form data
   const [data, setDataInternal] = useState<TData>(() => {
-    return { ...config.initialData } as TData;
+    return (config.initialData || {}) as TData;
   });
 
   // Initialize form state
@@ -41,15 +41,15 @@ export function useBaseForm<TData extends Record<string, unknown>>(
   });
 
   // Track initial data for dirty checking
-  const [initialData] = useState<TData>(() => ({ ...config.initialData } as TData));
+  const [initialData] = useState<TData>(() => (config.initialData || {}) as TData);
 
   // =============================================================================
   // VALIDATION HELPERS
   // =============================================================================
 
   const validateField = useCallback(async (
-    field: keyof TData, 
-    value: unknown, 
+    _field: keyof TData,
+    value: unknown,
     schema?: FieldValidationSchema
   ): Promise<string | null> => {
     if (!schema) return null;
@@ -409,7 +409,7 @@ export function createFormSchema<TData>(
 ): FormValidationSchema<TData> {
   return {
     fields,
-    globalValidation,
+    ...(globalValidation ? { globalValidation } : {}),
   };
 }
 

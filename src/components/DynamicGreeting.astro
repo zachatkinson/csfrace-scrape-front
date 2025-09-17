@@ -78,7 +78,11 @@ const { class: className = "text-2xl font-semibold text-white mb-6", id = "greet
 
   function getRandomMessage(period: keyof typeof greetingMessages): string {
     const messages = greetingMessages[period];
-    return messages[Math.floor(Math.random() * messages.length)];
+    if (!messages || messages.length === 0) {
+      return "Ready to convert something amazing today?";
+    }
+    const randomIndex = Math.floor(Math.random() * messages.length);
+    return messages[randomIndex] || "Ready to convert something amazing today?";
   }
 
   function getTimezoneFromSettings(): string {

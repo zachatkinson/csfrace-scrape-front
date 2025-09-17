@@ -4,10 +4,18 @@
  */
 
 import { getApiBaseUrl } from '../constants/api';
-import type { JobStatus } from '../types/job';
+import type {
+  JobStatus,
+  DashboardJobStatus,
+  IBackendJob as Job,
+  JobPriority,
+  JobCreateRequest as JobCreate,
+  IJobsResponse as JobListResponse,
+  JobProcessingOptions as ProcessingOptions,
+  JobConverterConfig as ConverterConfig
+} from '../types/job';
 import {
   EnhancedApiClient,
-  EnhancedApiError,
   type EnhancedApiClientConfig
 } from '../utils/api-utils.ts';
 
@@ -15,7 +23,7 @@ import {
 export type {
   JobConverterConfig as ConverterConfig,
   JobProcessingOptions as ProcessingOptions
-} from '../types/job.ts';
+} from '../types/job';
 
 export interface BatchConfig {
   maxConcurrent?: number;
@@ -135,7 +143,7 @@ export type {
   JobPriority,
   BackendJobListResponse as JobListResponse,
   JobCreateRequest as JobCreate
-} from '../types/job.ts';
+} from '../types/job';
 
 export interface JobUpdate {
   priority?: JobPriority | undefined;
@@ -257,6 +265,9 @@ export interface APIError {
  * DRY: Eliminates duplicate error handling patterns using shared utilities
  */
 class APIClient extends EnhancedApiClient {
+  private apiKey?: string;
+  private baseURL: string;
+
   constructor(baseURL?: string, apiKey?: string) {
     const config: EnhancedApiClientConfig = {
       baseURL: baseURL ?? getApiBaseUrl(),
@@ -270,6 +281,11 @@ class APIClient extends EnhancedApiClient {
       }
     };
     super(config);
+
+    this.baseURL = config.baseURL;
+    if (config.apiKey) {
+      this.apiKey = config.apiKey;
+    }
   }
 
   // All sophisticated error handling now inherited from EnhancedApiClient
@@ -300,41 +316,27 @@ class APIClient extends EnhancedApiClient {
   }
 
   async createJob(jobData: JobCreate): Promise<Job> {
-    return this.get<Job>('/jobs', {
-      method: 'POST',
-      body: JSON.stringify(jobData),
-    });
+    return this.post<Job>('/jobs', jobData);
   }
 
   async updateJob(id: number, jobData: JobUpdate): Promise<Job> {
-    return this.get<Job>(`/jobs/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(jobData),
-    });
+    return this.put<Job>(`/jobs/${id}`, jobData);
   }
 
   async deleteJob(id: number): Promise<void> {
-    return this.get<void>(`/jobs/${id}`, {
-      method: 'DELETE',
-    });
+    return this.delete<void>(`/jobs/${id}`);
   }
 
   async startJob(id: number): Promise<Job> {
-    return this.get<Job>(`/jobs/${id}/start`, {
-      method: 'POST',
-    });
+    return this.post<Job>(`/jobs/${id}/start`);
   }
 
   async cancelJob(id: number): Promise<Job> {
-    return this.get<Job>(`/jobs/${id}/cancel`, {
-      method: 'POST',
-    });
+    return this.post<Job>(`/jobs/${id}/cancel`);
   }
 
   async retryJob(id: number): Promise<Job> {
-    return this.get<Job>(`/jobs/${id}/retry`, {
-      method: 'POST',
-    });
+    return this.post<Job>(`/jobs/${id}/retry`);
   }
 
   // Batches API
@@ -358,10 +360,7 @@ class APIClient extends EnhancedApiClient {
   }
 
   async createBatch(batchData: BatchCreate): Promise<Batch> {
-    return this.get<Batch>('/batches', {
-      method: 'POST',
-      body: JSON.stringify(batchData),
-    });
+    return this.post<Batch>('/batches', batchData);
   }
 
   // Health check and monitoring
@@ -444,23 +443,33 @@ class APIClient extends EnhancedApiClient {
 export const apiClient = new APIClient();
 
 // Job status utilities
-export const JOB_STATUS_LABELS: Record<JobStatus, string> = {
+export const JOB_STATUS_LABELS: Record<DashboardJobStatus, string> = {
   pending: 'Pending',
+  validating: 'Validating',
+  scraping: 'Scraping',
   running: 'Processing',
   completed: 'Completed',
+  error: 'Error',
   failed: 'Failed',
-  skipped: 'Skipped',
   cancelled: 'Cancelled',
+  queued: 'Queued',
+  processing: 'Processing',
+  skipped: 'Skipped',
   partial: 'Partial',
 };
 
-export const JOB_STATUS_COLORS: Record<JobStatus, string> = {
+export const JOB_STATUS_COLORS: Record<DashboardJobStatus, string> = {
   pending: '#f59e0b', // amber-500
+  validating: '#8b5cf6', // violet-500
+  scraping: '#06b6d4', // cyan-500
   running: '#3b82f6', // blue-500
   completed: '#10b981', // emerald-500
+  error: '#dc2626', // red-600
   failed: '#ef4444', // red-500
-  skipped: '#6b7280', // gray-500
   cancelled: '#9ca3af', // gray-400
+  queued: '#6366f1', // indigo-500
+  processing: '#3b82f6', // blue-500
+  skipped: '#6b7280', // gray-500
   partial: '#f97316', // orange-500
 };
 
@@ -614,8 +623,8 @@ export function getHealthStatus(health: HealthCheck): {
     issues.push('Database connectivity issues');
   }
   
-  if (health.cache?.status === 'error') {
-    issues.push('Cache service unavailable');
+  if (health.cache?.status === 'unhealthy' || health.cache?.status === 'degraded') {
+    issues.push('Cache service issues');
   }
   
   if (health.monitoring?.status !== 'healthy') {

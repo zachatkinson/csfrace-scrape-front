@@ -226,6 +226,9 @@ export interface IBackendJob {
   content_size_bytes?: number;
   images_downloaded?: number;
   batch_id?: string;
+  next_retry_at?: string;
+  duration_seconds?: number;
+  timeout_seconds?: number;
 }
 
 /**

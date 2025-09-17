@@ -5,10 +5,11 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
-import { TIMING_CONSTANTS } from '../constants/timing.ts';
-import { UrlValidationService, type UrlValidationResult } from '../services/UrlValidationService.ts';
-import { FileProcessingService, type FileProcessingResult } from '../services/FileProcessingService.ts';
-import { FORM_VALIDATORS } from '../utils/form-validation.ts';
+import { TIMING_CONSTANTS } from '../constants/timing';
+import { UrlValidationService } from '../services/UrlValidationService';
+import type { UrlValidationResult } from '../types';
+import { FileProcessingService, type ProcessedFile } from '../services/FileProcessingService';
+import { FORM_VALIDATORS } from '../utils/form-validation';
 
 export interface ScrapingFormState {
   // Single URL mode
@@ -21,7 +22,7 @@ export interface ScrapingFormState {
   batchMode: boolean;
   batchUrls: string;
   isBatchSubmitting: boolean;
-  fileProcessingResult: FileProcessingResult | null;
+  fileProcessingResult: ProcessedFile | null;
   
   // UI state
   error: string | null;
@@ -72,12 +73,12 @@ export function useScrapingForm(options: UseScrapingFormOptions = {}) {
   // Services
   const [urlValidationService] = useState(() => new UrlValidationService({
     onValidationStart: () => setState(prev => ({ ...prev, isValidating: true })),
-    onValidationComplete: (_, result) => setState(prev => ({ 
-      ...prev, 
+    onValidationComplete: (_url: string, result: UrlValidationResult) => setState(prev => ({
+      ...prev,
       validationResult: result,
-      isValidating: false 
+      isValidating: false
     })),
-    onValidationError: (_, error) => setState(prev => ({ 
+    onValidationError: (_url: string, error: string) => setState(prev => ({ 
       ...prev, 
       error,
       isValidating: false 
@@ -113,7 +114,7 @@ export function useScrapingForm(options: UseScrapingFormOptions = {}) {
   });
 
   // Validation timeout ref
-  const validationTimeoutRef = useRef<number>();
+  const validationTimeoutRef = useRef<number | null>(null);
 
   // URL Actions
   const setUrl = useCallback((url: string) => {

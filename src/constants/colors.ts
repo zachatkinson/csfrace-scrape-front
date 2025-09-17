@@ -133,10 +133,10 @@ export const UI_COLORS = {
       TEXT_HOVER: COLORS.NEUTRAL.WHITE,
     },
     GHOST: {
-      BACKGROUND: UI_COLORS.GLASS.BACKGROUND,
-      BACKGROUND_HOVER: UI_COLORS.GLASS.BACKGROUND_HOVER,
-      TEXT: UI_COLORS.TEXT.SECONDARY,
-      TEXT_HOVER: UI_COLORS.TEXT.PRIMARY,
+      BACKGROUND: 'rgba(255, 255, 255, 0.05)',
+      BACKGROUND_HOVER: 'rgba(255, 255, 255, 0.1)',
+      TEXT: 'rgba(255, 255, 255, 0.9)',
+      TEXT_HOVER: 'rgba(255, 255, 255, 1)',
     },
   },
 
@@ -231,9 +231,9 @@ export const ColorHelpers = {
     const hex = hexColor.replace('#', '');
     
     // Parse hex to RGB
-    const r = parseInt(hex.substr(0, 2), 16);
-    const g = parseInt(hex.substr(2, 2), 16);
-    const b = parseInt(hex.substr(4, 2), 16);
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
     
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   },
@@ -257,7 +257,7 @@ export const ColorHelpers = {
    */
   getContrastText: (backgroundColor: string): string => {
     // Simple contrast logic - in a real app, you'd use a proper contrast calculation
-    const darkColors = [
+    const darkColors: string[] = [
       COLORS.NEUTRAL.GRAY['800'],
       COLORS.NEUTRAL.GRAY['900'],
       COLORS.NEUTRAL.BLACK,

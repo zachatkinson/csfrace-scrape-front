@@ -11,7 +11,6 @@ interface ConversionFormConfig {
 }
 
 export class ConversionFormManager {
-  private apiBaseUrl: string;
   private container: HTMLElement;
   private currentMode: 'bulk' | 'single' = 'bulk';
   
@@ -34,7 +33,6 @@ export class ConversionFormManager {
   private bulkConvertBtn: HTMLButtonElement | null = null;
 
   constructor(config: ConversionFormConfig) {
-    this.apiBaseUrl = config.apiBaseUrl;
     this.container = config.container;
     this.currentMode = config.defaultMode || 'bulk';
   }
@@ -256,8 +254,8 @@ export class ConversionFormManager {
   private handleFiles(files: FileList) {
     if (files.length > 0) {
       const file = files[0];
-      if (file.type === 'text/csv' || file.type === 'text/plain' || 
-          file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
+      if (file && (file.type === 'text/csv' || file.type === 'text/plain' ||
+          file.name.endsWith('.csv') || file.name.endsWith('.txt'))) {
         
         // Show file name
         if (this.fileName) {

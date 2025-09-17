@@ -47,15 +47,16 @@ export { SecurityUtils, SecureStorage } from './security.ts';
 export {
   FieldValidator,
   FormValidator,
-  createValidationSchema
+  ValidationHelpers
 } from './form-validation.ts';
 
 // DOM utilities
 export {
   SafeDomAccessor,
-  DomUpdater,
+  DomTextUpdater,
   DomClassUpdater
 } from './dom-utilities.ts';
+export type { IDomUpdater } from './dom-utilities.ts';
 
 // Modal utilities
 export * from './modalUtils.ts';

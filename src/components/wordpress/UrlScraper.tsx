@@ -32,7 +32,7 @@ export interface UrlScraperProps {
  */
 export const UrlScraper: React.FC<UrlScraperProps> = ({
   onJobSubmit,
-  onJobUpdate,
+  onJobUpdate: _onJobUpdate,
   maxConcurrentJobs: _maxConcurrentJobs = 5,
   className = '',
 }) => {
@@ -42,7 +42,7 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
   // Direct API job submission - NO SERVICE ABSTRACTION!
   const submitSingleJob = async (url: string, options: any = {}) => {
     try {
-      actions.setLoading(true);
+      actions.setSubmitting(true);
 
       const job = await fetch(`${getApiBaseUrl()}/jobs`, {
         method: 'POST',
@@ -71,14 +71,14 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
     } catch (error) {
       actions.setError(error instanceof Error ? error.message : 'Job submission failed');
     } finally {
-      actions.setLoading(false);
+      actions.setSubmitting(false);
     }
   };
 
   // Direct API batch submission - NO SERVICE ABSTRACTION!
   const submitBatchJobs = async (urls: string[], options: any = {}) => {
     try {
-      actions.setLoading(true);
+      actions.setBatchSubmitting(true);
 
       const batch = await fetch(`${getApiBaseUrl()}/batches`, {
         method: 'POST',
@@ -103,7 +103,7 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
     } catch (error) {
       actions.setError(error instanceof Error ? error.message : 'Batch submission failed');
     } finally {
-      actions.setLoading(false);
+      actions.setBatchSubmitting(false);
     }
   };
 

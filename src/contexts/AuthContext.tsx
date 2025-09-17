@@ -15,6 +15,7 @@ import React, {
 import { getApiBaseUrl } from '../constants/api.ts';
 import type {
   User,
+  UserProfile,
   AuthTokens,
   LoginCredentials,
   RegisterData
@@ -198,7 +199,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       // Create FormData for OAuth2 token endpoint
       const formData = new FormData();
-      formData.append('username', credentials.username);
+      formData.append('username', credentials.email); // Backend expects 'username' field, we use email
       formData.append('password', credentials.password);
       
       const tokens = await fetch(`${getApiBase()}/auth/token`, {
@@ -251,7 +252,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       
       // Auto-login after registration
-      await login({ username: data.email, password: data.password });
+      await login({ email: data.email, password: data.password });
     } catch (error) {
       setState(prev => ({
         ...prev,
@@ -494,7 +495,7 @@ export function useWebAuthn() {
 export function useUserProfile() {
   const { user, isLoading, error, clearError } = useAuth();
   
-  const updateProfile = async (profileData: Partial<UserProfile>) => {
+  const updateProfile = async (_profileData: Partial<UserProfile>) => {
     // TODO: Implement profile update call to Docker backend
     console.warn('Profile update not implemented yet');
     throw new Error('Profile update functionality not implemented');

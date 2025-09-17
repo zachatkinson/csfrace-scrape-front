@@ -82,7 +82,7 @@ test.describe('Security Tests', () => {
       await expect(page).toHaveURL(/login|auth|unauthorized/);
     });
 
-    test('should handle token expiry', async ({ page, context }) => {
+    test('should handle token expiry', async ({ page }) => {
       await page.goto('/');
       
       // Mock expired token
@@ -198,7 +198,7 @@ test.describe('Security Tests', () => {
         try {
           const response = await page.request.get('/api/health');
           responses.push(response.status());
-        } catch (error) {
+        } catch {
           responses.push(0);
         }
       }

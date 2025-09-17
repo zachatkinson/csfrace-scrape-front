@@ -65,6 +65,9 @@ export function parseJWT(token: string): TokenPayload | null {
 
     // Decode payload (base64url)
     const payload = parts[1];
+    if (!payload) {
+      return null;
+    }
     const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
     
     return JSON.parse(decoded) as TokenPayload;
@@ -131,14 +134,8 @@ export function getSecondsUntilExpiry(token: string): number {
 }
 
 // =============================================================================
-// TOKEN STORAGE UTILITIES  
+// TOKEN STORAGE UTILITIES
 // =============================================================================
-
-const TOKEN_STORAGE_KEYS = {
-  ACCESS_TOKEN: 'csfrace_access_token',
-  REFRESH_TOKEN: 'csfrace_refresh_token',
-  TOKEN_EXPIRY: 'csfrace_token_expiry',
-} as const;
 
 /**
  * Store tokens using enterprise-grade secure storage

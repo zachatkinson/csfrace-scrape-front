@@ -7,7 +7,7 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios';
 import { getApiBaseUrl, API_CONFIG } from '../constants/api.ts';
 import { TIMING_CONSTANTS } from '../constants/timing.ts';
-import { logger, logApiCall, logApiResponse, logError, logDebug } from '../utils/logger.ts';
+import { logger, logError } from '../utils/logger.ts';
 import type { 
   ApiResponse, 
   ConversionJob, 

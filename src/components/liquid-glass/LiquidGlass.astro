@@ -56,18 +56,12 @@ const glassVariantProps: GlassVariantProps = {
   lensing,
   loading,
   blur,
-  reducedMotion,
-  highContrast,
+  ...(reducedMotion !== undefined && { reducedMotion }),
+  ...(highContrast !== undefined && { highContrast }),
 };
 
 // Get configuration from strategy pattern - extensible without modification!
 const variantConfig = getGlassVariantConfig(variant, glassVariantProps);
-
-// Combine all classes from strategy
-const allClasses = [
-  ...variantConfig.classes,
-  className,
-].filter(Boolean).join(' ');
 
 // Get the element to render
 const TagName = Element;
@@ -75,7 +69,10 @@ const TagName = Element;
 
 <!-- Render the liquid glass element -->
 <TagName
-  class={allClasses}
+  class:list={[
+    ...variantConfig.classes,
+    className && className
+  ]}
   style={variantConfig.customProperties}
   {...htmlProps}
 >

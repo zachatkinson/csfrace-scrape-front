@@ -6,8 +6,8 @@
 
 import React from 'react';
 import { LiquidCard, LiquidButton, LiquidInput } from '../liquid-glass';
-import type { UrlValidationResult } from '../../services/UrlValidationService.ts';
-import { SecurityUtils } from '../../utils/security.ts';
+import type { UrlValidationResult } from '../../types';
+import { SecurityUtils } from '../../utils/security';
 
 export interface SingleUrlFormProps {
   url: string;
@@ -124,19 +124,19 @@ export const SingleUrlForm: React.FC<SingleUrlFormProps> = ({
             </div>
             
             <div className="text-xs text-white/70 space-y-1">
-              {validationResult.metadata.title && (
+              {validationResult.metadata?.title && (
                 <div>
-                  <span className="text-white/50">Title:</span> {validationResult.metadata.title}
+                  <span className="text-white/50">Title:</span> {validationResult.metadata?.title}
                 </div>
               )}
-              {validationResult.metadata.description && (
+              {validationResult.metadata?.description && (
                 <div>
-                  <span className="text-white/50">Description:</span> {validationResult.metadata.description}
+                  <span className="text-white/50">Description:</span> {validationResult.metadata?.description}
                 </div>
               )}
-              {validationResult.metadata.lastModified && (
+              {validationResult.metadata?.lastModified && (
                 <div>
-                  <span className="text-white/50">Modified:</span> {validationResult.metadata.lastModified}
+                  <span className="text-white/50">Modified:</span> {validationResult.metadata?.lastModified}
                 </div>
               )}
             </div>

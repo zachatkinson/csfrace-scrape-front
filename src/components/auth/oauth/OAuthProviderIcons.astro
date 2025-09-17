@@ -72,8 +72,8 @@ if (!iconConfig) {
   role="img"
   aria-label={`${provider} icon`}
 >
-  {iconConfig.paths.map((path, index) => (
-    <path key={index} d={path.d} fill={path.fill} />
+  {iconConfig.paths.map((path) => (
+    <path d={path.d} fill={path.fill} />
   ))}
 </svg>
 

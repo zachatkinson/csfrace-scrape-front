@@ -91,15 +91,16 @@ class JobsListIntegration {
       case 'status':
         filtered.sort((a, b) => a.status.localeCompare(b.status));
         break;
-      case 'progress':
+      case 'progress': {
         // Custom sorting logic
         const statusPriority: Record<string, number> = {
           'failed': 0, 'processing': 1, 'queued': 2, 'completed': 3
         };
-        filtered.sort((a, b) => 
+        filtered.sort((a, b) =>
           (statusPriority[a.status] || 999) - (statusPriority[b.status] || 999)
         );
         break;
+      }
     }
 
     this.filteredJobs = filtered;

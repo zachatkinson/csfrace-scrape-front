@@ -3,7 +3,8 @@
  * Handles all backend health monitoring operations
  */
 
-import { SERVER_API_BASE_URL } from 'astro:env/server';
+// Use runtime environment variable for API base URL
+const SERVER_API_BASE_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
 import { ssePerformanceService } from './SSEPerformanceService';
 
 export interface HealthResponse {

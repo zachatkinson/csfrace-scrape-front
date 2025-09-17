@@ -118,7 +118,7 @@ const statusConfig = JOB_STATUS_CONFIG[job.status as keyof typeof JOB_STATUS_CON
           
           <!-- Job Metadata -->
           <div class="flex items-center space-x-4 mt-2 text-xs text-white/50 job-metadata">
-            <span class="job-time" title={job.createdAt ? formatDateTime(job.createdAt) : 'No date'}>
+            <span class="job-time" title={job.createdAt ? formatDateTime(job.createdAt).full : 'No date'}>
               {job.createdAt ? formatRelativeTime(job.createdAt) : 'No date'}
             </span>
             <span class="job-id">ID: {job.id}</span>

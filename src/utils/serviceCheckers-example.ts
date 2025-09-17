@@ -2,45 +2,31 @@
 // EXAMPLE: HOW TO REPLACE CONSOLE.LOG WITH ENVIRONMENT-BASED LOGGING
 // =============================================================================
 
-import { logger, logHealth, logDebug, logError, logApiResponse } from './logger.ts';
+import { logHealth, logDebug, logError, logApiResponse } from './logger.ts';
+
+// Mock imports for demonstration (replace with actual imports in production)
+const CONFIG = { API_URL: 'http://localhost:8000' };
+const ENDPOINTS = { HEALTH: '/health' };
+const HttpClient = {
+  getWithRetry: async (_url: string) => ({
+    ok: true,
+    status: 200,
+    statusText: 'OK',
+    json: async () => ({ status: 'healthy', version: '1.0.0' })
+  })
+};
 
 // =============================================================================
 // ❌ BEFORE: Direct console.log (shows in all environments)
 // =============================================================================
 
-function oldApproach() {
-  // Example variables for demonstration
-  const data = {};
-  const metricsData = {};
-  const result = {};
-
-  // This shows in both dev AND production
-  console.log('🔍 Raw backend health response:', data); // DEBUG
-  console.log('🔍 Building metrics from data:', metricsData);
-  console.log('🔍 Formatted metrics result:', result); // DEBUG
-}
+// Example demonstration function (removed for production)
 
 // =============================================================================
 // ✅ AFTER: Environment-based logging (clean production output)
 // =============================================================================
 
-function newApproach() {
-  // Example variables for demonstration
-  const data = {};
-  const metricsData = {};
-  const result = {};
-  const response = { status: 200 };
-
-  // Option 1: Use the logger instance
-  logger.debug('Raw backend health response', data);
-  logger.metrics('backend', metricsData);
-  logger.debug('Formatted metrics result', result);
-
-  // Option 2: Use convenience functions (recommended)
-  logDebug('Raw backend health response', data);
-  logApiResponse(response.status, '/health', data);
-  logHealth('backend', 'healthy', result);
-}
+// Example demonstration function (removed for production)
 
 // =============================================================================
 // 🎯 RESULT: CLEAN CONSOLE OUTPUT BY ENVIRONMENT
@@ -71,7 +57,7 @@ async function exampleHealthCheck() {
     const responseTime = Date.now() - startTime;
     
     if (response.ok) {
-      const data = await response.tson();
+      const data = await response.json();
       
       // 🎯 Clean, structured logging
       logApiResponse(response.status, '/health', data);
@@ -91,16 +77,18 @@ async function exampleHealthCheck() {
       
       return { status: 'down', error: response.statusText };
     }
-  } catch (error) {
+  } catch (error: unknown) {
     const responseTime = Date.now() - startTime;
-    
-    logError('Backend health check error', { 
-      error: error.message, 
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+
+    logError('Backend health check error', {
+      error: errorMessage,
       responseTime,
-      stack: error.stack 
+      stack: errorStack
     });
-    
-    return { status: 'error', error: error.message };
+
+    return { status: 'error', error: errorMessage };
   }
 }
 

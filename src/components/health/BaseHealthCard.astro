@@ -103,8 +103,8 @@ const responseTime = serviceResult.metrics.responseTime;
     </div>
 
     <!-- Service-specific details -->
-    {details.map(detail => (
-      <div key={detail.key}>
+    {details.map((detail) => (
+      <div>
         <span class="text-white/60">{detail.label}:</span>
         <span class="ml-2 text-white font-mono" data-metric={detail.key}>{detail.value}</span>
       </div>
@@ -120,7 +120,7 @@ const responseTime = serviceResult.metrics.responseTime;
   )}
 </div>
 
-<script type="module">
+<script>
   // =============================================================================
   // ASTRO MCP BEST PRACTICE: Using data attributes instead of define:vars
   // No anti-patterns: Proper event-driven architecture with data attributes
@@ -132,9 +132,12 @@ const responseTime = serviceResult.metrics.responseTime;
   document.addEventListener('DOMContentLoaded', () => {
     const healthCards = document.querySelectorAll('[data-service-name]');
 
-    healthCards.forEach(card => {
-      const serviceName = card.getAttribute('data-service-name');
-      const serviceResult = JSON.parse(card.getAttribute('data-service-result') || '{}');
+    healthCards.forEach((card) => {
+      const htmlCard = card as HTMLElement;
+      const serviceName = htmlCard.getAttribute('data-service-name');
+      const serviceResult = JSON.parse(htmlCard.getAttribute('data-service-result') || '{}');
+
+      if (!serviceName) return; // Skip if serviceName is null
 
       const timestampElementId = `last-check-${serviceName.toLowerCase().replace(/\s+/g, '-')}`;
 
@@ -147,9 +150,9 @@ const responseTime = serviceResult.metrics.responseTime;
       });
 
       // Store cleanup function for proper memory management
-      if (card.dataset.cleanupRegistered !== 'true') {
+      if (htmlCard.dataset.cleanupRegistered !== 'true') {
         window.addEventListener('beforeunload', cleanupTimezoneListener);
-        card.dataset.cleanupRegistered = 'true';
+        htmlCard.dataset.cleanupRegistered = 'true';
       }
     });
   });

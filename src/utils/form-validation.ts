@@ -136,7 +136,14 @@ export class FieldValidator {
   private rules: ValidationRule[] = [];
   private debounceTimeout: number | null = null;
 
-  constructor(private _fieldName: string) {}
+  constructor(private fieldName: string) {}
+
+  /**
+   * Get field name for debugging and error reporting
+   */
+  getFieldName(): string {
+    return this.fieldName;
+  }
 
   /**
    * Add validation rule
@@ -327,7 +334,10 @@ export const FORM_VALIDATORS = {
 
     validator.addField('confirmPassword')
       .addRule({
-        validator: (value: string) => value === validator['formData']?.password,
+        validator: (value: string) => {
+          const formValidator = validator as any;
+          return value === formValidator.formData?.password;
+        },
         message: 'Passwords do not match',
       });
 
@@ -401,7 +411,7 @@ export const ValidationHelpers = {
    */
   formatErrors: (errors: string[]): string => {
     if (errors.length === 0) return '';
-    if (errors.length === 1) return errors[0];
+    if (errors.length === 1) return errors[0] || '';
     return `• ${errors.join('\n• ')}`;
   },
 
@@ -457,7 +467,7 @@ export const ValidationHelpers = {
     result.errors.forEach(error => {
       const [fieldName, message] = error.split(': ');
       const field = formElement.querySelector(`[name="${fieldName}"]`);
-      if (field) {
+      if (field && message) {
         const errorElement = document.createElement('div');
         errorElement.className = 'validation-error text-red-400 text-xs mt-1';
         errorElement.textContent = message;

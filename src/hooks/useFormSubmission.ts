@@ -67,7 +67,7 @@ export function useFormSubmission<TData = Record<string, unknown>>(
       }));
 
       if (submissionResult.success) {
-        onSuccess?.(submissionResult.data || data);
+        onSuccess?.(submissionResult.data as TData || data);
 
         // Reset form if requested (caller would need to handle this)
         if (resetFormOnSuccess) {

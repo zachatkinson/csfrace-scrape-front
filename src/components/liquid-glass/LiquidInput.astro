@@ -5,6 +5,7 @@
  * Following Astro MCP best practices with pure HTML/CSS
  */
 
+
 export interface Props {
   // Label and help text
   label?: string;
@@ -70,7 +71,7 @@ const {
 } = Astro.props;
 
 // Generate unique ID if not provided
-const inputId = id || `liquid-input-${Math.random().toString(36).substr(2, 9)}`;
+const inputId = id || `liquid-input-${Math.random().toString(36).substring(2, 11)}`;
 
 // SOLID: Pure functions for class generation
 const getSizeClasses = (size: string) => {
@@ -168,7 +169,7 @@ const sizeClasses = getSizeClasses(size);
       <!-- Input Field -->
       <input
         id={inputId}
-        type={type}
+        type={type as any}
         name={name}
         value={value}
         placeholder={floatingLabel ? '' : placeholder}
@@ -248,7 +249,7 @@ const sizeClasses = getSizeClasses(size);
 <!-- =============================================================================
      ASTRO ISLANDS SCRIPT (Client-Side Enhancement)
      ============================================================================= -->
-<script type="module">
+<script>
   class LiquidInputManager {
     constructor() {
       this.init();
@@ -295,13 +296,14 @@ const sizeClasses = getSizeClasses(size);
 
     setupClearButtons() {
       document.querySelectorAll('[data-clear-target]').forEach(button => {
-        const targetId = button.dataset.clearTarget;
-        const input = document.getElementById(targetId);
+        const targetId = (button as HTMLElement).dataset.clearTarget;
+        if (!targetId) return;
+        const input = document.getElementById(targetId) as HTMLInputElement;
         
         if (!input) return;
         
         const updateClearButton = () => {
-          if (input.value.length > 0) {
+          if ((input as HTMLInputElement).value.length > 0) {
             button.classList.remove('hidden');
           } else {
             button.classList.add('hidden');
@@ -316,7 +318,7 @@ const sizeClasses = getSizeClasses(size);
         
         // Handle clear button click
         button.addEventListener('click', () => {
-          input.value = '';
+          (input as HTMLInputElement).value = '';
           input.focus();
           updateClearButton();
           

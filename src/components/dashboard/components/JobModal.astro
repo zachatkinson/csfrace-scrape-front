@@ -80,7 +80,7 @@ const {
      MODAL SCRIPT - DRY Implementation using BaseModalManager
      Following SOLID principles with base modal behavior
      ============================================================================= -->
-<script type="module">
+<script>
   import { BaseModalManager } from '/src/scripts/baseModalManager';
 
   // Job Modal Manager extending base functionality
@@ -89,21 +89,23 @@ const {
       super({
         modalId: 'job-modal',
         closeOnEscape: true,
-        closeOnBackdrop: true
+        closeOnBackdrop: true,
+        onOpen: () => {
+          this.loadJobDetails();
+        }
       });
     }
 
-    // Job-specific initialization
-    setupModalSpecificHandlers() {
-      // Handle job data loading when modal opens
-      this.config.onOpen = () => {
-        this.loadJobDetails();
-      };
+    // Job-specific initialization - required by BaseModalManager
+    protected setupModalSpecificHandlers(): void {
+      // Job-specific setup can be done here
+      console.log('🔧 JobModalManager: Setting up job-specific handlers');
     }
 
     // Load job details from nano store
-    async loadJobDetails() {
-      const jobId = this.modal?.dataset.jobId;
+    private async loadJobDetails(): Promise<void> {
+      const modal = this.modalElement;
+      const jobId = modal?.dataset.jobId;
       if (!jobId) return;
 
       const contentEl = document.getElementById('job-details-content');

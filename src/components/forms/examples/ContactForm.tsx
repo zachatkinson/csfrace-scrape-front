@@ -170,9 +170,15 @@ export const ContactForm: React.FC<ContactFormProps> = ({
   return (
     <div className={className}>
       <UnifiedFormBuilder
-        {...contactFormConfig}
+        id={contactFormConfig.id!}
+        {...(contactFormConfig.title && { title: contactFormConfig.title })}
+        {...(contactFormConfig.subtitle && { subtitle: contactFormConfig.subtitle })}
+        fields={contactFormConfig.fields!}
+        {...(contactFormConfig.validateOnBlur !== undefined && { validateOnBlur: contactFormConfig.validateOnBlur })}
+        {...(contactFormConfig.validateOnChange !== undefined && { validateOnChange: contactFormConfig.validateOnChange })}
+        {...(contactFormConfig.submitOnEnter !== undefined && { submitOnEnter: contactFormConfig.submitOnEnter })}
         onSubmit={handleSubmit}
-        onCancel={onCancel}
+        {...(onCancel && { onCancel })}
         showCancel={!!onCancel}
         submitLabel="Send Message"
         cancelLabel="Cancel"
