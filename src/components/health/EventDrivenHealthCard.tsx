@@ -8,7 +8,7 @@ import { useStore } from '@nanostores/react';
 import { $healthData } from '../../stores/healthStore.ts';
 import { getStatusColor, getStatusBorderClass } from '../../utils/health-ui-utilities.ts';
 import type { IServiceResult } from '../../utils/serviceCheckers.ts';
-import { formatTimestamp, onTimezoneChange } from '../../utils/timezone.ts';
+import { formatTimestamp, onTimezoneChange } from '/src/utils/timezone.ts';
 
 interface EventDrivenHealthCardProps {
   serviceName: 'frontend' | 'backend' | 'database' | 'cache';

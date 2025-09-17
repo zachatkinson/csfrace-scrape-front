@@ -1,0 +1,310 @@
+---
+// =============================================================================
+// ASTRO NATIVE FOOTER STATUS COMPONENT - ASTRO MCP COMPLIANT
+// Pure Astro implementation using Islands Architecture
+// =============================================================================
+
+import { formatTimestamp } from '/src/utils/timezone';
+
+// Server-side props (if any needed)
+export interface Props {
+  initialServices?: number;
+  initialUp?: number;
+  initialTotal?: number;
+}
+
+const { 
+  initialServices = 0, 
+  initialUp = 0, 
+  initialTotal = 4 
+} = Astro.props;
+
+// Server-side default state
+const defaultStatus = {
+  status: 'loading',
+  text: 'Loading system status...',
+  color: 'gray'
+};
+---
+
+<!-- =============================================================================
+     ASTRO NATIVE FOOTER STATUS (DRY/SOLID/Astro MCP)
+     ============================================================================= -->
+<div 
+  class="flex items-center space-x-4 footer-health-status" 
+  data-component="health-status"
+  data-initial-services={initialServices}
+  data-initial-up={initialUp}
+  data-initial-total={initialTotal}
+>
+  <!-- Overall Status -->
+  <div class="flex items-center space-x-2">
+    <div
+      class="w-3 h-3 rounded-full status-indicator bg-gray-400 animate-pulse"
+      data-status="loading"
+      id="overall-status-indicator"
+    ></div>
+    <span 
+      class="text-white/80 text-sm font-medium status-text" 
+      id="overall-status-text"
+    >
+      System: Loading...
+    </span>
+  </div>
+
+  <!-- Individual Service Indicators -->
+  <div class="flex items-center space-x-2" id="service-indicators">
+    <!-- Frontend Service -->
+    <div class="flex items-center space-x-1 group relative" data-service="frontend" data-service-index="0">
+      <div class="w-2 h-2 rounded-full status-indicator bg-gray-400 animate-pulse" data-status="loading"></div>
+      <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1
+                  bg-black/80 text-white text-xs rounded opacity-0 group-hover:opacity-100
+                  transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+        <span class="service-tooltip">🌐 Frontend: LOADING | Response: N/A</span>
+      </div>
+    </div>
+
+    <!-- Backend Service -->
+    <div class="flex items-center space-x-1 group relative" data-service="backend" data-service-index="1">
+      <div class="w-2 h-2 rounded-full status-indicator bg-gray-400 animate-pulse" data-status="loading"></div>
+      <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1
+                  bg-black/80 text-white text-xs rounded opacity-0 group-hover:opacity-100
+                  transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+        <span class="service-tooltip">🔧 Backend: LOADING | Response: N/A</span>
+      </div>
+    </div>
+
+    <!-- Database Service -->
+    <div class="flex items-center space-x-1 group relative" data-service="database" data-service-index="2">
+      <div class="w-2 h-2 rounded-full status-indicator bg-gray-400 animate-pulse" data-status="loading"></div>
+      <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1
+                  bg-black/80 text-white text-xs rounded opacity-0 group-hover:opacity-100
+                  transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+        <span class="service-tooltip">🐘 Database: LOADING | Response: N/A</span>
+      </div>
+    </div>
+
+    <!-- Cache Service -->
+    <div class="flex items-center space-x-1 group relative" data-service="cache" data-service-index="3">
+      <div class="w-2 h-2 rounded-full status-indicator bg-gray-400 animate-pulse" data-status="loading"></div>
+      <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1
+                  bg-black/80 text-white text-xs rounded opacity-0 group-hover:opacity-100
+                  transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+        <span class="service-tooltip">⚡ Cache: LOADING | Response: N/A</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Last Update Time -->
+  <div class="text-white/50 text-xs timestamp" id="overall-status-timestamp">
+    Updated: Loading...
+  </div>
+</div>
+
+<!-- =============================================================================
+     ASTRO ISLANDS SCRIPT (DRY/SOLID/Astro MCP Best Practices)
+     ============================================================================= -->
+<script type="module">
+  // Import nano stores for reactive health data (Astro MCP best practice)
+  import { $healthData, $serviceMetrics } from '/src/stores/healthStore';
+  import { formatTimestamp, onTimezoneChange } from '/src/utils/timezone';
+
+  class AstroFooterStatusManager {
+    constructor() {
+      this.isInitialized = false;
+      this.elements = {};
+      this.cleanupCallbacks = [];
+      this.init();
+    }
+
+    async init() {
+      // Wait for DOM to be ready
+      if (document.readyState === 'loading') {
+        await new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve));
+      }
+
+      this.setupElements();
+      this.setupStoreSubscriptions();
+      this.setupTimezoneListener();
+      this.isInitialized = true;
+
+      console.log('🏁 AstroFooterStatus: Initialized with nano stores');
+    }
+
+    setupElements() {
+      this.elements = {
+        container: document.querySelector('[data-component="health-status"]'),
+        overallIndicator: document.getElementById('overall-status-indicator'),
+        overallText: document.getElementById('overall-status-text'),
+        timestamp: document.getElementById('overall-status-timestamp'),
+        serviceIndicators: document.getElementById('service-indicators')
+      };
+    }
+
+    setupStoreSubscriptions() {
+      if (typeof $healthData === 'undefined' || typeof $serviceMetrics === 'undefined') {
+        console.warn('🏁 AstroFooterStatus: Nano stores not available, using fallback');
+        return;
+      }
+
+      // Subscribe to health data changes
+      const unsubscribeHealth = $healthData.subscribe((healthData) => {
+        this.updateHealthDisplay(healthData);
+      });
+
+      // Subscribe to service metrics changes  
+      const unsubscribeMetrics = $serviceMetrics.subscribe((serviceMetrics) => {
+        this.updateMetricsDisplay(serviceMetrics);
+      });
+
+      this.cleanupCallbacks.push(unsubscribeHealth, unsubscribeMetrics);
+    }
+
+    setupTimezoneListener() {
+      if (typeof onTimezoneChange === 'function') {
+        const cleanup = onTimezoneChange(() => {
+          this.updateTimestamp();
+        });
+        this.cleanupCallbacks.push(cleanup);
+      }
+    }
+
+    updateHealthDisplay(healthData) {
+      if (!this.elements.container || !healthData) return;
+
+      const { services, overallStatus } = healthData;
+      
+      // Update overall status
+      if (this.elements.overallIndicator) {
+        this.elements.overallIndicator.className = `w-3 h-3 rounded-full status-indicator ${this.getStatusColorClass(overallStatus.status)}`;
+        this.elements.overallIndicator.setAttribute('data-status', overallStatus.status);
+      }
+
+      // Update individual services
+      this.updateServiceIndicators(services);
+      this.updateTimestamp(healthData.metadata?.timestamp);
+
+      console.log('🏁 AstroFooterStatus: Updated with health data', {
+        status: overallStatus.status,
+        services: Object.keys(services).length
+      });
+    }
+
+    updateMetricsDisplay(serviceMetrics) {
+      if (!this.elements.overallText || !serviceMetrics) return;
+
+      const { up, total, hasAnyData } = serviceMetrics;
+
+      if (hasAnyData) {
+        this.elements.overallText.textContent = `System: ${up}/${total} Services`;
+        console.log('🏁 AstroFooterStatus: Updated metrics', { up, total });
+      } else {
+        this.elements.overallText.textContent = 'System: Loading...';
+      }
+    }
+
+    updateServiceIndicators(services) {
+      if (!services || !this.elements.serviceIndicators) return;
+
+      const serviceDisplay = [
+        { key: 'frontend', name: 'Frontend', icon: '🌐' },
+        { key: 'backend', name: 'Backend', icon: '🔧' },
+        { key: 'database', name: 'Database', icon: '🐘' },
+        { key: 'cache', name: 'Cache', icon: '⚡' }
+      ];
+
+      serviceDisplay.forEach((item, index) => {
+        const serviceElement = this.elements.serviceIndicators.querySelector(`[data-service="${item.key}"]`);
+        const service = services[item.key];
+
+        if (serviceElement && service) {
+          const indicator = serviceElement.querySelector('.status-indicator');
+          const tooltip = serviceElement.querySelector('.service-tooltip');
+
+          if (indicator) {
+            indicator.className = `w-2 h-2 rounded-full status-indicator ${this.getStatusColorClass(service.status)}`;
+            indicator.setAttribute('data-status', service.status);
+          }
+
+          if (tooltip) {
+            const responseTime = service.metrics?.responseTime;
+            const formattedTime = typeof responseTime === 'number' ? `${responseTime}ms` : 'N/A';
+            tooltip.textContent = `${item.icon} ${item.name}: ${service.status.toUpperCase()} | Response: ${formattedTime}`;
+          }
+        }
+      });
+    }
+
+    updateTimestamp(timestamp) {
+      if (!this.elements.timestamp) return;
+
+      if (timestamp && timestamp > 0) {
+        const date = new Date(timestamp);
+        const formatted = typeof formatTimestamp === 'function' ? formatTimestamp(date) : date.toLocaleString();
+        this.elements.timestamp.textContent = `Updated: ${formatted}`;
+      } else {
+        this.elements.timestamp.textContent = 'Updated: Loading...';
+      }
+    }
+
+    getStatusColorClass(status) {
+      switch (status) {
+        case 'up':
+        case 'healthy': return 'bg-green-500';
+        case 'degraded': return 'bg-yellow-500';
+        case 'down': return 'bg-red-500';
+        case 'error': return 'bg-orange-500';
+        default: return 'bg-gray-400';
+      }
+    }
+
+    destroy() {
+      this.cleanupCallbacks.forEach(cleanup => {
+        if (typeof cleanup === 'function') {
+          cleanup();
+        }
+      });
+      this.cleanupCallbacks = [];
+    }
+  }
+
+  // Initialize the Astro footer status manager
+  const footerStatusManager = new AstroFooterStatusManager();
+
+  // Global cleanup for page transitions
+  if (typeof window !== 'undefined') {
+    window.astroFooterStatusManager = footerStatusManager;
+  }
+</script>
+
+<style>
+  /* Additional styles for smooth transitions */
+  .status-indicator {
+    transition: background-color 0.2s ease-in-out;
+  }
+
+  .footer-health-status {
+    /* Ensure consistent spacing and alignment */
+    min-height: 24px;
+  }
+
+  /* Tooltip improvements */
+  .group:hover .opacity-0 {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-2px);
+  }
+
+  /* Loading animation */
+  .animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: .5;
+    }
+  }
+</style>

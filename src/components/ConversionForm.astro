@@ -7,7 +7,7 @@
  */
 
 // For client-side components, always use PUBLIC_API_BASE_URL (browser-accessible)
-import { getApiBaseUrl } from '/src/constants/api.ts';
+import { getApiBaseUrl } from '../constants/api';
 const apiBaseUrl = getApiBaseUrl();
 ---
 
@@ -126,8 +126,8 @@ const apiBaseUrl = getApiBaseUrl();
 <script type="module">
   // Custom element following Astro best practices
   // This script is bundled, optimized, and deduplicated by Astro
-  import { ConversionFormManager } from '/src/scripts/conversionFormManager.ts';
-  import { getApiBaseUrl } from '/src/constants/api.ts';
+  import { ConversionFormManager } from '/src/scripts/conversionFormManager';
+  import { getApiBaseUrl } from '/src/constants/api';
   
   class ConversionForm extends HTMLElement {
     constructor() {

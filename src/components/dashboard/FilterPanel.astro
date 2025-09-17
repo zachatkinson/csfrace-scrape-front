@@ -195,13 +195,13 @@ const sortOptionsData = SORT_OPTIONS.map(option => ({
      ============================================================================= -->
 
 <!-- Central Communication Coordinator (loads first) -->
-<script src="./scripts/filter-coordinator.ts"></script>
+<script type="module" src="/src/components/dashboard/scripts/filter-coordinator.js"></script>
 
 <!-- Individual Manager Islands (load after coordinator) -->
-<script src="./scripts/filter-manager.ts"></script>
-<script src="./scripts/search-manager.ts"></script>
-<script src="./scripts/sort-manager.ts"></script>
-<script src="./scripts/batch-actions.ts"></script>
+<script type="module" src="/src/components/dashboard/scripts/filter-manager.js"></script>
+<script type="module" src="/src/components/dashboard/scripts/search-manager.js"></script>
+<script type="module" src="/src/components/dashboard/scripts/sort-manager.js"></script>
+<script type="module" src="/src/components/dashboard/scripts/batch-actions.js"></script>
 
 <!-- =============================================================================
      COMPONENT STYLES (DRY Principle)

@@ -1,0 +1,394 @@
+---
+/**
+ * LiquidCard - Astro Native Component
+ * Content card with authentic Apple Liquid Glass material system
+ * Following Astro MCP best practices with pure HTML/CSS
+ */
+
+export interface Props {
+  // Card content
+  title?: string;
+  subtitle?: string;
+  
+  // Layout options
+  padding?: 'sm' | 'md' | 'lg' | 'xl';
+  spacing?: 'tight' | 'normal' | 'relaxed';
+  
+  // Visual hierarchy
+  elevation?: 'low' | 'medium' | 'high';
+  
+  // Status indication
+  status?: 'default' | 'success' | 'warning' | 'error' | 'info' | 'processing';
+  
+  // Glass effect options
+  blur?: 'subtle' | 'default' | 'strong';
+  lensing?: boolean;
+  
+  // Custom styling
+  className?: string;
+  
+  // HTML attributes
+  id?: string;
+  'data-card-id'?: string;
+  'data-status'?: string;
+}
+
+const {
+  title,
+  subtitle,
+  padding = 'md',
+  spacing = 'normal', 
+  elevation = 'medium',
+  status = 'default',
+  blur,
+  lensing = false,
+  className = '',
+  id,
+  'data-card-id': dataCardId,
+  'data-status': dataStatus,
+  ...props
+} = Astro.props;
+
+// SOLID: Pure functions for class generation
+const getPaddingClasses = (padding: string): string => {
+  const paddingMap = {
+    'sm': 'p-4',
+    'md': 'p-6',
+    'lg': 'p-8', 
+    'xl': 'p-10'
+  };
+  return paddingMap[padding as keyof typeof paddingMap] || paddingMap.md;
+};
+
+const getSpacingClasses = (spacing: string): string => {
+  const spacingMap = {
+    'tight': 'space-y-2',
+    'normal': 'space-y-4',
+    'relaxed': 'space-y-6'
+  };
+  return spacingMap[spacing as keyof typeof spacingMap] || spacingMap.normal;
+};
+
+const getElevationClasses = (elevation: string): string => {
+  const elevationMap = {
+    'low': 'liquid-glass-low',
+    'medium': 'liquid-glass-medium',
+    'high': 'liquid-glass-high'
+  };
+  return elevationMap[elevation as keyof typeof elevationMap] || elevationMap.medium;
+};
+
+const getStatusClasses = (status: string): string => {
+  if (status === 'default') return '';
+  
+  const statusMap = {
+    'success': 'border-l-4 border-green-500/70',
+    'warning': 'border-l-4 border-yellow-500/70',
+    'error': 'border-l-4 border-red-500/70',
+    'info': 'border-l-4 border-blue-500/70',
+    'processing': 'border-l-4 border-purple-500/70'
+  };
+  
+  return statusMap[status as keyof typeof statusMap] || '';
+};
+
+const getBlurClasses = (blur: string | undefined, elevation: string): string => {
+  // Use elevation-based blur if not explicitly set
+  const effectiveBlur = blur || (elevation === 'low' ? 'subtle' : elevation === 'high' ? 'strong' : 'default');
+  
+  const blurMap = {
+    'subtle': 'backdrop-blur-sm',
+    'default': 'backdrop-blur-md', 
+    'strong': 'backdrop-blur-lg'
+  };
+  
+  return blurMap[effectiveBlur as keyof typeof blurMap] || blurMap.default;
+};
+
+// Generate final card classes
+const cardClasses = [
+  'liquid-glass liquid-card',
+  getPaddingClasses(padding),
+  getSpacingClasses(spacing),
+  getElevationClasses(elevation),
+  getStatusClasses(status),
+  getBlurClasses(blur, elevation),
+  lensing && 'liquid-glass-lensing',
+  className
+].filter(Boolean).join(' ');
+---
+
+<!-- =============================================================================
+     LIQUID CARD (Astro MCP Compliant)
+     Single Responsibility: Display content card with liquid glass styling
+     ============================================================================= -->
+<div
+  id={id}
+  class={cardClasses}
+  data-card-id={dataCardId}
+  data-status={dataStatus || status}
+  data-elevation={elevation}
+  data-padding={padding}
+  data-spacing={spacing}
+  data-lensing={lensing}
+  {...props}
+>
+  
+  <!-- Card Header -->
+  {(title || subtitle || Astro.slots.has('header')) && (
+    <div class="glass-card-header mb-4">
+      
+      <!-- Custom Header Slot -->
+      {Astro.slots.has('header') && (
+        <div class="mb-3">
+          <slot name="header" />
+        </div>
+      )}
+      
+      <!-- Title -->
+      {title && (
+        <h3 class="text-lg font-semibold text-white/90 mb-1">
+          {title}
+        </h3>
+      )}
+      
+      <!-- Subtitle -->
+      {subtitle && (
+        <p class="text-sm text-white/70">
+          {subtitle}
+        </p>
+      )}
+      
+    </div>
+  )}
+  
+  <!-- Card Content -->
+  <div class="glass-card-content">
+    <slot />
+  </div>
+  
+  <!-- Card Footer -->
+  {Astro.slots.has('footer') && (
+    <div class="glass-card-footer mt-4 pt-4 border-t border-white/10">
+      <slot name="footer" />
+    </div>
+  )}
+  
+</div>
+
+<style>
+  /* =============================================================================
+     LIQUID GLASS CARD STYLES (Authentic Apple Design)
+     ============================================================================= */
+  
+  .liquid-glass {
+    /* Base liquid glass material */
+    backdrop-filter: blur(20px) saturate(180%);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .liquid-card {
+    /* Card-specific enhancements */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  }
+  
+  .liquid-card::before {
+    /* Subtle highlight overlay */
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.3),
+      transparent
+    );
+  }
+  
+  /* Elevation Variants */
+  .liquid-glass-low {
+    box-shadow: 
+      0 4px 16px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px) saturate(150%);
+  }
+  
+  .liquid-glass-medium {
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(20px) saturate(180%);
+  }
+  
+  .liquid-glass-high {
+    box-shadow: 
+      0 16px 48px rgba(0, 0, 0, 0.4),
+      0 8px 16px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(24px) saturate(200%);
+    transform: translateY(-2px);
+  }
+  
+  /* Lensing Effect */
+  .liquid-glass-lensing {
+    background: radial-gradient(
+      circle at 50% 50%,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.05) 50%,
+      rgba(255, 255, 255, 0.02) 100%
+    );
+  }
+  
+  .liquid-glass-lensing::after {
+    content: '';
+    position: absolute;
+    top: 10%;
+    left: 10%;
+    right: 10%;
+    bottom: 10%;
+    border-radius: 12px;
+    background: radial-gradient(
+      ellipse at 30% 30%,
+      rgba(255, 255, 255, 0.2) 0%,
+      transparent 70%
+    );
+    pointer-events: none;
+  }
+  
+  /* Interactive States */
+  .liquid-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 
+      0 16px 48px rgba(0, 0, 0, 0.4),
+      0 8px 16px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+  
+  /* Status Indicators */
+  .liquid-card[data-status="success"] {
+    background: linear-gradient(
+      135deg,
+      rgba(16, 185, 129, 0.1) 0%,
+      rgba(255, 255, 255, 0.05) 100%
+    );
+  }
+  
+  .liquid-card[data-status="warning"] {
+    background: linear-gradient(
+      135deg,
+      rgba(245, 158, 11, 0.1) 0%,
+      rgba(255, 255, 255, 0.05) 100%
+    );
+  }
+  
+  .liquid-card[data-status="error"] {
+    background: linear-gradient(
+      135deg,
+      rgba(239, 68, 68, 0.1) 0%,
+      rgba(255, 255, 255, 0.05) 100%
+    );
+  }
+  
+  .liquid-card[data-status="info"] {
+    background: linear-gradient(
+      135deg,
+      rgba(59, 130, 246, 0.1) 0%,
+      rgba(255, 255, 255, 0.05) 100%
+    );
+  }
+  
+  .liquid-card[data-status="processing"] {
+    background: linear-gradient(
+      135deg,
+      rgba(147, 51, 234, 0.1) 0%,
+      rgba(255, 255, 255, 0.05) 100%
+    );
+    position: relative;
+  }
+  
+  .liquid-card[data-status="processing"]::before {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(147, 51, 234, 0.3),
+      transparent
+    );
+    animation: shimmer 2s infinite;
+  }
+  
+  /* Card Content Styling */
+  .glass-card-header {
+    /* Header area styling */
+    position: relative;
+  }
+  
+  .glass-card-content {
+    /* Content area styling */
+    position: relative;
+    z-index: 1;
+  }
+  
+  .glass-card-footer {
+    /* Footer area styling */
+    position: relative;
+  }
+  
+  /* Animations */
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 640px) {
+    .liquid-card[data-padding="lg"],
+    .liquid-card[data-padding="xl"] {
+      padding: 1.5rem; /* Force smaller padding on mobile */
+    }
+  }
+  
+  /* Accessibility enhancements */
+  .liquid-card:focus-within {
+    outline: 2px solid rgba(59, 130, 246, 0.6);
+    outline-offset: 2px;
+  }
+  
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .liquid-card,
+    .liquid-card::before {
+      transition: none !important;
+      animation: none !important;
+      transform: none !important;
+    }
+  }
+  
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .liquid-card {
+      border: 2px solid currentColor;
+      background: transparent;
+    }
+  }
+  
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    .liquid-card {
+      background: rgba(0, 0, 0, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+  }
+</style>

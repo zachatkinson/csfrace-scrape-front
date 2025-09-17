@@ -7,12 +7,12 @@
 
 // Import global styles (includes Tailwind + Liquid Glass)
 import '../../styles/global.css';
-import { getApiBaseUrl } from '/src/constants/api.ts';
-import { TIMING_CONSTANTS } from '../../constants/timing.ts';
+import { getApiBaseUrl } from '../../constants/api';
+import { TIMING_CONSTANTS } from '../../constants/timing';
 // Import Astro View Transitions for SPA-like navigation
 import { ViewTransitions } from 'astro:transitions';
 // Import pure UI component for health status (Astro MCP best practice)
-import { EventDrivenFooterStatus } from '../health/EventDrivenFooterStatus.tsx'; // nanostore → UI
+import EventDrivenFooterStatus from '../health/EventDrivenFooterStatus.astro'; // Astro native component
 // Import DRY/SOLID Auth Modal Component
 import AuthModal from '../auth/AuthModal.astro';
 // Import DRY/SOLID Settings Panel Component
@@ -127,7 +127,7 @@ const {
               <!-- Server Island for Real-time Health Status (DRY/SOLID) -->
               <div class="space-y-3">
                 <!-- Pure UI Component - Reads from nanostore (ASTRO MCP BEST PRACTICE) -->
-                <EventDrivenFooterStatus client:load />
+                <EventDrivenFooterStatus />
               </div>
               
               <!-- Troubleshooting Link -->
@@ -261,8 +261,8 @@ const {
 
     <!-- ASTRO MCP BEST PRACTICE: Global SSE Service in MainLayout -->
     <script type="module">
-      import { formatTimestamp } from '/src/utils/timezone.ts';
-      import { getApiBaseUrl } from '/src/constants/api.ts';
+      import { formatTimestamp } from '/src/utils/timezone';
+      import { getApiBaseUrl } from '/src/constants/api';
 
       // SINGLETON PATTERN: Global health SSE service (Astro MCP best practice)
       if (!window.__healthSSEService) {
@@ -299,7 +299,7 @@ const {
                   console.log('🎯 SSEService: Service update received:', serviceUpdate);
 
                   // Update nanostore (Astro MCP pattern)
-                  const { updateHealthData, getCurrentHealthData } = await import('/src/stores/healthStore.ts');
+                  const { updateHealthData, getCurrentHealthData } = await import('/src/stores/healthStore');
                   const updateTime = new Date(serviceUpdate.timestamp || Date.now());
 
                   let services = {};
@@ -387,7 +387,7 @@ const {
 
     <!-- ASTRO MCP BEST PRACTICE: Global Job SSE Service in MainLayout (DRY pattern) -->
     <script type="module">
-      import { getApiBaseUrl } from '/src/constants/api.ts';
+      import { getApiBaseUrl } from '/src/constants/api';
 
       // SINGLETON PATTERN: Global job SSE service (following same pattern as health SSE)
       if (!window.__jobSSEService) {
@@ -482,28 +482,7 @@ const {
       }
     </script>
 
-    <!-- ASTRO MCP BEST PRACTICE: Health Status Initialization -->
-    <!-- Following DRY/SOLID: Single EventDrivenFooterStatus component with SSE -->
-    <script type="module">
-      import { EventDrivenFooterStatus } from '/src/components/health/EventDrivenFooterStatus.tsx';
-
-      // Initialize React component for health status (Astro MCP compliant)
-      // Static imports work better than dynamic imports in Astro client scripts
-      import { createRoot } from 'react-dom/client';
-
-      document.addEventListener('DOMContentLoaded', () => {
-        const container = document.getElementById('health-status-container');
-        if (container && !container.dataset.initialized) {
-          console.log('🚀 MainLayout: Initializing EventDrivenFooterStatus React component');
-          const root = createRoot(container);
-          root.render(EventDrivenFooterStatus());
-          container.dataset.initialized = 'true';
-        }
-      });
-
-      // SINGLETON PATTERN: Global health system manager (DRY principle)
-      // OLD SSE SERVICE REMOVED - keeping only __healthSSEService to follow DRY principle
-      // This code block was commented out but causing syntax errors - completely removed
-    </script>
+    <!-- ASTRO MCP BEST PRACTICE: Component hydration handled by client:load directive above -->
+    <!-- EventDrivenFooterStatus is automatically initialized by Astro Islands -->
   </body>
 </html>

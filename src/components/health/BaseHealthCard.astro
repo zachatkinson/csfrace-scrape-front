@@ -9,7 +9,7 @@
 // =============================================================================
 
 import type { IServiceResult } from '../../utils/serviceCheckers.ts';
-import { formatTimestamp } from '../../utils/timezone.ts';
+import { formatTimestamp } from '/src/utils/timezone';
 
 export interface Props {
   serviceName: string;
@@ -126,7 +126,7 @@ const responseTime = serviceResult.metrics.responseTime;
   // No anti-patterns: Proper event-driven architecture with data attributes
   // =============================================================================
 
-  import { formatTimestamp, onTimezoneChange } from '../../utils/timezone.ts';
+  import { formatTimestamp, onTimezoneChange } from '/src/utils/timezone';
 
   // ASTRO MCP COMPLIANT: Get data from DOM attributes (not define:vars)
   document.addEventListener('DOMContentLoaded', () => {

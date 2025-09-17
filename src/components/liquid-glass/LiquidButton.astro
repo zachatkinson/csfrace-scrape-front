@@ -1,0 +1,341 @@
+---
+/**
+ * LiquidButton - Astro Native Component  
+ * Interactive button with authentic Apple Liquid Glass material
+ * Following Astro MCP best practices with pure HTML/CSS
+ */
+
+export interface Props {
+  // Button variants
+  variant?: 'primary' | 'secondary' | 'accent' | 'ghost' | 'destructive';
+  
+  // Sizing
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  
+  // State
+  loading?: boolean;
+  disabled?: boolean;
+  
+  // Visual enhancements
+  glow?: boolean;
+  pulse?: boolean;
+  
+  // Layout
+  fullWidth?: boolean;
+  
+  // HTML button attributes
+  type?: 'button' | 'submit' | 'reset';
+  form?: string;
+  className?: string;
+  
+  // Data attributes for client-side interaction
+  'data-action'?: string;
+  'data-target'?: string;
+}
+
+const {
+  variant = 'primary',
+  size = 'md',
+  loading = false,
+  disabled = false,
+  glow = false,
+  pulse = false,
+  fullWidth = false,
+  type = 'button',
+  form,
+  className = '',
+  'data-action': dataAction,
+  'data-target': dataTarget,
+  ...props
+} = Astro.props;
+
+// SOLID: Pure functions for class generation
+const getVariantClasses = (variant: string): string => {
+  const variants = {
+    'primary': 'text-white bg-gradient-to-r from-blue-500/80 to-purple-600/80 hover:from-blue-600/90 hover:to-purple-700/90',
+    'secondary': 'text-white/90 hover:text-white hover:bg-white/10',
+    'accent': 'text-white bg-gradient-to-r from-emerald-500/80 to-cyan-600/80 hover:from-emerald-600/90 hover:to-cyan-700/90',
+    'ghost': 'text-white/80 hover:text-white hover:bg-white/5',
+    'destructive': 'text-white bg-gradient-to-r from-red-500/80 to-pink-600/80 hover:from-red-600/90 hover:to-pink-700/90'
+  };
+  
+  return variants[variant as keyof typeof variants] || variants.primary;
+};
+
+const getSizeClasses = (size: string): string => {
+  const sizes = {
+    'sm': 'px-3 py-2 text-sm',
+    'md': 'px-4 py-2.5 text-base',
+    'lg': 'px-6 py-3 text-lg',
+    'xl': 'px-8 py-4 text-xl'
+  };
+  
+  return sizes[size as keyof typeof sizes] || sizes.md;
+};
+
+const getStateClasses = (disabled: boolean, loading: boolean, glow: boolean, pulse: boolean, fullWidth: boolean): string => {
+  const classes = [];
+  
+  if (disabled || loading) {
+    classes.push('opacity-50 cursor-not-allowed');
+  }
+  
+  if (glow) {
+    classes.push('shadow-[0_0_20px_currentColor]');
+  }
+  
+  if (pulse) {
+    classes.push('animate-pulse');
+  }
+  
+  if (fullWidth) {
+    classes.push('w-full');
+  }
+  
+  return classes.join(' ');
+};
+
+// Generate final button classes
+const buttonClasses = [
+  getVariantClasses(variant),
+  getSizeClasses(size), 
+  getStateClasses(disabled, loading, glow, pulse, fullWidth),
+  'font-medium rounded-glass',
+  'transition-all duration-glass',
+  'flex items-center justify-center gap-2',
+  'focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2 focus:ring-offset-transparent',
+  'active:scale-95',
+  className
+].filter(Boolean).join(' ');
+---
+
+<!-- =============================================================================
+     LIQUID BUTTON (Astro MCP Compliant)
+     Single Responsibility: Display interactive button with liquid glass styling
+     ============================================================================= -->
+<button
+  class:list={[
+    'liquid-glass glass-button liquid-glass-interactive',
+    loading && 'glass-loading',
+    buttonClasses
+  ]}
+  type={type}
+  disabled={disabled || loading}
+  form={form}
+  data-variant={variant}
+  data-size={size}
+  data-action={dataAction}
+  data-target={dataTarget}
+  {...props}
+>
+  <!-- Loading Spinner -->
+  {loading && (
+    <div class="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white">
+    </div>
+  )}
+  
+  <!-- Button Content -->
+  <span class:list={[loading ? 'opacity-0' : 'opacity-100']}>
+    <slot />
+  </span>
+  
+  <!-- Icon Slots -->
+  <span class="flex-shrink-0">
+    <slot name="left-icon" />
+  </span>
+  
+  <span class="flex-shrink-0">
+    <slot name="right-icon" />
+  </span>
+</button>
+
+<!-- =============================================================================
+     ASTRO ISLANDS SCRIPT (Optional Client-Side Enhancement)
+     ============================================================================= -->
+<script type="module">
+  // Optional: Add haptic feedback simulation for enhanced UX
+  class LiquidButtonManager {
+    constructor() {
+      this.init();
+    }
+
+    init() {
+      // Add click feedback to all liquid buttons
+      document.querySelectorAll('.liquid-glass-interactive').forEach(button => {
+        button.addEventListener('click', this.handleClick.bind(this));
+      });
+    }
+
+    handleClick(event) {
+      const button = event.currentTarget;
+      
+      // Skip if disabled or loading
+      if (button.disabled || button.classList.contains('glass-loading')) {
+        event.preventDefault();
+        return;
+      }
+      
+      // Add haptic feedback class temporarily
+      button.classList.add('scale-95');
+      
+      setTimeout(() => {
+        button.classList.remove('scale-95');
+      }, 100);
+      
+      // Handle data-action if present
+      const action = button.dataset.action;
+      const target = button.dataset.target;
+      
+      if (action && target) {
+        // Dispatch custom event for action handling
+        window.dispatchEvent(new CustomEvent('liquidButton:action', {
+          detail: { action, target, button }
+        }));
+      }
+    }
+  }
+
+  // Initialize button manager
+  if (typeof window !== 'undefined') {
+    new LiquidButtonManager();
+  }
+</script>
+
+<style>
+  /* =============================================================================
+     LIQUID GLASS BUTTON STYLES (Authentic Apple Design)
+     ============================================================================= */
+  
+  .liquid-glass {
+    /* Base liquid glass material */
+    backdrop-filter: blur(20px) saturate(180%);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  }
+  
+  .glass-button {
+    /* Button-specific glass effects */
+    position: relative;
+    overflow: hidden;
+    border-radius: 16px;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  
+  .glass-button::before {
+    /* Shimmer effect overlay */
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent
+    );
+    transition: left 0.5s ease;
+  }
+  
+  .glass-button:hover::before {
+    left: 100%;
+  }
+  
+  .liquid-glass-interactive {
+    /* Interactive states */
+    cursor: pointer;
+    transform: translateZ(0); /* Force hardware acceleration */
+  }
+  
+  .liquid-glass-interactive:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+      0 12px 40px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  }
+  
+  .liquid-glass-interactive:active {
+    transform: translateY(0) scale(0.98);
+  }
+  
+  .glass-loading {
+    /* Loading state */
+    pointer-events: none;
+    position: relative;
+  }
+  
+  .glass-loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(4px);
+    border-radius: inherit;
+  }
+  
+  /* Variant-specific enhancements */
+  .glass-button[data-variant="primary"] {
+    box-shadow: 
+      0 8px 32px rgba(59, 130, 246, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  
+  .glass-button[data-variant="accent"] {
+    box-shadow: 
+      0 8px 32px rgba(16, 185, 129, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  
+  .glass-button[data-variant="destructive"] {
+    box-shadow: 
+      0 8px 32px rgba(239, 68, 68, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  
+  /* Size-specific adjustments */
+  .glass-button[data-size="sm"] {
+    border-radius: 12px;
+  }
+  
+  .glass-button[data-size="lg"] {
+    border-radius: 20px;
+  }
+  
+  .glass-button[data-size="xl"] {
+    border-radius: 24px;
+  }
+  
+  /* Accessibility enhancements */
+  .glass-button:focus-visible {
+    outline: 2px solid rgba(59, 130, 246, 0.6);
+    outline-offset: 2px;
+  }
+  
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .glass-button,
+    .glass-button::before,
+    .liquid-glass-interactive {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+  
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .glass-button {
+      border: 2px solid currentColor;
+      background: transparent;
+    }
+  }
+</style>

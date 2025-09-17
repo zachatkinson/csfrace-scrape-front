@@ -2,12 +2,12 @@
  * Job API utilities for fetching and managing conversion jobs
  */
 
-import { getApiBaseUrl } from '../constants/api.ts';
-import { TIMING_CONSTANTS } from '../constants/timing.ts';
+import { getApiBaseUrl } from '../constants/api';
+import { TIMING_CONSTANTS } from '../constants/timing';
 import type {
   SimpleJob as Job,
   SimpleJobListResponse as JobListResponse
-} from '../types/job.ts';
+} from '../types/job';
 
 class JobAPI {
   private baseUrl: string;

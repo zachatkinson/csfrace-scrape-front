@@ -1,0 +1,483 @@
+---
+/**
+ * LiquidInput - Astro Native Component
+ * Form input with authentic Apple Liquid Glass material
+ * Following Astro MCP best practices with pure HTML/CSS
+ */
+
+export interface Props {
+  // Label and help text
+  label?: string;
+  helperText?: string;
+  errorText?: string;
+  
+  // Visual variants
+  size?: 'sm' | 'md' | 'lg';
+  variant?: 'default' | 'filled' | 'minimal';
+  
+  // States
+  error?: boolean;
+  success?: boolean;
+  loading?: boolean;
+  
+  // Enhanced features
+  floatingLabel?: boolean;
+  clearable?: boolean;
+  
+  // Custom styling
+  className?: string;
+  inputClassName?: string;
+  
+  // Standard input attributes
+  type?: string;
+  name?: string;
+  value?: string;
+  placeholder?: string;
+  disabled?: boolean;
+  required?: boolean;
+  readonly?: boolean;
+  id?: string;
+  
+  // Data attributes for client-side interaction
+  'data-action'?: string;
+  'data-target'?: string;
+}
+
+const {
+  label,
+  helperText,
+  errorText,
+  size = 'md',
+  variant = 'default',
+  error = false,
+  success = false,
+  loading = false,
+  floatingLabel = false,
+  clearable = false,
+  className = '',
+  inputClassName = '',
+  type = 'text',
+  name,
+  value,
+  placeholder,
+  disabled = false,
+  required = false,
+  readonly = false,
+  id,
+  'data-action': dataAction,
+  'data-target': dataTarget,
+  ...props
+} = Astro.props;
+
+// Generate unique ID if not provided
+const inputId = id || `liquid-input-${Math.random().toString(36).substr(2, 9)}`;
+
+// SOLID: Pure functions for class generation
+const getSizeClasses = (size: string) => {
+  const sizes = {
+    'sm': {
+      container: 'h-9',
+      input: 'px-3 py-2 text-sm',
+      icon: 'w-4 h-4'
+    },
+    'md': {
+      container: 'h-11', 
+      input: 'px-4 py-3 text-base',
+      icon: 'w-5 h-5'
+    },
+    'lg': {
+      container: 'h-13',
+      input: 'px-5 py-4 text-lg',
+      icon: 'w-6 h-6'
+    }
+  };
+  
+  return sizes[size as keyof typeof sizes] || sizes.md;
+};
+
+const getStateClasses = (error: boolean, success: boolean, disabled: boolean): string => {
+  const classes = [];
+  
+  if (error) {
+    classes.push('border-red-500/50 focus-within:border-red-500 focus-within:ring-red-500/20');
+  } else if (success) {
+    classes.push('border-green-500/50 focus-within:border-green-500 focus-within:ring-green-500/20');
+  } else {
+    classes.push('border-white/20 focus-within:border-blue-500/50 focus-within:ring-blue-500/20');
+  }
+  
+  if (disabled) {
+    classes.push('opacity-50 cursor-not-allowed');
+  }
+  
+  return classes.join(' ');
+};
+
+const getVariantClasses = (variant: string): string => {
+  switch (variant) {
+    case 'filled':
+      return 'bg-white/10 border-white/30';
+    case 'minimal':
+      return 'bg-transparent border-0 border-b-2 rounded-none';
+    default:
+      return 'bg-white/5 border-white/20';
+  }
+};
+
+const sizeClasses = getSizeClasses(size);
+---
+
+<!-- =============================================================================
+     LIQUID INPUT (Astro MCP Compliant)
+     Single Responsibility: Display form input with liquid glass styling
+     ============================================================================= -->
+<div class:list={['relative liquid-input-container', className]} data-size={size} data-variant={variant}>
+  
+  <!-- Static Label -->
+  {label && !floatingLabel && (
+    <label 
+      for={inputId} 
+      class="block text-sm font-medium text-white/80 mb-2"
+    >
+      {label}
+    </label>
+  )}
+  
+  <!-- Input Container -->
+  <div class="relative">
+    <div 
+      class:list={[
+        'liquid-glass liquid-glass-input relative flex items-center',
+        'transition-all duration-glass',
+        'focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-offset-transparent',
+        sizeClasses.container,
+        getVariantClasses(variant),
+        getStateClasses(error, success, disabled)
+      ]}
+      data-floating-label={floatingLabel}
+      data-has-value={Boolean(value)}
+      data-error={error}
+      data-success={success}
+    >
+      
+      <!-- Left Icon Slot -->
+      <div class:list={['flex-shrink-0 text-white/60 ml-3', sizeClasses.icon]}>
+        <slot name="left-icon" />
+      </div>
+      
+      <!-- Input Field -->
+      <input
+        id={inputId}
+        type={type}
+        name={name}
+        value={value}
+        placeholder={floatingLabel ? '' : placeholder}
+        disabled={disabled}
+        required={required}
+        readonly={readonly}
+        data-action={dataAction}
+        data-target={dataTarget}
+        class:list={[
+          'flex-1 bg-transparent border-none outline-none',
+          'text-white placeholder:text-white/50',
+          sizeClasses.input,
+          inputClassName
+        ]}
+        {...props}
+      />
+      
+      <!-- Floating Label -->
+      {floatingLabel && label && (
+        <label
+          for={inputId}
+          class:list={[
+            'floating-label absolute left-4 text-white/60 pointer-events-none',
+            'transition-all duration-glass origin-left',
+            error && 'error-state',
+            success && 'success-state'
+          ]}
+        >
+          {label}
+        </label>
+      )}
+      
+      <!-- Right Icons Container -->
+      <div class="flex items-center gap-2 mr-3">
+        
+        <!-- Loading Spinner -->
+        {loading && (
+          <div class="animate-spin rounded-full w-4 h-4 border-2 border-white/30 border-t-white">
+          </div>
+        )}
+        
+        <!-- Clear Button -->
+        {clearable && (
+          <button
+            type="button"
+            class="clear-button hidden text-white/60 hover:text-white/80 transition-colors"
+            data-clear-target={inputId}
+            tabindex="-1"
+          >
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+        
+        <!-- Right Icon Slot -->
+        <div class:list={['flex-shrink-0 text-white/60', sizeClasses.icon]}>
+          <slot name="right-icon" />
+        </div>
+        
+      </div>
+    </div>
+  </div>
+  
+  <!-- Helper Text -->
+  {(helperText || errorText) && (
+    <p class:list={[
+      'mt-2 text-sm',
+      error ? 'text-red-400' : 'text-white/60'
+    ]}>
+      {error ? errorText : helperText}
+    </p>
+  )}
+  
+</div>
+
+<!-- =============================================================================
+     ASTRO ISLANDS SCRIPT (Client-Side Enhancement)
+     ============================================================================= -->
+<script type="module">
+  class LiquidInputManager {
+    constructor() {
+      this.init();
+    }
+
+    init() {
+      // Setup floating labels
+      this.setupFloatingLabels();
+      
+      // Setup clear buttons
+      this.setupClearButtons();
+      
+      // Setup focus states
+      this.setupFocusStates();
+    }
+
+    setupFloatingLabels() {
+      document.querySelectorAll('[data-floating-label="true"]').forEach(container => {
+        const input = container.querySelector('input');
+        const label = container.querySelector('.floating-label');
+        
+        if (!input || !label) return;
+        
+        const updateLabelPosition = () => {
+          const hasValue = input.value.length > 0;
+          const isFocused = document.activeElement === input;
+          
+          if (hasValue || isFocused) {
+            label.classList.add('floating');
+          } else {
+            label.classList.remove('floating');
+          }
+        };
+        
+        // Initial state
+        updateLabelPosition();
+        
+        // Update on input and focus changes
+        input.addEventListener('input', updateLabelPosition);
+        input.addEventListener('focus', updateLabelPosition);
+        input.addEventListener('blur', updateLabelPosition);
+      });
+    }
+
+    setupClearButtons() {
+      document.querySelectorAll('[data-clear-target]').forEach(button => {
+        const targetId = button.dataset.clearTarget;
+        const input = document.getElementById(targetId);
+        
+        if (!input) return;
+        
+        const updateClearButton = () => {
+          if (input.value.length > 0) {
+            button.classList.remove('hidden');
+          } else {
+            button.classList.add('hidden');
+          }
+        };
+        
+        // Initial state
+        updateClearButton();
+        
+        // Update on input changes
+        input.addEventListener('input', updateClearButton);
+        
+        // Handle clear button click
+        button.addEventListener('click', () => {
+          input.value = '';
+          input.focus();
+          updateClearButton();
+          
+          // Dispatch input event for any listeners
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+      });
+    }
+
+    setupFocusStates() {
+      document.querySelectorAll('.liquid-input-container input').forEach(input => {
+        const container = input.closest('.liquid-glass-input');
+        
+        if (!container) return;
+        
+        input.addEventListener('focus', () => {
+          container.classList.add('focused');
+        });
+        
+        input.addEventListener('blur', () => {
+          container.classList.remove('focused');
+        });
+      });
+    }
+  }
+
+  // Initialize input manager
+  if (typeof window !== 'undefined') {
+    new LiquidInputManager();
+  }
+</script>
+
+<style>
+  /* =============================================================================
+     LIQUID GLASS INPUT STYLES (Authentic Apple Design)
+     ============================================================================= */
+  
+  .liquid-glass-input {
+    /* Base glass input styling */
+    backdrop-filter: blur(20px) saturate(180%);
+    border-radius: 12px;
+    border: 1px solid;
+    box-shadow: 
+      0 4px 16px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  }
+  
+  .liquid-glass-input.focused {
+    /* Enhanced focus state */
+    transform: translateY(-1px);
+    box-shadow: 
+      0 8px 24px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Floating Label States */
+  .floating-label {
+    /* Default position */
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.6);
+  }
+  
+  .floating-label.floating {
+    /* Floating position */
+    top: -8px;
+    transform: translateY(0) scale(0.85);
+    background: linear-gradient(to right, 
+      rgba(255, 255, 255, 0.1), 
+      rgba(255, 255, 255, 0.2), 
+      rgba(255, 255, 255, 0.1)
+    );
+    padding: 0 8px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+  }
+  
+  .floating-label.error-state {
+    color: rgba(239, 68, 68, 0.8);
+  }
+  
+  .floating-label.success-state {
+    color: rgba(16, 185, 129, 0.8);
+  }
+  
+  /* Variant-specific styles */
+  .liquid-input-container[data-variant="filled"] .liquid-glass-input {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+  
+  .liquid-input-container[data-variant="minimal"] .liquid-glass-input {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0;
+    box-shadow: none;
+  }
+  
+  .liquid-input-container[data-variant="minimal"] .liquid-glass-input.focused {
+    border-bottom-color: rgba(59, 130, 246, 0.8);
+    transform: none;
+    box-shadow: 0 2px 0 rgba(59, 130, 246, 0.3);
+  }
+  
+  /* Size-specific adjustments */
+  .liquid-input-container[data-size="sm"] .liquid-glass-input {
+    border-radius: 8px;
+  }
+  
+  .liquid-input-container[data-size="lg"] .liquid-glass-input {
+    border-radius: 16px;
+  }
+  
+  /* State colors */
+  .liquid-glass-input[data-error="true"] {
+    border-color: rgba(239, 68, 68, 0.5);
+  }
+  
+  .liquid-glass-input[data-success="true"] {
+    border-color: rgba(16, 185, 129, 0.5);
+  }
+  
+  /* Clear button enhancement */
+  .clear-button {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  
+  .liquid-glass-input:hover .clear-button:not(.hidden) {
+    opacity: 1;
+  }
+  
+  /* Accessibility enhancements */
+  .liquid-glass-input:focus-within {
+    outline: 2px solid rgba(59, 130, 246, 0.6);
+    outline-offset: 2px;
+  }
+  
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .liquid-glass-input,
+    .floating-label,
+    .clear-button {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+  
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .liquid-glass-input {
+      border: 2px solid currentColor;
+      background: transparent;
+    }
+    
+    .floating-label {
+      background: var(--bg-color, #000);
+    }
+  }
+</style>

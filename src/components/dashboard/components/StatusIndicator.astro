@@ -9,7 +9,7 @@
 // IMPORTS & TYPES
 // =============================================================================
 import { DASHBOARD_CSS_CLASSES } from '../types/dashboard.types';
-import { formatTimestamp } from '../../../utils/timezone.ts';
+import { formatTimestamp } from '/src/utils/timezone';
 
 // =============================================================================
 // COMPONENT PROPS
@@ -97,7 +97,7 @@ const formatLastUpdated = (date?: Date): string => {
   // No anti-patterns: Proper event-driven architecture with data attributes
   // =============================================================================
 
-  import { formatTimestamp, onTimezoneChange } from '../../../utils/timezone.ts';
+  import { formatTimestamp, onTimezoneChange } from '/src/utils/timezone';
 
   // ASTRO MCP COMPLIANT: Get data from DOM attributes (not define:vars)
   document.addEventListener('DOMContentLoaded', () => {

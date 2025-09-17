@@ -3,8 +3,8 @@
  * Provides typed interfaces for all backend endpoints
  */
 
-import { getApiBaseUrl } from '../constants/api.ts';
-import type { JobStatus } from '../types/job.ts';
+import { getApiBaseUrl } from '../constants/api';
+import type { JobStatus } from '../types/job';
 import {
   EnhancedApiClient,
   EnhancedApiError,

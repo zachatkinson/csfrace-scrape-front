@@ -7,8 +7,8 @@
  * =============================================================================
  */
 
-import { domUtils, waitForDOM } from '../utils/dom.utils.js';
-import type { IDashboardState, IDashboardStats } from '../types/dashboard.types.js';
+import { domUtils, waitForDOM } from '../utils/dom.utils';
+import type { IDashboardState, IDashboardStats } from '../types/dashboard.types';
 
 // =============================================================================
 // DASHBOARD COORDINATOR CLASS (Single Responsibility Principle)

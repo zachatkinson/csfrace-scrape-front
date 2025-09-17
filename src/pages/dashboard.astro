@@ -19,7 +19,7 @@ import DashboardHeader from '../components/dashboard/components/DashboardHeader.
 import FilterPanel from '../components/dashboard/FilterPanel.astro';
 import DashboardJobs from '../components/dashboard/DashboardJobs.astro';
 import JobModal from '../components/dashboard/components/JobModal.astro';
-import DashboardManager from '../components/dashboard/DashboardManager.tsx';
+
 
 // =============================================================================
 // COMPONENT PROPS (Interface Segregation Principle)
@@ -128,9 +128,9 @@ const modalProps = {
   <JobModal {...modalProps} />
   
   <!-- =================================================================
-       CLIENT-SIDE ENHANCEMENT - REACT ISLAND (Astro MCP Pattern)
+       CLIENT-SIDE ENHANCEMENT - COORDINATION VIA ASTRO ISLANDS
        ================================================================= -->
-  <DashboardManager client:idle />
+  <!-- DashboardCoordinator loaded via script below (following Astro MCP best practice) -->
   
 </MainLayout>
 
@@ -142,7 +142,7 @@ const modalProps = {
 // Use dynamic import for client-side module loading (Astro best practice)
 async function initializeDashboard() {
   try {
-    const { DashboardCoordinator } = await import('/src/components/dashboard/scripts/dashboard-coordinator.js');
+    const { DashboardCoordinator } = await import('/src/components/dashboard/scripts/dashboard-coordinator');
 
     // Initialize dashboard coordinator when DOM is ready
     const dashboardCoordinator = new DashboardCoordinator();
