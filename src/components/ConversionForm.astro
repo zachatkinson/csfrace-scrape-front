@@ -126,27 +126,29 @@ const apiBaseUrl = getApiBaseUrl();
 <script type="module">
   // Custom element following Astro best practices
   // This script is bundled, optimized, and deduplicated by Astro
-  import { ConversionFormManager } from '/src/scripts/conversionFormManager';
-  import { getApiBaseUrl } from '/src/constants/api';
-  
+
   class ConversionForm extends HTMLElement {
     constructor() {
       super();
       this.formManager = null;
     }
 
-    connectedCallback() {
+    async connectedCallback() {
+      // Dynamically import modules to avoid TypeScript execution errors in browser
+      const { ConversionFormManager } = await import('/src/scripts/conversionFormManager');
+      const { getApiBaseUrl } = await import('/src/constants/api');
+
       // Read configuration from data attributes (Astro best practice)
       const apiUrl = this.dataset.apiUrl || getApiBaseUrl();
       const defaultMode = this.dataset.defaultMode || 'bulk';
-      
+
       // Initialize form manager
       this.formManager = new ConversionFormManager({
         apiBaseUrl: apiUrl,
         container: this,
         defaultMode
       });
-      
+
       // Initialize the form functionality
       this.formManager.init();
       
