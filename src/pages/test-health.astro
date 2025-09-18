@@ -69,13 +69,48 @@ import MainLayout from '../components/layout/MainLayout.astro';
       </div>
     </div>
 
-    <!-- Service Status Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Service Status Cards - 4 Card Layout -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
-      <!-- Backend API Service -->
+      <!-- Frontend Service -->
       <div class="glass-card p-6">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-xl font-semibold text-white">Backend API</h3>
+          <h3 class="text-xl font-semibold text-white">Frontend</h3>
+          <div class="flex items-center">
+            <span id="frontend-status" class="status-circle status-up"></span>
+            <span class="text-sm text-white/70">Status</span>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div>
+            <span class="text-white/60 text-sm">Message:</span>
+            <div id="frontend-message" class="text-white">Frontend Active</div>
+          </div>
+
+          <div>
+            <span class="text-white/60 text-sm">Response Time:</span>
+            <div id="frontend-latency" class="text-white font-mono">-</div>
+          </div>
+
+          <div>
+            <span class="text-white/60 text-sm">Last Check:</span>
+            <div id="frontend-last-updated" class="text-white/80 text-sm">Never</div>
+          </div>
+        </div>
+
+        <button
+          id="refresh-frontend-btn"
+          class="w-full mt-4 glass-button px-3 py-2 text-white/80 hover:text-white border border-white/20 hover:border-white/40 rounded transition-all duration-200"
+        >
+          Refresh Frontend
+        </button>
+      </div>
+
+      <!-- Backend Service -->
+      <div class="glass-card p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-xl font-semibold text-white">Backend</h3>
           <div class="flex items-center">
             <span id="backend-status" class="status-circle status-up"></span>
             <span class="text-sm text-white/70">Status</span>
@@ -107,12 +142,12 @@ import MainLayout from '../components/layout/MainLayout.astro';
         </button>
       </div>
 
-      <!-- Database Service -->
+      <!-- PostgreSQL Database -->
       <div class="glass-card p-6">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-xl font-semibold text-white">Database</h3>
+          <h3 class="text-xl font-semibold text-white">PostgreSQL</h3>
           <div class="flex items-center">
-            <span id="database-status" class="status-circle status-up"></span>
+            <span id="postgresql-status" class="status-circle status-up"></span>
             <span class="text-sm text-white/70">Status</span>
           </div>
         </div>
@@ -120,27 +155,34 @@ import MainLayout from '../components/layout/MainLayout.astro';
         <div class="space-y-3">
           <div>
             <span class="text-white/60 text-sm">Message:</span>
-            <div id="database-message" class="text-white">Via Backend Health Check</div>
+            <div id="postgresql-message" class="text-white">Via Backend Health Check</div>
           </div>
 
           <div>
             <span class="text-white/60 text-sm">Response Time:</span>
-            <div id="database-latency" class="text-white font-mono">-</div>
+            <div id="postgresql-latency" class="text-white font-mono">-</div>
           </div>
 
           <div>
             <span class="text-white/60 text-sm">Last Check:</span>
-            <div id="database-last-updated" class="text-white/80 text-sm">Never</div>
+            <div id="postgresql-last-updated" class="text-white/80 text-sm">Never</div>
           </div>
         </div>
+
+        <button
+          id="refresh-postgresql-btn"
+          class="w-full mt-4 glass-button px-3 py-2 text-white/80 hover:text-white border border-white/20 hover:border-white/40 rounded transition-all duration-200"
+        >
+          Refresh PostgreSQL
+        </button>
       </div>
 
-      <!-- Cache Service -->
+      <!-- Redis Cache -->
       <div class="glass-card p-6">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-xl font-semibold text-white">Cache (Redis)</h3>
+          <h3 class="text-xl font-semibold text-white">Redis</h3>
           <div class="flex items-center">
-            <span id="cache-status" class="status-circle status-up"></span>
+            <span id="redis-status" class="status-circle status-up"></span>
             <span class="text-sm text-white/70">Status</span>
           </div>
         </div>
@@ -148,19 +190,26 @@ import MainLayout from '../components/layout/MainLayout.astro';
         <div class="space-y-3">
           <div>
             <span class="text-white/60 text-sm">Message:</span>
-            <div id="cache-message" class="text-white">Via Backend Health Check</div>
+            <div id="redis-message" class="text-white">Via Backend Health Check</div>
           </div>
 
           <div>
             <span class="text-white/60 text-sm">Response Time:</span>
-            <div id="cache-latency" class="text-white font-mono">-</div>
+            <div id="redis-latency" class="text-white font-mono">-</div>
           </div>
 
           <div>
             <span class="text-white/60 text-sm">Last Check:</span>
-            <div id="cache-last-updated" class="text-white/80 text-sm">Never</div>
+            <div id="redis-last-updated" class="text-white/80 text-sm">Never</div>
           </div>
         </div>
+
+        <button
+          id="refresh-redis-btn"
+          class="w-full mt-4 glass-button px-3 py-2 text-white/80 hover:text-white border border-white/20 hover:border-white/40 rounded transition-all duration-200"
+        >
+          Refresh Redis
+        </button>
       </div>
     </div>
 
@@ -204,6 +253,156 @@ import MainLayout from '../components/layout/MainLayout.astro';
           <input id="auto-refresh-toggle" type="checkbox" class="sr-only peer">
           <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
         </label>
+      </div>
+    </div>
+
+    <!-- System Performance Overview -->
+    <div class="glass-card p-6">
+      <h3 class="text-xl font-semibold text-white mb-4">System Performance Overview</h3>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <!-- CPU Usage -->
+        <div class="bg-black/20 p-4 rounded-lg">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-white/60 text-sm">CPU Usage</span>
+            <span id="cpu-usage" class="text-white font-bold">--%</span>
+          </div>
+          <div class="w-full bg-gray-700 rounded-full h-2">
+            <div id="cpu-progress" class="bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- Memory Usage -->
+        <div class="bg-black/20 p-4 rounded-lg">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-white/60 text-sm">Memory Usage</span>
+            <span id="memory-usage" class="text-white font-bold">--%</span>
+          </div>
+          <div class="w-full bg-gray-700 rounded-full h-2">
+            <div id="memory-progress" class="bg-green-600 h-2 rounded-full" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- Disk Usage -->
+        <div class="bg-black/20 p-4 rounded-lg">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-white/60 text-sm">Disk Usage</span>
+            <span id="disk-usage" class="text-white font-bold">--%</span>
+          </div>
+          <div class="w-full bg-gray-700 rounded-full h-2">
+            <div id="disk-progress" class="bg-yellow-600 h-2 rounded-full" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- Network I/O -->
+        <div class="bg-black/20 p-4 rounded-lg">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-white/60 text-sm">Network I/O</span>
+            <span id="network-io" class="text-white font-bold">-- KB/s</span>
+          </div>
+          <div class="w-full bg-gray-700 rounded-full h-2">
+            <div id="network-progress" class="bg-purple-600 h-2 rounded-full" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Performance Metrics -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div>
+          <h4 class="text-lg font-medium text-white mb-3">Response Times</h4>
+          <div class="space-y-2">
+            <div class="flex justify-between">
+              <span class="text-white/60">Average Response:</span>
+              <span id="avg-response" class="text-white font-mono">-- ms</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-white/60">P95 Response:</span>
+              <span id="p95-response" class="text-white font-mono">-- ms</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-white/60">Max Response:</span>
+              <span id="max-response" class="text-white font-mono">-- ms</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="text-lg font-medium text-white mb-3">System Load</h4>
+          <div class="space-y-2">
+            <div class="flex justify-between">
+              <span class="text-white/60">Active Connections:</span>
+              <span id="active-connections" class="text-white font-mono">--</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-white/60">Queue Length:</span>
+              <span id="queue-length" class="text-white font-mono">--</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-white/60">Uptime:</span>
+              <span id="system-uptime" class="text-white font-mono">--</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Raw Data Export -->
+    <div class="glass-card p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-xl font-semibold text-white">Raw Data Export</h3>
+        <div class="flex gap-2">
+          <button id="export-json-btn" class="glass-button px-4 py-2 text-white/80 hover:text-white border border-white/20 hover:border-white/40 rounded transition-all duration-200">
+            Export JSON
+          </button>
+          <button id="export-csv-btn" class="glass-button px-4 py-2 text-white/80 hover:text-white border border-white/20 hover:border-white/40 rounded transition-all duration-200">
+            Export CSV
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div>
+          <h4 class="text-lg font-medium text-white mb-3">Health Data Preview</h4>
+          <div class="bg-black/40 p-4 rounded-lg h-64 overflow-auto">
+            <pre id="raw-health-data" class="text-green-400 text-xs font-mono whitespace-pre-wrap">Loading health data...</pre>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="text-lg font-medium text-white mb-3">Export Options</h4>
+          <div class="space-y-4">
+            <div>
+              <label class="flex items-center">
+                <input type="checkbox" id="include-historical" class="mr-2">
+                <span class="text-white/80">Include Historical Data (Last 24h)</span>
+              </label>
+            </div>
+            <div>
+              <label class="flex items-center">
+                <input type="checkbox" id="include-metrics" class="mr-2" checked>
+                <span class="text-white/80">Include Performance Metrics</span>
+              </label>
+            </div>
+            <div>
+              <label class="flex items-center">
+                <input type="checkbox" id="include-errors" class="mr-2" checked>
+                <span class="text-white/80">Include Error Logs</span>
+              </label>
+            </div>
+            <div>
+              <label class="block text-white/80 mb-2">Time Range:</label>
+              <select id="time-range" class="w-full bg-black/40 text-white border border-white/20 rounded px-3 py-2">
+                <option value="1h">Last Hour</option>
+                <option value="6h">Last 6 Hours</option>
+                <option value="24h" selected>Last 24 Hours</option>
+                <option value="7d">Last 7 Days</option>
+              </select>
+            </div>
+            <button id="generate-report-btn" class="w-full glass-button px-4 py-3 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-500/50 hover:border-blue-500/70 rounded-lg transition-all duration-200">
+              Generate Detailed Report
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>

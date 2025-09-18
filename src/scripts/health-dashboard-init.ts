@@ -33,9 +33,21 @@ class HealthDashboard {
       this.manager.refreshAllServices();
     });
 
-    // Refresh individual backend service
+    // Refresh individual service buttons
+    document.getElementById('refresh-frontend-btn')?.addEventListener('click', () => {
+      this.manager.refreshSingleService('frontend');
+    });
+
     document.getElementById('refresh-backend-btn')?.addEventListener('click', () => {
       this.manager.refreshSingleService('backend');
+    });
+
+    document.getElementById('refresh-postgresql-btn')?.addEventListener('click', () => {
+      this.manager.refreshSingleService('postgresql');
+    });
+
+    document.getElementById('refresh-redis-btn')?.addEventListener('click', () => {
+      this.manager.refreshSingleService('redis');
     });
 
     // Auto-refresh toggle
@@ -61,6 +73,25 @@ class HealthDashboard {
     document.getElementById('test-cors-btn')?.addEventListener('click', () => {
       this.runDiagnostic('cors');
     });
+
+    // Export buttons
+    document.getElementById('export-json-btn')?.addEventListener('click', () => {
+      this.exportHealthData('json');
+    });
+
+    document.getElementById('export-csv-btn')?.addEventListener('click', () => {
+      this.exportHealthData('csv');
+    });
+
+    document.getElementById('generate-report-btn')?.addEventListener('click', () => {
+      this.generateDetailedReport();
+    });
+
+    // Initialize performance metrics mock data
+    this.initializePerformanceMetrics();
+
+    // Initialize raw health data preview
+    this.initializeRawDataPreview();
 
     // Cleanup on page unload
     window.addEventListener('beforeunload', () => {
@@ -94,6 +125,312 @@ class HealthDashboard {
 
       resultsEl.innerHTML += result;
     }, 1000);
+  }
+
+  private exportHealthData(format: 'json' | 'csv'): void {
+    // Get current health data from the raw data preview
+    const rawDataEl = document.getElementById('raw-health-data');
+    if (!rawDataEl) return;
+
+    const timestamp = new Date().toISOString();
+    const filename = `health-data-${timestamp.split('T')[0]}.${format}`;
+
+    try {
+      const healthData = JSON.parse(rawDataEl.textContent || '{}');
+
+      let content: string;
+      let mimeType: string;
+
+      if (format === 'json') {
+        content = JSON.stringify(healthData, null, 2);
+        mimeType = 'application/json';
+      } else {
+        // Convert to CSV
+        content = this.convertToCSV(healthData);
+        mimeType = 'text/csv';
+      }
+
+      // Create and download file
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      // Show success message in diagnostic results
+      const resultsEl = document.getElementById('diagnostic-results');
+      if (resultsEl) {
+        resultsEl.innerHTML = `<div class="text-green-400">[${new Date().toLocaleTimeString()}] Exported ${format.toUpperCase()}: ${filename}</div>`;
+      }
+    } catch (error) {
+      const resultsEl = document.getElementById('diagnostic-results');
+      if (resultsEl) {
+        resultsEl.innerHTML = `<div class="text-red-400">[${new Date().toLocaleTimeString()}] Export failed: ${error}</div>`;
+      }
+    }
+  }
+
+  private convertToCSV(data: any): string {
+    const headers = ['Service', 'Status', 'Response Time (ms)', 'Last Check', 'Message'];
+    const rows = [headers.join(',')];
+
+    if (data.services) {
+      Object.keys(data.services).forEach(serviceName => {
+        const service = data.services[serviceName];
+        const row = [
+          serviceName,
+          service.status || 'unknown',
+          service.response_time || '',
+          service.last_check || '',
+          `"${service.message || ''}"`
+        ];
+        rows.push(row.join(','));
+      });
+    }
+
+    return rows.join('\n');
+  }
+
+  private generateDetailedReport(): void {
+    const includeHistorical = (document.getElementById('include-historical') as HTMLInputElement)?.checked || false;
+    const includeMetrics = (document.getElementById('include-metrics') as HTMLInputElement)?.checked || false;
+    const includeErrors = (document.getElementById('include-errors') as HTMLInputElement)?.checked || false;
+    const timeRange = (document.getElementById('time-range') as HTMLSelectElement)?.value || '24h';
+
+    const timestamp = new Date().toISOString();
+    const reportData = {
+      generated_at: timestamp,
+      time_range: timeRange,
+      options: {
+        include_historical: includeHistorical,
+        include_metrics: includeMetrics,
+        include_errors: includeErrors
+      },
+      current_status: JSON.parse(document.getElementById('raw-health-data')?.textContent || '{}'),
+      performance_metrics: includeMetrics ? this.gatherPerformanceMetrics() : null,
+      historical_data: includeHistorical ? this.generateMockHistoricalData(timeRange) : null,
+      error_logs: includeErrors ? this.generateMockErrorLogs() : null
+    };
+
+    // Export as JSON
+    const content = JSON.stringify(reportData, null, 2);
+    const blob = new Blob([content], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `detailed-health-report-${timestamp.split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    // Show success message
+    const resultsEl = document.getElementById('diagnostic-results');
+    if (resultsEl) {
+      resultsEl.innerHTML = `<div class="text-green-400">[${new Date().toLocaleTimeString()}] Generated detailed report with ${Object.keys(reportData).length} sections</div>`;
+    }
+  }
+
+  private initializePerformanceMetrics(): void {
+    // Initialize with mock performance data
+    this.updatePerformanceMetrics({
+      cpu_usage: Math.floor(Math.random() * 30) + 20, // 20-50%
+      memory_usage: Math.floor(Math.random() * 40) + 30, // 30-70%
+      disk_usage: Math.floor(Math.random() * 20) + 15, // 15-35%
+      network_io: Math.floor(Math.random() * 100) + 50, // 50-150 KB/s
+      avg_response: Math.floor(Math.random() * 50) + 10, // 10-60ms
+      p95_response: Math.floor(Math.random() * 100) + 50, // 50-150ms
+      max_response: Math.floor(Math.random() * 200) + 100, // 100-300ms
+      active_connections: Math.floor(Math.random() * 50) + 10, // 10-60
+      queue_length: Math.floor(Math.random() * 10), // 0-10
+      uptime: this.formatUptime(Math.floor(Math.random() * 30) + 1) // 1-30 days
+    });
+
+    // Update every 5 seconds with slight variations
+    setInterval(() => {
+      this.updatePerformanceMetrics({
+        cpu_usage: Math.max(10, Math.min(90, (parseInt(document.getElementById('cpu-usage')?.textContent?.replace('%', '') || '50') + (Math.random() - 0.5) * 10))),
+        memory_usage: Math.max(20, Math.min(80, (parseInt(document.getElementById('memory-usage')?.textContent?.replace('%', '') || '50') + (Math.random() - 0.5) * 5))),
+        disk_usage: Math.max(10, Math.min(50, (parseInt(document.getElementById('disk-usage')?.textContent?.replace('%', '') || '25') + (Math.random() - 0.5) * 2))),
+        network_io: Math.max(20, (parseInt(document.getElementById('network-io')?.textContent?.split(' ')[0] || '100') + (Math.random() - 0.5) * 20)),
+        avg_response: Math.max(5, (parseInt(document.getElementById('avg-response')?.textContent?.replace(' ms', '') || '30') + (Math.random() - 0.5) * 10)),
+        p95_response: Math.max(20, (parseInt(document.getElementById('p95-response')?.textContent?.replace(' ms', '') || '80') + (Math.random() - 0.5) * 20)),
+        max_response: Math.max(50, (parseInt(document.getElementById('max-response')?.textContent?.replace(' ms', '') || '150') + (Math.random() - 0.5) * 30)),
+        active_connections: Math.max(5, (parseInt(document.getElementById('active-connections')?.textContent || '25') + (Math.random() - 0.5) * 5)),
+        queue_length: Math.max(0, (parseInt(document.getElementById('queue-length')?.textContent || '2') + (Math.random() - 0.5) * 2)),
+        uptime: document.getElementById('system-uptime')?.textContent || '1d 2h 30m'
+      });
+    }, 5000);
+  }
+
+  private updatePerformanceMetrics(metrics: any): void {
+    // Update UI elements
+    this.updateElementText('cpu-usage', `${Math.round(metrics.cpu_usage)}%`);
+    this.updateElementText('memory-usage', `${Math.round(metrics.memory_usage)}%`);
+    this.updateElementText('disk-usage', `${Math.round(metrics.disk_usage)}%`);
+    this.updateElementText('network-io', `${Math.round(metrics.network_io)} KB/s`);
+
+    this.updateElementText('avg-response', `${Math.round(metrics.avg_response)} ms`);
+    this.updateElementText('p95-response', `${Math.round(metrics.p95_response)} ms`);
+    this.updateElementText('max-response', `${Math.round(metrics.max_response)} ms`);
+
+    this.updateElementText('active-connections', Math.round(metrics.active_connections).toString());
+    this.updateElementText('queue-length', Math.round(metrics.queue_length).toString());
+    this.updateElementText('system-uptime', metrics.uptime);
+
+    // Update progress bars
+    this.updateProgressBar('cpu-progress', metrics.cpu_usage);
+    this.updateProgressBar('memory-progress', metrics.memory_usage);
+    this.updateProgressBar('disk-progress', metrics.disk_usage);
+    this.updateProgressBar('network-progress', Math.min(100, metrics.network_io / 2)); // Scale network I/O
+  }
+
+  private updateElementText(id: string, text: string): void {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
+
+  private updateProgressBar(id: string, percentage: number): void {
+    const el = document.getElementById(id);
+    if (el) el.style.width = `${Math.round(percentage)}%`;
+  }
+
+  private formatUptime(days: number): string {
+    const hours = Math.floor(Math.random() * 24);
+    const minutes = Math.floor(Math.random() * 60);
+    return `${days}d ${hours}h ${minutes}m`;
+  }
+
+  private gatherPerformanceMetrics(): any {
+    return {
+      cpu_usage: document.getElementById('cpu-usage')?.textContent,
+      memory_usage: document.getElementById('memory-usage')?.textContent,
+      disk_usage: document.getElementById('disk-usage')?.textContent,
+      network_io: document.getElementById('network-io')?.textContent,
+      avg_response: document.getElementById('avg-response')?.textContent,
+      p95_response: document.getElementById('p95-response')?.textContent,
+      max_response: document.getElementById('max-response')?.textContent,
+      active_connections: document.getElementById('active-connections')?.textContent,
+      queue_length: document.getElementById('queue-length')?.textContent,
+      uptime: document.getElementById('system-uptime')?.textContent
+    };
+  }
+
+  private generateMockHistoricalData(timeRange: string): any[] {
+    const points = timeRange === '1h' ? 12 : timeRange === '6h' ? 24 : timeRange === '24h' ? 48 : 168;
+    const data = [];
+
+    for (let i = 0; i < points; i++) {
+      data.push({
+        timestamp: new Date(Date.now() - (points - i) * (timeRange === '7d' ? 3600000 : 1800000)).toISOString(),
+        cpu_usage: Math.floor(Math.random() * 60) + 20,
+        memory_usage: Math.floor(Math.random() * 50) + 30,
+        response_time: Math.floor(Math.random() * 100) + 20
+      });
+    }
+
+    return data;
+  }
+
+  private generateMockErrorLogs(): any[] {
+    return [
+      {
+        timestamp: new Date(Date.now() - 3600000).toISOString(),
+        level: 'WARN',
+        service: 'backend',
+        message: 'High response time detected'
+      },
+      {
+        timestamp: new Date(Date.now() - 7200000).toISOString(),
+        level: 'ERROR',
+        service: 'postgresql',
+        message: 'Connection timeout'
+      }
+    ];
+  }
+
+  private initializeRawDataPreview(): void {
+    const rawData = {
+      timestamp: new Date().toISOString(),
+      overall_status: "unknown",
+      services: {
+        frontend: {
+          status: "unknown",
+          response_time: null,
+          last_check: null
+        },
+        backend: {
+          status: "unknown",
+          response_time: null,
+          last_check: null
+        },
+        postgresql: {
+          status: "unknown",
+          response_time: null,
+          last_check: null
+        },
+        redis: {
+          status: "unknown",
+          response_time: null,
+          last_check: null
+        }
+      }
+    };
+
+    const rawDataEl = document.getElementById('raw-health-data');
+    if (rawDataEl) {
+      rawDataEl.textContent = JSON.stringify(rawData, null, 2);
+    }
+
+    // Update raw data every 10 seconds to simulate real-time updates
+    setInterval(() => {
+      this.updateRawDataPreview();
+    }, 10000);
+  }
+
+  private updateRawDataPreview(): void {
+    const rawData = {
+      timestamp: new Date().toISOString(),
+      overall_status: document.getElementById('overall-status')?.className.includes('status-up') ? 'healthy' :
+                     document.getElementById('overall-status')?.className.includes('status-degraded') ? 'degraded' : 'unhealthy',
+      services: {
+        frontend: {
+          status: document.getElementById('frontend-status')?.className.includes('status-up') ? 'healthy' : 'unhealthy',
+          response_time: this.extractNumericValue(document.getElementById('frontend-latency')?.textContent),
+          last_check: document.getElementById('frontend-last-updated')?.textContent
+        },
+        backend: {
+          status: document.getElementById('backend-status')?.className.includes('status-up') ? 'healthy' : 'unhealthy',
+          response_time: this.extractNumericValue(document.getElementById('backend-latency')?.textContent),
+          last_check: document.getElementById('backend-last-updated')?.textContent
+        },
+        postgresql: {
+          status: document.getElementById('postgresql-status')?.className.includes('status-up') ? 'healthy' : 'unhealthy',
+          response_time: this.extractNumericValue(document.getElementById('postgresql-latency')?.textContent),
+          last_check: document.getElementById('postgresql-last-updated')?.textContent
+        },
+        redis: {
+          status: document.getElementById('redis-status')?.className.includes('status-up') ? 'healthy' : 'unhealthy',
+          response_time: this.extractNumericValue(document.getElementById('redis-latency')?.textContent),
+          last_check: document.getElementById('redis-last-updated')?.textContent
+        }
+      }
+    };
+
+    const rawDataEl = document.getElementById('raw-health-data');
+    if (rawDataEl) {
+      rawDataEl.textContent = JSON.stringify(rawData, null, 2);
+    }
+  }
+
+  private extractNumericValue(text: string | null | undefined): number | null {
+    if (!text) return null;
+    const match = text.match(/(\d+)/);
+    return match && match[1] ? parseInt(match[1]) : null;
   }
 }
 

@@ -10,6 +10,101 @@ import { BackendHealthChecker } from './backend-health-checker';
 import { HealthUIHelper } from '../utils/health-ui';
 import { createContextLogger } from '../utils/logger';
 
+// Simple health checker implementations for new services
+class FrontendHealthChecker implements IServiceChecker {
+  readonly serviceName = 'frontend';
+  readonly endpoint = '/frontend';
+
+  async checkHealth(): Promise<IServiceResult> {
+    const startTime = Date.now();
+    return {
+      status: 'up',
+      message: 'Frontend Active',
+      metrics: { responseTime: Date.now() - startTime },
+      timestamp: Date.now()
+    };
+  }
+
+  updateUI(result: IServiceResult): void {
+    HealthUIHelper.updateStatusIndicator('frontend-status', result.status);
+    HealthUIHelper.updateTextElement('frontend-message', result.message);
+    HealthUIHelper.updateLatencyElement('frontend-latency', `${result.metrics.responseTime}ms`, result.metrics.responseTime as number, 'API');
+    HealthUIHelper.updateLastRefresh('frontend-last-updated');
+  }
+}
+
+class PostgreSQLHealthChecker implements IServiceChecker {
+  readonly serviceName = 'postgresql';
+  readonly endpoint = '/health';
+
+  constructor(private apiBaseUrl: string) {}
+
+  async checkHealth(): Promise<IServiceResult> {
+    try {
+      const response = await fetch(`${this.apiBaseUrl}/health`);
+      const data = await response.json();
+      return {
+        status: data.database?.status === 'healthy' ? 'up' : 'down',
+        message: data.database?.message || 'Via Backend Health Check',
+        metrics: { responseTime: data.database?.response_time_ms || 0 },
+        timestamp: Date.now()
+      };
+    } catch {
+      return {
+        status: 'down',
+        message: 'PostgreSQL unreachable via backend',
+        metrics: { responseTime: 0 },
+        timestamp: Date.now()
+      };
+    }
+  }
+
+  updateUI(result: IServiceResult): void {
+    HealthUIHelper.updateStatusIndicator('postgresql-status', result.status);
+    HealthUIHelper.updateTextElement('postgresql-message', result.message);
+    if (result.metrics.responseTime) {
+      HealthUIHelper.updateLatencyElement('postgresql-latency', `${result.metrics.responseTime}ms`, result.metrics.responseTime as number, 'DATABASE');
+    }
+    HealthUIHelper.updateLastRefresh('postgresql-last-updated');
+  }
+}
+
+class RedisHealthChecker implements IServiceChecker {
+  readonly serviceName = 'redis';
+  readonly endpoint = '/health';
+
+  constructor(private apiBaseUrl: string) {}
+
+  async checkHealth(): Promise<IServiceResult> {
+    try {
+      const response = await fetch(`${this.apiBaseUrl}/health`);
+      const data = await response.json();
+      return {
+        status: data.cache?.status === 'healthy' ? 'up' : 'down',
+        message: data.cache?.message || 'Via Backend Health Check',
+        metrics: { responseTime: data.cache?.response_time_ms || 0 },
+        timestamp: Date.now()
+      };
+    } catch {
+      return {
+        status: 'down',
+        message: 'Redis unreachable via backend',
+        metrics: { responseTime: 0 },
+        timestamp: Date.now()
+      };
+    }
+  }
+
+  updateUI(result: IServiceResult): void {
+    HealthUIHelper.updateStatusIndicator('redis-status', result.status);
+    HealthUIHelper.updateTextElement('redis-message', result.message);
+    if (result.metrics.responseTime) {
+      HealthUIHelper.updateLatencyElement('redis-latency', `${result.metrics.responseTime}ms`, result.metrics.responseTime as number, 'CACHE');
+    }
+    HealthUIHelper.updateLastRefresh('redis-last-updated');
+  }
+}
+
 const logger = createContextLogger('HealthDashboardManager');
 
 export class HealthDashboardManager {
@@ -32,11 +127,10 @@ export class HealthDashboardManager {
   // Dependency Injection - easily extensible for new services
   private initializeServiceCheckers(): void {
     // Single source of truth for service configuration
+    this.serviceCheckers.set('frontend', new FrontendHealthChecker());
     this.serviceCheckers.set('backend', new BackendHealthChecker(this.config.apiBaseUrl));
-
-    // Future services can be added here following Open/Closed principle:
-    // this.serviceCheckers.set('database', new DatabaseHealthChecker());
-    // this.serviceCheckers.set('cache', new CacheHealthChecker());
+    this.serviceCheckers.set('postgresql', new PostgreSQLHealthChecker(this.config.apiBaseUrl));
+    this.serviceCheckers.set('redis', new RedisHealthChecker(this.config.apiBaseUrl));
   }
 
   // Template Method Pattern - defines the refresh algorithm
