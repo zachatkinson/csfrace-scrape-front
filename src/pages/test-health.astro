@@ -60,13 +60,25 @@ import BaseHealthCard from '../components/health/BaseHealthCard.astro';
       </div>
 
       <!-- Overall Status -->
-      <div class="flex items-center gap-4 p-4 bg-black/20 rounded-lg">
-        <div class="flex items-center">
-          <span id="overall-status" class="status-circle status-up"></span>
-          <span class="text-white font-medium">Overall Status</span>
+      <div class="space-y-3">
+        <div class="flex items-center gap-4 p-4 bg-black/20 rounded-lg">
+          <div class="flex items-center">
+            <span id="overall-status" class="status-circle status-up"></span>
+            <span class="text-white font-medium">Overall Status</span>
+          </div>
+          <span id="overall-message" class="text-white/80">Loading...</span>
+          <span id="overall-last-updated" class="text-white/60 text-sm ml-auto">Never</span>
         </div>
-        <span id="overall-message" class="text-white/80">Loading...</span>
-        <span id="overall-last-updated" class="text-white/60 text-sm ml-auto">Never</span>
+
+        <!-- CORS Status -->
+        <div class="flex items-center gap-4 p-3 bg-black/20 rounded-lg">
+          <div class="flex items-center">
+            <span id="cors-status" class="status-circle status-up"></span>
+            <span class="text-white/90 font-medium">CORS Configuration</span>
+          </div>
+          <span id="cors-message" class="text-white/70">Checking...</span>
+          <span id="cors-last-checked" class="text-white/50 text-sm ml-auto">Never</span>
+        </div>
       </div>
     </div>
 
@@ -99,49 +111,6 @@ import BaseHealthCard from '../components/health/BaseHealthCard.astro';
         defaultMessage="Via Backend Health Check"
         showRefreshButton={true}
       />
-    </div>
-
-    <!-- Diagnostics Panel -->
-    <div class="glass-card p-6">
-      <h3 class="text-xl font-semibold text-white mb-4">System Diagnostics</h3>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <h4 class="text-lg font-medium text-white mb-3">Quick Tests</h4>
-          <div class="space-y-2">
-            <button id="test-connectivity-btn" class="w-full glass-button px-4 py-2 text-left text-white/80 hover:text-white border border-white/20 hover:border-white/40 rounded transition-all duration-200">
-              Test Network Connectivity
-            </button>
-            <button id="test-latency-btn" class="w-full glass-button px-4 py-2 text-left text-white/80 hover:text-white border border-white/20 hover:border-white/40 rounded transition-all duration-200">
-              Test API Latency
-            </button>
-            <button id="test-cors-btn" class="w-full glass-button px-4 py-2 text-left text-white/80 hover:text-white border border-white/20 hover:border-white/40 rounded transition-all duration-200">
-              Test CORS Policies
-            </button>
-          </div>
-        </div>
-
-        <div>
-          <h4 class="text-lg font-medium text-white mb-3">Test Results</h4>
-          <div id="diagnostic-results" class="space-y-2 text-sm text-white/80">
-            <div>Ready to run diagnostics...</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Auto-Refresh Settings -->
-    <div class="glass-card p-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <h3 class="text-lg font-semibold text-white">Auto-Refresh</h3>
-          <p class="text-white/60 text-sm">Automatically refresh health status every 30 seconds</p>
-        </div>
-        <label class="relative inline-flex items-center cursor-pointer">
-          <input id="auto-refresh-toggle" type="checkbox" class="sr-only peer">
-          <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-        </label>
-      </div>
     </div>
 
     <!-- System Performance Overview -->
@@ -257,44 +226,18 @@ import BaseHealthCard from '../components/health/BaseHealthCard.astro';
         </div>
 
         <div>
-          <h4 class="text-lg font-medium text-white mb-3">Export Options</h4>
-          <div class="space-y-4">
-            <div>
-              <label class="flex items-center">
-                <input type="checkbox" id="include-historical" class="mr-2">
-                <span class="text-white/80">Include Historical Data (Last 24h)</span>
-              </label>
-            </div>
-            <div>
-              <label class="flex items-center">
-                <input type="checkbox" id="include-metrics" class="mr-2" checked>
-                <span class="text-white/80">Include Performance Metrics</span>
-              </label>
-            </div>
-            <div>
-              <label class="flex items-center">
-                <input type="checkbox" id="include-errors" class="mr-2" checked>
-                <span class="text-white/80">Include Error Logs</span>
-              </label>
-            </div>
-            <div>
-              <label class="block text-white/80 mb-2">Time Range:</label>
-              <select id="time-range" class="w-full bg-black/40 text-white border border-white/20 rounded px-3 py-2">
-                <option value="1h">Last Hour</option>
-                <option value="6h">Last 6 Hours</option>
-                <option value="24h" selected>Last 24 Hours</option>
-                <option value="7d">Last 7 Days</option>
-              </select>
-            </div>
-            <button id="generate-report-btn" class="w-full glass-button px-4 py-3 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-500/50 hover:border-blue-500/70 rounded-lg transition-all duration-200">
-              Generate Detailed Report
-            </button>
+          <h4 class="text-lg font-medium text-white mb-3">Performance Metrics Preview</h4>
+          <div class="bg-black/40 p-4 rounded-lg h-64 overflow-auto">
+            <pre id="raw-performance-data" class="text-blue-400 text-xs font-mono whitespace-pre-wrap">Loading performance data...</pre>
           </div>
         </div>
       </div>
+
     </div>
   </div>
 </MainLayout>
+
+
 
 <!-- DRY/SOLID/Astro MCP Implementation - External TypeScript File -->
 <script type="module" src="/src/scripts/health-dashboard-init.ts" is:inline></script>

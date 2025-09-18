@@ -13,8 +13,8 @@ export {
   formatPercentage,
   formatLogLevel,
   capitalize,
-  formatJobTitle
-} from './formatting.ts';
+  formatJobTitle,
+} from "./formatting.ts";
 
 // Calculation utilities
 export {
@@ -24,8 +24,8 @@ export {
   calculateNextRetryTime,
   calculatePercentage,
   calculateAverage,
-  calculateProcessingRate
-} from './calculations.ts';
+  calculateProcessingRate,
+} from "./calculations.ts";
 
 // API utilities (enhanced error handling and HTTP operations)
 export {
@@ -37,53 +37,49 @@ export {
   createAppError,
   formatErrorMessage,
   logError,
-  ApiErrorCode
-} from './api-utils.ts';
+  ApiErrorCode,
+} from "./api-utils.ts";
 
 // Security utilities
-export { SecurityUtils, SecureStorage } from './security.ts';
+export { SecurityUtils, SecureStorage } from "./security.ts";
 
 // Form validation utilities
 export {
   FieldValidator,
   FormValidator,
-  ValidationHelpers
-} from './form-validation.ts';
+  ValidationHelpers,
+} from "./form-validation.ts";
 
 // DOM utilities
 export {
   SafeDomAccessor,
   DomTextUpdater,
-  DomClassUpdater
-} from './dom-utilities.ts';
-export type { IDomUpdater } from './dom-utilities.ts';
+  DomClassUpdater,
+} from "./dom-utilities.ts";
+export type { IDomUpdater } from "./dom-utilities.ts";
 
 // Modal utilities
-export * from './modalUtils.ts';
+export * from "./modalUtils.ts";
 
 // Test helpers (for development/testing)
 export {
   SecurityTestHelpers,
   AuthTestHelpers,
   PerformanceTestHelpers,
-  AccessibilityTestHelpers
-} from './test-helpers.ts';
+  AccessibilityTestHelpers,
+} from "./test-helpers.ts";
 
 // Auth-related utilities
-export * from './auth-tokens.ts';
-export * from './authApi.ts';
-export * from './secure-token-storage.ts';
+export * from "./auth-tokens.ts";
+export * from "./authApi.ts";
+export * from "./secure-token-storage.ts";
 
 // Service utilities
-export { HttpClient, ErrorHandler } from './serviceCheckers.ts';
+export { HttpClient, ErrorHandler } from "./serviceCheckers.ts";
 
 // UI utilities
-export { UIUpdater } from './uiUpdater.ts';
-export * from './health-ui-utilities.ts';
+export { UIUpdater } from "./uiUpdater.ts";
+export * from "./health-ui-utilities.ts";
 
 // Type definitions for utilities
-export type {
-  ApiError,
-  ErrorSeverity,
-  ErrorAction
-} from './api-utils.ts';
+export type { ApiError, ErrorSeverity, ErrorAction } from "./api-utils.ts";

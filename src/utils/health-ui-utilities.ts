@@ -13,17 +13,17 @@
  */
 export function getStatusColor(status: string): string {
   switch (status) {
-    case 'up':
-      return 'bg-green-400';
-    case 'degraded':
-      return 'bg-yellow-400';
-    case 'down':
-    case 'error':
-      return 'bg-red-400';
-    case 'loading':
-      return 'bg-yellow-400 animate-pulse';
+    case "up":
+      return "bg-green-400";
+    case "degraded":
+      return "bg-yellow-400";
+    case "down":
+    case "error":
+      return "bg-red-400";
+    case "loading":
+      return "bg-yellow-400 animate-pulse";
     default:
-      return 'bg-gray-400';
+      return "bg-gray-400";
   }
 }
 
@@ -34,17 +34,17 @@ export function getStatusColor(status: string): string {
  */
 export function getStatusBorderClass(status: string): string {
   switch (status) {
-    case 'up':
-      return 'border-green-200';
-    case 'degraded':
-      return 'border-yellow-200';
-    case 'down':
-    case 'error':
-      return 'border-red-200';
-    case 'loading':
-      return 'border-yellow-200';
+    case "up":
+      return "border-green-200";
+    case "degraded":
+      return "border-yellow-200";
+    case "down":
+    case "error":
+      return "border-red-200";
+    case "loading":
+      return "border-yellow-200";
     default:
-      return 'border-gray-200';
+      return "border-gray-200";
   }
 }
 
@@ -55,17 +55,17 @@ export function getStatusBorderClass(status: string): string {
  */
 export function getStatusTextColor(status: string): string {
   switch (status) {
-    case 'up':
-      return 'text-green-600';
-    case 'degraded':
-      return 'text-yellow-600';
-    case 'down':
-    case 'error':
-      return 'text-red-600';
-    case 'loading':
-      return 'text-yellow-600';
+    case "up":
+      return "text-green-600";
+    case "degraded":
+      return "text-yellow-600";
+    case "down":
+    case "error":
+      return "text-red-600";
+    case "loading":
+      return "text-yellow-600";
     default:
-      return 'text-gray-600';
+      return "text-gray-600";
   }
 }
 
@@ -74,20 +74,22 @@ export function getStatusTextColor(status: string): string {
  * @param responseTime - Response time in milliseconds or string
  * @returns Formatted response time string
  */
-export function formatResponseTime(responseTime: number | string | undefined): string {
+export function formatResponseTime(
+  responseTime: number | string | undefined,
+): string {
   if (responseTime === undefined || responseTime === null) {
-    return 'N/A';
+    return "N/A";
   }
 
-  if (typeof responseTime === 'number') {
+  if (typeof responseTime === "number") {
     return `${responseTime}ms`;
   }
 
-  if (typeof responseTime === 'string') {
+  if (typeof responseTime === "string") {
     return responseTime;
   }
 
-  return 'N/A';
+  return "N/A";
 }
 
 /**
@@ -97,14 +99,14 @@ export function formatResponseTime(responseTime: number | string | undefined): s
  */
 export function getStatusPriority(status: string): number {
   switch (status) {
-    case 'down':
-    case 'error':
+    case "down":
+    case "error":
       return 1; // Highest priority - show errors first
-    case 'degraded':
+    case "degraded":
       return 2;
-    case 'loading':
+    case "loading":
       return 3;
-    case 'up':
+    case "up":
       return 4; // Lowest priority - show healthy services last
     default:
       return 5;
@@ -117,7 +119,7 @@ export function getStatusPriority(status: string): number {
  * @returns True if service is healthy
  */
 export function isHealthyStatus(status: string): boolean {
-  return status === 'up';
+  return status === "up";
 }
 
 /**
@@ -126,7 +128,7 @@ export function isHealthyStatus(status: string): boolean {
  * @returns True if service is unhealthy
  */
 export function isUnhealthyStatus(status: string): boolean {
-  return status === 'down' || status === 'error';
+  return status === "down" || status === "error";
 }
 
 /**
@@ -135,7 +137,7 @@ export function isUnhealthyStatus(status: string): boolean {
  * @returns True if service is degraded
  */
 export function isDegradedStatus(status: string): boolean {
-  return status === 'degraded';
+  return status === "degraded";
 }
 
 /**
@@ -145,17 +147,17 @@ export function isDegradedStatus(status: string): boolean {
  */
 export function getStatusMessage(status: string): string {
   switch (status) {
-    case 'up':
-      return 'Service is operational';
-    case 'degraded':
-      return 'Service is experiencing issues';
-    case 'down':
-      return 'Service is unavailable';
-    case 'error':
-      return 'Service encountered an error';
-    case 'loading':
-      return 'Checking service status...';
+    case "up":
+      return "Service is operational";
+    case "degraded":
+      return "Service is experiencing issues";
+    case "down":
+      return "Service is unavailable";
+    case "error":
+      return "Service encountered an error";
+    case "loading":
+      return "Checking service status...";
     default:
-      return 'Service status unknown';
+      return "Service status unknown";
   }
 }

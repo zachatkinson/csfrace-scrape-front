@@ -5,7 +5,7 @@
 
 /// <reference lib="dom" />
 
-// ============================================================================= 
+// =============================================================================
 // CORE FILTER TYPES
 // =============================================================================
 
@@ -53,7 +53,7 @@ export interface IFilterUpdateEvent {
 }
 
 export interface IBatchActionEvent {
-  action: 'select-all' | 'select-none' | 'delete-selected';
+  action: "select-all" | "select-none" | "delete-selected";
   selectedIds: readonly string[];
   timestamp: number;
 }
@@ -70,7 +70,7 @@ export interface IJobsDataUpdateEvent {
 
 export interface IJobData {
   readonly id: string;
-  readonly status: 'pending' | 'processing' | 'completed' | 'failed' | 'queued';
+  readonly status: "pending" | "processing" | "completed" | "failed" | "queued";
   readonly title: string;
   readonly url: string;
   readonly createdAt: Date;
@@ -125,7 +125,7 @@ export interface IDOMUtils {
   addEventListener(
     element: Element,
     type: string,
-    listener: EventListener
+    listener: EventListener,
   ): void;
 }
 
@@ -134,18 +134,18 @@ export interface IDOMUtils {
 // =============================================================================
 
 export const FILTER_CONFIG: Record<string, IFilterConfig> = {
-  all: { label: 'All', icon: '' },
-  processing: { label: 'Processing', icon: '' },
-  completed: { label: 'Completed', icon: '' },
-  failed: { label: 'Failed', icon: '' },
-  queued: { label: 'Pending', icon: '' }
+  all: { label: "All", icon: "" },
+  processing: { label: "Processing", icon: "" },
+  completed: { label: "Completed", icon: "" },
+  failed: { label: "Failed", icon: "" },
+  queued: { label: "Pending", icon: "" },
 } as const;
 
 export const SORT_OPTIONS: readonly ISortOption[] = [
-  { value: 'newest', label: 'Newest First' },
-  { value: 'oldest', label: 'Oldest First' },
-  { value: 'status', label: 'By Status' },
-  { value: 'progress', label: 'By Progress' }
+  { value: "newest", label: "Newest First" },
+  { value: "oldest", label: "Oldest First" },
+  { value: "status", label: "By Status" },
+  { value: "progress", label: "By Progress" },
 ] as const;
 
 // =============================================================================
@@ -153,10 +153,11 @@ export const SORT_OPTIONS: readonly ISortOption[] = [
 // =============================================================================
 
 export const CSS_CLASSES = {
-  FILTER_BTN: 'filter-btn px-3 py-1 text-xs rounded-full transition-all duration-200',
-  FILTER_ACTIVE: 'bg-blue-500/50 text-blue-300 border-blue-400/30',
-  FILTER_DISABLED: 'opacity-50 cursor-not-allowed',
-  FILTER_HOVER: 'hover:bg-white/20',
-  GLASS_INPUT: 'glass-input text-sm px-3 py-1',
-  GLASS_BUTTON: 'glass-button px-3 py-1 text-xs'
+  FILTER_BTN:
+    "filter-btn px-3 py-1 text-xs rounded-full transition-all duration-200",
+  FILTER_ACTIVE: "bg-blue-500/50 text-blue-300 border-blue-400/30",
+  FILTER_DISABLED: "opacity-50 cursor-not-allowed",
+  FILTER_HOVER: "hover:bg-white/20",
+  GLASS_INPUT: "glass-input text-sm px-3 py-1",
+  GLASS_BUTTON: "glass-button px-3 py-1 text-xs",
 } as const;

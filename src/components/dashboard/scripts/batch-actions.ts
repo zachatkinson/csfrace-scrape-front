@@ -3,12 +3,12 @@
  * Following SOLID principles and Astro Islands Architecture
  */
 
-import type { IBatchActionManager } from '../types/filter.types';
-import { EventUtils } from '../utils/filter.utils';
-import { domUtils, waitForDOM } from '../utils/dom.utils';
-import { createContextLogger } from '../../../utils/logger';
+import type { IBatchActionManager } from "../types/filter.types";
+import { EventUtils } from "../utils/filter.utils";
+import { domUtils, waitForDOM } from "../utils/dom.utils";
+import { createContextLogger } from "../../../utils/logger";
 
-const logger = createContextLogger('BatchActionManager');
+const logger = createContextLogger("BatchActionManager");
 
 // =============================================================================
 // BATCH ACTION MANAGER CLASS (Single Responsibility Principle)
@@ -30,12 +30,12 @@ class BatchActionManager implements IBatchActionManager {
 
   private async init(): Promise<void> {
     await waitForDOM();
-    
+
     this.loadInitialState();
     this.attachEventListeners();
     this.updateButtonStates();
-    
-    logger.info('Initialized with batch operations');
+
+    logger.info("Initialized with batch operations");
   }
 
   private loadInitialState(): void {
@@ -43,15 +43,19 @@ class BatchActionManager implements IBatchActionManager {
     if (!panel) return;
 
     // Load total jobs count
-    const totalJobsAttr = domUtils.getDataAttribute(panel, 'total-jobs');
+    const totalJobsAttr = domUtils.getDataAttribute(panel, "total-jobs");
     this.totalJobs = totalJobsAttr ? parseInt(totalJobsAttr, 10) : 0;
 
     // Initialize selected jobs set (will be populated by external job data)
     this.selectedJobs = new Set();
 
     // Get button references
-    this.selectAllBtn = domUtils.querySelector('#select-all-btn') as HTMLButtonElement;
-    this.deleteSelectedBtn = domUtils.querySelector('#delete-selected-btn') as HTMLButtonElement;
+    this.selectAllBtn = domUtils.querySelector(
+      "#select-all-btn",
+    ) as HTMLButtonElement;
+    this.deleteSelectedBtn = domUtils.querySelector(
+      "#delete-selected-btn",
+    ) as HTMLButtonElement;
   }
 
   // =========================================================================
@@ -65,35 +69,35 @@ class BatchActionManager implements IBatchActionManager {
   selectAll(): void {
     // This will be populated with actual job IDs from external job data
     // For now, we emit an event for the parent component to handle
-    this.emitBatchActionEvent('select-all');
-    
-    logger.debug('Select all requested');
+    this.emitBatchActionEvent("select-all");
+
+    logger.debug("Select all requested");
   }
 
   selectNone(): void {
     this.selectedJobs.clear();
     this.updateButtonStates();
     this.updateComponentState();
-    this.emitBatchActionEvent('select-none');
-    
-    logger.debug('Deselected all jobs');
+    this.emitBatchActionEvent("select-none");
+
+    logger.debug("Deselected all jobs");
   }
 
   deleteSelected(): void {
     if (this.selectedJobs.size === 0) {
-      logger.warn('No jobs selected for deletion');
+      logger.warn("No jobs selected for deletion");
       return;
     }
 
     // Confirm deletion (basic confirmation, could be enhanced with modal)
     const selectedCount = this.selectedJobs.size;
     const confirmed = confirm(
-      `Are you sure you want to delete ${selectedCount} selected job${selectedCount > 1 ? 's' : ''}?`
+      `Are you sure you want to delete ${selectedCount} selected job${selectedCount > 1 ? "s" : ""}?`,
     );
 
     if (confirmed) {
-      this.emitBatchActionEvent('delete-selected');
-      logger.info('Deletion confirmed', { selectedCount });
+      this.emitBatchActionEvent("delete-selected");
+      logger.info("Deletion confirmed", { selectedCount });
     }
   }
 
@@ -127,7 +131,7 @@ class BatchActionManager implements IBatchActionManager {
     } else {
       this.selectedJobs.add(jobId);
     }
-    
+
     this.updateButtonStates();
     this.updateComponentState();
   }
@@ -139,9 +143,9 @@ class BatchActionManager implements IBatchActionManager {
   private attachEventListeners(): void {
     // Select All/None button
     if (this.selectAllBtn) {
-      domUtils.addEventListener(this.selectAllBtn, 'click', (event) => {
+      domUtils.addEventListener(this.selectAllBtn, "click", (event) => {
         event.preventDefault();
-        
+
         if (this.isAllSelected()) {
           this.selectNone();
         } else {
@@ -152,14 +156,14 @@ class BatchActionManager implements IBatchActionManager {
 
     // Delete Selected button
     if (this.deleteSelectedBtn) {
-      domUtils.addEventListener(this.deleteSelectedBtn, 'click', (event) => {
+      domUtils.addEventListener(this.deleteSelectedBtn, "click", (event) => {
         event.preventDefault();
         this.deleteSelected();
       });
     }
 
     // Listen for external job selection updates
-    window.addEventListener('jobs:selectionUpdate', (event) => {
+    window.addEventListener("jobs:selectionUpdate", (event) => {
       const customEvent = event as CustomEvent;
       if (customEvent.detail?.selectedJobIds) {
         this.updateSelectedJobs(customEvent.detail.selectedJobIds);
@@ -167,7 +171,7 @@ class BatchActionManager implements IBatchActionManager {
     });
 
     // Listen for job data updates to update total count
-    window.addEventListener('jobs:dataUpdate', (event) => {
+    window.addEventListener("jobs:dataUpdate", (event) => {
       const customEvent = event as CustomEvent;
       if (customEvent.detail?.jobs) {
         this.updateTotalJobs(customEvent.detail.jobs.length);
@@ -175,7 +179,7 @@ class BatchActionManager implements IBatchActionManager {
     });
 
     // Listen for individual job selection changes
-    window.addEventListener('job:selectionToggle', (event) => {
+    window.addEventListener("job:selectionToggle", (event) => {
       const customEvent = event as CustomEvent;
       if (customEvent.detail?.jobId) {
         this.toggleJobSelection(customEvent.detail.jobId);
@@ -195,26 +199,30 @@ class BatchActionManager implements IBatchActionManager {
     const hasJobs = this.totalJobs > 0;
 
     // Update button text
-    this.selectAllBtn.textContent = allSelected ? 'Select None' : 'Select All';
+    this.selectAllBtn.textContent = allSelected ? "Select None" : "Select All";
 
     // Update button state
     this.selectAllBtn.disabled = !hasJobs;
 
     // Update data attributes
-    domUtils.setDataAttribute(this.selectAllBtn, 'all-selected', allSelected ? 'true' : 'false');
+    domUtils.setDataAttribute(
+      this.selectAllBtn,
+      "all-selected",
+      allSelected ? "true" : "false",
+    );
 
     // Update ARIA attributes
     domUtils.setAttributes(this.selectAllBtn, {
-      'aria-label': allSelected 
-        ? 'Deselect all jobs' 
+      "aria-label": allSelected
+        ? "Deselect all jobs"
         : `Select all ${this.totalJobs} jobs`,
-      'aria-pressed': allSelected ? 'true' : 'false'
+      "aria-pressed": allSelected ? "true" : "false",
     });
 
     // Update visual styling
     domUtils.updateClasses(this.selectAllBtn, {
-      add: allSelected ? ['bg-blue-500/20', 'text-blue-300'] : [],
-      remove: allSelected ? [] : ['bg-blue-500/20', 'text-blue-300']
+      add: allSelected ? ["bg-blue-500/20", "text-blue-300"] : [],
+      remove: allSelected ? [] : ["bg-blue-500/20", "text-blue-300"],
     });
   }
 
@@ -228,13 +236,17 @@ class BatchActionManager implements IBatchActionManager {
     this.deleteSelectedBtn.disabled = !hasSelection;
 
     // Update data attribute
-    domUtils.setDataAttribute(this.deleteSelectedBtn, 'selected-count', selectedCount.toString());
+    domUtils.setDataAttribute(
+      this.deleteSelectedBtn,
+      "selected-count",
+      selectedCount.toString(),
+    );
 
     // Update ARIA attributes
     domUtils.setAttributes(this.deleteSelectedBtn, {
-      'aria-label': hasSelection 
-        ? `Delete ${selectedCount} selected job${selectedCount > 1 ? 's' : ''}` 
-        : 'No jobs selected for deletion'
+      "aria-label": hasSelection
+        ? `Delete ${selectedCount} selected job${selectedCount > 1 ? "s" : ""}`
+        : "No jobs selected for deletion",
     });
 
     // Update badge in button
@@ -242,8 +254,8 @@ class BatchActionManager implements IBatchActionManager {
 
     // Update visual styling
     domUtils.updateClasses(this.deleteSelectedBtn, {
-      add: hasSelection ? [] : ['opacity-50'],
-      remove: hasSelection ? ['opacity-50'] : []
+      add: hasSelection ? [] : ["opacity-50"],
+      remove: hasSelection ? ["opacity-50"] : [],
     });
   }
 
@@ -251,15 +263,18 @@ class BatchActionManager implements IBatchActionManager {
     if (!this.deleteSelectedBtn) return;
 
     // Find existing badge
-    const existingBadge = this.deleteSelectedBtn.querySelector('.selected-count-badge');
-    
+    const existingBadge = this.deleteSelectedBtn.querySelector(
+      ".selected-count-badge",
+    );
+
     if (count > 0) {
       if (existingBadge) {
         existingBadge.textContent = count.toString();
       } else {
         // Create new badge
-        const badge = document.createElement('span');
-        badge.className = 'selected-count-badge ml-1 bg-red-500/20 px-1 rounded-full text-xs';
+        const badge = document.createElement("span");
+        badge.className =
+          "selected-count-badge ml-1 bg-red-500/20 px-1 rounded-full text-xs";
         badge.textContent = count.toString();
         this.deleteSelectedBtn.appendChild(badge);
       }
@@ -276,18 +291,27 @@ class BatchActionManager implements IBatchActionManager {
     if (!panel) return;
 
     // Update data attributes for state persistence
-    domUtils.setDataAttribute(panel, 'selected-jobs', this.selectedJobs.size.toString());
-    domUtils.setDataAttribute(panel, 'total-jobs', this.totalJobs.toString());
+    domUtils.setDataAttribute(
+      panel,
+      "selected-jobs",
+      this.selectedJobs.size.toString(),
+    );
+    domUtils.setDataAttribute(panel, "total-jobs", this.totalJobs.toString());
   }
 
-  private emitBatchActionEvent(action: 'select-all' | 'select-none' | 'delete-selected'): void {
-    const event = EventUtils.createBatchActionEvent(action, Array.from(this.selectedJobs));
+  private emitBatchActionEvent(
+    action: "select-all" | "select-none" | "delete-selected",
+  ): void {
+    const event = EventUtils.createBatchActionEvent(
+      action,
+      Array.from(this.selectedJobs),
+    );
     EventUtils.dispatchEvent(event);
-    
-    logger.debug('Batch action emitted', {
+
+    logger.debug("Batch action emitted", {
       action,
       selectedCount: this.selectedJobs.size,
-      totalJobs: this.totalJobs
+      totalJobs: this.totalJobs,
     });
   }
 }
@@ -297,27 +321,28 @@ class BatchActionManager implements IBatchActionManager {
 // =============================================================================
 
 class BatchActionUtils {
-  
   /**
    * Validate job ID format
    */
   static isValidJobId(jobId: string): boolean {
-    return typeof jobId === 'string' && jobId.trim().length > 0;
+    return typeof jobId === "string" && jobId.trim().length > 0;
   }
 
   /**
    * Filter valid job IDs from array
    */
   static filterValidJobIds(jobIds: unknown[]): string[] {
-    return jobIds.filter((id): id is string => this.isValidJobId(String(id))).map(id => String(id).trim());
+    return jobIds
+      .filter((id): id is string => this.isValidJobId(String(id)))
+      .map((id) => String(id).trim());
   }
 
   /**
    * Create confirmation message for batch deletion
    */
   static createDeletionConfirmationMessage(count: number): string {
-    if (count === 0) return 'No jobs selected for deletion.';
-    if (count === 1) return 'Are you sure you want to delete the selected job?';
+    if (count === 0) return "No jobs selected for deletion.";
+    if (count === 1) return "Are you sure you want to delete the selected job?";
     return `Are you sure you want to delete ${count} selected jobs?`;
   }
 
@@ -326,12 +351,12 @@ class BatchActionUtils {
    */
   static getBatchActionIcon(action: string): string {
     const icons: Record<string, string> = {
-      'select-all': '☑️',
-      'select-none': '⬜',
-      'delete-selected': '🗑️'
+      "select-all": "☑️",
+      "select-none": "⬜",
+      "delete-selected": "🗑️",
     };
-    
-    return icons[action] || '⚡';
+
+    return icons[action] || "⚡";
   }
 
   /**
@@ -339,13 +364,13 @@ class BatchActionUtils {
    */
   static estimateOperationTime(action: string, count: number): number {
     const baseTimes: Record<string, number> = {
-      'select-all': 50,
-      'select-none': 10,
-      'delete-selected': 200
+      "select-all": 50,
+      "select-none": 10,
+      "delete-selected": 200,
     };
-    
+
     const baseTime = baseTimes[action] || 100;
-    return baseTime + (count * 10); // ms
+    return baseTime + count * 10; // ms
   }
 }
 
@@ -357,13 +382,17 @@ class BatchActionUtils {
 const batchActionManager = new BatchActionManager();
 
 // Expose manager globally for debugging and external access
-if (typeof window !== 'undefined') {
-  (window as Window & {
-    batchActionManager?: BatchActionManager;
-    BatchActionUtils?: typeof BatchActionUtils;
-  }).batchActionManager = batchActionManager;
-  (window as Window & {
-    batchActionManager?: BatchActionManager;
-    BatchActionUtils?: typeof BatchActionUtils;
-  }).BatchActionUtils = BatchActionUtils;
+if (typeof window !== "undefined") {
+  (
+    window as Window & {
+      batchActionManager?: BatchActionManager;
+      BatchActionUtils?: typeof BatchActionUtils;
+    }
+  ).batchActionManager = batchActionManager;
+  (
+    window as Window & {
+      batchActionManager?: BatchActionManager;
+      BatchActionUtils?: typeof BatchActionUtils;
+    }
+  ).BatchActionUtils = BatchActionUtils;
 }

@@ -4,7 +4,11 @@
  * Follows Template Method Pattern for consistent health checking
  */
 
-import type { IServiceChecker, IServiceResult, ServiceStatus } from '../types/health';
+import type {
+  IServiceChecker,
+  IServiceResult,
+  ServiceStatus,
+} from "../types/health";
 
 export abstract class BaseHealthChecker implements IServiceChecker {
   abstract readonly serviceName: string;
@@ -19,9 +23,9 @@ export abstract class BaseHealthChecker implements IServiceChecker {
       const response = await fetch(url, {
         signal: controller.signal,
         headers: {
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache'
-        }
+          Accept: "application/json",
+          "Cache-Control": "no-cache",
+        },
       });
       clearTimeout(timeoutId);
       return response;
@@ -31,16 +35,22 @@ export abstract class BaseHealthChecker implements IServiceChecker {
     }
   }
 
-  protected createResult(status: ServiceStatus, message: string, metrics: Record<string, unknown>, error?: string): IServiceResult {
+  protected createResult(
+    status: ServiceStatus,
+    message: string,
+    metrics: Record<string, unknown>,
+    error?: string,
+  ): IServiceResult {
     return {
       status,
       message,
       metrics: {
-        responseTime: (typeof metrics.responseTime === 'number' ? metrics.responseTime : 0),
-        ...metrics
+        responseTime:
+          typeof metrics.responseTime === "number" ? metrics.responseTime : 0,
+        ...metrics,
       },
       ...(error !== undefined && { error }),
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
   }
 

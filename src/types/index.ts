@@ -4,10 +4,10 @@
  */
 
 // Re-export JobStatus from job.ts to maintain backwards compatibility
-export type { JobStatus } from './job.ts';
+export type { JobStatus } from "./job.ts";
 
 // Content Types
-export type ContentType = 'post' | 'page' | 'product' | 'category' | 'tag';
+export type ContentType = "post" | "page" | "product" | "category" | "tag";
 
 // API Response Types
 export interface ApiResponse<T = unknown> {
@@ -19,20 +19,20 @@ export interface ApiResponse<T = unknown> {
 }
 
 // Re-export content types from job.ts to maintain backwards compatibility
-export type { WordPressContent, ShopifyContent } from './job.ts';
+export type { WordPressContent, ShopifyContent } from "./job.ts";
 
 // Re-export ConversionJob from job.ts to maintain backwards compatibility
-export type { ConversionJob } from './job.ts';
+export type { ConversionJob } from "./job.ts";
 
 // Re-export auth types to maintain backwards compatibility
 export type {
   PasswordChangeData,
   PasswordResetRequest,
-  PasswordResetConfirm
-} from './auth.ts';
+  PasswordResetConfirm,
+} from "./auth.ts";
 
 // Re-export OAuth types to maintain backwards compatibility
-export type { IOAuthProvider as OAuthProvider } from './oauth.ts';
+export type { IOAuthProvider as OAuthProvider } from "./oauth.ts";
 
 // Conversion Configuration
 export interface ConversionOptions {
@@ -41,16 +41,16 @@ export interface ConversionOptions {
   convertImages: boolean;
   optimizeImages: boolean;
   downloadImages: boolean;
-  
+
   // Shopify-specific
   productType?: string;
   vendor?: string;
   tags?: string[];
-  
+
   // SEO
   generateSeoTitle: boolean;
   generateSeoDescription: boolean;
-  
+
   // Advanced
   customCss?: string;
   removeWordPressSpecific: boolean;
@@ -79,8 +79,8 @@ export interface BatchRequest {
   urls: string[];
   options: ConversionOptions;
   createdAt: Date;
-  status: 'pending' | 'processing' | 'completed' | 'error';
-  jobs: import('./job').ConversionJob[];
+  status: "pending" | "processing" | "completed" | "error";
+  jobs: import("./job").ConversionJob[];
   progress: {
     total: number;
     completed: number;
@@ -90,11 +90,19 @@ export interface BatchRequest {
 
 // WebSocket Events
 export interface WebSocketEvent {
-  type: 'job_update' | 'job_complete' | 'job_error' | 'connection_status' | 'batch_update';
+  type:
+    | "job_update"
+    | "job_complete"
+    | "job_error"
+    | "connection_status"
+    | "batch_update";
   payload: {
     jobId?: string;
     batchId?: string;
-    data?: import('./job').ConversionJob | BatchRequest | Record<string, unknown>;
+    data?:
+      | import("./job").ConversionJob
+      | BatchRequest
+      | Record<string, unknown>;
     timestamp: string;
   };
 }
@@ -118,7 +126,7 @@ export interface ConversionStats {
 export interface UiState {
   isLoading: boolean;
   isConnected: boolean;
-  theme: 'light' | 'dark' | 'auto';
+  theme: "light" | "dark" | "auto";
   notifications: Notification[];
   activeModal?: string;
   sidebarCollapsed: boolean;
@@ -126,7 +134,7 @@ export interface UiState {
 
 export interface Notification {
   id: string;
-  type: 'info' | 'success' | 'warning' | 'error';
+  type: "info" | "success" | "warning" | "error";
   title: string;
   message: string;
   action?: {
@@ -170,7 +178,15 @@ type FormValue = string | number | boolean | string[];
 export interface FormField {
   name: string;
   label: string;
-  type: 'text' | 'url' | 'email' | 'password' | 'textarea' | 'select' | 'checkbox' | 'radio';
+  type:
+    | "text"
+    | "url"
+    | "email"
+    | "password"
+    | "textarea"
+    | "select"
+    | "checkbox"
+    | "radio";
   value: FormValue;
   error?: string;
   validation?: ValidationRule;
@@ -186,9 +202,13 @@ export type Prettify<T> = {
 
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
-export type RequireAtLeastOne<T, Keys extends keyof T = keyof T> = Pick<T, Exclude<keyof T, Keys>> & {
-  [K in Keys]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<Keys, K>>>;
-}[Keys];
+export type RequireAtLeastOne<T, Keys extends keyof T = keyof T> = Pick<
+  T,
+  Exclude<keyof T, Keys>
+> &
+  {
+    [K in Keys]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<Keys, K>>>;
+  }[Keys];
 
 // Environment Variables
 export interface EnvironmentConfig {
@@ -200,11 +220,17 @@ export interface EnvironmentConfig {
   maxConcurrentJobs: number;
   enableRealTimeUpdates: boolean;
   debugMode: boolean;
-  logLevel: 'debug' | 'info' | 'warn' | 'error';
+  logLevel: "debug" | "info" | "warn" | "error";
 }
 
 // Authentication types
-export type { LoginCredentials, RegisterData, User, UserProfile, AuthTokens } from './auth.js';
+export type {
+  LoginCredentials,
+  RegisterData,
+  User,
+  UserProfile,
+  AuthTokens,
+} from "./auth.js";
 
 // Note: Additional type exports would go here when those modules exist
 // export * from './api';

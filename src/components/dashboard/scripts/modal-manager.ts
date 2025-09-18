@@ -3,10 +3,10 @@
  * Following SOLID principles with single responsibility for modal operations
  */
 
-import { domUtils, waitForDOM } from '../utils/dom.utils';
-import { createContextLogger } from '../../../utils/logger';
+import { domUtils, waitForDOM } from "../utils/dom.utils";
+import { createContextLogger } from "../../../utils/logger";
 
-const logger = createContextLogger('ModalManager');
+const logger = createContextLogger("ModalManager");
 
 // =============================================================================
 // MODAL MANAGER CLASS (Single Responsibility Principle)
@@ -29,16 +29,16 @@ export class ModalManager {
     this.attachEventListeners();
     this.isInitialized = true;
 
-    logger.info('Initialized with proper Islands architecture');
+    logger.info("Initialized with proper Islands architecture");
   }
 
   /**
    * Setup DOM element references
    */
   private setupElements(): void {
-    this.modal = domUtils.querySelector('#job-modal');
-    this.closeButton = domUtils.querySelector('#close-modal');
-    this.contentArea = domUtils.querySelector('#job-details-content');
+    this.modal = domUtils.querySelector("#job-modal");
+    this.closeButton = domUtils.querySelector("#close-modal");
+    this.contentArea = domUtils.querySelector("#job-details-content");
   }
 
   /**
@@ -47,19 +47,21 @@ export class ModalManager {
   private attachEventListeners(): void {
     // Close button click
     if (this.closeButton) {
-      domUtils.addEventListener(this.closeButton, 'click', () => this.closeModal());
+      domUtils.addEventListener(this.closeButton, "click", () =>
+        this.closeModal(),
+      );
     }
 
     // Escape key close
-    document.addEventListener('keydown', (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+    document.addEventListener("keydown", (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
         this.closeModal();
       }
     });
 
     // Background click close
     if (this.modal) {
-      domUtils.addEventListener(this.modal, 'click', (event) => {
+      domUtils.addEventListener(this.modal, "click", (event) => {
         if (event.target === this.modal) {
           this.closeModal();
         }
@@ -67,7 +69,7 @@ export class ModalManager {
     }
 
     // Listen for job detail requests
-    window.addEventListener('job:showDetails', (event) => {
+    window.addEventListener("job:showDetails", (event) => {
       this.showJobDetails((event as CustomEvent).detail.jobId);
     });
   }
@@ -79,20 +81,22 @@ export class ModalManager {
     if (!this.modal || !this.contentArea) return;
 
     // Set job ID attribute
-    domUtils.setAttribute(this.modal, 'data-job-id', jobId);
-    domUtils.setAttribute(this.modal, 'data-modal-open', 'true');
+    domUtils.setAttribute(this.modal, "data-job-id", jobId);
+    domUtils.setAttribute(this.modal, "data-modal-open", "true");
 
     // Show modal
-    domUtils.removeClass(this.modal, 'hidden');
+    domUtils.removeClass(this.modal, "hidden");
 
     // Set ARIA attributes
-    domUtils.setAttribute(this.contentArea, 'aria-busy', 'true');
+    domUtils.setAttribute(this.contentArea, "aria-busy", "true");
 
     // Fetch and display job details
     this.loadJobDetails(jobId);
 
     // Focus management for accessibility
-    const firstFocusable = this.modal.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    const firstFocusable = this.modal.querySelector(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    );
     if (firstFocusable) {
       (firstFocusable as HTMLElement).focus();
     }
@@ -104,11 +108,11 @@ export class ModalManager {
   closeModal(): void {
     if (!this.modal) return;
 
-    domUtils.addClass(this.modal, 'hidden');
-    domUtils.setAttribute(this.modal, 'data-modal-open', 'false');
+    domUtils.addClass(this.modal, "hidden");
+    domUtils.setAttribute(this.modal, "data-modal-open", "false");
 
     // Clear job ID
-    domUtils.setAttribute(this.modal, 'data-job-id', '');
+    domUtils.setAttribute(this.modal, "data-job-id", "");
 
     // Clear content
     if (this.contentArea) {
@@ -121,7 +125,7 @@ export class ModalManager {
     }
 
     // Emit close event
-    window.dispatchEvent(new CustomEvent('modal:closed'));
+    window.dispatchEvent(new CustomEvent("modal:closed"));
   }
 
   /**
@@ -135,23 +139,26 @@ export class ModalManager {
       // For now, showing mock data structure
       const mockJobDetails = {
         id: jobId,
-        title: 'Sample Job',
-        status: 'processing',
+        title: "Sample Job",
+        status: "processing",
         progress: 75,
-        url: 'https://example.com',
+        url: "https://example.com",
         createdAt: new Date().toISOString(),
-        logs: ['Started processing...', 'Extracting content...', 'Converting format...']
+        logs: [
+          "Started processing...",
+          "Extracting content...",
+          "Converting format...",
+        ],
       };
 
       // Render job details
       this.renderJobDetails(mockJobDetails);
 
       // Update ARIA attributes
-      domUtils.setAttribute(this.contentArea, 'aria-busy', 'false');
-
+      domUtils.setAttribute(this.contentArea, "aria-busy", "false");
     } catch (error) {
-      logger.error('Failed to load job details', { error });
-      this.renderError('Failed to load job details');
+      logger.error("Failed to load job details", { error });
+      this.renderError("Failed to load job details");
     }
   }
 
@@ -200,7 +207,7 @@ export class ModalManager {
         <div>
           <label class="text-white/70 text-sm">Logs</label>
           <div class="bg-black/30 rounded p-3 max-h-40 overflow-y-auto">
-            ${Array.isArray(job.logs) ? (job.logs as string[]).map((log: string) => `<p class="text-green-400 text-sm font-mono">${log}</p>`).join('') : '<p class="text-white/70 text-sm">No logs available</p>'}
+            ${Array.isArray(job.logs) ? (job.logs as string[]).map((log: string) => `<p class="text-green-400 text-sm font-mono">${log}</p>`).join("") : '<p class="text-white/70 text-sm">No logs available</p>'}
           </div>
         </div>
       </div>
@@ -231,4 +238,8 @@ export class ModalManager {
 // =============================================================================
 
 const modalManager = new ModalManager();
-modalManager.initialize().catch(error => logger.error('Failed to initialize modal manager', { error }));
+modalManager
+  .initialize()
+  .catch((error) =>
+    logger.error("Failed to initialize modal manager", { error }),
+  );

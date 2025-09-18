@@ -3,7 +3,7 @@
  * Provides typed interfaces for all backend endpoints
  */
 
-import { getApiBaseUrl } from '../constants/api';
+import { getApiBaseUrl } from "../constants/api";
 import type {
   JobStatus,
   DashboardJobStatus,
@@ -12,18 +12,18 @@ import type {
   JobCreateRequest as JobCreate,
   IJobsResponse as JobListResponse,
   JobProcessingOptions as ProcessingOptions,
-  JobConverterConfig as ConverterConfig
-} from '../types/job';
+  JobConverterConfig as ConverterConfig,
+} from "../types/job";
 import {
   EnhancedApiClient,
-  type EnhancedApiClientConfig
-} from '../utils/api-utils.ts';
+  type EnhancedApiClientConfig,
+} from "../utils/api-utils.ts";
 
 // Re-export configuration types from centralized location
 export type {
   JobConverterConfig as ConverterConfig,
-  JobProcessingOptions as ProcessingOptions
-} from '../types/job';
+  JobProcessingOptions as ProcessingOptions,
+} from "../types/job";
 
 export interface BatchConfig {
   maxConcurrent?: number;
@@ -50,7 +50,7 @@ export interface SummaryData {
 }
 
 export interface DatabaseHealth {
-  status: 'healthy' | 'degraded' | 'unhealthy';
+  status: "healthy" | "degraded" | "unhealthy";
   connectionCount?: number;
   queryLatency?: number;
   freeSpace?: number;
@@ -58,7 +58,7 @@ export interface DatabaseHealth {
 }
 
 export interface CacheHealth {
-  status: 'healthy' | 'degraded' | 'unhealthy';
+  status: "healthy" | "degraded" | "unhealthy";
   hitRate?: number;
   size?: number;
   memoryUsage?: number;
@@ -66,7 +66,7 @@ export interface CacheHealth {
 }
 
 export interface MonitoringHealth {
-  status: 'healthy' | 'degraded' | 'unhealthy';
+  status: "healthy" | "degraded" | "unhealthy";
   alertsActive?: number;
   lastCheck?: string;
   uptime?: number;
@@ -135,15 +135,15 @@ export interface ContextData {
 }
 
 // Re-export enhanced error class for backwards compatibility
-export { EnhancedApiError as ApiError } from '../utils/api-utils.ts';
+export { EnhancedApiError as ApiError } from "../utils/api-utils.ts";
 
 // Re-export unified types from centralized location
 export type {
   BackendJob as Job,
   JobPriority,
   BackendJobListResponse as JobListResponse,
-  JobCreateRequest as JobCreate
-} from '../types/job';
+  JobCreateRequest as JobCreate,
+} from "../types/job";
 
 export interface JobUpdate {
   priority?: JobPriority | undefined;
@@ -277,8 +277,8 @@ class APIClient extends EnhancedApiClient {
         maxAttempts: 3,
         baseDelayMs: 1000,
         maxDelayMs: 10000,
-        backoffMultiplier: 2
-      }
+        backoffMultiplier: 2,
+      },
     };
     super(config);
 
@@ -299,15 +299,17 @@ class APIClient extends EnhancedApiClient {
     domain?: string;
   }): Promise<JobListResponse> {
     const searchParams = new URLSearchParams();
-    
-    if (params?.page) searchParams.append('page', params.page.toString());
-    if (params?.page_size) searchParams.append('page_size', params.page_size.toString());
-    if (params?.status_filter) searchParams.append('status_filter', params.status_filter);
-    if (params?.domain) searchParams.append('domain', params.domain);
+
+    if (params?.page) searchParams.append("page", params.page.toString());
+    if (params?.page_size)
+      searchParams.append("page_size", params.page_size.toString());
+    if (params?.status_filter)
+      searchParams.append("status_filter", params.status_filter);
+    if (params?.domain) searchParams.append("domain", params.domain);
 
     const query = searchParams.toString();
-    const endpoint = `/jobs${query ? `?${query}` : ''}`;
-    
+    const endpoint = `/jobs${query ? `?${query}` : ""}`;
+
     return this.get<JobListResponse>(endpoint);
   }
 
@@ -316,7 +318,7 @@ class APIClient extends EnhancedApiClient {
   }
 
   async createJob(jobData: JobCreate): Promise<Job> {
-    return this.post<Job>('/jobs', jobData);
+    return this.post<Job>("/jobs", jobData);
   }
 
   async updateJob(id: number, jobData: JobUpdate): Promise<Job> {
@@ -345,13 +347,14 @@ class APIClient extends EnhancedApiClient {
     page_size?: number;
   }): Promise<BatchListResponse> {
     const searchParams = new URLSearchParams();
-    
-    if (params?.page) searchParams.append('page', params.page.toString());
-    if (params?.page_size) searchParams.append('page_size', params.page_size.toString());
+
+    if (params?.page) searchParams.append("page", params.page.toString());
+    if (params?.page_size)
+      searchParams.append("page_size", params.page_size.toString());
 
     const query = searchParams.toString();
-    const endpoint = `/batches${query ? `?${query}` : ''}`;
-    
+    const endpoint = `/batches${query ? `?${query}` : ""}`;
+
     return this.get<BatchListResponse>(endpoint);
   }
 
@@ -360,40 +363,41 @@ class APIClient extends EnhancedApiClient {
   }
 
   async createBatch(batchData: BatchCreate): Promise<Batch> {
-    return this.post<Batch>('/batches', batchData);
+    return this.post<Batch>("/batches", batchData);
   }
 
   // Health check and monitoring
   async getHealth(): Promise<HealthCheck> {
-    return this.get<HealthCheck>('/health');
+    return this.get<HealthCheck>("/health");
   }
 
   async getMetrics(): Promise<MetricsResponse> {
-    return this.get<MetricsResponse>('/health/metrics');
+    return this.get<MetricsResponse>("/health/metrics");
   }
 
-  async getLiveness(): Promise<{status: string}> {
-    return this.get<{status: string}>('/health/live');
+  async getLiveness(): Promise<{ status: string }> {
+    return this.get<{ status: string }>("/health/live");
   }
 
-  async getReadiness(): Promise<{status: string}> {
-    return this.get<{status: string}>('/health/ready');
+  async getReadiness(): Promise<{ status: string }> {
+    return this.get<{ status: string }>("/health/ready");
   }
 
   async getPrometheusMetrics(): Promise<string> {
     const url = `${this.baseURL}/health/prometheus`;
     const headers: HeadersInit = {};
-    
+
     if (this.apiKey) {
-      (headers as Record<string, string>)['Authorization'] = `Bearer ${this.apiKey}`;
+      (headers as Record<string, string>)["Authorization"] =
+        `Bearer ${this.apiKey}`;
     }
-    
+
     const response = await fetch(url, { headers });
-    
+
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
-    
+
     return response.text();
   }
 
@@ -414,18 +418,18 @@ class APIClient extends EnhancedApiClient {
       component?: string;
       limit?: number;
       offset?: number;
-    }
+    },
   ): Promise<JobLog[]> {
     const searchParams = new URLSearchParams();
-    
-    if (params?.level) searchParams.append('level', params.level);
-    if (params?.component) searchParams.append('component', params.component);
-    if (params?.limit) searchParams.append('limit', params.limit.toString());
-    if (params?.offset) searchParams.append('offset', params.offset.toString());
+
+    if (params?.level) searchParams.append("level", params.level);
+    if (params?.component) searchParams.append("component", params.component);
+    if (params?.limit) searchParams.append("limit", params.limit.toString());
+    if (params?.offset) searchParams.append("offset", params.offset.toString());
 
     const query = searchParams.toString();
-    const endpoint = `/jobs/${jobId}/logs${query ? `?${query}` : ''}`;
-    
+    const endpoint = `/jobs/${jobId}/logs${query ? `?${query}` : ""}`;
+
     return this.get<JobLog[]>(endpoint);
   }
 
@@ -444,55 +448,55 @@ export const apiClient = new APIClient();
 
 // Job status utilities
 export const JOB_STATUS_LABELS: Record<DashboardJobStatus, string> = {
-  pending: 'Pending',
-  validating: 'Validating',
-  scraping: 'Scraping',
-  running: 'Processing',
-  completed: 'Completed',
-  error: 'Error',
-  failed: 'Failed',
-  cancelled: 'Cancelled',
-  queued: 'Queued',
-  processing: 'Processing',
-  skipped: 'Skipped',
-  partial: 'Partial',
+  pending: "Pending",
+  validating: "Validating",
+  scraping: "Scraping",
+  running: "Processing",
+  completed: "Completed",
+  error: "Error",
+  failed: "Failed",
+  cancelled: "Cancelled",
+  queued: "Queued",
+  processing: "Processing",
+  skipped: "Skipped",
+  partial: "Partial",
 };
 
 export const JOB_STATUS_COLORS: Record<DashboardJobStatus, string> = {
-  pending: '#f59e0b', // amber-500
-  validating: '#8b5cf6', // violet-500
-  scraping: '#06b6d4', // cyan-500
-  running: '#3b82f6', // blue-500
-  completed: '#10b981', // emerald-500
-  error: '#dc2626', // red-600
-  failed: '#ef4444', // red-500
-  cancelled: '#9ca3af', // gray-400
-  queued: '#6366f1', // indigo-500
-  processing: '#3b82f6', // blue-500
-  skipped: '#6b7280', // gray-500
-  partial: '#f97316', // orange-500
+  pending: "#f59e0b", // amber-500
+  validating: "#8b5cf6", // violet-500
+  scraping: "#06b6d4", // cyan-500
+  running: "#3b82f6", // blue-500
+  completed: "#10b981", // emerald-500
+  error: "#dc2626", // red-600
+  failed: "#ef4444", // red-500
+  cancelled: "#9ca3af", // gray-400
+  queued: "#6366f1", // indigo-500
+  processing: "#3b82f6", // blue-500
+  skipped: "#6b7280", // gray-500
+  partial: "#f97316", // orange-500
 };
 
 export const JOB_PRIORITY_LABELS: Record<JobPriority, string> = {
-  low: 'Low',
-  normal: 'Normal',
-  high: 'High',
-  urgent: 'Urgent',
+  low: "Low",
+  normal: "Normal",
+  high: "High",
+  urgent: "Urgent",
 };
 
 export const JOB_PRIORITY_COLORS: Record<JobPriority, string> = {
-  low: '#6b7280', // gray-500
-  normal: '#3b82f6', // blue-500
-  high: '#f59e0b', // amber-500
-  urgent: '#ef4444', // red-500
+  low: "#6b7280", // gray-500
+  normal: "#3b82f6", // blue-500
+  high: "#f59e0b", // amber-500
+  urgent: "#ef4444", // red-500
 };
 
 // Helper functions
 export function getJobProgress(job: Job): number {
   switch (job.status) {
-    case 'completed':
+    case "completed":
       return 100;
-    case 'running':
+    case "running":
       // Estimate progress based on duration if available
       if (job.started_at && job.timeout_seconds) {
         const startTime = new Date(job.started_at).getTime();
@@ -501,8 +505,8 @@ export function getJobProgress(job: Job): number {
         return Math.min(90, (elapsed / job.timeout_seconds) * 100);
       }
       return 50; // Default for running jobs
-    case 'failed':
-    case 'cancelled':
+    case "failed":
+    case "cancelled":
       return 0;
     default:
       return 0;
@@ -517,7 +521,7 @@ export function getJobDuration(job: Job): string {
     const remainingSeconds = seconds % 60;
     return `${minutes}m ${remainingSeconds}s`;
   }
-  
+
   if (job.started_at && job.completed_at) {
     const start = new Date(job.started_at).getTime();
     const end = new Date(job.completed_at).getTime();
@@ -527,22 +531,22 @@ export function getJobDuration(job: Job): string {
     const remainingSeconds = seconds % 60;
     return `${minutes}m ${remainingSeconds}s`;
   }
-  
-  return 'N/A';
+
+  return "N/A";
 }
 
 export function formatFileSize(bytes: number | null | undefined): string {
-  if (!bytes) return 'N/A';
-  
-  const units = ['B', 'KB', 'MB', 'GB'];
+  if (!bytes) return "N/A";
+
+  const units = ["B", "KB", "MB", "GB"];
   let size = bytes;
   let unitIndex = 0;
-  
+
   while (size >= 1024 && unitIndex < units.length - 1) {
     size /= 1024;
     unitIndex++;
   }
-  
+
   return `${size.toFixed(1)} ${units[unitIndex]}`;
 }
 
@@ -550,12 +554,12 @@ export function getRelativeTime(dateString: string): string {
   const date = new Date(dateString);
   const now = new Date();
   const diff = now.getTime() - date.getTime();
-  
+
   const seconds = Math.floor(diff / 1000);
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
-  
+
   if (days > 0) return `${days}d ago`;
   if (hours > 0) return `${hours}h ago`;
   if (minutes > 0) return `${minutes}m ago`;
@@ -571,74 +575,79 @@ export {
   getValidationErrorMessage,
   getFormValidationErrors,
   hasValidationErrors,
-  isRetryableError
-} from '../utils/api-utils.ts';
+  isRetryableError,
+} from "../utils/api-utils.ts";
 
 // Content result utilities
 export function getContentSummary(result: ContentResult): string {
   const parts: string[] = [];
-  
+
   if (result.word_count) {
     parts.push(`${result.word_count} words`);
   }
-  
+
   if (result.image_count) {
     parts.push(`${result.image_count} images`);
   }
-  
+
   if (result.link_count) {
     parts.push(`${result.link_count} links`);
   }
-  
-  return parts.join(', ') || 'No content statistics';
+
+  return parts.join(", ") || "No content statistics";
 }
 
 // Job logs utilities
 export const JOB_LOG_LEVELS = {
-  DEBUG: 'DEBUG',
-  INFO: 'INFO',
-  WARN: 'WARN',
-  ERROR: 'ERROR',
+  DEBUG: "DEBUG",
+  INFO: "INFO",
+  WARN: "WARN",
+  ERROR: "ERROR",
 } as const;
 
 export const JOB_LOG_LEVEL_COLORS: Record<string, string> = {
-  DEBUG: '#6b7280', // gray-500
-  INFO: '#3b82f6',  // blue-500
-  WARN: '#f59e0b',  // amber-500
-  ERROR: '#ef4444', // red-500
+  DEBUG: "#6b7280", // gray-500
+  INFO: "#3b82f6", // blue-500
+  WARN: "#f59e0b", // amber-500
+  ERROR: "#ef4444", // red-500
 };
 
 export function formatLogLevel(level: string): string {
-  return JOB_LOG_LEVELS[level.toUpperCase() as keyof typeof JOB_LOG_LEVELS] || level;
+  return (
+    JOB_LOG_LEVELS[level.toUpperCase() as keyof typeof JOB_LOG_LEVELS] || level
+  );
 }
 
 // Health check utilities
 export function getHealthStatus(health: HealthCheck): {
-  status: 'healthy' | 'degraded' | 'unhealthy';
+  status: "healthy" | "degraded" | "unhealthy";
   issues: string[];
 } {
   const issues: string[] = [];
-  
-  if (health.database?.status !== 'healthy') {
-    issues.push('Database connectivity issues');
+
+  if (health.database?.status !== "healthy") {
+    issues.push("Database connectivity issues");
   }
-  
-  if (health.cache?.status === 'unhealthy' || health.cache?.status === 'degraded') {
-    issues.push('Cache service issues');
+
+  if (
+    health.cache?.status === "unhealthy" ||
+    health.cache?.status === "degraded"
+  ) {
+    issues.push("Cache service issues");
   }
-  
-  if (health.monitoring?.status !== 'healthy') {
-    issues.push('Monitoring service issues');
+
+  if (health.monitoring?.status !== "healthy") {
+    issues.push("Monitoring service issues");
   }
-  
-  let status: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
-  
-  if (health.status === 'unhealthy') {
-    status = 'unhealthy';
-  } else if (health.status === 'degraded' || issues.length > 0) {
-    status = 'degraded';
+
+  let status: "healthy" | "degraded" | "unhealthy" = "healthy";
+
+  if (health.status === "unhealthy") {
+    status = "unhealthy";
+  } else if (health.status === "degraded" || issues.length > 0) {
+    status = "degraded";
   }
-  
+
   return { status, issues };
 }
 
@@ -647,19 +656,19 @@ export function getJobEfficiency(job: Job): number {
   if (!job.duration_seconds || !job.content_size_bytes) {
     return 0;
   }
-  
+
   // Calculate bytes per second (efficiency metric)
   return job.content_size_bytes / job.duration_seconds;
 }
 
 export function isJobRetryable(job: Job): boolean {
-  return job.status === 'failed' && job.retry_count < job.max_retries;
+  return job.status === "failed" && job.retry_count < job.max_retries;
 }
 
 export function getJobNextRetryTime(job: Job): Date | null {
   if (!job.next_retry_at) {
     return null;
   }
-  
+
   return new Date(job.next_retry_at);
 }

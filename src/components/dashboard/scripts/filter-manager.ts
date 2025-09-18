@@ -3,20 +3,20 @@
  * Following SOLID principles and Astro Islands Architecture
  */
 
-import type { IFilterManager } from '../types/filter.types';
-import { FilterUtils, EventUtils } from '../utils/filter.utils';
-import { domUtils, waitForDOM } from '../utils/dom.utils';
-import { createContextLogger } from '../../../utils/logger';
+import type { IFilterManager } from "../types/filter.types";
+import { FilterUtils, EventUtils } from "../utils/filter.utils";
+import { domUtils, waitForDOM } from "../utils/dom.utils";
+import { createContextLogger } from "../../../utils/logger";
 
-const logger = createContextLogger('FilterManager');
+const logger = createContextLogger("FilterManager");
 
 // =============================================================================
 // FILTER MANAGER CLASS (Single Responsibility Principle)
 // =============================================================================
 
 class FilterManager implements IFilterManager {
-  private currentFilter: string = 'all';
-  private availableStatuses: readonly string[] = ['all'];
+  private currentFilter: string = "all";
+  private availableStatuses: readonly string[] = ["all"];
 
   constructor() {
     this.init();
@@ -28,27 +28,31 @@ class FilterManager implements IFilterManager {
 
   private async init(): Promise<void> {
     await waitForDOM();
-    
+
     this.loadInitialState();
     this.attachEventListeners();
     this.updateFilterStates();
     this.emitInitialState();
-    
-    logger.info('FilterManager initialized with Astro Islands architecture');
+
+    logger.info("FilterManager initialized with Astro Islands architecture");
   }
 
   private loadInitialState(): void {
     const panel = domUtils.querySelector('[data-component="filter-panel"]');
     if (!panel) return;
 
-    this.currentFilter = domUtils.getDataAttribute(panel, 'current-filter') || 'all';
-    
-    const statusesAttr = domUtils.getDataAttribute(panel, 'available-statuses');
+    this.currentFilter =
+      domUtils.getDataAttribute(panel, "current-filter") || "all";
+
+    const statusesAttr = domUtils.getDataAttribute(panel, "available-statuses");
     if (statusesAttr) {
       try {
         this.availableStatuses = JSON.parse(statusesAttr);
       } catch (error) {
-        console.warn('FilterManager: Failed to parse available statuses', error);
+        console.warn(
+          "FilterManager: Failed to parse available statuses",
+          error,
+        );
       }
     }
   }
@@ -71,11 +75,11 @@ class FilterManager implements IFilterManager {
       this.currentFilter = filter;
       this.updateFilterStates();
       this.emitFilterUpdate();
-      
+
       // Update component data attribute for state persistence
       const panel = domUtils.querySelector('[data-component="filter-panel"]');
       if (panel) {
-        domUtils.setDataAttribute(panel, 'current-filter', filter);
+        domUtils.setDataAttribute(panel, "current-filter", filter);
       }
     }
   }
@@ -87,11 +91,15 @@ class FilterManager implements IFilterManager {
   updateAvailableStatuses(statuses: readonly string[]): void {
     this.availableStatuses = statuses;
     this.updateFilterStates();
-    
+
     // Update component data attribute
     const panel = domUtils.querySelector('[data-component="filter-panel"]');
     if (panel) {
-      domUtils.setDataAttribute(panel, 'available-statuses', JSON.stringify(statuses));
+      domUtils.setDataAttribute(
+        panel,
+        "available-statuses",
+        JSON.stringify(statuses),
+      );
     }
   }
 
@@ -105,13 +113,13 @@ class FilterManager implements IFilterManager {
 
   private attachEventListeners(): void {
     // Listen for filter button clicks
-    const filterButtons = domUtils.querySelectorAll('[data-filter]');
-    
-    filterButtons.forEach(button => {
-      domUtils.addEventListener(button, 'click', (event) => {
+    const filterButtons = domUtils.querySelectorAll("[data-filter]");
+
+    filterButtons.forEach((button) => {
+      domUtils.addEventListener(button, "click", (event) => {
         event.preventDefault();
-        
-        const filterKey = domUtils.getDataAttribute(button, 'filter');
+
+        const filterKey = domUtils.getDataAttribute(button, "filter");
         if (filterKey && !this.isFilterDisabled(filterKey)) {
           this.setCurrentFilter(filterKey);
         }
@@ -119,7 +127,7 @@ class FilterManager implements IFilterManager {
     });
 
     // Listen for external jobs data updates
-    window.addEventListener('jobs:dataUpdate', (event) => {
+    window.addEventListener("jobs:dataUpdate", (event) => {
       const customEvent = event as CustomEvent;
       if (customEvent.detail?.availableStatuses) {
         this.updateAvailableStatuses(customEvent.detail.availableStatuses);
@@ -128,10 +136,10 @@ class FilterManager implements IFilterManager {
   }
 
   private updateFilterStates(): void {
-    const filterButtons = domUtils.querySelectorAll('[data-filter]');
-    
-    filterButtons.forEach(button => {
-      const filter = domUtils.getDataAttribute(button, 'filter');
+    const filterButtons = domUtils.querySelectorAll("[data-filter]");
+
+    filterButtons.forEach((button) => {
+      const filter = domUtils.getDataAttribute(button, "filter");
       if (!filter) return;
 
       const isDisabled = this.isFilterDisabled(filter);
@@ -144,22 +152,26 @@ class FilterManager implements IFilterManager {
 
       // Update visual styling using utility classes
       domUtils.updateClasses(button, {
-        add: isActive ? ['bg-blue-500/50', 'text-blue-300', 'border-blue-400/30'] : [],
-        remove: isActive ? [] : ['bg-blue-500/50', 'text-blue-300', 'border-blue-400/30'],
-        toggle: isDisabled ? ['opacity-50', 'cursor-not-allowed'] : []
+        add: isActive
+          ? ["bg-blue-500/50", "text-blue-300", "border-blue-400/30"]
+          : [],
+        remove: isActive
+          ? []
+          : ["bg-blue-500/50", "text-blue-300", "border-blue-400/30"],
+        toggle: isDisabled ? ["opacity-50", "cursor-not-allowed"] : [],
       });
 
       // Update hover states
       if (isDisabled) {
-        domUtils.removeClass(button, 'hover:bg-white/20');
+        domUtils.removeClass(button, "hover:bg-white/20");
       } else {
-        domUtils.addClass(button, 'hover:bg-white/20');
+        domUtils.addClass(button, "hover:bg-white/20");
       }
 
       // Update ARIA attributes for accessibility
       domUtils.setAttributes(button, {
-        'aria-pressed': isActive ? 'true' : 'false',
-        'aria-disabled': isDisabled ? 'true' : 'false'
+        "aria-pressed": isActive ? "true" : "false",
+        "aria-disabled": isDisabled ? "true" : "false",
       });
     });
   }
@@ -168,20 +180,21 @@ class FilterManager implements IFilterManager {
     const panel = domUtils.querySelector('[data-component="filter-panel"]');
     if (!panel) return;
 
-    const currentSort = domUtils.getDataAttribute(panel, 'current-sort') || 'newest';
-    const searchQuery = domUtils.getDataAttribute(panel, 'search-query') || '';
+    const currentSort =
+      domUtils.getDataAttribute(panel, "current-sort") || "newest";
+    const searchQuery = domUtils.getDataAttribute(panel, "search-query") || "";
 
     const event = EventUtils.createFilterUpdateEvent(
       this.currentFilter,
       currentSort,
-      searchQuery
+      searchQuery,
     );
 
     EventUtils.dispatchEvent(event);
-    
-    logger.debug('Filter updated', {
+
+    logger.debug("Filter updated", {
       filter: this.currentFilter,
-      availableStatuses: this.availableStatuses
+      availableStatuses: this.availableStatuses,
     });
   }
 
@@ -201,6 +214,7 @@ class FilterManager implements IFilterManager {
 const filterManager = new FilterManager();
 
 // Expose manager globally for debugging and external access
-if (typeof window !== 'undefined') {
-  (window as Window & { filterManager?: FilterManager }).filterManager = filterManager;
+if (typeof window !== "undefined") {
+  (window as Window & { filterManager?: FilterManager }).filterManager =
+    filterManager;
 }

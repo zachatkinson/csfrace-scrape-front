@@ -36,6 +36,7 @@ A production-ready, enterprise-grade frontend application built with modern web 
 ## 🎯 Features
 
 ### Core Functionality
+
 - **📊 Dashboard** — Real-time job monitoring with filtering, sorting, and batch operations
 - **🔗 URL Processing** — Single URL and batch URL scraping with intelligent validation
 - **⚙️ Settings Management** — Comprehensive configuration with persistent storage
@@ -43,6 +44,7 @@ A production-ready, enterprise-grade frontend application built with modern web 
 - **📱 Responsive Design** — Mobile-first approach with seamless desktop experience
 
 ### Technical Features
+
 - **🔄 Real-time Updates** — WebSocket integration for live job status updates
 - **🎨 Design System** — Modular liquid glass components with strategy patterns
 - **📝 Form Management** — Standardized form system with validation and error handling
@@ -50,6 +52,7 @@ A production-ready, enterprise-grade frontend application built with modern web 
 - **🔍 Type Safety** — Comprehensive TypeScript interfaces and type checking
 
 ### User Experience
+
 - **⚡ Fast Loading** — Optimized assets and progressive enhancement
 - **♿ Accessible** — WCAG compliant with keyboard navigation and screen reader support
 - **🌙 Modern UI** — Glass morphism effects with smooth animations and transitions
@@ -90,7 +93,7 @@ src/
 
 ### Prerequisites
 
-- **Node.js** 18+ 
+- **Node.js** 18+
 - **pnpm** (recommended) or npm
 - **Docker** (optional, for containerized development)
 
@@ -231,6 +234,7 @@ csfrace-scrape-front/
 ├── docker-compose.yml       # Docker configuration
 └── .env.example             # Environment variables template
 ```
+
 </details>
 
 ## 🔌 API Integration
@@ -267,7 +271,7 @@ const container = new ServiceContainer({
   api: new RestApiService(apiConfig),
   auth: new CustomAuthService(authConfig),
   storage: new BrowserStorageService(),
-  notifications: new ToastNotificationService()
+  notifications: new ToastNotificationService(),
 });
 
 // Usage in components
@@ -338,7 +342,7 @@ We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md) 
 # Unit tests
 pnpm test
 
-# Integration tests  
+# Integration tests
 pnpm test:integration
 
 # E2E tests

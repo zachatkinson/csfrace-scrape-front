@@ -10,19 +10,19 @@ import React, {
   useContext,
   useState,
   useEffect,
-  useCallback
-} from 'react';
-import { getApiBaseUrl } from '../constants/api.ts';
-import { createContextLogger } from '../utils/logger';
+  useCallback,
+} from "react";
+import { getApiBaseUrl } from "../constants/api.ts";
+import { createContextLogger } from "../utils/logger";
 import type {
   User,
   UserProfile,
   AuthTokens,
   LoginCredentials,
-  RegisterData
-} from '../types/auth.ts';
+  RegisterData,
+} from "../types/auth.ts";
 
-const logger = createContextLogger('AuthContext');
+const logger = createContextLogger("AuthContext");
 
 // DRY/SOLID: Use centralized API base URL
 const getApiBase = () => getApiBaseUrl();
@@ -46,14 +46,14 @@ interface AuthContextValue extends AuthState {
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<void>;
-  
+
   // OAuth
   loginWithOAuth: (provider: string) => Promise<void>;
-  
+
   // WebAuthn/Passkeys
   registerPasskey: () => Promise<void>;
   authenticateWithPasskey: () => Promise<void>;
-  
+
   // Utils
   clearError: () => void;
   checkAuthStatus: () => Promise<boolean>;
@@ -68,7 +68,8 @@ const initialState: AuthState = {
   error: null,
   isInitialized: false,
   oauthProviders: [],
-  webauthnSupported: typeof window !== 'undefined' && 'credentials' in navigator,
+  webauthnSupported:
+    typeof window !== "undefined" && "credentials" in navigator,
 };
 
 // Create context
@@ -79,7 +80,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const response = await fetch(`${getApiBase()}${endpoint}`, {
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...options.headers,
     },
     ...options,
@@ -94,8 +95,8 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
 };
 
 // Token storage helpers
-const TOKEN_KEY = 'auth_tokens';
-const USER_KEY = 'auth_user';
+const TOKEN_KEY = "auth_tokens";
+const USER_KEY = "auth_user";
 
 const saveTokens = (tokens: AuthTokens) => {
   localStorage.setItem(TOKEN_KEY, JSON.stringify(tokens));
@@ -143,13 +144,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (storedTokens && storedUser) {
           // Verify token is still valid by calling /auth/me
           try {
-            const currentUser = await apiRequest('/auth/me', {
+            const currentUser = await apiRequest("/auth/me", {
               headers: {
-                'Authorization': `Bearer ${storedTokens.access_token}`,
+                Authorization: `Bearer ${storedTokens.access_token}`,
               },
             });
-            
-            setState(prev => ({
+
+            setState((prev) => ({
               ...prev,
               user: currentUser,
               tokens: storedTokens,
@@ -160,14 +161,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } catch {
             // Token invalid, clear storage
             clearStorage();
-            setState(prev => ({
+            setState((prev) => ({
               ...prev,
               isLoading: false,
               isInitialized: true,
             }));
           }
         } else {
-          setState(prev => ({
+          setState((prev) => ({
             ...prev,
             isLoading: false,
             isInitialized: true,
@@ -176,16 +177,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // Load OAuth providers from Docker backend
         try {
-          const providers = await apiRequest('/auth/oauth/providers');
-          setState(prev => ({ ...prev, oauthProviders: providers }));
+          const providers = await apiRequest("/auth/oauth/providers");
+          setState((prev) => ({ ...prev, oauthProviders: providers }));
         } catch (error) {
-          logger.error('Failed to load OAuth providers', { error });
+          logger.error("Failed to load OAuth providers", { error });
         }
-
       } catch (error) {
-        setState(prev => ({
+        setState((prev) => ({
           ...prev,
-          error: error instanceof Error ? error.message : 'Auth initialization failed',
+          error:
+            error instanceof Error
+              ? error.message
+              : "Auth initialization failed",
           isLoading: false,
           isInitialized: true,
         }));
@@ -197,36 +200,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Login with email/password
   const login = useCallback(async (credentials: LoginCredentials) => {
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
-    
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+
     try {
       // Create FormData for OAuth2 token endpoint
       const formData = new FormData();
-      formData.append('username', credentials.email); // Backend expects 'username' field, we use email
-      formData.append('password', credentials.password);
-      
+      formData.append("username", credentials.email); // Backend expects 'username' field, we use email
+      formData.append("password", credentials.password);
+
       const tokens = await fetch(`${getApiBase()}/auth/token`, {
-        method: 'POST',
+        method: "POST",
         body: formData,
       }).then(async (res) => {
         if (!res.ok) {
           const error = await res.text();
-          throw new Error(error || 'Login failed');
+          throw new Error(error || "Login failed");
         }
         return res.json();
       });
-      
+
       // Get user profile
-      const user = await apiRequest('/auth/me', {
+      const user = await apiRequest("/auth/me", {
         headers: {
-          'Authorization': `Bearer ${tokens.access_token}`,
+          Authorization: `Bearer ${tokens.access_token}`,
         },
       });
-      
+
       saveTokens(tokens);
       saveUser(user);
-      
-      setState(prev => ({
+
+      setState((prev) => ({
         ...prev,
         user,
         tokens,
@@ -235,9 +238,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         error: null,
       }));
     } catch (error) {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
-        error: error instanceof Error ? error.message : 'Login failed',
+        error: error instanceof Error ? error.message : "Login failed",
         isLoading: false,
       }));
       throw error;
@@ -245,45 +248,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Register new user
-  const register = useCallback(async (data: RegisterData) => {
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
-    
-    try {
-      await apiRequest('/auth/register', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
-      
-      // Auto-login after registration
-      await login({ email: data.email, password: data.password });
-    } catch (error) {
-      setState(prev => ({
-        ...prev,
-        error: error instanceof Error ? error.message : 'Registration failed',
-        isLoading: false,
-      }));
-      throw error;
-    }
-  }, [login]);
+  const register = useCallback(
+    async (data: RegisterData) => {
+      setState((prev) => ({ ...prev, isLoading: true, error: null }));
+
+      try {
+        await apiRequest("/auth/register", {
+          method: "POST",
+          body: JSON.stringify(data),
+        });
+
+        // Auto-login after registration
+        await login({ email: data.email, password: data.password });
+      } catch (error) {
+        setState((prev) => ({
+          ...prev,
+          error: error instanceof Error ? error.message : "Registration failed",
+          isLoading: false,
+        }));
+        throw error;
+      }
+    },
+    [login],
+  );
 
   // Logout user
   const logout = useCallback(async () => {
-    setState(prev => ({ ...prev, isLoading: true }));
-    
+    setState((prev) => ({ ...prev, isLoading: true }));
+
     try {
       if (state.tokens) {
-        await apiRequest('/auth/logout', {
-          method: 'POST',
+        await apiRequest("/auth/logout", {
+          method: "POST",
           headers: {
-            'Authorization': `Bearer ${state.tokens.access_token}`,
+            Authorization: `Bearer ${state.tokens.access_token}`,
           },
         });
       }
     } catch (error) {
-      logger.error('Logout API call failed', { error });
+      logger.error("Logout API call failed", { error });
     } finally {
       clearStorage();
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         user: null,
         tokens: null,
@@ -296,33 +302,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // OAuth login
   const loginWithOAuth = useCallback(async (provider: string) => {
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
-    
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+
     try {
       // Store provider in sessionStorage for callback page
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('oauth_provider', provider);
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("oauth_provider", provider);
       }
-      
+
       // POST request with provider and redirect_uri in body
-      const response = await apiRequest('/auth/oauth/login', {
-        method: 'POST',
+      const response = await apiRequest("/auth/oauth/login", {
+        method: "POST",
         body: JSON.stringify({
           provider: provider,
-          redirect_uri: `${window.location.origin}/auth/callback`
+          redirect_uri: `${window.location.origin}/auth/callback`,
         }),
       });
-      
+
       // Redirect to OAuth provider URL
       if (response.authorization_url) {
         window.location.href = response.authorization_url;
       } else {
-        throw new Error('No authorization URL returned from server');
+        throw new Error("No authorization URL returned from server");
       }
     } catch (error) {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
-        error: error instanceof Error ? error.message : 'OAuth login failed',
+        error: error instanceof Error ? error.message : "OAuth login failed",
         isLoading: false,
       }));
       throw error;
@@ -331,35 +337,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Passkey registration
   const registerPasskey = useCallback(async () => {
-    if (!state.tokens) throw new Error('Must be logged in to register passkey');
-    
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
-    
+    if (!state.tokens) throw new Error("Must be logged in to register passkey");
+
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+
     try {
-      const options = await apiRequest('/auth/passkeys/register/begin', {
+      const options = await apiRequest("/auth/passkeys/register/begin", {
         headers: {
-          'Authorization': `Bearer ${state.tokens.access_token}`,
+          Authorization: `Bearer ${state.tokens.access_token}`,
         },
       });
-      
+
       // Use WebAuthn API
       const credential = await navigator.credentials.create({
-        publicKey: options
+        publicKey: options,
       });
-      
-      await apiRequest('/auth/passkeys/register/complete', {
-        method: 'POST',
+
+      await apiRequest("/auth/passkeys/register/complete", {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${state.tokens.access_token}`,
+          Authorization: `Bearer ${state.tokens.access_token}`,
         },
         body: JSON.stringify({ credential }),
       });
-      
-      setState(prev => ({ ...prev, isLoading: false }));
+
+      setState((prev) => ({ ...prev, isLoading: false }));
     } catch (error) {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
-        error: error instanceof Error ? error.message : 'Passkey registration failed',
+        error:
+          error instanceof Error
+            ? error.message
+            : "Passkey registration failed",
         isLoading: false,
       }));
       throw error;
@@ -368,32 +377,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Passkey authentication
   const authenticateWithPasskey = useCallback(async () => {
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
-    
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+
     try {
-      const options = await apiRequest('/auth/passkeys/authenticate/begin');
-      
+      const options = await apiRequest("/auth/passkeys/authenticate/begin");
+
       // Use WebAuthn API
       const credential = await navigator.credentials.get({
-        publicKey: options
+        publicKey: options,
       });
-      
-      const tokens = await apiRequest('/auth/passkeys/authenticate/complete', {
-        method: 'POST',
+
+      const tokens = await apiRequest("/auth/passkeys/authenticate/complete", {
+        method: "POST",
         body: JSON.stringify({ credential }),
       });
-      
+
       // Get user profile
-      const user = await apiRequest('/auth/me', {
+      const user = await apiRequest("/auth/me", {
         headers: {
-          'Authorization': `Bearer ${tokens.access_token}`,
+          Authorization: `Bearer ${tokens.access_token}`,
         },
       });
-      
+
       saveTokens(tokens);
       saveUser(user);
-      
-      setState(prev => ({
+
+      setState((prev) => ({
         ...prev,
         user,
         tokens,
@@ -402,9 +411,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         error: null,
       }));
     } catch (error) {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
-        error: error instanceof Error ? error.message : 'Passkey authentication failed',
+        error:
+          error instanceof Error
+            ? error.message
+            : "Passkey authentication failed",
         isLoading: false,
       }));
       throw error;
@@ -414,34 +426,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Refresh token
   const refreshToken = useCallback(async () => {
     if (!state.tokens?.refresh_token) return;
-    
+
     try {
-      const newTokens = await apiRequest('/auth/refresh', {
-        method: 'POST',
+      const newTokens = await apiRequest("/auth/refresh", {
+        method: "POST",
         body: JSON.stringify({ refresh_token: state.tokens.refresh_token }),
       });
-      
+
       saveTokens(newTokens);
-      setState(prev => ({ ...prev, tokens: newTokens }));
+      setState((prev) => ({ ...prev, tokens: newTokens }));
     } catch (error) {
-      logger.error('Token refresh failed', { error });
+      logger.error("Token refresh failed", { error });
       logout();
     }
   }, [state.tokens, logout]);
 
   // Clear error
   const clearError = useCallback(() => {
-    setState(prev => ({ ...prev, error: null }));
+    setState((prev) => ({ ...prev, error: null }));
   }, []);
 
   // Check auth status
   const checkAuthStatus = useCallback(async (): Promise<boolean> => {
     if (!state.tokens) return false;
-    
+
     try {
-      await apiRequest('/auth/me', {
+      await apiRequest("/auth/me", {
         headers: {
-          'Authorization': `Bearer ${state.tokens.access_token}`,
+          Authorization: `Bearer ${state.tokens.access_token}`,
         },
       });
       return true;
@@ -464,9 +476,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={contextValue}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 }
 
@@ -474,35 +484,76 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }
 
 // Focused hooks for Interface Segregation Principle
 export function useBasicAuth() {
-  const { user, tokens, isAuthenticated, isLoading, isInitialized, error, login, register, logout, refreshToken, clearError, checkAuthStatus } = useAuth();
-  return { user, tokens, isAuthenticated, isLoading, isInitialized, error, login, register, logout, refreshToken, clearError, checkAuthStatus };
+  const {
+    user,
+    tokens,
+    isAuthenticated,
+    isLoading,
+    isInitialized,
+    error,
+    login,
+    register,
+    logout,
+    refreshToken,
+    clearError,
+    checkAuthStatus,
+  } = useAuth();
+  return {
+    user,
+    tokens,
+    isAuthenticated,
+    isLoading,
+    isInitialized,
+    error,
+    login,
+    register,
+    logout,
+    refreshToken,
+    clearError,
+    checkAuthStatus,
+  };
 }
 
 export function useOAuth() {
-  const { oauthProviders, isLoading, error, loginWithOAuth, clearError } = useAuth();
+  const { oauthProviders, isLoading, error, loginWithOAuth, clearError } =
+    useAuth();
   return { oauthProviders, isLoading, error, loginWithOAuth, clearError };
 }
 
 export function useWebAuthn() {
-  const { webauthnSupported, isLoading, error, registerPasskey, authenticateWithPasskey, clearError } = useAuth();
-  return { webauthnSupported, isLoading, error, registerPasskey, authenticateWithPasskey, clearError };
+  const {
+    webauthnSupported,
+    isLoading,
+    error,
+    registerPasskey,
+    authenticateWithPasskey,
+    clearError,
+  } = useAuth();
+  return {
+    webauthnSupported,
+    isLoading,
+    error,
+    registerPasskey,
+    authenticateWithPasskey,
+    clearError,
+  };
 }
 
 export function useUserProfile() {
   const { user, isLoading, error, clearError } = useAuth();
-  
+
   const updateProfile = async (_profileData: Partial<UserProfile>) => {
     // TODO: Implement profile update call to Docker backend
-    logger.warn('Profile update not implemented yet');
-    throw new Error('Profile update functionality not implemented');
+    logger.warn("Profile update not implemented yet");
+    throw new Error("Profile update functionality not implemented");
   };
-  
+
   return { user, isLoading, error, updateProfile, clearError };
 }

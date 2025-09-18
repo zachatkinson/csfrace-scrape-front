@@ -3,47 +3,51 @@
  * Refactored to follow SOLID principles and use astro:env
  */
 
-import type { APIRoute } from 'astro';
+import type { APIRoute } from "astro";
 
 import {
   HealthService,
   HealthServiceError,
   type HealthResponse,
-  type ServiceUpdate
-} from '../../../services/HealthService';
-import {
-  SSEStreamService
-} from '../../../services/SSEStreamService';
+  type ServiceUpdate,
+} from "../../../services/HealthService";
+import { SSEStreamService } from "../../../services/SSEStreamService";
 import {
   ssePerformanceService,
-  type AdaptivePollingResult
-} from '../../../services/SSEPerformanceService';
-import { webSocketFallbackService } from '../../../services/WebSocketFallbackService';
-import { createContextLogger } from '../../../utils/logger';
+  type AdaptivePollingResult,
+} from "../../../services/SSEPerformanceService";
+import { webSocketFallbackService } from "../../../services/WebSocketFallbackService";
+import { createContextLogger } from "../../../utils/logger";
 
-const logger = createContextLogger('HealthStreamAPI');
+const logger = createContextLogger("HealthStreamAPI");
 
 export const GET: APIRoute = async ({ request }) => {
   // Check connection limits following performance optimization principles
   if (!ssePerformanceService.canAcceptConnection()) {
-    return new Response(JSON.stringify({
-      error: 'Too many concurrent connections',
-      maxConnections: ssePerformanceService.getMetrics().maxConnections
-    }), {
-      status: 429,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return new Response(
+      JSON.stringify({
+        error: "Too many concurrent connections",
+        maxConnections: ssePerformanceService.getMetrics().maxConnections,
+      }),
+      {
+        status: 429,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   }
 
   // Register connection
   const connectionRegistered = ssePerformanceService.registerConnection();
   if (!connectionRegistered) {
-    return new Response(JSON.stringify({
-      error: 'Failed to register connection'
-    }), {
-      status: 503,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return new Response(
+      JSON.stringify({
+        error: "Failed to register connection",
+      }),
+      {
+        status: 503,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   }
 
   // Initialize services following Dependency Inversion Principle
@@ -63,27 +67,31 @@ export const GET: APIRoute = async ({ request }) => {
       let lastHealthData: HealthResponse | null = null;
       let currentPollingConfig: AdaptivePollingResult = {
         interval: 30000, // Default 30s interval
-        strategy: 'normal',
-        reason: 'Initial configuration'
+        strategy: "normal",
+        reason: "Initial configuration",
       };
 
       // Create debounced update function to prevent rapid-fire updates
-      const debouncedSendUpdates = ssePerformanceService.createDebouncedFunction(
-        (changes: ServiceUpdate[]) => {
-          for (const change of changes) {
-            const updateMessage = sseService.createServiceUpdateMessage(change);
-            if (!sseService.sendMessage(controller, updateMessage)) {
-              return; // Controller closed
+      const debouncedSendUpdates =
+        ssePerformanceService.createDebouncedFunction(
+          (changes: ServiceUpdate[]) => {
+            for (const change of changes) {
+              const updateMessage =
+                sseService.createServiceUpdateMessage(change);
+              if (!sseService.sendMessage(controller, updateMessage)) {
+                return; // Controller closed
+              }
             }
-          }
-        },
-        'health-updates'
-      );
+          },
+          "health-updates",
+        );
 
       const fetchAndCompareHealth = async () => {
         // Check if controller is still open
         if (!sseService.isControllerOpen(controller, request)) {
-          logger.info('SSE Controller closed or request aborted, stopping health fetch');
+          logger.info(
+            "SSE Controller closed or request aborted, stopping health fetch",
+          );
           return;
         }
 
@@ -92,20 +100,35 @@ export const GET: APIRoute = async ({ request }) => {
 
           // If this is the first fetch, send all services
           if (!lastHealthData) {
-            await sendAllServices(controller, sseService, healthService, currentHealthData);
+            await sendAllServices(
+              controller,
+              sseService,
+              healthService,
+              currentHealthData,
+            );
             lastHealthData = currentHealthData;
 
             // Set initial adaptive polling
-            currentPollingConfig = ssePerformanceService.getAdaptivePollingInterval(currentHealthData);
-            logger.info(`Initial SSE polling: ${currentPollingConfig.interval}ms (${currentPollingConfig.strategy}) - ${currentPollingConfig.reason}`);
+            currentPollingConfig =
+              ssePerformanceService.getAdaptivePollingInterval(
+                currentHealthData,
+              );
+            logger.info(
+              `Initial SSE polling: ${currentPollingConfig.interval}ms (${currentPollingConfig.strategy}) - ${currentPollingConfig.reason}`,
+            );
 
             // Enable WebSocket fallback if needed for critical scenarios
-            webSocketFallbackService.enableForCriticalScenarios(currentHealthData);
+            webSocketFallbackService.enableForCriticalScenarios(
+              currentHealthData,
+            );
             return;
           }
 
           // Compare with previous data and send updates only for changed services
-          const changes = healthService.detectServiceChanges(currentHealthData, lastHealthData);
+          const changes = healthService.detectServiceChanges(
+            currentHealthData,
+            lastHealthData,
+          );
 
           // Send updates through debounced function to prevent spam
           if (changes.length > 0) {
@@ -113,10 +136,13 @@ export const GET: APIRoute = async ({ request }) => {
           }
 
           // Check if we need to adjust polling interval based on system health
-          const newPollingConfig = ssePerformanceService.getAdaptivePollingInterval(currentHealthData);
+          const newPollingConfig =
+            ssePerformanceService.getAdaptivePollingInterval(currentHealthData);
           if (newPollingConfig.interval !== currentPollingConfig.interval) {
             currentPollingConfig = newPollingConfig;
-            logger.info(`SSE polling adjusted: ${currentPollingConfig.interval}ms (${currentPollingConfig.strategy}) - ${currentPollingConfig.reason}`);
+            logger.info(
+              `SSE polling adjusted: ${currentPollingConfig.interval}ms (${currentPollingConfig.strategy}) - ${currentPollingConfig.reason}`,
+            );
 
             // Restart interval with new timing
             clearInterval(intervalId);
@@ -124,17 +150,18 @@ export const GET: APIRoute = async ({ request }) => {
           }
 
           // Update WebSocket fallback based on current health
-          webSocketFallbackService.enableForCriticalScenarios(currentHealthData);
+          webSocketFallbackService.enableForCriticalScenarios(
+            currentHealthData,
+          );
 
           lastHealthData = currentHealthData;
-
         } catch (error) {
           // Send error event
           const errorMessage = sseService.createErrorMessage(
-            'backend',
+            "backend",
             error instanceof HealthServiceError
               ? error.message
-              : 'Unknown error'
+              : "Unknown error",
           );
           sseService.sendMessage(controller, errorMessage);
         }
@@ -144,7 +171,7 @@ export const GET: APIRoute = async ({ request }) => {
         intervalId = window.setInterval(() => {
           if (sseService.isControllerOpen(controller, request)) {
             fetchAndCompareHealth().catch((error) => {
-              console.error('SSE health fetch error:', error);
+              console.error("SSE health fetch error:", error);
             });
           } else {
             // Controller is closed, clear interval
@@ -173,12 +200,15 @@ export const GET: APIRoute = async ({ request }) => {
         ssePerformanceService.cleanup();
         // Clean up WebSocket fallback
         webSocketFallbackService.cleanup();
-        logger.info('SSE connection cleaned up, active connections:', { activeConnections: ssePerformanceService.getMetrics().activeConnections });
+        logger.info("SSE connection cleaned up, active connections:", {
+          activeConnections:
+            ssePerformanceService.getMetrics().activeConnections,
+        });
       };
 
       // Handle client disconnect
-      request.signal?.addEventListener('abort', () => {
-        logger.info('Client disconnected, cleaning up SSE stream');
+      request.signal?.addEventListener("abort", () => {
+        logger.info("Client disconnected, cleaning up SSE stream");
         cleanup();
       });
     },
@@ -198,24 +228,24 @@ async function sendAllServices(
   controller: ReadableStreamDefaultController,
   sseService: SSEStreamService,
   healthService: HealthService,
-  healthData: HealthResponse
+  healthData: HealthResponse,
 ): Promise<void> {
-  const services = ['frontend', 'backend', 'database', 'cache'];
+  const services = ["frontend", "backend", "database", "cache"];
 
   for (const serviceName of services) {
     let serviceData: ServiceUpdate | undefined;
 
     switch (serviceName) {
-      case 'frontend':
+      case "frontend":
         serviceData = createFrontendServiceData(healthData.timestamp);
         break;
-      case 'backend':
+      case "backend":
         serviceData = healthService.createBackendServiceUpdate(healthData);
         break;
-      case 'database':
+      case "database":
         serviceData = healthService.createDatabaseServiceUpdate(healthData);
         break;
-      case 'cache':
+      case "cache":
         serviceData = healthService.createCacheServiceUpdate(healthData);
         break;
     }
@@ -235,14 +265,14 @@ async function sendAllServices(
  */
 function createFrontendServiceData(timestamp: string): ServiceUpdate {
   return {
-    service: 'frontend',
-    status: 'healthy', // Frontend is healthy if we can run this code
+    service: "frontend",
+    status: "healthy", // Frontend is healthy if we can run this code
     timestamp,
     data: {
-      version: import.meta.env.PUBLIC_ASTRO_VERSION || 'unknown',
+      version: import.meta.env.PUBLIC_ASTRO_VERSION || "unknown",
       port: import.meta.env.PUBLIC_SERVER_PORT || 3000,
-      framework: 'Astro + React + TypeScript',
+      framework: "Astro + React + TypeScript",
       response_time_ms: 0, // Immediate for frontend
-    }
+    },
   };
 }

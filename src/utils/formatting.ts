@@ -10,10 +10,10 @@
  */
 export function formatFileSize(bytes: number | null | undefined): string {
   if (bytes === null || bytes === undefined || bytes === 0) {
-    return '0 B';
+    return "0 B";
   }
 
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const units = ["B", "KB", "MB", "GB", "TB"];
   const k = 1024;
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
@@ -34,7 +34,7 @@ export function formatRelativeTime(dateString: string): string {
     const diffDays = Math.floor(diffHours / 24);
 
     if (diffMins < 1) {
-      return 'Just now';
+      return "Just now";
     } else if (diffMins < 60) {
       return `${diffMins}m ago`;
     } else if (diffHours < 24) {
@@ -45,7 +45,7 @@ export function formatRelativeTime(dateString: string): string {
       return date.toLocaleDateString();
     }
   } catch {
-    return 'Unknown';
+    return "Unknown";
   }
 }
 
@@ -55,7 +55,7 @@ export function formatRelativeTime(dateString: string): string {
  */
 export function formatDuration(startTime?: number, endTime?: number): string {
   if (!startTime || !endTime) {
-    return 'Unknown';
+    return "Unknown";
   }
 
   const durationMs = endTime - startTime;
@@ -101,14 +101,14 @@ export function capitalize(str: string): string {
  * SOLID: Single Responsibility - Job title formatting only
  */
 export function formatJobTitle(url: string, existingTitle?: string): string {
-  if (existingTitle && existingTitle.trim() !== '') {
+  if (existingTitle && existingTitle.trim() !== "") {
     return existingTitle;
   }
 
   try {
     const urlObj = new URL(url);
     const pathname = urlObj.pathname;
-    const segments = pathname.split('/').filter(Boolean);
+    const segments = pathname.split("/").filter(Boolean);
 
     if (segments.length === 0) {
       return urlObj.hostname;
@@ -120,8 +120,8 @@ export function formatJobTitle(url: string, existingTitle?: string): string {
       return urlObj.hostname;
     }
     return lastSegment
-      .replace(/[-_]/g, ' ')
-      .replace(/\b\w/g, l => l.toUpperCase());
+      .replace(/[-_]/g, " ")
+      .replace(/\b\w/g, (l) => l.toUpperCase());
   } catch {
     return url;
   }

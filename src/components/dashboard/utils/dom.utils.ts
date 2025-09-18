@@ -5,7 +5,7 @@
 
 /// <reference lib="dom" />
 
-import type { IDOMUtils } from '../types/filter.types.ts';
+import type { IDOMUtils } from "../types/filter.types.ts";
 
 /**
  * Type-safe event map for DOM elements
@@ -20,7 +20,6 @@ type DOMEventMap = {
 // =============================================================================
 
 export class DOMUtils implements IDOMUtils {
-  
   /**
    * Safe querySelector with null check
    */
@@ -84,17 +83,17 @@ export class DOMUtils implements IDOMUtils {
   addEventListener<K extends keyof DOMEventMap>(
     element: Element,
     type: K,
-    listener: (event: DOMEventMap[K]) => void
+    listener: (event: DOMEventMap[K]) => void,
   ): void;
   addEventListener(
     element: Element,
     type: string,
-    listener: EventListener
+    listener: EventListener,
   ): void;
   addEventListener(
     element: Element,
     type: string,
-    listener: EventListener | ((event: Event) => void)
+    listener: EventListener | ((event: Event) => void),
   ): void {
     if (!element || !type || !listener) return;
 
@@ -108,18 +107,21 @@ export class DOMUtils implements IDOMUtils {
   /**
    * Update multiple classes at once (DRY pattern)
    */
-  updateClasses(element: Element, classUpdates: {
-    add?: string[];
-    remove?: string[];
-    toggle?: string[];
-  }): void {
+  updateClasses(
+    element: Element,
+    classUpdates: {
+      add?: string[];
+      remove?: string[];
+      toggle?: string[];
+    },
+  ): void {
     if (!element) return;
 
     const { add = [], remove = [], toggle = [] } = classUpdates;
 
-    remove.forEach(className => this.removeClass(element, className));
-    add.forEach(className => this.addClass(element, className));
-    toggle.forEach(className => this.toggleClass(element, className));
+    remove.forEach((className) => this.removeClass(element, className));
+    add.forEach((className) => this.addClass(element, className));
+    toggle.forEach((className) => this.toggleClass(element, className));
   }
 
   /**
@@ -138,16 +140,20 @@ export class DOMUtils implements IDOMUtils {
    */
   getDataAttribute(element: Element, attributeName: string): string | null {
     if (!element || !attributeName) return null;
-    
+
     return element.getAttribute(`data-${attributeName}`);
   }
 
   /**
    * Set data attribute safely
    */
-  setDataAttribute(element: Element, attributeName: string, value: string): void {
+  setDataAttribute(
+    element: Element,
+    attributeName: string,
+    value: string,
+  ): void {
     if (!element || !attributeName) return;
-    
+
     this.setAttribute(element, `data-${attributeName}`, value);
   }
 }
@@ -167,8 +173,8 @@ export const domUtils = new DOMUtils();
  */
 export function waitForDOM(): Promise<void> {
   return new Promise((resolve) => {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => resolve());
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () => resolve());
     } else {
       resolve();
     }
@@ -180,11 +186,11 @@ export function waitForDOM(): Promise<void> {
  */
 export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
-  wait: number
+  wait: number,
 ): (...args: Parameters<T>) => void {
   let timeout: ReturnType<typeof setTimeout>;
 
-  return function(this: ThisParameterType<T>, ...args: Parameters<T>) {
+  return function (this: ThisParameterType<T>, ...args: Parameters<T>) {
     clearTimeout(timeout);
     timeout = setTimeout(() => func.apply(this, args), wait);
   };
@@ -195,15 +201,15 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
  */
 export function throttle<T extends (...args: unknown[]) => unknown>(
   func: T,
-  limit: number
+  limit: number,
 ): (...args: Parameters<T>) => void {
   let inThrottle: boolean;
 
-  return function(this: ThisParameterType<T>, ...args: Parameters<T>) {
+  return function (this: ThisParameterType<T>, ...args: Parameters<T>) {
     if (!inThrottle) {
       func.apply(this, args);
       inThrottle = true;
-      setTimeout(() => inThrottle = false, limit);
+      setTimeout(() => (inThrottle = false), limit);
     }
   };
 }

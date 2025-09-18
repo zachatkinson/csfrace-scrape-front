@@ -7,7 +7,7 @@
  * Dependency Inversion: Depends on DOM abstractions, not concrete implementations
  */
 
-import { createContextLogger } from '../utils/logger.js';
+import { createContextLogger } from "../utils/logger.js";
 
 // =============================================================================
 // TYPES & INTERFACES
@@ -40,7 +40,7 @@ export abstract class BaseModalManager {
   protected backdrop: HTMLElement | null = null;
   protected isOpen: boolean = false;
   protected isInitialized: boolean = false;
-  protected readonly logger = createContextLogger('BaseModalManager');
+  protected readonly logger = createContextLogger("BaseModalManager");
 
   // Focus management for accessibility
   private previouslyFocusedElement: Element | null = null;
@@ -50,7 +50,7 @@ export abstract class BaseModalManager {
     this.config = {
       closeOnEscape: true,
       closeOnBackdrop: true,
-      ...config
+      ...config,
     };
   }
 
@@ -67,7 +67,9 @@ export abstract class BaseModalManager {
    */
   init(): void {
     if (this.isInitialized) {
-      this.logger.warn('Modal already initialized', { modalId: this.config.modalId });
+      this.logger.warn("Modal already initialized", {
+        modalId: this.config.modalId,
+      });
       return;
     }
 
@@ -78,9 +80,14 @@ export abstract class BaseModalManager {
       this.setupAccessibility();
       this.isInitialized = true;
 
-      this.logger.info('Modal initialized successfully', { modalId: this.config.modalId });
+      this.logger.info("Modal initialized successfully", {
+        modalId: this.config.modalId,
+      });
     } catch (error) {
-      this.logger.error('Failed to initialize modal', { modalId: this.config.modalId, error });
+      this.logger.error("Failed to initialize modal", {
+        modalId: this.config.modalId,
+        error,
+      });
     }
   }
 
@@ -91,18 +98,22 @@ export abstract class BaseModalManager {
   protected cacheElements(): void {
     this.modal = document.getElementById(this.config.modalId);
     if (!this.modal) {
-      throw new Error(`Modal element with ID "${this.config.modalId}" not found`);
+      throw new Error(
+        `Modal element with ID "${this.config.modalId}" not found`,
+      );
     }
 
     // Find close button (common patterns)
-    this.closeButton = this.modal.querySelector('[data-modal-close]') ||
-                      this.modal.querySelector('.modal-close') ||
-                      this.modal.querySelector(`#${this.config.modalId}-close`);
+    this.closeButton =
+      this.modal.querySelector("[data-modal-close]") ||
+      this.modal.querySelector(".modal-close") ||
+      this.modal.querySelector(`#${this.config.modalId}-close`);
 
     // Find backdrop (common patterns)
-    this.backdrop = this.modal.querySelector('[data-modal-backdrop]') ||
-                   this.modal.querySelector('.modal-backdrop') ||
-                   this.modal; // Modal itself can be the backdrop
+    this.backdrop =
+      this.modal.querySelector("[data-modal-backdrop]") ||
+      this.modal.querySelector(".modal-backdrop") ||
+      this.modal; // Modal itself can be the backdrop
   }
 
   /**
@@ -112,7 +123,7 @@ export abstract class BaseModalManager {
   protected setupEventListeners(): void {
     // Close button click
     if (this.closeButton) {
-      this.closeButton.addEventListener('click', (e) => {
+      this.closeButton.addEventListener("click", (e) => {
         e.preventDefault();
         this.close();
       });
@@ -120,7 +131,7 @@ export abstract class BaseModalManager {
 
     // Backdrop click (if enabled)
     if (this.config.closeOnBackdrop && this.backdrop) {
-      this.backdrop.addEventListener('click', (e) => {
+      this.backdrop.addEventListener("click", (e) => {
         // Only close if clicking the backdrop itself, not child elements
         if (e.target === this.backdrop) {
           this.close();
@@ -130,7 +141,7 @@ export abstract class BaseModalManager {
 
     // Escape key (if enabled)
     if (this.config.closeOnEscape) {
-      document.addEventListener('keydown', this.handleEscapeKey.bind(this));
+      document.addEventListener("keydown", this.handleEscapeKey.bind(this));
     }
 
     // Listen for external open/close events
@@ -152,12 +163,12 @@ export abstract class BaseModalManager {
     if (!this.modal) return;
 
     // Ensure modal has proper ARIA attributes
-    this.modal.setAttribute('role', 'dialog');
-    this.modal.setAttribute('aria-modal', 'true');
-    
+    this.modal.setAttribute("role", "dialog");
+    this.modal.setAttribute("aria-modal", "true");
+
     // Add aria-hidden when closed
     if (!this.isOpen) {
-      this.modal.setAttribute('aria-hidden', 'true');
+      this.modal.setAttribute("aria-hidden", "true");
     }
 
     // Cache focusable elements
@@ -171,16 +182,16 @@ export abstract class BaseModalManager {
     if (!this.modal) return;
 
     const focusableSelector = [
-      'button:not([disabled])',
-      'input:not([disabled])',
-      'textarea:not([disabled])',
-      'select:not([disabled])',
-      'a[href]',
-      '[tabindex]:not([tabindex="-1"])'
-    ].join(', ');
+      "button:not([disabled])",
+      "input:not([disabled])",
+      "textarea:not([disabled])",
+      "select:not([disabled])",
+      "a[href]",
+      '[tabindex]:not([tabindex="-1"])',
+    ].join(", ");
 
     this.focusableElements = Array.from(
-      this.modal.querySelectorAll(focusableSelector)
+      this.modal.querySelectorAll(focusableSelector),
     ) as HTMLElement[];
   }
 
@@ -193,7 +204,9 @@ export abstract class BaseModalManager {
 
     // Call before open hook
     if (this.config.onBeforeOpen && !this.config.onBeforeOpen()) {
-      this.logger.info('Modal open prevented by onBeforeOpen hook', { modalId: this.config.modalId });
+      this.logger.info("Modal open prevented by onBeforeOpen hook", {
+        modalId: this.config.modalId,
+      });
       return;
     }
 
@@ -206,9 +219,9 @@ export abstract class BaseModalManager {
 
       // Update state
       this.isOpen = true;
-      
+
       // Update accessibility
-      this.modal.setAttribute('aria-hidden', 'false');
+      this.modal.setAttribute("aria-hidden", "false");
       this.updateFocusableElements();
 
       // Focus management
@@ -220,11 +233,14 @@ export abstract class BaseModalManager {
       }
 
       // Emit open event
-      this.emitModalEvent('opened');
+      this.emitModalEvent("opened");
 
-      this.logger.info('Modal opened', { modalId: this.config.modalId });
+      this.logger.info("Modal opened", { modalId: this.config.modalId });
     } catch (error) {
-      this.logger.error('Failed to open modal', { modalId: this.config.modalId, error });
+      this.logger.error("Failed to open modal", {
+        modalId: this.config.modalId,
+        error,
+      });
     }
   }
 
@@ -237,7 +253,9 @@ export abstract class BaseModalManager {
 
     // Call before close hook
     if (this.config.onBeforeClose && !this.config.onBeforeClose()) {
-      this.logger.info('Modal close prevented by onBeforeClose hook', { modalId: this.config.modalId });
+      this.logger.info("Modal close prevented by onBeforeClose hook", {
+        modalId: this.config.modalId,
+      });
       return;
     }
 
@@ -249,7 +267,7 @@ export abstract class BaseModalManager {
       this.isOpen = false;
 
       // Update accessibility
-      this.modal.setAttribute('aria-hidden', 'true');
+      this.modal.setAttribute("aria-hidden", "true");
 
       // Restore focus
       this.restoreFocus();
@@ -260,11 +278,14 @@ export abstract class BaseModalManager {
       }
 
       // Emit close event
-      this.emitModalEvent('closed');
+      this.emitModalEvent("closed");
 
-      this.logger.info('Modal closed', { modalId: this.config.modalId });
+      this.logger.info("Modal closed", { modalId: this.config.modalId });
     } catch (error) {
-      this.logger.error('Failed to close modal', { modalId: this.config.modalId, error });
+      this.logger.error("Failed to close modal", {
+        modalId: this.config.modalId,
+        error,
+      });
     }
   }
 
@@ -274,15 +295,15 @@ export abstract class BaseModalManager {
    */
   protected showModal(): void {
     if (!this.modal) return;
-    
-    this.modal.classList.remove('hidden');
-    this.modal.style.display = 'flex';
-    
+
+    this.modal.classList.remove("hidden");
+    this.modal.style.display = "flex";
+
     // Add opening animation class if it exists
-    if (this.modal.classList.contains('modal-animate')) {
-      this.modal.classList.add('modal-opening');
+    if (this.modal.classList.contains("modal-animate")) {
+      this.modal.classList.add("modal-opening");
       setTimeout(() => {
-        this.modal?.classList.remove('modal-opening');
+        this.modal?.classList.remove("modal-opening");
       }, 300);
     }
   }
@@ -293,18 +314,18 @@ export abstract class BaseModalManager {
    */
   protected hideModal(): void {
     if (!this.modal) return;
-    
+
     // Add closing animation class if it exists
-    if (this.modal.classList.contains('modal-animate')) {
-      this.modal.classList.add('modal-closing');
+    if (this.modal.classList.contains("modal-animate")) {
+      this.modal.classList.add("modal-closing");
       setTimeout(() => {
-        this.modal?.classList.remove('modal-closing');
-        this.modal?.classList.add('hidden');
-        if (this.modal) this.modal.style.display = 'none';
+        this.modal?.classList.remove("modal-closing");
+        this.modal?.classList.add("hidden");
+        if (this.modal) this.modal.style.display = "none";
       }, 300);
     } else {
-      this.modal.classList.add('hidden');
-      this.modal.style.display = 'none';
+      this.modal.classList.add("hidden");
+      this.modal.style.display = "none";
     }
   }
 
@@ -312,7 +333,7 @@ export abstract class BaseModalManager {
    * Handle escape key press
    */
   private handleEscapeKey(event: KeyboardEvent): void {
-    if (event.key === 'Escape' && this.isOpen) {
+    if (event.key === "Escape" && this.isOpen) {
       event.preventDefault();
       this.close();
     }
@@ -334,7 +355,10 @@ export abstract class BaseModalManager {
    * Restore focus to previously focused element
    */
   private restoreFocus(): void {
-    if (this.previouslyFocusedElement && 'focus' in this.previouslyFocusedElement) {
+    if (
+      this.previouslyFocusedElement &&
+      "focus" in this.previouslyFocusedElement
+    ) {
       (this.previouslyFocusedElement as HTMLElement).focus();
     }
     this.previouslyFocusedElement = null;
@@ -343,12 +367,12 @@ export abstract class BaseModalManager {
   /**
    * Emit modal events for external listening
    */
-  private emitModalEvent(eventType: 'opened' | 'closed'): void {
+  private emitModalEvent(eventType: "opened" | "closed"): void {
     const event = new CustomEvent(`modal-${eventType}`, {
       detail: {
         modalId: this.config.modalId,
-        timestamp: Date.now()
-      }
+        timestamp: Date.now(),
+      },
     });
     window.dispatchEvent(event);
   }
@@ -378,7 +402,7 @@ export abstract class BaseModalManager {
   destroy(): void {
     // Remove event listeners
     if (this.config.closeOnEscape) {
-      document.removeEventListener('keydown', this.handleEscapeKey.bind(this));
+      document.removeEventListener("keydown", this.handleEscapeKey.bind(this));
     }
 
     // Clear references
@@ -390,7 +414,7 @@ export abstract class BaseModalManager {
     this.isInitialized = false;
     this.isOpen = false;
 
-    this.logger.info('Modal destroyed', { modalId: this.config.modalId });
+    this.logger.info("Modal destroyed", { modalId: this.config.modalId });
   }
 
   /**
@@ -418,7 +442,9 @@ export function createModalManager(config: ModalConfig): BaseModalManager {
   return new (class extends BaseModalManager {
     protected setupModalSpecificHandlers(): void {
       // Default implementation - can be overridden
-      this.logger.info('Setting up default modal handlers', { modalId: this.config.modalId });
+      this.logger.info("Setting up default modal handlers", {
+        modalId: this.config.modalId,
+      });
     }
   })(config);
 }
@@ -446,11 +472,13 @@ export const ModalUtils = {
    */
   closeAllModals(): void {
     // This could be implemented with a registry of modal managers
-    document.querySelectorAll('[role="dialog"][aria-hidden="false"]').forEach(modal => {
-      const modalId = modal.id;
-      if (modalId) {
-        this.closeModal(modalId);
-      }
-    });
-  }
+    document
+      .querySelectorAll('[role="dialog"][aria-hidden="false"]')
+      .forEach((modal) => {
+        const modalId = modal.id;
+        if (modalId) {
+          this.closeModal(modalId);
+        }
+      });
+  },
 };

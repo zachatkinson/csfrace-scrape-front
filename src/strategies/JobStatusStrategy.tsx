@@ -4,8 +4,8 @@
  * SOLID: Strategy Pattern - Different behaviors for different job statuses
  */
 
-import type { ReactNode } from 'react';
-import type { JobStatus } from '../types/job.ts';
+import type { ReactNode } from "react";
+import type { JobStatus } from "../types/job.ts";
 
 // =============================================================================
 // JOB STATUS INTERFACES
@@ -30,7 +30,7 @@ export interface JobStatusBehavior {
 }
 
 export interface JobStatusStats {
-  category: 'pending' | 'processing' | 'completed' | 'error';
+  category: "pending" | "processing" | "completed" | "error";
   isTerminal: boolean; // Whether this is a final state
   includeInActiveCount: boolean;
 }
@@ -41,24 +41,24 @@ export interface JobStatusStats {
 
 export interface IJobStatusStrategy {
   readonly status: JobStatus;
-  
+
   // Display properties
   getDisplay(): JobStatusDisplay;
-  
+
   // Behavioral properties
   getBehavior(): JobStatusBehavior;
-  
+
   // Statistics properties
   getStats(): JobStatusStats;
-  
+
   // Actions
   getAvailableActions(): JobAction[];
-  
+
   // Transitions - what statuses can this status transition to
   getAllowedTransitions(): JobStatus[];
 }
 
-export type JobAction = 'cancel' | 'retry' | 'download' | 'delete' | 'view';
+export type JobAction = "cancel" | "retry" | "download" | "delete" | "view";
 
 // =============================================================================
 // CONCRETE STATUS STRATEGIES
@@ -68,21 +68,31 @@ export type JobAction = 'cancel' | 'retry' | 'download' | 'delete' | 'view';
  * Pending Job Status Strategy
  */
 export class PendingStatusStrategy implements IJobStatusStrategy {
-  readonly status: JobStatus = 'pending';
-  
+  readonly status: JobStatus = "pending";
+
   getDisplay(): JobStatusDisplay {
     return {
-      label: 'Queued',
-      color: 'text-gray-400',
-      bgColor: 'bg-gray-500/20',
+      label: "Queued",
+      color: "text-gray-400",
+      bgColor: "bg-gray-500/20",
       icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
         </svg>
       ),
     };
   }
-  
+
   getBehavior(): JobStatusBehavior {
     return {
       canCancel: true,
@@ -95,21 +105,21 @@ export class PendingStatusStrategy implements IJobStatusStrategy {
       defaultProgress: 0,
     };
   }
-  
+
   getStats(): JobStatusStats {
     return {
-      category: 'pending',
+      category: "pending",
       isTerminal: false,
       includeInActiveCount: true,
     };
   }
-  
+
   getAvailableActions(): JobAction[] {
-    return ['cancel', 'delete'];
+    return ["cancel", "delete"];
   }
-  
+
   getAllowedTransitions(): JobStatus[] {
-    return ['validating', 'cancelled', 'error'];
+    return ["validating", "cancelled", "error"];
   }
 }
 
@@ -117,19 +127,19 @@ export class PendingStatusStrategy implements IJobStatusStrategy {
  * Validating Job Status Strategy
  */
 export class ValidatingStatusStrategy implements IJobStatusStrategy {
-  readonly status: JobStatus = 'validating';
-  
+  readonly status: JobStatus = "validating";
+
   getDisplay(): JobStatusDisplay {
     return {
-      label: 'Validating',
-      color: 'text-blue-400',
-      bgColor: 'bg-blue-500/20',
+      label: "Validating",
+      color: "text-blue-400",
+      bgColor: "bg-blue-500/20",
       icon: (
         <div className="animate-spin rounded-full w-4 h-4 border-2 border-blue-400/30 border-t-blue-400"></div>
       ),
     };
   }
-  
+
   getBehavior(): JobStatusBehavior {
     return {
       canCancel: true,
@@ -142,21 +152,21 @@ export class ValidatingStatusStrategy implements IJobStatusStrategy {
       defaultProgress: 25,
     };
   }
-  
+
   getStats(): JobStatusStats {
     return {
-      category: 'processing',
+      category: "processing",
       isTerminal: false,
       includeInActiveCount: true,
     };
   }
-  
+
   getAvailableActions(): JobAction[] {
-    return ['cancel'];
+    return ["cancel"];
   }
-  
+
   getAllowedTransitions(): JobStatus[] {
-    return ['scraping', 'cancelled', 'error'];
+    return ["scraping", "cancelled", "error"];
   }
 }
 
@@ -164,19 +174,19 @@ export class ValidatingStatusStrategy implements IJobStatusStrategy {
  * Scraping Job Status Strategy
  */
 export class ScrapingStatusStrategy implements IJobStatusStrategy {
-  readonly status: JobStatus = 'scraping';
-  
+  readonly status: JobStatus = "scraping";
+
   getDisplay(): JobStatusDisplay {
     return {
-      label: 'Converting',
-      color: 'text-purple-400',
-      bgColor: 'bg-purple-500/20',
+      label: "Converting",
+      color: "text-purple-400",
+      bgColor: "bg-purple-500/20",
       icon: (
         <div className="animate-spin rounded-full w-4 h-4 border-2 border-purple-400/30 border-t-purple-400"></div>
       ),
     };
   }
-  
+
   getBehavior(): JobStatusBehavior {
     return {
       canCancel: true,
@@ -189,21 +199,21 @@ export class ScrapingStatusStrategy implements IJobStatusStrategy {
       defaultProgress: 75,
     };
   }
-  
+
   getStats(): JobStatusStats {
     return {
-      category: 'processing',
+      category: "processing",
       isTerminal: false,
       includeInActiveCount: true,
     };
   }
-  
+
   getAvailableActions(): JobAction[] {
-    return ['cancel'];
+    return ["cancel"];
   }
-  
+
   getAllowedTransitions(): JobStatus[] {
-    return ['completed', 'cancelled', 'error'];
+    return ["completed", "cancelled", "error"];
   }
 }
 
@@ -211,21 +221,31 @@ export class ScrapingStatusStrategy implements IJobStatusStrategy {
  * Completed Job Status Strategy
  */
 export class CompletedStatusStrategy implements IJobStatusStrategy {
-  readonly status: JobStatus = 'completed';
-  
+  readonly status: JobStatus = "completed";
+
   getDisplay(): JobStatusDisplay {
     return {
-      label: 'Completed',
-      color: 'text-green-400',
-      bgColor: 'bg-green-500/20',
+      label: "Completed",
+      color: "text-green-400",
+      bgColor: "bg-green-500/20",
       icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M5 13l4 4L19 7"
+          />
         </svg>
       ),
     };
   }
-  
+
   getBehavior(): JobStatusBehavior {
     return {
       canCancel: false,
@@ -238,19 +258,19 @@ export class CompletedStatusStrategy implements IJobStatusStrategy {
       defaultProgress: 100,
     };
   }
-  
+
   getStats(): JobStatusStats {
     return {
-      category: 'completed',
+      category: "completed",
       isTerminal: true,
       includeInActiveCount: false,
     };
   }
-  
+
   getAvailableActions(): JobAction[] {
-    return ['download', 'delete', 'view'];
+    return ["download", "delete", "view"];
   }
-  
+
   getAllowedTransitions(): JobStatus[] {
     return []; // Terminal state
   }
@@ -260,21 +280,31 @@ export class CompletedStatusStrategy implements IJobStatusStrategy {
  * Error Job Status Strategy
  */
 export class ErrorStatusStrategy implements IJobStatusStrategy {
-  readonly status: JobStatus = 'error';
-  
+  readonly status: JobStatus = "error";
+
   getDisplay(): JobStatusDisplay {
     return {
-      label: 'Failed',
-      color: 'text-red-400',
-      bgColor: 'bg-red-500/20',
+      label: "Failed",
+      color: "text-red-400",
+      bgColor: "bg-red-500/20",
       icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M6 18L18 6M6 6l12 12"
+          />
         </svg>
       ),
     };
   }
-  
+
   getBehavior(): JobStatusBehavior {
     return {
       canCancel: false,
@@ -287,21 +317,21 @@ export class ErrorStatusStrategy implements IJobStatusStrategy {
       defaultProgress: 0,
     };
   }
-  
+
   getStats(): JobStatusStats {
     return {
-      category: 'error',
+      category: "error",
       isTerminal: true,
       includeInActiveCount: false,
     };
   }
-  
+
   getAvailableActions(): JobAction[] {
-    return ['retry', 'delete'];
+    return ["retry", "delete"];
   }
-  
+
   getAllowedTransitions(): JobStatus[] {
-    return ['pending', 'validating']; // Can be retried
+    return ["pending", "validating"]; // Can be retried
   }
 }
 
@@ -309,21 +339,31 @@ export class ErrorStatusStrategy implements IJobStatusStrategy {
  * Cancelled Job Status Strategy
  */
 export class CancelledStatusStrategy implements IJobStatusStrategy {
-  readonly status: JobStatus = 'cancelled';
-  
+  readonly status: JobStatus = "cancelled";
+
   getDisplay(): JobStatusDisplay {
     return {
-      label: 'Cancelled',
-      color: 'text-orange-400',
-      bgColor: 'bg-orange-500/20',
+      label: "Cancelled",
+      color: "text-orange-400",
+      bgColor: "bg-orange-500/20",
       icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636" />
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636"
+          />
         </svg>
       ),
     };
   }
-  
+
   getBehavior(): JobStatusBehavior {
     return {
       canCancel: false,
@@ -336,21 +376,21 @@ export class CancelledStatusStrategy implements IJobStatusStrategy {
       defaultProgress: 0,
     };
   }
-  
+
   getStats(): JobStatusStats {
     return {
-      category: 'error',
+      category: "error",
       isTerminal: true,
       includeInActiveCount: false,
     };
   }
-  
+
   getAvailableActions(): JobAction[] {
-    return ['retry', 'delete'];
+    return ["retry", "delete"];
   }
-  
+
   getAllowedTransitions(): JobStatus[] {
-    return ['pending', 'validating']; // Can be retried
+    return ["pending", "validating"]; // Can be retried
   }
 }
 
@@ -363,15 +403,18 @@ export class CancelledStatusStrategy implements IJobStatusStrategy {
  * SOLID: Factory Pattern - Centralized creation logic
  */
 export class JobStatusStrategyFactory {
-  private static readonly strategies = new Map<JobStatus, () => IJobStatusStrategy>([
-    ['pending', () => new PendingStatusStrategy()],
-    ['validating', () => new ValidatingStatusStrategy()],
-    ['scraping', () => new ScrapingStatusStrategy()],
-    ['completed', () => new CompletedStatusStrategy()],
-    ['error', () => new ErrorStatusStrategy()],
-    ['cancelled', () => new CancelledStatusStrategy()],
+  private static readonly strategies = new Map<
+    JobStatus,
+    () => IJobStatusStrategy
+  >([
+    ["pending", () => new PendingStatusStrategy()],
+    ["validating", () => new ValidatingStatusStrategy()],
+    ["scraping", () => new ScrapingStatusStrategy()],
+    ["completed", () => new CompletedStatusStrategy()],
+    ["error", () => new ErrorStatusStrategy()],
+    ["cancelled", () => new CancelledStatusStrategy()],
   ]);
-  
+
   static create(status: JobStatus): IJobStatusStrategy {
     const strategyFactory = this.strategies.get(status);
     if (!strategyFactory) {
@@ -379,11 +422,11 @@ export class JobStatusStrategyFactory {
     }
     return strategyFactory();
   }
-  
+
   static getAllStatuses(): JobStatus[] {
     return Array.from(this.strategies.keys());
   }
-  
+
   static isValidStatus(status: string): status is JobStatus {
     return this.strategies.has(status as JobStatus);
   }
@@ -399,7 +442,7 @@ export class JobStatusStrategyFactory {
  */
 export class JobStatusManager {
   private static strategyCache = new Map<JobStatus, IJobStatusStrategy>();
-  
+
   static getStrategy(status: JobStatus): IJobStatusStrategy {
     if (!this.strategyCache.has(status)) {
       this.strategyCache.set(status, JobStatusStrategyFactory.create(status));
@@ -410,48 +453,49 @@ export class JobStatusManager {
     }
     return strategy;
   }
-  
+
   static getDisplay(status: JobStatus): JobStatusDisplay {
     return this.getStrategy(status).getDisplay();
   }
-  
+
   static getBehavior(status: JobStatus): JobStatusBehavior {
     return this.getStrategy(status).getBehavior();
   }
-  
+
   static getStats(status: JobStatus): JobStatusStats {
     return this.getStrategy(status).getStats();
   }
-  
+
   static getAvailableActions(status: JobStatus): JobAction[] {
     return this.getStrategy(status).getAvailableActions();
   }
-  
+
   static canTransition(fromStatus: JobStatus, toStatus: JobStatus): boolean {
-    const allowedTransitions = this.getStrategy(fromStatus).getAllowedTransitions();
+    const allowedTransitions =
+      this.getStrategy(fromStatus).getAllowedTransitions();
     return allowedTransitions.includes(toStatus);
   }
-  
+
   static isTerminal(status: JobStatus): boolean {
     return this.getStats(status).isTerminal;
   }
-  
+
   static isActive(status: JobStatus): boolean {
     return this.getBehavior(status).isActive;
   }
-  
+
   static shouldShowProgress(status: JobStatus): boolean {
     return this.getBehavior(status).showProgress;
   }
-  
+
   static getStatusPriority(status: JobStatus): number {
     return this.getBehavior(status).priority;
   }
-  
+
   static getDefaultProgress(status: JobStatus): number {
     return this.getBehavior(status).defaultProgress;
   }
-  
+
   static categorizeStatuses(statuses: JobStatus[]): Record<string, number> {
     const categories = {
       pending: 0,
@@ -459,12 +503,12 @@ export class JobStatusManager {
       completed: 0,
       error: 0,
     };
-    
-    statuses.forEach(status => {
+
+    statuses.forEach((status) => {
       const stats = this.getStats(status);
       categories[stats.category]++;
     });
-    
+
     return categories;
   }
 }

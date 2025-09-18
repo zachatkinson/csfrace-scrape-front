@@ -1,5 +1,5 @@
-import DOMPurify from 'dompurify';
-import CryptoJS from 'crypto-js';
+import DOMPurify from "dompurify";
+import CryptoJS from "crypto-js";
 
 interface ISanitizationOptions {
   allowedTags?: string[];
@@ -14,62 +14,87 @@ interface IEncryptionOptions {
 
 export class SecurityUtils {
   private static readonly DEFAULT_ALLOWED_TAGS = [
-    'p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li', 
-    'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'code', 'pre'
+    "p",
+    "br",
+    "strong",
+    "em",
+    "u",
+    "a",
+    "ul",
+    "ol",
+    "li",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "blockquote",
+    "code",
+    "pre",
   ];
 
   private static readonly DEFAULT_ALLOWED_ATTRIBUTES = [
-    'href', 'title', 'class', 'id', 'target', 'rel'
+    "href",
+    "title",
+    "class",
+    "id",
+    "target",
+    "rel",
   ];
 
   public static sanitizeHtml(
-    dirty: string, 
-    options: ISanitizationOptions = {}
+    dirty: string,
+    options: ISanitizationOptions = {},
   ): string {
     const config = {
       ALLOWED_TAGS: options.allowedTags || this.DEFAULT_ALLOWED_TAGS,
-      ALLOWED_ATTR: options.allowedAttributes || this.DEFAULT_ALLOWED_ATTRIBUTES,
+      ALLOWED_ATTR:
+        options.allowedAttributes || this.DEFAULT_ALLOWED_ATTRIBUTES,
       REMOVE_COMMENTS: options.stripComments !== false,
       FORBID_SCRIPT: true,
-      FORBID_TAGS: ['script', 'object', 'embed', 'iframe', 'form', 'input'],
-      FORBID_ATTR: ['onerror', 'onclick', 'onload', 'onmouseover', 'onfocus'],
-      USE_PROFILES: { html: true }
+      FORBID_TAGS: ["script", "object", "embed", "iframe", "form", "input"],
+      FORBID_ATTR: ["onerror", "onclick", "onload", "onmouseover", "onfocus"],
+      USE_PROFILES: { html: true },
     };
 
     return DOMPurify.sanitize(dirty, config);
   }
 
   public static sanitizeText(input: string): string {
-    return DOMPurify.sanitize(input, { 
+    return DOMPurify.sanitize(input, {
       ALLOWED_TAGS: [],
       ALLOWED_ATTR: [],
-      KEEP_CONTENT: true
+      KEEP_CONTENT: true,
     });
   }
 
   public static sanitizeUrl(url: string): string {
     try {
       const parsed = new URL(url);
-      
-      if (!['http:', 'https:'].includes(parsed.protocol)) {
-        throw new Error('Invalid protocol');
+
+      if (!["http:", "https:"].includes(parsed.protocol)) {
+        throw new Error("Invalid protocol");
       }
-      
+
       return parsed.toString();
     } catch {
-      throw new Error('Invalid URL format');
+      throw new Error("Invalid URL format");
     }
   }
 
-  public static validateInput(input: string, maxLength: number = 1000): boolean {
-    if (typeof input !== 'string') {
+  public static validateInput(
+    input: string,
+    maxLength: number = 1000,
+  ): boolean {
+    if (typeof input !== "string") {
       return false;
     }
-    
+
     if (input.length > maxLength) {
       return false;
     }
-    
+
     const suspiciousPatterns = [
       /<script/i,
       /javascript:/i,
@@ -77,51 +102,62 @@ export class SecurityUtils {
       /vbscript:/i,
       /onload=/i,
       /onerror=/i,
-      /onclick=/i
+      /onclick=/i,
     ];
-    
-    return !suspiciousPatterns.some(pattern => pattern.test(input));
+
+    return !suspiciousPatterns.some((pattern) => pattern.test(input));
   }
 
-  public static encryptToken(token: string, options: IEncryptionOptions): string {
+  public static encryptToken(
+    token: string,
+    options: IEncryptionOptions,
+  ): string {
     const encrypted = CryptoJS.AES.encrypt(token, options.key).toString();
     return encrypted;
   }
 
-  public static decryptToken(encryptedToken: string, options: IEncryptionOptions): string {
+  public static decryptToken(
+    encryptedToken: string,
+    options: IEncryptionOptions,
+  ): string {
     try {
       const decrypted = CryptoJS.AES.decrypt(encryptedToken, options.key);
       return decrypted.toString(CryptoJS.enc.Utf8);
     } catch {
-      throw new Error('Token decryption failed');
+      throw new Error("Token decryption failed");
     }
   }
 
   public static generateCSRFToken(): string {
     const array = new Uint8Array(32);
     crypto.getRandomValues(array);
-    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+    return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join(
+      "",
+    );
   }
 
   public static hashPassword(password: string, salt?: string): string {
-    const saltToUse = salt || CryptoJS.lib.WordArray.random(128/8).toString();
+    const saltToUse = salt || CryptoJS.lib.WordArray.random(128 / 8).toString();
     const hash = CryptoJS.PBKDF2(password, saltToUse, {
-      keySize: 512/32,
-      iterations: 10000
+      keySize: 512 / 32,
+      iterations: 10000,
     }).toString();
-    
+
     return `${saltToUse}:${hash}`;
   }
 
-  public static validatePassword(password: string, hashedPassword: string): boolean {
+  public static validatePassword(
+    password: string,
+    hashedPassword: string,
+  ): boolean {
     try {
-      const [salt, hash] = hashedPassword.split(':');
+      const [salt, hash] = hashedPassword.split(":");
       if (!salt || !hash) return false;
       const testHash = CryptoJS.PBKDF2(password, salt, {
-        keySize: 512/32,
-        iterations: 10000
+        keySize: 512 / 32,
+        iterations: 10000,
       }).toString();
-      
+
       return testHash === hash;
     } catch {
       return false;
@@ -129,31 +165,33 @@ export class SecurityUtils {
   }
 
   public static escapeHtml(text: string): string {
-    const div = document.createElement('div');
+    const div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
   }
 
   public static sanitizeFileName(fileName: string): string {
-    return fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+    return fileName.replace(/[^a-zA-Z0-9.-]/g, "_");
   }
 
   public static validateFileType(file: File, allowedTypes: string[]): boolean {
     return allowedTypes.includes(file.type);
   }
 
-  public static sanitizeHeaders(headers: Record<string, string>): Record<string, string> {
+  public static sanitizeHeaders(
+    headers: Record<string, string>,
+  ): Record<string, string> {
     const sanitized: Record<string, string> = {};
-    
+
     for (const [key, value] of Object.entries(headers)) {
-      const cleanKey = key.replace(/[^\w-]/g, '');
-      const cleanValue = value.replace(/[\r\n]/g, '');
-      
+      const cleanKey = key.replace(/[^\w-]/g, "");
+      const cleanValue = value.replace(/[\r\n]/g, "");
+
       if (cleanKey && cleanValue) {
         sanitized[cleanKey] = cleanValue;
       }
     }
-    
+
     return sanitized;
   }
 }
@@ -168,9 +206,11 @@ export interface ISecureStorageOptions {
  * Single Responsibility: Each error type handles specific failure scenarios
  */
 export class EncryptionKeyError extends Error {
-  constructor(message = 'Encryption key not configured. Set VITE_ENCRYPTION_KEY environment variable.') {
+  constructor(
+    message = "Encryption key not configured. Set VITE_ENCRYPTION_KEY environment variable.",
+  ) {
     super(message);
-    this.name = 'EncryptionKeyError';
+    this.name = "EncryptionKeyError";
   }
 }
 
@@ -181,26 +221,32 @@ export class SecureStorage {
       throw new EncryptionKeyError();
     }
     if (key.length < 32) {
-      throw new EncryptionKeyError('Encryption key must be at least 32 characters long');
+      throw new EncryptionKeyError(
+        "Encryption key must be at least 32 characters long",
+      );
     }
     return key;
   }
 
-  public static setItem(key: string, value: string, options: ISecureStorageOptions = {}): void {
+  public static setItem(
+    key: string,
+    value: string,
+    options: ISecureStorageOptions = {},
+  ): void {
     let dataToStore = value;
-    
+
     if (options.encrypt) {
       const encryptionKey = this.getEncryptionKey();
       dataToStore = SecurityUtils.encryptToken(value, { key: encryptionKey });
     }
-    
+
     const storageItem = {
       data: dataToStore,
       timestamp: Date.now(),
       encrypted: options.encrypt || false,
-      expirationMinutes: options.expirationMinutes
+      expirationMinutes: options.expirationMinutes,
     };
-    
+
     localStorage.setItem(key, JSON.stringify(storageItem));
   }
 
@@ -208,22 +254,23 @@ export class SecureStorage {
     try {
       const item = localStorage.getItem(key);
       if (!item) return null;
-      
+
       const parsed = JSON.parse(item);
-      
+
       if (parsed.expirationMinutes) {
-        const expirationTime = parsed.timestamp + (parsed.expirationMinutes * 60 * 1000);
+        const expirationTime =
+          parsed.timestamp + parsed.expirationMinutes * 60 * 1000;
         if (Date.now() > expirationTime) {
           this.removeItem(key);
           return null;
         }
       }
-      
+
       if (parsed.encrypted) {
         const encryptionKey = this.getEncryptionKey();
         return SecurityUtils.decryptToken(parsed.data, { key: encryptionKey });
       }
-      
+
       return parsed.data;
     } catch {
       return null;

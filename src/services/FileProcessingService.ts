@@ -30,12 +30,12 @@ export interface FileProcessingConfig {
 export class FileProcessingService {
   private static readonly DEFAULT_MAX_SIZE = 10 * 1024 * 1024; // 10MB
   private static readonly TEXT_MIME_TYPES = [
-    'text/plain',
-    'text/csv',
-    'text/html',
-    'text/markdown',
-    'application/json',
-    'application/xml'
+    "text/plain",
+    "text/csv",
+    "text/html",
+    "text/markdown",
+    "application/json",
+    "application/xml",
   ];
 
   private config: FileProcessingConfig;
@@ -49,10 +49,13 @@ export class FileProcessingService {
    */
   async processFile(
     file: File,
-    options: FileProcessingOptions = {}
+    options: FileProcessingOptions = {},
   ): Promise<ProcessedFile> {
     try {
-      const result = await FileProcessingService.processFileStatic(file, options);
+      const result = await FileProcessingService.processFileStatic(
+        file,
+        options,
+      );
 
       if (result.isValid && result.content) {
         const urls = FileProcessingService.extractUrlsFromFile(result.content);
@@ -63,7 +66,8 @@ export class FileProcessingService {
 
       return result;
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'File processing failed';
+      const errorMsg =
+        error instanceof Error ? error.message : "File processing failed";
       this.config.onFileError?.(errorMsg);
       throw error;
     }
@@ -74,24 +78,24 @@ export class FileProcessingService {
    */
   static async processFileStatic(
     file: File,
-    options: FileProcessingOptions = {}
+    options: FileProcessingOptions = {},
   ): Promise<ProcessedFile> {
     const {
       maxSizeBytes = this.DEFAULT_MAX_SIZE,
       allowedTypes,
       readAsText = true,
       readAsDataUrl = false,
-      validateContent = false
+      validateContent = false,
     } = options;
 
     // Basic file info
     const result: ProcessedFile = {
       name: file.name,
       size: file.size,
-      type: file.type || 'application/octet-stream',
-      content: '',
+      type: file.type || "application/octet-stream",
+      content: "",
       lastModified: new Date(file.lastModified),
-      isValid: true
+      isValid: true,
     };
 
     // Validate file size
@@ -120,7 +124,10 @@ export class FileProcessingService {
 
       // Validate content if requested
       if (validateContent) {
-        const contentError = this.validateFileContent(result.content, file.type);
+        const contentError = this.validateFileContent(
+          result.content,
+          file.type,
+        );
         if (contentError) {
           result.isValid = false;
           result.error = contentError;
@@ -128,7 +135,8 @@ export class FileProcessingService {
       }
     } catch (error) {
       result.isValid = false;
-      result.error = error instanceof Error ? error.message : 'Failed to read file';
+      result.error =
+        error instanceof Error ? error.message : "Failed to read file";
     }
 
     return result;
@@ -139,11 +147,11 @@ export class FileProcessingService {
    */
   async processFiles(
     files: FileList | File[],
-    options: FileProcessingOptions = {}
+    options: FileProcessingOptions = {},
   ): Promise<ProcessedFile[]> {
     const fileArray = Array.from(files);
     const results = await Promise.all(
-      fileArray.map(file => this.processFile(file, options))
+      fileArray.map((file) => this.processFile(file, options)),
     );
     return results;
   }
@@ -153,11 +161,11 @@ export class FileProcessingService {
    */
   static async processFilesStatic(
     files: FileList | File[],
-    options: FileProcessingOptions = {}
+    options: FileProcessingOptions = {},
   ): Promise<ProcessedFile[]> {
     const fileArray = Array.from(files);
     const results = await Promise.all(
-      fileArray.map(file => this.processFileStatic(file, options))
+      fileArray.map((file) => this.processFileStatic(file, options)),
     );
     return results;
   }
@@ -169,7 +177,7 @@ export class FileProcessingService {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
-      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.onerror = () => reject(new Error("Failed to read file"));
       reader.readAsText(file);
     });
   }
@@ -181,7 +189,7 @@ export class FileProcessingService {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
-      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.onerror = () => reject(new Error("Failed to read file"));
       reader.readAsDataURL(file);
     });
   }
@@ -189,32 +197,35 @@ export class FileProcessingService {
   /**
    * Validate file content
    */
-  private static validateFileContent(content: string, mimeType: string): string | null {
+  private static validateFileContent(
+    content: string,
+    mimeType: string,
+  ): string | null {
     // Validate JSON files
-    if (mimeType === 'application/json') {
+    if (mimeType === "application/json") {
       try {
         JSON.parse(content);
       } catch {
-        return 'Invalid JSON format';
+        return "Invalid JSON format";
       }
     }
 
     // Validate XML files
-    if (mimeType === 'application/xml' || mimeType === 'text/xml') {
+    if (mimeType === "application/xml" || mimeType === "text/xml") {
       try {
         const parser = new DOMParser();
-        const doc = parser.parseFromString(content, 'text/xml');
-        if (doc.getElementsByTagName('parsererror').length > 0) {
-          return 'Invalid XML format';
+        const doc = parser.parseFromString(content, "text/xml");
+        if (doc.getElementsByTagName("parsererror").length > 0) {
+          return "Invalid XML format";
         }
       } catch {
-        return 'Invalid XML format';
+        return "Invalid XML format";
       }
     }
 
     // Check for empty content
     if (!content || content.trim().length === 0) {
-      return 'File is empty';
+      return "File is empty";
     }
 
     return null;
@@ -224,7 +235,7 @@ export class FileProcessingService {
    * Format file size for display
    */
   static formatFileSize(bytes: number): string {
-    const units = ['B', 'KB', 'MB', 'GB'];
+    const units = ["B", "KB", "MB", "GB"];
     let size = bytes;
     let unitIndex = 0;
 
@@ -240,12 +251,14 @@ export class FileProcessingService {
    * Check if file is text-based
    */
   static isTextFile(file: File): boolean {
-    return this.TEXT_MIME_TYPES.includes(file.type) ||
-           file.name.endsWith('.txt') ||
-           file.name.endsWith('.csv') ||
-           file.name.endsWith('.json') ||
-           file.name.endsWith('.xml') ||
-           file.name.endsWith('.md');
+    return (
+      this.TEXT_MIME_TYPES.includes(file.type) ||
+      file.name.endsWith(".txt") ||
+      file.name.endsWith(".csv") ||
+      file.name.endsWith(".json") ||
+      file.name.endsWith(".xml") ||
+      file.name.endsWith(".md")
+    );
   }
 
   /**
@@ -261,11 +274,15 @@ export class FileProcessingService {
    * Parse CSV content to URLs
    */
   static parseCsvToUrls(content: string, columnIndex: number = 0): string[] {
-    const lines = content.split('\n').filter(line => line.trim());
+    const lines = content.split("\n").filter((line) => line.trim());
     const urls: string[] = [];
 
-    for (let i = 1; i < lines.length; i++) { // Skip header
-      const columns = lines[i]?.split(',').map(col => col.trim().replace(/^["']|["']$/g, '')) || [];
+    for (let i = 1; i < lines.length; i++) {
+      // Skip header
+      const columns =
+        lines[i]
+          ?.split(",")
+          .map((col) => col.trim().replace(/^["']|["']$/g, "")) || [];
       if (columns[columnIndex]) {
         urls.push(columns[columnIndex]);
       }
@@ -276,9 +293,20 @@ export class FileProcessingService {
 }
 
 // Export convenience functions
-export const processFile = FileProcessingService.processFileStatic.bind(FileProcessingService);
-export const processFiles = FileProcessingService.processFilesStatic.bind(FileProcessingService);
-export const formatFileSize = FileProcessingService.formatFileSize.bind(FileProcessingService);
-export const isTextFile = FileProcessingService.isTextFile.bind(FileProcessingService);
-export const extractUrlsFromFile = FileProcessingService.extractUrlsFromFile.bind(FileProcessingService);
-export const parseCsvToUrls = FileProcessingService.parseCsvToUrls.bind(FileProcessingService);
+export const processFile = FileProcessingService.processFileStatic.bind(
+  FileProcessingService,
+);
+export const processFiles = FileProcessingService.processFilesStatic.bind(
+  FileProcessingService,
+);
+export const formatFileSize = FileProcessingService.formatFileSize.bind(
+  FileProcessingService,
+);
+export const isTextFile = FileProcessingService.isTextFile.bind(
+  FileProcessingService,
+);
+export const extractUrlsFromFile =
+  FileProcessingService.extractUrlsFromFile.bind(FileProcessingService);
+export const parseCsvToUrls = FileProcessingService.parseCsvToUrls.bind(
+  FileProcessingService,
+);

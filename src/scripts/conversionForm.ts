@@ -5,10 +5,10 @@
  * DRY: Centralized form element management
  */
 
-import type { ConversionFormManager } from './conversionFormManager';
-import { createContextLogger } from '../utils/logger.js';
+import type { ConversionFormManager } from "./conversionFormManager";
+import { createContextLogger } from "../utils/logger.js";
 
-const logger = createContextLogger('ConversionFormModule');
+const logger = createContextLogger("ConversionFormModule");
 
 // Define interfaces for type safety
 interface ConversionFormElement extends HTMLElement {
@@ -37,21 +37,21 @@ interface JobDashboardElement extends HTMLElement {
  */
 class ConversionForm extends HTMLElement implements ConversionFormElement {
   public formManager: ConversionFormManager | null = null;
-  private readonly logger = createContextLogger('ConversionForm');
+  private readonly logger = createContextLogger("ConversionForm");
 
   constructor() {
     super();
-    this.logger.info('Constructor called');
+    this.logger.info("Constructor called");
   }
 
   async connectedCallback(): Promise<void> {
-    this.logger.info('connectedCallback called');
+    this.logger.info("connectedCallback called");
 
     try {
       // Dynamic imports to load the compiled TypeScript modules
       const [managerModule, apiModule] = await Promise.all([
-        import('./conversionFormManager'),
-        import('../constants/api')
+        import("./conversionFormManager"),
+        import("../constants/api"),
       ]);
 
       const { ConversionFormManager } = managerModule;
@@ -59,15 +59,15 @@ class ConversionForm extends HTMLElement implements ConversionFormElement {
 
       // Read configuration from data attributes (Astro best practice)
       const apiUrl = this.dataset.apiUrl || getApiBaseUrl();
-      const defaultMode = this.dataset.defaultMode || 'bulk';
+      const defaultMode = this.dataset.defaultMode || "bulk";
 
-      this.logger.info('About to create manager', { apiUrl, defaultMode });
+      this.logger.info("About to create manager", { apiUrl, defaultMode });
 
       // Initialize form manager with proper types
       this.formManager = new ConversionFormManager({
         apiBaseUrl: apiUrl,
         container: this,
-        defaultMode: defaultMode as 'bulk' | 'single'
+        defaultMode: defaultMode as "bulk" | "single",
       });
 
       // Initialize the form functionality
@@ -76,9 +76,9 @@ class ConversionForm extends HTMLElement implements ConversionFormElement {
       // Set up job dashboard integration
       this.setupJobDashboardIntegration();
 
-      this.logger.info('Initialization completed successfully');
+      this.logger.info("Initialization completed successfully");
     } catch (error) {
-      this.logger.error('Failed to initialize', error);
+      this.logger.error("Failed to initialize", error);
       // Follow SOLID principle: handle errors gracefully
       this.handleInitializationError(error);
     }
@@ -86,7 +86,7 @@ class ConversionForm extends HTMLElement implements ConversionFormElement {
 
   disconnectedCallback(): void {
     // Cleanup when element is removed - prevent memory leaks
-    this.logger.info('disconnectedCallback called');
+    this.logger.info("disconnectedCallback called");
     this.cleanup();
   }
 
@@ -96,7 +96,10 @@ class ConversionForm extends HTMLElement implements ConversionFormElement {
    */
   private setupJobDashboardIntegration(): void {
     // Listen for job submissions and refresh the job dashboard
-    window.addEventListener('conversionJobSubmitted', this.handleJobSubmission.bind(this));
+    window.addEventListener(
+      "conversionJobSubmitted",
+      this.handleJobSubmission.bind(this),
+    );
   }
 
   /**
@@ -104,11 +107,16 @@ class ConversionForm extends HTMLElement implements ConversionFormElement {
    */
   private handleJobSubmission(event: Event): void {
     const customEvent = event as ConversionJobEvent;
-    this.logger.info('Form submitted, refreshing job dashboard', customEvent.detail);
+    this.logger.info(
+      "Form submitted, refreshing job dashboard",
+      customEvent.detail,
+    );
 
     // Find JobDashboard component and refresh it
-    const jobDashboard = document.querySelector('job-dashboard') as JobDashboardElement;
-    if (jobDashboard && typeof jobDashboard.refresh === 'function') {
+    const jobDashboard = document.querySelector(
+      "job-dashboard",
+    ) as JobDashboardElement;
+    if (jobDashboard && typeof jobDashboard.refresh === "function") {
       // Small delay to allow the API call to process
       setTimeout(() => {
         if (jobDashboard.refresh) {
@@ -123,8 +131,9 @@ class ConversionForm extends HTMLElement implements ConversionFormElement {
    */
   private handleInitializationError(error: unknown): void {
     // Display user-friendly error message
-    const errorMessage = error instanceof Error ? error.message : 'Unknown initialization error';
-    console.error('ConversionForm initialization failed:', errorMessage);
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown initialization error";
+    console.error("ConversionForm initialization failed:", errorMessage);
 
     // Could implement user notification here if needed
     // For now, just log for debugging
@@ -136,15 +145,20 @@ class ConversionForm extends HTMLElement implements ConversionFormElement {
   private cleanup(): void {
     if (this.formManager) {
       // If formManager has cleanup methods, call them
-      const managerWithDestroy = this.formManager as ConversionFormManager & { destroy?: () => void };
-      if (typeof managerWithDestroy.destroy === 'function') {
+      const managerWithDestroy = this.formManager as ConversionFormManager & {
+        destroy?: () => void;
+      };
+      if (typeof managerWithDestroy.destroy === "function") {
         managerWithDestroy.destroy();
       }
       this.formManager = null;
     }
 
     // Remove event listeners
-    window.removeEventListener('conversionJobSubmitted', this.handleJobSubmission.bind(this));
+    window.removeEventListener(
+      "conversionJobSubmitted",
+      this.handleJobSubmission.bind(this),
+    );
   }
 
   // Public API methods with proper types
@@ -153,7 +167,7 @@ class ConversionForm extends HTMLElement implements ConversionFormElement {
    * Switch form mode programmatically
    */
   public switchMode(mode: string): void {
-    this.formManager?.switchMode(mode as 'bulk' | 'single');
+    this.formManager?.switchMode(mode as "bulk" | "single");
   }
 
   /**
@@ -172,11 +186,11 @@ class ConversionForm extends HTMLElement implements ConversionFormElement {
 }
 
 // Define the custom element
-if (!customElements.get('conversion-form')) {
-  customElements.define('conversion-form', ConversionForm);
-  logger.info('Custom element defined');
+if (!customElements.get("conversion-form")) {
+  customElements.define("conversion-form", ConversionForm);
+  logger.info("Custom element defined");
 } else {
-  logger.info('Custom element already defined');
+  logger.info("Custom element already defined");
 }
 
 // Export for testing purposes

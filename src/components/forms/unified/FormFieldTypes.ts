@@ -5,29 +5,29 @@
  * Interface Segregation: Separate interfaces for different field concerns
  */
 
-import type { ReactNode } from 'react';
-import type React from 'react';
+import type { ReactNode } from "react";
+import type React from "react";
 
 /**
  * Base Field Type Enumeration
  * Extensible enum pattern for type safety
  */
-export type FormFieldType = 
-  | 'text'
-  | 'email' 
-  | 'password'
-  | 'url'
-  | 'tel'
-  | 'search'
-  | 'number'
-  | 'textarea'
-  | 'select'
-  | 'checkbox'
-  | 'radio'
-  | 'file'
-  | 'date'
-  | 'datetime-local'
-  | 'time';
+export type FormFieldType =
+  | "text"
+  | "email"
+  | "password"
+  | "url"
+  | "tel"
+  | "search"
+  | "number"
+  | "textarea"
+  | "select"
+  | "checkbox"
+  | "radio"
+  | "file"
+  | "date"
+  | "datetime-local"
+  | "time";
 
 /**
  * Field Validation State
@@ -65,8 +65,8 @@ export interface IFieldVisualConfig {
   readonly helpText?: string;
   readonly leftIcon?: ReactNode;
   readonly rightIcon?: ReactNode;
-  readonly size?: 'sm' | 'md' | 'lg';
-  readonly variant?: 'default' | 'outlined' | 'filled';
+  readonly size?: "sm" | "md" | "lg";
+  readonly variant?: "default" | "outlined" | "filled";
   readonly fullWidth?: boolean;
   readonly className?: string;
 }
@@ -116,10 +116,10 @@ export interface IFieldEventHandlers<T = unknown> {
  * Complete Field Configuration
  * Composition: Combines all field concerns into single interface
  */
-export interface IUnifiedFieldConfig<T = unknown> extends 
-  IFieldVisualConfig, 
-  IFieldBehaviorConfig, 
-  IFieldEventHandlers<T> {
+export interface IUnifiedFieldConfig<T = unknown>
+  extends IFieldVisualConfig,
+    IFieldBehaviorConfig,
+    IFieldEventHandlers<T> {
   readonly type: FormFieldType;
   readonly name: string;
   readonly value?: T;
@@ -137,22 +137,23 @@ export interface IUnifiedFieldConfig<T = unknown> extends
  * Open/Closed: Extensible for new field type configurations
  */
 export interface ITextFieldConfig extends IUnifiedFieldConfig<string> {
-  readonly type: 'text' | 'email' | 'password' | 'url' | 'tel' | 'search';
+  readonly type: "text" | "email" | "password" | "url" | "tel" | "search";
 }
 
 export interface INumberFieldConfig extends IUnifiedFieldConfig<number> {
-  readonly type: 'number';
+  readonly type: "number";
 }
 
 export interface ITextAreaFieldConfig extends IUnifiedFieldConfig<string> {
-  readonly type: 'textarea';
+  readonly type: "textarea";
   readonly rows?: number;
   readonly cols?: number;
-  readonly resize?: 'none' | 'vertical' | 'horizontal' | 'both';
+  readonly resize?: "none" | "vertical" | "horizontal" | "both";
 }
 
-export interface ISelectFieldConfig<T = string | number> extends IUnifiedFieldConfig<T> {
-  readonly type: 'select';
+export interface ISelectFieldConfig<T = string | number>
+  extends IUnifiedFieldConfig<T> {
+  readonly type: "select";
   readonly options: readonly IFieldOption[];
   readonly multiple?: boolean;
   readonly searchable?: boolean;
@@ -160,18 +161,20 @@ export interface ISelectFieldConfig<T = string | number> extends IUnifiedFieldCo
 }
 
 export interface ICheckboxFieldConfig extends IUnifiedFieldConfig<boolean> {
-  readonly type: 'checkbox';
+  readonly type: "checkbox";
   readonly checked?: boolean;
   readonly indeterminate?: boolean;
 }
 
-export interface IRadioFieldConfig<T = string | number> extends IUnifiedFieldConfig<T> {
-  readonly type: 'radio';
+export interface IRadioFieldConfig<T = string | number>
+  extends IUnifiedFieldConfig<T> {
+  readonly type: "radio";
   readonly options: readonly IFieldOption[];
 }
 
-export interface IFileFieldConfig extends IUnifiedFieldConfig<FileList | File[] | null> {
-  readonly type: 'file';
+export interface IFileFieldConfig
+  extends IUnifiedFieldConfig<FileList | File[] | null> {
+  readonly type: "file";
   readonly accept?: string;
   readonly multiple?: boolean;
   readonly maxSize?: number; // in bytes
@@ -179,14 +182,14 @@ export interface IFileFieldConfig extends IUnifiedFieldConfig<FileList | File[] 
 }
 
 export interface IDateFieldConfig extends IUnifiedFieldConfig<string | Date> {
-  readonly type: 'date' | 'datetime-local' | 'time';
+  readonly type: "date" | "datetime-local" | "time";
 }
 
 /**
  * Field Configuration Union Type
  * Type Safety: Ensures proper field configuration based on type
  */
-export type FieldConfig = 
+export type FieldConfig =
   | ITextFieldConfig
   | INumberFieldConfig
   | ITextAreaFieldConfig
@@ -218,12 +221,24 @@ export type FieldValidationRule<T = unknown> = (value: T) => string | undefined;
 export interface IFieldValidationRules {
   readonly required: (message?: string) => FieldValidationRule<unknown>;
   readonly email: (message?: string) => FieldValidationRule<string>;
-  readonly minLength: (min: number, message?: string) => FieldValidationRule<string>;
-  readonly maxLength: (max: number, message?: string) => FieldValidationRule<string>;
-  readonly pattern: (pattern: RegExp, message?: string) => FieldValidationRule<string>;
+  readonly minLength: (
+    min: number,
+    message?: string,
+  ) => FieldValidationRule<string>;
+  readonly maxLength: (
+    max: number,
+    message?: string,
+  ) => FieldValidationRule<string>;
+  readonly pattern: (
+    pattern: RegExp,
+    message?: string,
+  ) => FieldValidationRule<string>;
   readonly min: (min: number, message?: string) => FieldValidationRule<number>;
   readonly max: (max: number, message?: string) => FieldValidationRule<number>;
-  readonly custom: <T>(validator: (value: T) => boolean, message: string) => FieldValidationRule<T>;
+  readonly custom: <T>(
+    validator: (value: T) => boolean,
+    message: string,
+  ) => FieldValidationRule<T>;
 }
 
 /**
@@ -231,7 +246,9 @@ export interface IFieldValidationRules {
  * Single Responsibility: Defines contract for async validation
  */
 export interface IAsyncValidator {
-  readonly validate: (value: unknown) => Promise<{ errors: string[]; warnings: string[] }>;
+  readonly validate: (
+    value: unknown,
+  ) => Promise<{ errors: string[]; warnings: string[] }>;
   readonly name: string;
   readonly priority?: number;
 }
@@ -240,10 +257,11 @@ export interface IAsyncValidator {
  * Field Component Props
  * Interface Segregation: Clean component interface
  */
-export interface IUnifiedFieldProps<T = unknown> extends IUnifiedFieldConfig<T> {
-  readonly 'data-testid'?: string;
-  readonly 'aria-label'?: string;
-  readonly 'aria-describedby'?: string;
+export interface IUnifiedFieldProps<T = unknown>
+  extends IUnifiedFieldConfig<T> {
+  readonly "data-testid"?: string;
+  readonly "aria-label"?: string;
+  readonly "aria-describedby"?: string;
   readonly id?: string;
 }
 
@@ -254,7 +272,7 @@ export interface IUnifiedFieldProps<T = unknown> extends IUnifiedFieldConfig<T> 
 export interface IFieldErrorConfig {
   readonly showIcon?: boolean;
   readonly showTooltip?: boolean;
-  readonly position?: 'bottom' | 'top' | 'right' | 'left';
+  readonly position?: "bottom" | "top" | "right" | "left";
   readonly className?: string;
 }
 
@@ -298,12 +316,19 @@ export interface IUnifiedFormState<T = Record<string, unknown>> {
  * Single Responsibility: Form interaction methods
  */
 export interface IUnifiedFormHandlers<T = Record<string, unknown>> {
-  readonly handleSubmit: (onSubmit: (data: T) => void | Promise<void>) => (e?: React.FormEvent) => Promise<void>;
+  readonly handleSubmit: (
+    onSubmit: (data: T) => void | Promise<void>,
+  ) => (e?: React.FormEvent) => Promise<void>;
   readonly handleReset: () => void;
-  readonly handleFieldChange: <K extends keyof T>(field: K) => (value: T[K]) => void;
+  readonly handleFieldChange: <K extends keyof T>(
+    field: K,
+  ) => (value: T[K]) => void;
   readonly handleFieldBlur: <K extends keyof T>(field: K) => () => void;
   readonly setFieldValue: <K extends keyof T>(field: K, value: T[K]) => void;
-  readonly setFieldError: <K extends keyof T>(field: K, error: string | undefined) => void;
+  readonly setFieldError: <K extends keyof T>(
+    field: K,
+    error: string | undefined,
+  ) => void;
   readonly clearErrors: () => void;
   readonly validateField: <K extends keyof T>(field: K) => Promise<boolean>;
   readonly validateForm: () => Promise<boolean>;

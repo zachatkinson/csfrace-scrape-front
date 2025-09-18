@@ -4,14 +4,14 @@
  * DRY: Consolidates job data patterns from DashboardManager
  */
 
-import { useState, useCallback, useEffect } from 'react';
-import type { IJobData, IJobStats } from '../../../types/job.ts';
-import * as apiClient from '../../../utils/dashboard/apiClient.ts';
-import * as jobUtils from '../../../utils/dashboard/jobUtils.ts';
-import { logError } from '../../../utils/api-utils.ts';
-import { createContextLogger } from '../../../utils/logger';
+import { useState, useCallback, useEffect } from "react";
+import type { IJobData, IJobStats } from "../../../types/job.ts";
+import * as apiClient from "../../../utils/dashboard/apiClient.ts";
+import * as jobUtils from "../../../utils/dashboard/jobUtils.ts";
+import { logError } from "../../../utils/api-utils.ts";
+import { createContextLogger } from "../../../utils/logger";
 
-const logger = createContextLogger('useJobData');
+const logger = createContextLogger("useJobData");
 
 export interface JobDataState {
   jobs: IJobData[];
@@ -33,42 +33,41 @@ export function useJobData(options: UseJobDataOptions = {}) {
     jobs: [],
     isLoading: false,
     stats: { total: 0, active: 0, completed: 0, failed: 0, queued: 0 },
-    lastUpdated: null
+    lastUpdated: null,
   });
 
-  const loadJobs = useCallback(async (params?: {
-    page?: number;
-    statusFilter?: string;
-  }) => {
-    try {
-      setState(prev => ({ ...prev, isLoading: true }));
+  const loadJobs = useCallback(
+    async (params?: { page?: number; statusFilter?: string }) => {
+      try {
+        setState((prev) => ({ ...prev, isLoading: true }));
 
-      const response = await apiClient.getJobs({
-        page: params?.page || 1,
-        page_size: pageSize,
-        status_filter: params?.statusFilter
-      });
+        const response = await apiClient.getJobs({
+          page: params?.page || 1,
+          page_size: pageSize,
+          status_filter: params?.statusFilter,
+        });
 
-      const convertedJobs = response.jobs.map(jobUtils.convertBackendJob);
-      const stats = jobUtils.calculateJobStats(convertedJobs);
+        const convertedJobs = response.jobs.map(jobUtils.convertBackendJob);
+        const stats = jobUtils.calculateJobStats(convertedJobs);
 
-      setState(prev => ({
-        ...prev,
-        jobs: convertedJobs,
-        stats,
-        isLoading: false,
-        lastUpdated: new Date()
-      }));
+        setState((prev) => ({
+          ...prev,
+          jobs: convertedJobs,
+          stats,
+          isLoading: false,
+          lastUpdated: new Date(),
+        }));
 
-      return convertedJobs;
-
-    } catch (error) {
-      logger.error('Failed to load jobs', { error });
-      logError(error, 'Job Data Loading');
-      setState(prev => ({ ...prev, isLoading: false }));
-      throw error;
-    }
-  }, [pageSize]);
+        return convertedJobs;
+      } catch (error) {
+        logger.error("Failed to load jobs", { error });
+        logError(error, "Job Data Loading");
+        setState((prev) => ({ ...prev, isLoading: false }));
+        throw error;
+      }
+    },
+    [pageSize],
+  );
 
   const refreshJobs = useCallback(() => {
     return loadJobs();
@@ -78,12 +77,14 @@ export function useJobData(options: UseJobDataOptions = {}) {
   useEffect(() => {
     const handleJobSSEUpdate = (event: CustomEvent) => {
       const { jobUpdate } = event.detail;
-      logger.debug('Processing SSE job update', { jobUpdate });
+      logger.debug("Processing SSE job update", { jobUpdate });
 
       if (jobUpdate) {
-        setState(prev => {
+        setState((prev) => {
           const updatedJobs = [...prev.jobs];
-          const jobIndex = updatedJobs.findIndex(job => job.id === jobUpdate.id);
+          const jobIndex = updatedJobs.findIndex(
+            (job) => job.id === jobUpdate.id,
+          );
 
           if (jobIndex >= 0) {
             // Update existing job
@@ -99,7 +100,7 @@ export function useJobData(options: UseJobDataOptions = {}) {
             ...prev,
             jobs: updatedJobs,
             stats: newStats,
-            lastUpdated: new Date()
+            lastUpdated: new Date(),
           };
         });
       }
@@ -107,26 +108,38 @@ export function useJobData(options: UseJobDataOptions = {}) {
 
     const handleJobsDataRefresh = (event: CustomEvent) => {
       const { source } = event.detail;
-      if (source === 'sse') {
-        logger.info('SSE triggered data refresh');
+      if (source === "sse") {
+        logger.info("SSE triggered data refresh");
         // Optionally trigger a full refresh for major changes
         // refreshJobs();
       }
     };
 
     // Listen for SSE events
-    window.addEventListener('jobSSEUpdate', handleJobSSEUpdate as EventListener);
-    window.addEventListener('jobsDataRefresh', handleJobsDataRefresh as EventListener);
+    window.addEventListener(
+      "jobSSEUpdate",
+      handleJobSSEUpdate as EventListener,
+    );
+    window.addEventListener(
+      "jobsDataRefresh",
+      handleJobsDataRefresh as EventListener,
+    );
 
     return () => {
-      window.removeEventListener('jobSSEUpdate', handleJobSSEUpdate as EventListener);
-      window.removeEventListener('jobsDataRefresh', handleJobsDataRefresh as EventListener);
+      window.removeEventListener(
+        "jobSSEUpdate",
+        handleJobSSEUpdate as EventListener,
+      );
+      window.removeEventListener(
+        "jobsDataRefresh",
+        handleJobsDataRefresh as EventListener,
+      );
     };
   }, []); // Empty dependency array - event handlers are stable
 
   return {
     ...state,
     loadJobs,
-    refreshJobs
+    refreshJobs,
   };
 }

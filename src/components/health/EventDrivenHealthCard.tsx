@@ -3,43 +3,49 @@
 // Uses Nano Stores for reactive health data following Astro best practices
 // =============================================================================
 
-import React, { useState, useEffect } from 'react';
-import { useStore } from '@nanostores/react';
-import { $healthData } from '../../stores/healthStore.ts';
-import { getStatusColor, getStatusBorderClass } from '../../utils/health-ui-utilities.ts';
-import type { IServiceResult } from '../../utils/serviceCheckers.ts';
-import { formatTimestamp, onTimezoneChange } from '/src/utils/timezone.ts';
-import { createContextLogger } from '../../utils/logger';
+import React, { useState, useEffect } from "react";
+import { useStore } from "@nanostores/react";
+import { $healthData } from "../../stores/healthStore.ts";
+import {
+  getStatusColor,
+  getStatusBorderClass,
+} from "../../utils/health-ui-utilities.ts";
+import type { IServiceResult } from "../../utils/serviceCheckers.ts";
+import { formatTimestamp, onTimezoneChange } from "/src/utils/timezone.ts";
+import { createContextLogger } from "../../utils/logger";
 
 interface EventDrivenHealthCardProps {
-  serviceName: 'frontend' | 'backend' | 'database' | 'cache';
+  serviceName: "frontend" | "backend" | "database" | "cache";
   domPrefix: string; // e.g., 'frontend', 'backend', 'postgres', 'redis'
   title: string;
   icon: string;
   description: string;
 }
 
-const logger = createContextLogger('EventDrivenHealthCard');
+const logger = createContextLogger("EventDrivenHealthCard");
 
 export const EventDrivenHealthCard: React.FC<EventDrivenHealthCardProps> = ({
   serviceName,
   domPrefix,
   title,
   icon,
-  description
+  description,
 }) => {
   // Use Nano Stores for reactive health data (Astro MCP best practice)
   const healthData = useStore($healthData);
   const serviceData = healthData.services[serviceName];
   const isLoading = !serviceData;
 
-  const [lastRefreshedFormatted, setLastRefreshedFormatted] = useState<string>('Loading...');
+  const [lastRefreshedFormatted, setLastRefreshedFormatted] =
+    useState<string>("Loading...");
 
   useEffect(() => {
     // Update DOM elements for backward compatibility
     const updateDOMElements = (result: IServiceResult) => {
       // Update status indicator
-      const statusIndicator = document.getElementById(`${domPrefix}-status-indicator`);
+      const statusIndicator = document.getElementById(
+        `${domPrefix}-status-indicator`,
+      );
       if (statusIndicator) {
         const statusClass = getStatusColor(result.status);
         statusIndicator.className = `w-3 h-3 rounded-full ${statusClass}`;
@@ -52,7 +58,9 @@ export const EventDrivenHealthCard: React.FC<EventDrivenHealthCardProps> = ({
       }
 
       // Update last refreshed
-      const lastRefreshedElement = document.getElementById(`${domPrefix}-last-refreshed`);
+      const lastRefreshedElement = document.getElementById(
+        `${domPrefix}-last-refreshed`,
+      );
       if (lastRefreshedElement) {
         const timestamp = result.timestamp || Date.now();
         lastRefreshedElement.textContent = formatTimestamp(new Date(timestamp));
@@ -68,42 +76,51 @@ export const EventDrivenHealthCard: React.FC<EventDrivenHealthCardProps> = ({
 
       // Service-specific metric updates
       switch (serviceName) {
-        case 'frontend':
+        case "frontend":
           updateElements({
-            [`${domPrefix}-response-time`]: `${metrics.responseTime || 'N/A'}${typeof metrics.responseTime === 'number' ? 'ms' : ''}`,
-            [`${domPrefix}-memory-usage`]: String((metrics.memory as Record<string, unknown>)?.used || 'N/A'),
-            [`${domPrefix}-page-load`]: `${metrics.responseTime || 'N/A'}${typeof metrics.responseTime === 'number' ? 'ms' : ''}`,
-            [`${domPrefix}-framework`]: String((metrics.framework as Record<string, unknown>)?.name || 'React/Astro'),
-            [`${domPrefix}-version`]: String((metrics.framework as Record<string, unknown>)?.version || 'N/A'),
-            [`${domPrefix}-port`]: String(metrics.port || window.location.port || '3000')
+            [`${domPrefix}-response-time`]: `${metrics.responseTime || "N/A"}${typeof metrics.responseTime === "number" ? "ms" : ""}`,
+            [`${domPrefix}-memory-usage`]: String(
+              (metrics.memory as Record<string, unknown>)?.used || "N/A",
+            ),
+            [`${domPrefix}-page-load`]: `${metrics.responseTime || "N/A"}${typeof metrics.responseTime === "number" ? "ms" : ""}`,
+            [`${domPrefix}-framework`]: String(
+              (metrics.framework as Record<string, unknown>)?.name ||
+                "React/Astro",
+            ),
+            [`${domPrefix}-version`]: String(
+              (metrics.framework as Record<string, unknown>)?.version || "N/A",
+            ),
+            [`${domPrefix}-port`]: String(
+              metrics.port || window.location.port || "3000",
+            ),
           });
           break;
 
-        case 'backend':
+        case "backend":
           updateElements({
-            [`${domPrefix}-response-time`]: `${metrics.responseTime || 'N/A'}${typeof metrics.responseTime === 'number' ? 'ms' : ''}`,
-            [`${domPrefix}-uptime`]: String(metrics.uptime || 'N/A'),
-            [`${domPrefix}-memory`]: String(metrics.memory || 'N/A'),
-            [`${domPrefix}-cpu`]: String(metrics.cpu || 'N/A'),
-            [`${domPrefix}-version`]: String(metrics.version || 'N/A')
+            [`${domPrefix}-response-time`]: `${metrics.responseTime || "N/A"}${typeof metrics.responseTime === "number" ? "ms" : ""}`,
+            [`${domPrefix}-uptime`]: String(metrics.uptime || "N/A"),
+            [`${domPrefix}-memory`]: String(metrics.memory || "N/A"),
+            [`${domPrefix}-cpu`]: String(metrics.cpu || "N/A"),
+            [`${domPrefix}-version`]: String(metrics.version || "N/A"),
           });
           break;
 
-        case 'database':
+        case "database":
           updateElements({
-            [`${domPrefix}-response-time`]: `${metrics.responseTime || 'N/A'}${typeof metrics.responseTime === 'number' ? 'ms' : ''}`,
-            [`${domPrefix}-connections`]: String(metrics.connections || 'N/A'),
-            [`${domPrefix}-version`]: String(metrics.version || 'PostgreSQL'),
-            [`${domPrefix}-status`]: String(metrics.status || 'Connected')
+            [`${domPrefix}-response-time`]: `${metrics.responseTime || "N/A"}${typeof metrics.responseTime === "number" ? "ms" : ""}`,
+            [`${domPrefix}-connections`]: String(metrics.connections || "N/A"),
+            [`${domPrefix}-version`]: String(metrics.version || "PostgreSQL"),
+            [`${domPrefix}-status`]: String(metrics.status || "Connected"),
           });
           break;
 
-        case 'cache':
+        case "cache":
           updateElements({
-            [`${domPrefix}-response-time`]: `${metrics.responseTime || 'N/A'}${typeof metrics.responseTime === 'number' ? 'ms' : ''}`,
-            [`${domPrefix}-memory`]: String(metrics.memory || 'N/A'),
-            [`${domPrefix}-version`]: String(metrics.version || 'Redis'),
-            [`${domPrefix}-connections`]: String(metrics.connections || 'N/A')
+            [`${domPrefix}-response-time`]: `${metrics.responseTime || "N/A"}${typeof metrics.responseTime === "number" ? "ms" : ""}`,
+            [`${domPrefix}-memory`]: String(metrics.memory || "N/A"),
+            [`${domPrefix}-version`]: String(metrics.version || "Redis"),
+            [`${domPrefix}-connections`]: String(metrics.connections || "N/A"),
           });
           break;
       }
@@ -120,9 +137,10 @@ export const EventDrivenHealthCard: React.FC<EventDrivenHealthCardProps> = ({
 
     // Update formatted timestamp when service data changes
     if (serviceData) {
-      logger.info('Using Nano Store data', { serviceName, serviceData });
+      logger.info("Using Nano Store data", { serviceName, serviceData });
 
-      const timestamp = serviceData.timestamp || new Date(healthData.metadata.timestamp);
+      const timestamp =
+        serviceData.timestamp || new Date(healthData.metadata.timestamp);
       setLastRefreshedFormatted(formatTimestamp(timestamp));
 
       // Update DOM elements for backward compatibility with existing scripts
@@ -136,7 +154,7 @@ export const EventDrivenHealthCard: React.FC<EventDrivenHealthCardProps> = ({
       }
     });
 
-    logger.info('Using Nano Store reactive data', { serviceName });
+    logger.info("Using Nano Store reactive data", { serviceName });
 
     return () => {
       cleanupTimezoneListener();
@@ -178,22 +196,22 @@ export const EventDrivenHealthCard: React.FC<EventDrivenHealthCardProps> = ({
         <p className="text-gray-600 mb-2">{description}</p>
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div>
-            <span className="font-medium">Status:</span>{' '}
-            <span className={`${serviceData.status === 'up' ? 'text-green-600' : 'text-red-600'}`}>
+            <span className="font-medium">Status:</span>{" "}
+            <span
+              className={`${serviceData.status === "up" ? "text-green-600" : "text-red-600"}`}
+            >
               {serviceData.status.toUpperCase()}
             </span>
           </div>
           <div>
-            <span className="font-medium">Response:</span>{' '}
-            {serviceData.metrics?.responseTime || 'N/A'}
-            {typeof serviceData.metrics?.responseTime === 'number' ? 'ms' : ''}
+            <span className="font-medium">Response:</span>{" "}
+            {serviceData.metrics?.responseTime || "N/A"}
+            {typeof serviceData.metrics?.responseTime === "number" ? "ms" : ""}
           </div>
         </div>
       </div>
 
-      <div className="mt-2 text-xs text-gray-500">
-        {serviceData.message}
-      </div>
+      <div className="mt-2 text-xs text-gray-500">{serviceData.message}</div>
     </div>
   );
 };

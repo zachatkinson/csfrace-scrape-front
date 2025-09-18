@@ -4,8 +4,8 @@
  * DRY: Consolidates auto-refresh patterns from DashboardManager
  */
 
-import { useEffect, useRef, useCallback } from 'react';
-import type { ConnectionStatus } from './useConnectionStatus.ts';
+import { useEffect, useRef, useCallback } from "react";
+import type { ConnectionStatus } from "./useConnectionStatus.ts";
 
 export interface UseAutoRefreshOptions {
   enabled?: boolean;
@@ -16,13 +16,13 @@ export interface UseAutoRefreshOptions {
 
 export function useAutoRefresh(
   refreshFunction: () => void | Promise<void>,
-  options: UseAutoRefreshOptions = {}
+  options: UseAutoRefreshOptions = {},
 ) {
   const {
     enabled = true,
     interval = 10000, // 10 seconds
-    connectionStatus = 'connected',
-    isLoading = false
+    connectionStatus = "connected",
+    isLoading = false,
   } = options;
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -37,7 +37,7 @@ export function useAutoRefresh(
     if (intervalRef.current) return; // Already running
 
     intervalRef.current = setInterval(() => {
-      if (connectionStatus === 'connected' && !isLoading) {
+      if (connectionStatus === "connected" && !isLoading) {
         refreshFunctionRef.current();
       }
     }, interval);
@@ -59,7 +59,7 @@ export function useAutoRefresh(
 
   // Setup auto-refresh based on options
   useEffect(() => {
-    if (enabled && connectionStatus === 'connected') {
+    if (enabled && connectionStatus === "connected") {
       startAutoRefresh();
     } else {
       stopAutoRefresh();
@@ -77,6 +77,6 @@ export function useAutoRefresh(
     startAutoRefresh,
     stopAutoRefresh,
     restartAutoRefresh,
-    isRunning: intervalRef.current !== null
+    isRunning: intervalRef.current !== null,
   };
 }

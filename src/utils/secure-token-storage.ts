@@ -2,7 +2,7 @@
  * Secure Token Storage System
  * Implements enterprise-grade security for authentication tokens
  * Following SOLID principles with proper abstraction and security isolation
- * 
+ *
  * Security Architecture:
  * - Access tokens: In-memory only (lost on tab close for security)
  * - Refresh tokens: HttpOnly cookies (server-managed, XSS-safe)
@@ -10,19 +10,19 @@
  * - No plain text storage of sensitive authentication data
  */
 
-import { SecureStorage, EncryptionKeyError } from './security';
-import { createContextLogger } from './logger';
+import { SecureStorage, EncryptionKeyError } from "./security";
+import { createContextLogger } from "./logger";
 
-const logger = createContextLogger('SecureTokenStorage');
+const logger = createContextLogger("SecureTokenStorage");
 
 /**
  * Token Storage Strategy Enum
  * Single Responsibility: Defines available storage strategies
  */
 export enum TokenStorageStrategy {
-  MEMORY = 'memory',
-  ENCRYPTED_STORAGE = 'encrypted_storage',
-  HTTP_ONLY_COOKIE = 'http_only_cookie'
+  MEMORY = "memory",
+  ENCRYPTED_STORAGE = "encrypted_storage",
+  HTTP_ONLY_COOKIE = "http_only_cookie",
 }
 
 /**
@@ -30,10 +30,10 @@ export enum TokenStorageStrategy {
  * Interface Segregation: Different token types have different security requirements
  */
 export enum TokenType {
-  ACCESS_TOKEN = 'access_token',
-  REFRESH_TOKEN = 'refresh_token',
-  ID_TOKEN = 'id_token',
-  SESSION_DATA = 'session_data'
+  ACCESS_TOKEN = "access_token",
+  REFRESH_TOKEN = "refresh_token",
+  ID_TOKEN = "id_token",
+  SESSION_DATA = "session_data",
 }
 
 /**
@@ -52,16 +52,19 @@ export interface ITokenStorageConfig {
  * Single Responsibility: Each error type handles specific failure scenarios
  */
 export class TokenStorageError extends Error {
-  constructor(message: string, public readonly tokenType: TokenType) {
+  constructor(
+    message: string,
+    public readonly tokenType: TokenType,
+  ) {
     super(message);
-    this.name = 'TokenStorageError';
+    this.name = "TokenStorageError";
   }
 }
 
 export class SecureStorageUnavailableError extends TokenStorageError {
   constructor(tokenType: TokenType) {
     super(`Secure storage unavailable for ${tokenType}`, tokenType);
-    this.name = 'SecureStorageUnavailableError';
+    this.name = "SecureStorageUnavailableError";
   }
 }
 
@@ -74,26 +77,26 @@ const TOKEN_STORAGE_CONFIG: Record<TokenType, ITokenStorageConfig> = {
     strategy: TokenStorageStrategy.MEMORY,
     expirationMinutes: 15, // Short-lived for security
     encrypted: false, // Not stored persistently
-    httpOnly: false
+    httpOnly: false,
   },
   [TokenType.REFRESH_TOKEN]: {
     strategy: TokenStorageStrategy.HTTP_ONLY_COOKIE,
     expirationMinutes: 10080, // 7 days
     encrypted: true,
-    httpOnly: true // XSS protection
+    httpOnly: true, // XSS protection
   },
   [TokenType.ID_TOKEN]: {
     strategy: TokenStorageStrategy.ENCRYPTED_STORAGE,
     expirationMinutes: 60,
     encrypted: true,
-    httpOnly: false
+    httpOnly: false,
   },
   [TokenType.SESSION_DATA]: {
     strategy: TokenStorageStrategy.ENCRYPTED_STORAGE,
     expirationMinutes: 480, // 8 hours
     encrypted: true,
-    httpOnly: false
-  }
+    httpOnly: false,
+  },
 } as const;
 
 /**
@@ -101,13 +104,20 @@ const TOKEN_STORAGE_CONFIG: Record<TokenType, ITokenStorageConfig> = {
  * Single Responsibility: Manages tokens that should not persist
  */
 class MemoryTokenStorage {
-  private static readonly tokens = new Map<string, {
-    value: string;
-    expiresAt: number;
-  }>();
+  private static readonly tokens = new Map<
+    string,
+    {
+      value: string;
+      expiresAt: number;
+    }
+  >();
 
-  public static setToken(key: string, value: string, expirationMinutes: number): void {
-    const expiresAt = Date.now() + (expirationMinutes * 60 * 1000);
+  public static setToken(
+    key: string,
+    value: string,
+    expirationMinutes: number,
+  ): void {
+    const expiresAt = Date.now() + expirationMinutes * 60 * 1000;
     this.tokens.set(key, { value, expiresAt });
   }
 
@@ -137,13 +147,17 @@ class MemoryTokenStorage {
  * Interface Segregation: Separate concerns for cookie management
  */
 export interface IHttpOnlyCookieManager {
-  setSecureCookie(name: string, value: string, options: {
-    maxAge: number;
-    httpOnly: boolean;
-    secure: boolean;
-    sameSite: 'strict' | 'lax' | 'none';
-  }): void;
-  
+  setSecureCookie(
+    name: string,
+    value: string,
+    options: {
+      maxAge: number;
+      httpOnly: boolean;
+      secure: boolean;
+      sameSite: "strict" | "lax" | "none";
+    },
+  ): void;
+
   clearCookie(name: string): void;
 }
 
@@ -172,12 +186,19 @@ export class SecureTokenStorageManager {
     try {
       switch (config.strategy) {
         case TokenStorageStrategy.MEMORY:
-          MemoryTokenStorage.setToken(key, value, config.expirationMinutes || 15);
+          MemoryTokenStorage.setToken(
+            key,
+            value,
+            config.expirationMinutes || 15,
+          );
           break;
 
         case TokenStorageStrategy.ENCRYPTED_STORAGE: {
-          const storageOptions: { encrypt: boolean; expirationMinutes?: number } = {
-            encrypt: config.encrypted
+          const storageOptions: {
+            encrypt: boolean;
+            expirationMinutes?: number;
+          } = {
+            encrypt: config.encrypted,
           };
           if (config.expirationMinutes !== undefined) {
             storageOptions.expirationMinutes = config.expirationMinutes;
@@ -190,23 +211,26 @@ export class SecureTokenStorageManager {
           if (!this.cookieManager) {
             throw new SecureStorageUnavailableError(tokenType);
           }
-          
+
           this.cookieManager.setSecureCookie(key, value, {
             maxAge: (config.expirationMinutes || 10080) * 60, // Convert to seconds
             httpOnly: true,
             secure: true, // HTTPS only
-            sameSite: 'strict' // CSRF protection
+            sameSite: "strict", // CSRF protection
           });
           break;
 
         default:
-          throw new TokenStorageError(`Unsupported storage strategy: ${config.strategy}`, tokenType);
+          throw new TokenStorageError(
+            `Unsupported storage strategy: ${config.strategy}`,
+            tokenType,
+          );
       }
     } catch (error) {
       if (error instanceof EncryptionKeyError) {
         throw new TokenStorageError(
-          `Failed to store ${tokenType}: ${error.message}`, 
-          tokenType
+          `Failed to store ${tokenType}: ${error.message}`,
+          tokenType,
         );
       }
       throw error;
@@ -235,13 +259,16 @@ export class SecureTokenStorageManager {
           return null;
 
         default:
-          throw new TokenStorageError(`Unsupported storage strategy: ${config.strategy}`, tokenType);
+          throw new TokenStorageError(
+            `Unsupported storage strategy: ${config.strategy}`,
+            tokenType,
+          );
       }
     } catch (error) {
       if (error instanceof EncryptionKeyError) {
         throw new TokenStorageError(
-          `Failed to retrieve ${tokenType}: ${error.message}`, 
-          tokenType
+          `Failed to retrieve ${tokenType}: ${error.message}`,
+          tokenType,
         );
       }
       return null;
@@ -282,7 +309,7 @@ export class SecureTokenStorageManager {
     MemoryTokenStorage.clearAll();
 
     // Clear encrypted storage for all token types
-    Object.values(TokenType).forEach(tokenType => {
+    Object.values(TokenType).forEach((tokenType) => {
       const config = TOKEN_STORAGE_CONFIG[tokenType];
       if (config.strategy === TokenStorageStrategy.ENCRYPTED_STORAGE) {
         this.removeToken(tokenType);
@@ -291,7 +318,7 @@ export class SecureTokenStorageManager {
 
     // Clear HTTP-only cookies
     if (this.cookieManager) {
-      Object.values(TokenType).forEach(tokenType => {
+      Object.values(TokenType).forEach((tokenType) => {
         const config = TOKEN_STORAGE_CONFIG[tokenType];
         if (config.strategy === TokenStorageStrategy.HTTP_ONLY_COOKIE) {
           this.removeToken(tokenType);
@@ -308,7 +335,7 @@ export class SecureTokenStorageManager {
     // For memory storage, expiration is handled internally
     // For encrypted storage, expiration is handled by SecureStorage
     // For HTTP-only cookies, expiration is handled by the browser
-    
+
     const token = this.getToken(tokenType);
     return token === null;
   }
@@ -342,11 +369,11 @@ export const secureTokenStorage = new SecureTokenStorageManager();
  */
 export class TokenMigrationService {
   private static readonly LEGACY_KEYS = [
-    'csfrace_access_token',
-    'csfrace_refresh_token',
-    'csfrace_token_expiry',
-    'csfrace-access-token',
-    'csfrace-refresh-token'
+    "csfrace_access_token",
+    "csfrace_refresh_token",
+    "csfrace_token_expiry",
+    "csfrace-access-token",
+    "csfrace-refresh-token",
   ];
 
   /**
@@ -356,26 +383,33 @@ export class TokenMigrationService {
   public static migrateLegacyTokens(): void {
     try {
       // Attempt to read legacy access token
-      const legacyAccessToken = localStorage.getItem('csfrace_access_token') || 
-                               localStorage.getItem('csfrace-access-token');
-      
+      const legacyAccessToken =
+        localStorage.getItem("csfrace_access_token") ||
+        localStorage.getItem("csfrace-access-token");
+
       if (legacyAccessToken) {
-        secureTokenStorage.storeToken(TokenType.ACCESS_TOKEN, legacyAccessToken);
+        secureTokenStorage.storeToken(
+          TokenType.ACCESS_TOKEN,
+          legacyAccessToken,
+        );
       }
 
-      // Attempt to read legacy refresh token  
-      const legacyRefreshToken = localStorage.getItem('csfrace_refresh_token') ||
-                                localStorage.getItem('csfrace-refresh-token');
-      
+      // Attempt to read legacy refresh token
+      const legacyRefreshToken =
+        localStorage.getItem("csfrace_refresh_token") ||
+        localStorage.getItem("csfrace-refresh-token");
+
       if (legacyRefreshToken) {
-        secureTokenStorage.storeToken(TokenType.REFRESH_TOKEN, legacyRefreshToken);
+        secureTokenStorage.storeToken(
+          TokenType.REFRESH_TOKEN,
+          legacyRefreshToken,
+        );
       }
 
       // Clear all legacy tokens
       this.clearLegacyTokens();
-      
     } catch (error) {
-      logger.warn('Token migration failed', { error });
+      logger.warn("Token migration failed", { error });
       // Continue execution - don't break the app
     }
   }
@@ -385,11 +419,11 @@ export class TokenMigrationService {
    * Single Responsibility: Handles legacy token cleanup
    */
   public static clearLegacyTokens(): void {
-    this.LEGACY_KEYS.forEach(key => {
+    this.LEGACY_KEYS.forEach((key) => {
       try {
         localStorage.removeItem(key);
       } catch (error) {
-        logger.warn('Failed to remove legacy token', { key, error });
+        logger.warn("Failed to remove legacy token", { key, error });
       }
     });
   }

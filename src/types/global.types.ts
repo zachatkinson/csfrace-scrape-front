@@ -57,7 +57,8 @@ export interface IApiResponse<T = unknown> {
   timestamp: string;
 }
 
-export interface IApiJobsResponse extends IApiResponse<{ jobs: IApiJobData[] }> {
+export interface IApiJobsResponse
+  extends IApiResponse<{ jobs: IApiJobData[] }> {
   pagination?: {
     page: number;
     page_size: number;
@@ -78,12 +79,12 @@ export interface ICustomEventDetail<T = unknown> {
 }
 
 export interface ICustomEventMap {
-  'jobs-updated': ICustomEventDetail<IJobData[]>;
-  'filter-changed': ICustomEventDetail<IFilterState>;
-  'health-changed': ICustomEventDetail<IHealthData>;
-  'validation-error': ICustomEventDetail<string[]>;
-  'auth-success': ICustomEventDetail<IAuthUser>;
-  'auth-error': ICustomEventDetail<IAuthError>;
+  "jobs-updated": ICustomEventDetail<IJobData[]>;
+  "filter-changed": ICustomEventDetail<IFilterState>;
+  "health-changed": ICustomEventDetail<IHealthData>;
+  "validation-error": ICustomEventDetail<string[]>;
+  "auth-success": ICustomEventDetail<IAuthUser>;
+  "auth-error": ICustomEventDetail<IAuthError>;
 }
 
 // =============================================================================
@@ -92,7 +93,7 @@ export interface ICustomEventMap {
 
 export interface IJobData {
   id: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed' | 'queued';
+  status: "pending" | "processing" | "completed" | "failed" | "queued";
   title: string;
   url: string;
   createdAt: Date;
@@ -107,12 +108,12 @@ export interface IFilterState {
     end?: Date;
   };
   searchTerm: string;
-  sortBy: 'created' | 'updated' | 'title' | 'status';
-  sortOrder: 'asc' | 'desc';
+  sortBy: "created" | "updated" | "title" | "status";
+  sortOrder: "asc" | "desc";
 }
 
 export interface IHealthData {
-  status: 'healthy' | 'warning' | 'error';
+  status: "healthy" | "warning" | "error";
   services: Record<string, IServiceHealth>;
   metadata: {
     timestamp: number;
@@ -122,14 +123,14 @@ export interface IHealthData {
 }
 
 export interface IServiceHealth {
-  status: 'up' | 'down' | 'degraded';
+  status: "up" | "down" | "degraded";
   latency?: number;
   error?: string;
   lastCheck: number;
 }
 
 export interface IHealthStatus {
-  overall: 'healthy' | 'warning' | 'error';
+  overall: "healthy" | "warning" | "error";
   details: string;
   timestamp: number;
 }
@@ -163,7 +164,9 @@ export interface IAuthError {
 
 export type IEventHandler<T = unknown> = (event: CustomEvent<T>) => void;
 
-export type IAsyncEventHandler<T = unknown> = (event: CustomEvent<T>) => Promise<void>;
+export type IAsyncEventHandler<T = unknown> = (
+  event: CustomEvent<T>,
+) => Promise<void>;
 
 export type IErrorHandler = (error: Error) => void;
 
@@ -189,18 +192,18 @@ export interface IValidationResult {
 export interface IBaseComponentProps {
   className?: string;
   id?: string;
-  'data-testid'?: string;
+  "data-testid"?: string;
 }
 
 export interface IIconProps extends IBaseComponentProps {
-  size?: 'sm' | 'md' | 'lg';
+  size?: "sm" | "md" | "lg";
   color?: string;
-  'aria-label'?: string;
+  "aria-label"?: string;
 }
 
 export interface IButtonProps extends IBaseComponentProps {
-  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
-  size?: 'sm' | 'md' | 'lg';
+  variant?: "primary" | "secondary" | "danger" | "ghost";
+  size?: "sm" | "md" | "lg";
   disabled?: boolean;
   loading?: boolean;
   onClick?: () => void;
@@ -210,7 +213,7 @@ export interface IModalProps extends IBaseComponentProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: "sm" | "md" | "lg" | "xl";
 }
 
 // =============================================================================
@@ -240,30 +243,30 @@ export interface IFormState<T = Record<string, unknown>> {
 
 export function isIJobData(obj: unknown): obj is IJobData {
   return (
-    typeof obj === 'object' &&
+    typeof obj === "object" &&
     obj !== null &&
-    'id' in obj &&
-    'status' in obj &&
-    'title' in obj &&
-    'url' in obj
+    "id" in obj &&
+    "status" in obj &&
+    "title" in obj &&
+    "url" in obj
   );
 }
 
 export function isIApiJobsResponse(obj: unknown): obj is IApiJobsResponse {
   return (
-    typeof obj === 'object' &&
+    typeof obj === "object" &&
     obj !== null &&
-    'success' in obj &&
-    typeof (obj as IApiResponse).success === 'boolean'
+    "success" in obj &&
+    typeof (obj as IApiResponse).success === "boolean"
   );
 }
 
 export function isIHealthData(obj: unknown): obj is IHealthData {
   return (
-    typeof obj === 'object' &&
+    typeof obj === "object" &&
     obj !== null &&
-    'status' in obj &&
-    'services' in obj &&
-    'metadata' in obj
+    "status" in obj &&
+    "services" in obj &&
+    "metadata" in obj
   );
 }

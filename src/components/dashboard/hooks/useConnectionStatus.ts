@@ -4,9 +4,9 @@
  * DRY: Consolidates connection status patterns from DashboardManager
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 
-export type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting';
+export type ConnectionStatus = "connected" | "disconnected" | "reconnecting";
 
 export interface UseConnectionStatusOptions {
   onStatusChange?: (status: ConnectionStatus) => void;
@@ -15,28 +15,31 @@ export interface UseConnectionStatusOptions {
 export function useConnectionStatus(options: UseConnectionStatusOptions = {}) {
   const { onStatusChange } = options;
 
-  const [status, setStatus] = useState<ConnectionStatus>('connected');
+  const [status, setStatus] = useState<ConnectionStatus>("connected");
 
-  const updateStatus = useCallback((newStatus: ConnectionStatus) => {
-    setStatus(prev => {
-      if (prev !== newStatus) {
-        onStatusChange?.(newStatus);
-        return newStatus;
-      }
-      return prev;
-    });
-  }, [onStatusChange]);
+  const updateStatus = useCallback(
+    (newStatus: ConnectionStatus) => {
+      setStatus((prev) => {
+        if (prev !== newStatus) {
+          onStatusChange?.(newStatus);
+          return newStatus;
+        }
+        return prev;
+      });
+    },
+    [onStatusChange],
+  );
 
   const markConnected = useCallback(() => {
-    updateStatus('connected');
+    updateStatus("connected");
   }, [updateStatus]);
 
   const markDisconnected = useCallback(() => {
-    updateStatus('disconnected');
+    updateStatus("disconnected");
   }, [updateStatus]);
 
   const markReconnecting = useCallback(() => {
-    updateStatus('reconnecting');
+    updateStatus("reconnecting");
   }, [updateStatus]);
 
   // Monitor online/offline events
@@ -44,12 +47,12 @@ export function useConnectionStatus(options: UseConnectionStatusOptions = {}) {
     const handleOnline = () => markConnected();
     const handleOffline = () => markDisconnected();
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
     };
   }, [markConnected, markDisconnected]);
 
@@ -57,6 +60,6 @@ export function useConnectionStatus(options: UseConnectionStatusOptions = {}) {
     status,
     markConnected,
     markDisconnected,
-    markReconnecting
+    markReconnecting,
   };
 }

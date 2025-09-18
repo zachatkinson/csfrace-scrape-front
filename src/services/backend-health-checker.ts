@@ -3,12 +3,12 @@
  * Handles health checking specifically for the backend API service
  */
 
-import { BaseHealthChecker } from './health-checker-base';
-import { HealthUIHelper } from '../utils/health-ui';
-import type { IServiceResult } from '../types/health';
+import { BaseHealthChecker } from "./health-checker-base";
+import { HealthUIHelper } from "../utils/health-ui";
+import type { IServiceResult } from "../types/health";
 
 export class BackendHealthChecker extends BaseHealthChecker {
-  readonly serviceName = 'Backend API';
+  readonly serviceName = "Backend API";
   readonly endpoint: string;
 
   constructor(apiBaseUrl: string) {
@@ -25,63 +25,69 @@ export class BackendHealthChecker extends BaseHealthChecker {
 
       if (!response.ok) {
         return this.createResult(
-          'error',
+          "error",
           `HTTP ${response.status}: ${response.statusText}`,
           { responseTime },
-          `Backend API returned ${response.status}`
+          `Backend API returned ${response.status}`,
         );
       }
 
       const data = await response.json();
 
-      if (data.status === 'healthy') {
-        return this.createResult(
-          'up',
-          'Backend API is operational',
-          { responseTime, version: data.version }
-        );
+      if (data.status === "healthy") {
+        return this.createResult("up", "Backend API is operational", {
+          responseTime,
+          version: data.version,
+        });
       } else {
-        return this.createResult(
-          'degraded',
-          'Backend API reports issues',
-          { responseTime, details: data.details }
-        );
+        return this.createResult("degraded", "Backend API reports issues", {
+          responseTime,
+          details: data.details,
+        });
       }
-
     } catch (error: unknown) {
       const responseTime = Math.round(performance.now() - startTime);
 
-      if (error && typeof error === 'object' && 'name' in error && error.name === 'AbortError') {
+      if (
+        error &&
+        typeof error === "object" &&
+        "name" in error &&
+        error.name === "AbortError"
+      ) {
         return this.createResult(
-          'error',
-          'Backend API request timed out',
+          "error",
+          "Backend API request timed out",
           { responseTime },
-          'Request timeout'
+          "Request timeout",
         );
       }
 
-      const errorMessage = error && typeof error === 'object' && 'message' in error && typeof error.message === 'string'
-        ? error.message
-        : 'Unknown error occurred';
+      const errorMessage =
+        error &&
+        typeof error === "object" &&
+        "message" in error &&
+        typeof error.message === "string"
+          ? error.message
+          : "Unknown error occurred";
 
       return this.createResult(
-        'error',
-        'Backend API is unreachable',
+        "error",
+        "Backend API is unreachable",
         { responseTime },
-        errorMessage
+        errorMessage,
       );
     }
   }
 
   updateUI(result: IServiceResult): void {
-    HealthUIHelper.updateStatusIndicator('backend-status', result.status);
-    HealthUIHelper.updateTextElement('backend-message', result.message);
+    HealthUIHelper.updateStatusIndicator("backend-status", result.status);
+    HealthUIHelper.updateTextElement("backend-message", result.message);
     HealthUIHelper.updateLatencyElement(
-      'backend-latency',
+      "backend-latency",
       `${result.metrics.responseTime}ms`,
       result.metrics.responseTime || 0,
-      'API'
+      "API",
     );
-    HealthUIHelper.updateLastRefresh('backend-last-updated');
+    HealthUIHelper.updateLastRefresh("backend-last-updated");
   }
 }

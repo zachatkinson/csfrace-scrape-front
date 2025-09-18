@@ -5,9 +5,9 @@
 // Follows SOLID principles with clear abstractions and interfaces
 // =============================================================================
 
-import { createContextLogger } from './logger';
+import { createContextLogger } from "./logger";
 
-const logger = createContextLogger('DomUtilities');
+const logger = createContextLogger("DomUtilities");
 
 // =============================================================================
 // INTERFACES (Interface Segregation Principle)
@@ -19,7 +19,11 @@ export interface IDomUpdater {
 
 export interface IDomClassUpdater {
   updateClass(elementId: string, className: string): boolean;
-  toggleClass(elementId: string, className: string, condition: boolean): boolean;
+  toggleClass(
+    elementId: string,
+    className: string,
+    condition: boolean,
+  ): boolean;
 }
 
 export interface IDomValidator {
@@ -38,7 +42,7 @@ export class SafeDomAccessor implements IDomValidator {
     try {
       return document.getElementById(elementId);
     } catch (error) {
-      logger.warn('DOM access error for element', { elementId, error });
+      logger.warn("DOM access error for element", { elementId, error });
       return null;
     }
   }
@@ -54,7 +58,7 @@ export class SafeDomAccessor implements IDomValidator {
    * Validate multiple elements, return missing ones
    */
   validateElements(elementIds: string[]): string[] {
-    return elementIds.filter(id => !this.validateElement(id));
+    return elementIds.filter((id) => !this.validateElement(id));
   }
 }
 
@@ -62,14 +66,13 @@ export class SafeDomAccessor implements IDomValidator {
 // SINGLE RESPONSIBILITY: Text Content Updates
 // =============================================================================
 export class DomTextUpdater implements IDomUpdater {
-
   /**
    * DRY: Update single element text content
    */
   updateElement(elementId: string, value: string | number): boolean {
     const element = SafeDomAccessor.getElement(elementId);
     if (!element) {
-      logger.warn('Element not found for text update', { elementId });
+      logger.warn("Element not found for text update", { elementId });
       return false;
     }
 
@@ -82,7 +85,7 @@ export class DomTextUpdater implements IDomUpdater {
    */
   updateElements(updates: Record<string, string | number>): void {
     const missingElements: string[] = [];
-    
+
     Object.entries(updates).forEach(([elementId, value]) => {
       const success = this.updateElement(elementId, value);
       if (!success) {
@@ -91,14 +94,18 @@ export class DomTextUpdater implements IDomUpdater {
     });
 
     if (missingElements.length > 0) {
-      logger.warn('Missing elements for batch update', { missingElements });
+      logger.warn("Missing elements for batch update", { missingElements });
     }
   }
 
   /**
    * DRY: Conditional update (only if condition is met)
    */
-  updateElementIf(elementId: string, value: string | number, condition: boolean): boolean {
+  updateElementIf(
+    elementId: string,
+    value: string | number,
+    condition: boolean,
+  ): boolean {
     return condition ? this.updateElement(elementId, value) : false;
   }
 }
@@ -113,7 +120,7 @@ export class DomClassUpdater implements IDomClassUpdater {
   updateClass(elementId: string, className: string): boolean {
     const element = SafeDomAccessor.getElement(elementId);
     if (!element) {
-      logger.warn('Element not found for class update', { elementId });
+      logger.warn("Element not found for class update", { elementId });
       return false;
     }
 
@@ -124,10 +131,14 @@ export class DomClassUpdater implements IDomClassUpdater {
   /**
    * DRY: Conditional class toggle
    */
-  toggleClass(elementId: string, className: string, condition: boolean): boolean {
+  toggleClass(
+    elementId: string,
+    className: string,
+    condition: boolean,
+  ): boolean {
     const element = SafeDomAccessor.getElement(elementId);
     if (!element) {
-      logger.warn('Element not found for class toggle', { elementId });
+      logger.warn("Element not found for class toggle", { elementId });
       return false;
     }
 
@@ -136,7 +147,7 @@ export class DomClassUpdater implements IDomClassUpdater {
     } else {
       element.classList.remove(className);
     }
-    
+
     return true;
   }
 
@@ -173,7 +184,11 @@ export class DomManager {
     return this.classUpdater.updateClass(elementId, className);
   }
 
-  toggleClass(elementId: string, className: string, condition: boolean): boolean {
+  toggleClass(
+    elementId: string,
+    className: string,
+    condition: boolean,
+  ): boolean {
     return this.classUpdater.toggleClass(elementId, className, condition);
   }
 
@@ -186,10 +201,10 @@ export class DomManager {
    */
   updateMetrics(metrics: Record<string, string | number>): void {
     const updates: Record<string, string | number> = {};
-    
+
     Object.entries(metrics).forEach(([key, value]) => {
       // Map metric keys to element IDs (convention-based)
-      const elementId = `frontend-${key.toLowerCase().replace(/([A-Z])/g, '-$1')}`;
+      const elementId = `frontend-${key.toLowerCase().replace(/([A-Z])/g, "-$1")}`;
       updates[elementId] = value;
     });
 
@@ -205,10 +220,11 @@ export class DomManager {
 
     Object.entries(features).forEach(([featureKey, isEnabled]) => {
       const elementId = `frontend-feature-${featureKey.toLowerCase()}`;
-      const status = isEnabled ? '✅' : '❌';
-      const className = isEnabled ? 'text-green-400' : 'text-red-400';
-      
-      textUpdates[elementId] = `${status} ${this.formatFeatureName(featureKey)}`;
+      const status = isEnabled ? "✅" : "❌";
+      const className = isEnabled ? "text-green-400" : "text-red-400";
+
+      textUpdates[elementId] =
+        `${status} ${this.formatFeatureName(featureKey)}`;
       classUpdates[elementId] = className;
     });
 
@@ -219,8 +235,8 @@ export class DomManager {
   private formatFeatureName(featureKey: string): string {
     // Convert camelCase to readable format
     return featureKey
-      .replace(/([A-Z])/g, ' $1')
-      .replace(/^./, str => str.toUpperCase())
+      .replace(/([A-Z])/g, " $1")
+      .replace(/^./, (str) => str.toUpperCase())
       .trim();
   }
 }
@@ -237,15 +253,24 @@ export const domManager = new DomManager();
 /**
  * @deprecated Use domManager.updateText() instead
  */
-export function updateElementText(elementId: string, value: string | number): boolean {
-  logger.warn('updateElementText is deprecated - use domManager.updateText() instead');
+export function updateElementText(
+  elementId: string,
+  value: string | number,
+): boolean {
+  logger.warn(
+    "updateElementText is deprecated - use domManager.updateText() instead",
+  );
   return domManager.updateText(elementId, value);
 }
 
 /**
- * @deprecated Use domManager.updateTexts() instead  
+ * @deprecated Use domManager.updateTexts() instead
  */
-export function updateElementTexts(updates: Record<string, string | number>): void {
-  logger.warn('updateElementTexts is deprecated - use domManager.updateTexts() instead');
+export function updateElementTexts(
+  updates: Record<string, string | number>,
+): void {
+  logger.warn(
+    "updateElementTexts is deprecated - use domManager.updateTexts() instead",
+  );
   domManager.updateTexts(updates);
 }

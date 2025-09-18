@@ -3,41 +3,45 @@
  * Handles secure storage and retrieval of authentication tokens and user data
  */
 
-import { AUTH_STORAGE_KEYS } from '../types/auth.ts';
-import type { User, AuthTokens } from '../types/auth.ts';
-import { SecureStorage } from '../utils/security.ts';
-import { createContextLogger } from '../utils/logger';
+import { AUTH_STORAGE_KEYS } from "../types/auth.ts";
+import type { User, AuthTokens } from "../types/auth.ts";
+import { SecureStorage } from "../utils/security.ts";
+import { createContextLogger } from "../utils/logger";
 
-const logger = createContextLogger('AuthStorage');
+const logger = createContextLogger("AuthStorage");
 
 class AuthStorage {
-  private readonly isClient = typeof window !== 'undefined';
-  private readonly PREFIX = 'csfrace_';
+  private readonly isClient = typeof window !== "undefined";
+  private readonly PREFIX = "csfrace_";
 
   // Token Management
   setTokens(tokens: AuthTokens): void {
     if (!this.isClient) return;
 
-    const expiresAt = Date.now() + (tokens.expires_in * 1000);
+    const expiresAt = Date.now() + tokens.expires_in * 1000;
     const tokensWithExpiry = { ...tokens, expires_at: expiresAt };
 
     // Store access token in encrypted sessionStorage for security (cleared on tab close)
-    SecureStorage.setItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN, tokens.access_token, { 
-      encrypt: true, 
-      expirationMinutes: tokens.expires_in / 60 
+    SecureStorage.setItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN, tokens.access_token, {
+      encrypt: true,
+      expirationMinutes: tokens.expires_in / 60,
     });
     sessionStorage.setItem(AUTH_STORAGE_KEYS.EXPIRES_AT, expiresAt.toString());
 
     // Store refresh token in encrypted localStorage if available (persistent across sessions)
     if (tokens.refresh_token) {
-      SecureStorage.setItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN, tokens.refresh_token, { 
-        encrypt: true,
-        expirationMinutes: 24 * 60 // 24 hours
-      });
+      SecureStorage.setItem(
+        AUTH_STORAGE_KEYS.REFRESH_TOKEN,
+        tokens.refresh_token,
+        {
+          encrypt: true,
+          expirationMinutes: 24 * 60, // 24 hours
+        },
+      );
     }
 
     // Dispatch storage event for cross-tab synchronization
-    this.dispatchStorageEvent('tokens_updated', tokensWithExpiry);
+    this.dispatchStorageEvent("tokens_updated", tokensWithExpiry);
   }
 
   getAccessToken(): string | null {
@@ -63,7 +67,7 @@ class AuthStorage {
     sessionStorage.removeItem(AUTH_STORAGE_KEYS.EXPIRES_AT);
     SecureStorage.removeItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
 
-    this.dispatchStorageEvent('tokens_cleared', null);
+    this.dispatchStorageEvent("tokens_cleared", null);
   }
 
   // User Data Management
@@ -71,7 +75,7 @@ class AuthStorage {
     if (!this.isClient) return;
 
     sessionStorage.setItem(AUTH_STORAGE_KEYS.USER, JSON.stringify(user));
-    this.dispatchStorageEvent('user_updated', user);
+    this.dispatchStorageEvent("user_updated", user);
   }
 
   getUser(): User | null {
@@ -81,7 +85,7 @@ class AuthStorage {
       const userData = sessionStorage.getItem(AUTH_STORAGE_KEYS.USER);
       return userData ? JSON.parse(userData) : null;
     } catch (error) {
-      logger.error('Failed to parse user data from storage', { error });
+      logger.error("Failed to parse user data from storage", { error });
       this.clearUser();
       return null;
     }
@@ -91,7 +95,7 @@ class AuthStorage {
     if (!this.isClient) return;
 
     sessionStorage.removeItem(AUTH_STORAGE_KEYS.USER);
-    this.dispatchStorageEvent('user_cleared', null);
+    this.dispatchStorageEvent("user_cleared", null);
   }
 
   // OAuth State Management
@@ -102,20 +106,28 @@ class AuthStorage {
       state,
       provider,
       verifier,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
-    sessionStorage.setItem(AUTH_STORAGE_KEYS.OAUTH_STATE, JSON.stringify(oauthData));
+    sessionStorage.setItem(
+      AUTH_STORAGE_KEYS.OAUTH_STATE,
+      JSON.stringify(oauthData),
+    );
   }
 
-  getOAuthState(): { state: string; provider: string; verifier?: string; timestamp: number } | null {
+  getOAuthState(): {
+    state: string;
+    provider: string;
+    verifier?: string;
+    timestamp: number;
+  } | null {
     if (!this.isClient) return null;
-    
+
     try {
       const oauthData = sessionStorage.getItem(AUTH_STORAGE_KEYS.OAUTH_STATE);
       return oauthData ? JSON.parse(oauthData) : null;
     } catch (error) {
-      logger.error('Failed to parse OAuth state from storage', { error });
+      logger.error("Failed to parse OAuth state from storage", { error });
       this.clearOAuthState();
       return null;
     }
@@ -147,7 +159,7 @@ class AuthStorage {
     if (accessToken && expiresAt) {
       tokens = {
         access_token: accessToken,
-        token_type: 'bearer',
+        token_type: "bearer",
         expires_in: Math.max(0, Math.floor((expiresAt - Date.now()) / 1000)),
         expires_at: expiresAt,
         ...(refreshToken != null && { refresh_token: refreshToken }),
@@ -167,42 +179,51 @@ class AuthStorage {
     this.clearTokens();
     this.clearUser();
     this.clearOAuthState();
-    this.dispatchStorageEvent('auth_cleared', null);
+    this.dispatchStorageEvent("auth_cleared", null);
   }
 
   // Cross-tab synchronization
   private dispatchStorageEvent(type: string, data: unknown): void {
     if (!this.isClient) return;
 
-    const event = new CustomEvent('auth_storage_change', {
-      detail: { type, data, timestamp: Date.now() }
+    const event = new CustomEvent("auth_storage_change", {
+      detail: { type, data, timestamp: Date.now() },
     });
     window.dispatchEvent(event);
   }
 
-  onStorageChange(callback: (event: { type: string; data: unknown; timestamp: number }) => void): () => void {
+  onStorageChange(
+    callback: (event: {
+      type: string;
+      data: unknown;
+      timestamp: number;
+    }) => void,
+  ): () => void {
     if (!this.isClient) return () => {};
 
     const handler = (event: CustomEvent) => {
       callback(event.detail);
     };
 
-    window.addEventListener('auth_storage_change', handler as EventListener);
-    
+    window.addEventListener("auth_storage_change", handler as EventListener);
+
     // Also listen for storage events from other tabs
     const storageHandler = (event: StorageEvent) => {
       if (event.key?.startsWith(this.PREFIX)) {
-        const type = event.key.replace(this.PREFIX, '');
+        const type = event.key.replace(this.PREFIX, "");
         const data = event.newValue ? JSON.parse(event.newValue) : null;
         callback({ type, data, timestamp: Date.now() });
       }
     };
-    window.addEventListener('storage', storageHandler);
+    window.addEventListener("storage", storageHandler);
 
     // Return cleanup function
     return () => {
-      window.removeEventListener('auth_storage_change', handler as EventListener);
-      window.removeEventListener('storage', storageHandler);
+      window.removeEventListener(
+        "auth_storage_change",
+        handler as EventListener,
+      );
+      window.removeEventListener("storage", storageHandler);
     };
   }
 
@@ -212,7 +233,7 @@ class AuthStorage {
     const expiresAt = this.getTokenExpiry();
 
     if (!accessToken || !expiresAt) return false;
-    
+
     return Date.now() < expiresAt;
   }
 
@@ -221,7 +242,7 @@ class AuthStorage {
     if (!expiresAt) return false;
 
     const bufferMs = bufferMinutes * 60 * 1000;
-    return Date.now() >= (expiresAt - bufferMs);
+    return Date.now() >= expiresAt - bufferMs;
   }
 
   // Session management
@@ -229,8 +250,11 @@ class AuthStorage {
     const expiresAt = this.getTokenExpiry();
     if (!expiresAt) return;
 
-    const newExpiresAt = expiresAt + (additionalMinutes * 60 * 1000);
-    sessionStorage.setItem(AUTH_STORAGE_KEYS.EXPIRES_AT, newExpiresAt.toString());
+    const newExpiresAt = expiresAt + additionalMinutes * 60 * 1000;
+    sessionStorage.setItem(
+      AUTH_STORAGE_KEYS.EXPIRES_AT,
+      newExpiresAt.toString(),
+    );
   }
 
   getSessionTimeRemaining(): number {
@@ -244,12 +268,16 @@ class AuthStorage {
   generateSecureKey(length: number = 32): string {
     if (!this.isClient || !window.crypto) {
       // Fallback for SSR or unsupported browsers
-      return Math.random().toString(36).substring(2, length + 2);
+      return Math.random()
+        .toString(36)
+        .substring(2, length + 2);
     }
 
     const array = new Uint8Array(length);
     window.crypto.getRandomValues(array);
-    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+    return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join(
+      "",
+    );
   }
 
   // Development utilities
@@ -283,7 +311,12 @@ export const authStorage = new AuthStorage();
 
 // Storage event types for type safety
 export interface AuthStorageEvent {
-  type: 'tokens_updated' | 'tokens_cleared' | 'user_updated' | 'user_cleared' | 'auth_cleared';
+  type:
+    | "tokens_updated"
+    | "tokens_cleared"
+    | "user_updated"
+    | "user_cleared"
+    | "auth_cleared";
   data: unknown;
   timestamp: number;
 }
@@ -297,16 +330,16 @@ export function useAuthStorage() {
 export const SECURITY_CONFIG = {
   // Token refresh buffer (refresh 5 minutes before expiry)
   TOKEN_REFRESH_BUFFER_MINUTES: 5,
-  
+
   // Maximum session duration (8 hours)
   MAX_SESSION_DURATION_MS: 8 * 60 * 60 * 1000,
-  
+
   // OAuth state length
   OAUTH_STATE_LENGTH: 32,
-  
+
   // PKCE code verifier length
   PKCE_VERIFIER_LENGTH: 43,
-  
+
   // Session warning threshold (15 minutes)
   SESSION_WARNING_THRESHOLD_MS: 15 * 60 * 1000,
 } as const;

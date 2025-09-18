@@ -4,18 +4,18 @@
  * Following SOLID principles with proper interface segregation
  */
 
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
 /**
  * OAuth Provider Identifier
  * Extensible enum pattern for type safety
  */
-export type OAuthProviderId = 
-  | 'google' 
-  | 'github' 
-  | 'microsoft' 
-  | 'facebook' 
-  | 'apple';
+export type OAuthProviderId =
+  | "google"
+  | "github"
+  | "microsoft"
+  | "facebook"
+  | "apple";
 
 /**
  * OAuth Provider Metadata Interface
@@ -44,7 +44,9 @@ export interface IOAuthProviderAction {
  * Complete OAuth Provider Definition
  * Composition pattern combining metadata and actions
  */
-export interface IOAuthProvider extends IOAuthProviderMetadata, IOAuthProviderAction {}
+export interface IOAuthProvider
+  extends IOAuthProviderMetadata,
+    IOAuthProviderAction {}
 
 /**
  * OAuth Button Props Interface
@@ -52,7 +54,7 @@ export interface IOAuthProvider extends IOAuthProviderMetadata, IOAuthProviderAc
  */
 export interface IOAuthButtonProps {
   readonly provider: IOAuthProvider;
-  readonly mode: 'login' | 'register';
+  readonly mode: "login" | "register";
   readonly loading: boolean;
   readonly disabled: boolean;
   readonly onClick: (providerId: OAuthProviderId) => void;
@@ -65,7 +67,7 @@ export interface IOAuthButtonProps {
  */
 export interface IOAuthProviderListProps {
   readonly providers: readonly IOAuthProvider[];
-  readonly mode: 'login' | 'register';
+  readonly mode: "login" | "register";
   readonly loading: boolean;
   readonly disabled: boolean;
   readonly onProviderClick: (providerId: OAuthProviderId) => void;

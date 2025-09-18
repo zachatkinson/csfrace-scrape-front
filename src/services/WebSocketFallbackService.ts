@@ -5,17 +5,21 @@
  */
 
 // Removed problematic astro:env/server import - use runtime environment
-const SERVER_API_BASE_URL = 'http://localhost:8000';
-import type { HealthResponse } from './HealthService';
-import { createContextLogger } from '../utils/logger';
+const SERVER_API_BASE_URL = "http://localhost:8000";
+import type { HealthResponse } from "./HealthService";
+import { createContextLogger } from "../utils/logger";
 
-const logger = createContextLogger('WebSocketFallbackService');
+const logger = createContextLogger("WebSocketFallbackService");
 
-export type CriticalAlertType = 'system_down' | 'database_failed' | 'cache_failed' | 'severe_degradation';
+export type CriticalAlertType =
+  | "system_down"
+  | "database_failed"
+  | "cache_failed"
+  | "severe_degradation";
 
 export interface CriticalAlert {
   type: CriticalAlertType;
-  severity: 'critical' | 'high';
+  severity: "critical" | "high";
   message: string;
   timestamp: string;
   healthData?: Partial<HealthResponse>;
@@ -42,7 +46,8 @@ export class WebSocketFallbackService {
   private reconnectAttempts: number = 0;
   private reconnectTimer: number | null = null;
   private heartbeatTimer: number | null = null;
-  private eventListeners: Map<string, Set<(...args: unknown[]) => void>> = new Map();
+  private eventListeners: Map<string, Set<(...args: unknown[]) => void>> =
+    new Map();
   private isEnabled: boolean = false;
 
   constructor(config?: Partial<WebSocketConfig>) {
@@ -51,7 +56,7 @@ export class WebSocketFallbackService {
       reconnectDelay: 5000, // 5 seconds
       maxReconnectAttempts: 10,
       heartbeatInterval: 30000, // 30 seconds
-      ...config
+      ...config,
     };
   }
 
@@ -63,12 +68,12 @@ export class WebSocketFallbackService {
     const shouldEnable = this.shouldEnableWebSocket(healthData);
 
     if (shouldEnable && !this.isEnabled) {
-      logger.info('WebSocket fallback enabled for critical scenarios');
+      logger.info("WebSocket fallback enabled for critical scenarios");
       this.connect();
       this.isEnabled = true;
       return true;
     } else if (!shouldEnable && this.isEnabled) {
-      logger.info('WebSocket fallback disabled - system stable');
+      logger.info("WebSocket fallback disabled - system stable");
       this.disconnect();
       this.isEnabled = false;
       return false;
@@ -80,7 +85,10 @@ export class WebSocketFallbackService {
   /**
    * Add event listener for critical alerts
    */
-  addEventListener(event: 'critical-alert' | 'connection-status', callback: (...args: unknown[]) => void): void {
+  addEventListener(
+    event: "critical-alert" | "connection-status",
+    callback: (...args: unknown[]) => void,
+  ): void {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, new Set());
     }
@@ -93,7 +101,10 @@ export class WebSocketFallbackService {
   /**
    * Remove event listener
    */
-  removeEventListener(event: string, callback: (...args: unknown[]) => void): void {
+  removeEventListener(
+    event: string,
+    callback: (...args: unknown[]) => void,
+  ): void {
     this.eventListeners.get(event)?.delete(callback);
   }
 
@@ -117,7 +128,7 @@ export class WebSocketFallbackService {
       connected: this.isConnected(),
       enabled: this.isEnabled,
       reconnectAttempts: this.reconnectAttempts,
-      maxAttempts: this.config.maxReconnectAttempts
+      maxAttempts: this.config.maxReconnectAttempts,
     };
   }
 
@@ -138,7 +149,7 @@ export class WebSocketFallbackService {
    */
   private buildWebSocketUrl(): string {
     const url = new URL(SERVER_API_BASE_URL);
-    const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+    const protocol = url.protocol === "https:" ? "wss:" : "ws:";
     return `${protocol}//${url.host}/ws/critical-alerts`;
   }
 
@@ -148,26 +159,26 @@ export class WebSocketFallbackService {
   private shouldEnableWebSocket(healthData: HealthResponse): boolean {
     const criticalConditions = [
       // System-level failures
-      healthData.status === 'unhealthy' || healthData.status === 'error',
+      healthData.status === "unhealthy" || healthData.status === "error",
 
       // Database critical issues
-      healthData.database.status === 'unhealthy' ||
-      healthData.database.status === 'error' ||
-      !healthData.database.connected ||
-      healthData.database.response_time_ms > 1000, // 1 second threshold
+      healthData.database.status === "unhealthy" ||
+        healthData.database.status === "error" ||
+        !healthData.database.connected ||
+        healthData.database.response_time_ms > 1000, // 1 second threshold
 
       // Cache critical issues
-      healthData.cache.status === 'unhealthy' ||
-      healthData.cache.status === 'error' ||
-      !healthData.cache.connected ||
-      healthData.cache.response_time_ms > 500, // 500ms threshold
+      healthData.cache.status === "unhealthy" ||
+        healthData.cache.status === "error" ||
+        !healthData.cache.connected ||
+        healthData.cache.response_time_ms > 500, // 500ms threshold
 
       // Performance degradation
       healthData.database.active_connections > 100, // High load
-      healthData.cache.connected_clients < 1 // Cache connectivity issues
+      healthData.cache.connected_clients < 1, // Cache connectivity issues
     ];
 
-    return criticalConditions.some(condition => condition);
+    return criticalConditions.some((condition) => condition);
   }
 
   /**
@@ -175,30 +186,33 @@ export class WebSocketFallbackService {
    */
   private connect(): void {
     try {
-      logger.info('Connecting to WebSocket', { url: this.config.url });
+      logger.info("Connecting to WebSocket", { url: this.config.url });
       this.websocket = new WebSocket(this.config.url);
 
       this.websocket.onopen = () => {
-        logger.info('WebSocket connected for critical alerts');
+        logger.info("WebSocket connected for critical alerts");
         this.reconnectAttempts = 0;
         this.startHeartbeat();
-        this.emitEvent('connection-status', { connected: true });
+        this.emitEvent("connection-status", { connected: true });
       };
 
       this.websocket.onmessage = (event) => {
         try {
           const alert: CriticalAlert = JSON.parse(event.data);
-          logger.warn('Critical alert received', { alert });
-          this.emitEvent('critical-alert', alert);
+          logger.warn("Critical alert received", { alert });
+          this.emitEvent("critical-alert", alert);
         } catch (error) {
-          logger.error('Failed to parse WebSocket message', { error });
+          logger.error("Failed to parse WebSocket message", { error });
         }
       };
 
       this.websocket.onclose = (event) => {
-        logger.info('WebSocket closed', { code: event.code, reason: event.reason });
+        logger.info("WebSocket closed", {
+          code: event.code,
+          reason: event.reason,
+        });
         this.stopHeartbeat();
-        this.emitEvent('connection-status', { connected: false });
+        this.emitEvent("connection-status", { connected: false });
 
         if (this.isEnabled) {
           this.scheduleReconnect();
@@ -206,11 +220,10 @@ export class WebSocketFallbackService {
       };
 
       this.websocket.onerror = (error) => {
-        logger.error('WebSocket error', { error });
+        logger.error("WebSocket error", { error });
       };
-
     } catch (error) {
-      logger.error('Failed to create WebSocket connection', { error });
+      logger.error("Failed to create WebSocket connection", { error });
       this.scheduleReconnect();
     }
   }
@@ -237,15 +250,20 @@ export class WebSocketFallbackService {
    */
   private scheduleReconnect(): void {
     if (this.reconnectAttempts >= this.config.maxReconnectAttempts) {
-      logger.error('Max WebSocket reconnection attempts reached');
+      logger.error("Max WebSocket reconnection attempts reached");
       this.isEnabled = false;
       return;
     }
 
     this.reconnectAttempts++;
-    const delay = this.config.reconnectDelay * Math.pow(2, Math.min(this.reconnectAttempts, 5)); // Exponential backoff
+    const delay =
+      this.config.reconnectDelay *
+      Math.pow(2, Math.min(this.reconnectAttempts, 5)); // Exponential backoff
 
-    logger.info('Scheduling WebSocket reconnect', { delay, attempt: this.reconnectAttempts });
+    logger.info("Scheduling WebSocket reconnect", {
+      delay,
+      attempt: this.reconnectAttempts,
+    });
 
     this.reconnectTimer = window.setTimeout(() => {
       if (this.isEnabled) {
@@ -260,7 +278,9 @@ export class WebSocketFallbackService {
   private startHeartbeat(): void {
     this.heartbeatTimer = window.setInterval(() => {
       if (this.websocket?.readyState === WebSocket.OPEN) {
-        this.websocket.send(JSON.stringify({ type: 'ping', timestamp: new Date().toISOString() }));
+        this.websocket.send(
+          JSON.stringify({ type: "ping", timestamp: new Date().toISOString() }),
+        );
       }
     }, this.config.heartbeatInterval);
   }
@@ -281,11 +301,11 @@ export class WebSocketFallbackService {
   private emitEvent(event: string, data: unknown): void {
     const listeners = this.eventListeners.get(event);
     if (listeners) {
-      listeners.forEach(callback => {
+      listeners.forEach((callback) => {
         try {
           callback(data);
         } catch (error) {
-          logger.error('Error in WebSocket event listener', { event, error });
+          logger.error("Error in WebSocket event listener", { event, error });
         }
       });
     }

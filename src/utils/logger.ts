@@ -12,7 +12,7 @@ export enum LogLevel {
   INFO = 1,
   WARN = 2,
   ERROR = 3,
-  CRITICAL = 4
+  CRITICAL = 4,
 }
 
 export interface LogEntry {
@@ -66,7 +66,7 @@ export class Logger implements ILogger {
       enableStorage: false,
       maxStorageEntries: 1000,
       includeStackTrace: false,
-      ...config
+      ...config,
     };
 
     this.correlationId = this.generateCorrelationId();
@@ -131,7 +131,12 @@ export class Logger implements ILogger {
   /**
    * Core logging implementation - DRY principle
    */
-  private log(level: LogLevel, message: string, data?: unknown, context?: string): void {
+  private log(
+    level: LogLevel,
+    message: string,
+    data?: unknown,
+    context?: string,
+  ): void {
     // Filter by log level
     if (level < this.config.level) {
       return;
@@ -144,7 +149,7 @@ export class Logger implements ILogger {
       context: this.formatContext(context),
       data: this.sanitizeData(data),
       source: this.getSource(),
-      correlationId: this.correlationId
+      correlationId: this.correlationId,
     };
 
     // Store entry if enabled
@@ -180,14 +185,14 @@ export class Logger implements ILogger {
     if (!data) return undefined;
 
     // Remove sensitive fields
-    if (typeof data === 'object' && data !== null) {
-      const sensitiveFields = ['password', 'token', 'key', 'secret', 'auth'];
-      const sanitized = { ...data as Record<string, unknown> };
+    if (typeof data === "object" && data !== null) {
+      const sensitiveFields = ["password", "token", "key", "secret", "auth"];
+      const sanitized = { ...(data as Record<string, unknown>) };
 
-      sensitiveFields.forEach(field => {
-        Object.keys(sanitized).forEach(key => {
+      sensitiveFields.forEach((field) => {
+        Object.keys(sanitized).forEach((key) => {
           if (key.toLowerCase().includes(field)) {
-            sanitized[key] = '[REDACTED]';
+            sanitized[key] = "[REDACTED]";
           }
         });
       });
@@ -206,15 +211,18 @@ export class Logger implements ILogger {
 
     try {
       const stack = new Error().stack;
-      const lines = stack?.split('\n') || [];
+      const lines = stack?.split("\n") || [];
       // Find the first non-logger line
-      const sourceLine = lines.find(line =>
-        line.includes('.ts') &&
-        !line.includes('logger.ts') &&
-        !line.includes('Logger')
+      const sourceLine = lines.find(
+        (line) =>
+          line.includes(".ts") &&
+          !line.includes("logger.ts") &&
+          !line.includes("Logger"),
       );
 
-      return sourceLine ? sourceLine.trim().replace(/^\s*at\s+/, '') : undefined;
+      return sourceLine
+        ? sourceLine.trim().replace(/^\s*at\s+/, "")
+        : undefined;
     } catch {
       return undefined;
     }
@@ -266,11 +274,11 @@ export class Logger implements ILogger {
     const parts = [
       `[${entry.timestamp}]`,
       `[${LogLevel[entry.level]}]`,
-      entry.context || '',
-      entry.message
+      entry.context || "",
+      entry.message,
     ].filter(Boolean);
 
-    return parts.join(' ');
+    return parts.join(" ");
   }
 
   /**
@@ -291,31 +299,46 @@ export class DevLogger implements ILogger {
   debug(message: string, data?: unknown, context?: string): void {
     if (this.level <= LogLevel.DEBUG) {
       // eslint-disable-next-line no-console
-      console.debug(`🐛 [DEBUG]${context ? ` [${context}]` : ''} ${message}`, data || '');
+      console.debug(
+        `🐛 [DEBUG]${context ? ` [${context}]` : ""} ${message}`,
+        data || "",
+      );
     }
   }
 
   info(message: string, data?: unknown, context?: string): void {
     if (this.level <= LogLevel.INFO) {
       // eslint-disable-next-line no-console
-      console.info(`ℹ️ [INFO]${context ? ` [${context}]` : ''} ${message}`, data || '');
+      console.info(
+        `ℹ️ [INFO]${context ? ` [${context}]` : ""} ${message}`,
+        data || "",
+      );
     }
   }
 
   warn(message: string, data?: unknown, context?: string): void {
     if (this.level <= LogLevel.WARN) {
-      console.warn(`⚠️ [WARN]${context ? ` [${context}]` : ''} ${message}`, data || '');
+      console.warn(
+        `⚠️ [WARN]${context ? ` [${context}]` : ""} ${message}`,
+        data || "",
+      );
     }
   }
 
   error(message: string, data?: unknown, context?: string): void {
     if (this.level <= LogLevel.ERROR) {
-      console.error(`❌ [ERROR]${context ? ` [${context}]` : ''} ${message}`, data || '');
+      console.error(
+        `❌ [ERROR]${context ? ` [${context}]` : ""} ${message}`,
+        data || "",
+      );
     }
   }
 
   critical(message: string, data?: unknown, context?: string): void {
-    console.error(`🚨 [CRITICAL]${context ? ` [${context}]` : ''} ${message}`, data || '');
+    console.error(
+      `🚨 [CRITICAL]${context ? ` [${context}]` : ""} ${message}`,
+      data || "",
+    );
   }
 
   setLevel(level: LogLevel): void {
@@ -354,7 +377,7 @@ export class LoggerFactory {
    */
   private static createLogger(): ILogger {
     const isDevelopment = import.meta.env.DEV;
-    const isTest = import.meta.env.MODE === 'test';
+    const isTest = import.meta.env.MODE === "test";
 
     if (isDevelopment || isTest) {
       return new DevLogger();
@@ -365,7 +388,7 @@ export class LoggerFactory {
       enableConsole: true,
       enableStorage: true,
       maxStorageEntries: 1000,
-      includeStackTrace: false
+      includeStackTrace: false,
     });
   }
 
@@ -391,14 +414,19 @@ export function createContextLogger(context: string): ILogger {
   const baseLogger = LoggerFactory.getLogger();
 
   return {
-    debug: (message: string, data?: unknown) => baseLogger.debug(message, data, context),
-    info: (message: string, data?: unknown) => baseLogger.info(message, data, context),
-    warn: (message: string, data?: unknown) => baseLogger.warn(message, data, context),
-    error: (message: string, data?: unknown) => baseLogger.error(message, data, context),
-    critical: (message: string, data?: unknown) => baseLogger.critical(message, data, context),
+    debug: (message: string, data?: unknown) =>
+      baseLogger.debug(message, data, context),
+    info: (message: string, data?: unknown) =>
+      baseLogger.info(message, data, context),
+    warn: (message: string, data?: unknown) =>
+      baseLogger.warn(message, data, context),
+    error: (message: string, data?: unknown) =>
+      baseLogger.error(message, data, context),
+    critical: (message: string, data?: unknown) =>
+      baseLogger.critical(message, data, context),
     setLevel: (level: LogLevel) => baseLogger.setLevel(level),
     getEntries: () => baseLogger.getEntries(),
-    clearEntries: () => baseLogger.clearEntries()
+    clearEntries: () => baseLogger.clearEntries(),
   };
 }
 
@@ -406,8 +434,8 @@ export function createContextLogger(context: string): ILogger {
  * Specialized Logger Instances - Domain-Specific Loggers
  * Following Single Responsibility and Interface Segregation principles
  */
-export const uiLogger = createContextLogger('UI');
-export const apiLogger = createContextLogger('API');
+export const uiLogger = createContextLogger("UI");
+export const apiLogger = createContextLogger("API");
 
 /**
  * API Call Logger - Specialized utility for API logging
@@ -418,14 +446,14 @@ export function logApiCall(
   url: string,
   status?: number,
   duration?: number,
-  error?: Error
+  error?: Error,
 ): void {
   const data = {
     method,
     url,
     status,
     duration: duration ? `${duration.toFixed(2)}ms` : undefined,
-    error: error?.message
+    error: error?.message,
   };
 
   if (error || (status && status >= 400)) {
@@ -441,7 +469,7 @@ export function logApiCall(
  */
 export class PerformanceLogger {
   private static timers: Map<string, number> = new Map();
-  private static logger = createContextLogger('Performance');
+  private static logger = createContextLogger("Performance");
 
   /**
    * Start timing an operation
@@ -464,7 +492,9 @@ export class PerformanceLogger {
     const duration = performance.now() - startTime;
     this.timers.delete(operation);
 
-    this.logger.info(`${operation} completed`, { duration: `${duration.toFixed(2)}ms` });
+    this.logger.info(`${operation} completed`, {
+      duration: `${duration.toFixed(2)}ms`,
+    });
     return duration;
   }
 
@@ -479,7 +509,7 @@ export class PerformanceLogger {
     if (elapsed > threshold) {
       this.logger.warn(`Slow operation detected: ${operation}`, {
         elapsed: `${elapsed.toFixed(2)}ms`,
-        threshold: `${threshold}ms`
+        threshold: `${threshold}ms`,
       });
     }
   }
@@ -495,5 +525,5 @@ export default {
   apiLogger,
   logApiCall,
   PerformanceLogger,
-  LogLevel
+  LogLevel,
 };

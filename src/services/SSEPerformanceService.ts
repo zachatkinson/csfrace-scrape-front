@@ -13,10 +13,10 @@ const SSE_RESPONSE_TIME_THRESHOLD_MS = 2000;
 const SSE_CONNECTION_COUNT_THRESHOLD = 10;
 const SSE_MAX_CONCURRENT_CONNECTIONS = 50;
 
-import type { HealthResponse } from './HealthService';
+import type { HealthResponse } from "./HealthService";
 
-export type HealthStatus = 'healthy' | 'degraded' | 'unhealthy';
-export type PollingStrategy = 'normal' | 'aggressive' | 'conservative';
+export type HealthStatus = "healthy" | "degraded" | "unhealthy";
+export type PollingStrategy = "normal" | "aggressive" | "conservative";
 
 export interface PerformanceMetrics {
   responseTimeThreshold: number;
@@ -51,7 +51,7 @@ export class SSEPerformanceService {
       connectionCountThreshold: SSE_CONNECTION_COUNT_THRESHOLD,
       currentInterval: SSE_POLLING_INTERVAL_MS,
       debounceDelay: SSE_DEBOUNCE_DELAY_MS,
-      maxConnections: SSE_MAX_CONCURRENT_CONNECTIONS
+      maxConnections: SSE_MAX_CONCURRENT_CONNECTIONS,
     };
   }
 
@@ -59,33 +59,35 @@ export class SSEPerformanceService {
    * Determine optimal polling interval based on system health
    * Implements adaptive polling strategy for performance optimization
    */
-  getAdaptivePollingInterval(healthData: HealthResponse): AdaptivePollingResult {
+  getAdaptivePollingInterval(
+    healthData: HealthResponse,
+  ): AdaptivePollingResult {
     const overallHealth = this.assessOverallHealth(healthData);
 
     switch (overallHealth) {
-      case 'unhealthy':
+      case "unhealthy":
         return {
           interval: SSE_POLLING_INTERVAL_UNHEALTHY_MS,
-          strategy: 'aggressive',
-          reason: 'System unhealthy - faster monitoring needed'
+          strategy: "aggressive",
+          reason: "System unhealthy - faster monitoring needed",
         };
-      case 'degraded':
+      case "degraded":
         return {
           interval: SSE_POLLING_INTERVAL_MS,
-          strategy: 'normal',
-          reason: 'System degraded - normal monitoring'
+          strategy: "normal",
+          reason: "System degraded - normal monitoring",
         };
-      case 'healthy':
+      case "healthy":
         return {
           interval: SSE_POLLING_INTERVAL_STABLE_MS,
-          strategy: 'conservative',
-          reason: 'System healthy - background monitoring'
+          strategy: "conservative",
+          reason: "System healthy - background monitoring",
         };
       default:
         return {
           interval: SSE_POLLING_INTERVAL_MS,
-          strategy: 'normal',
-          reason: 'Default monitoring interval'
+          strategy: "normal",
+          reason: "Default monitoring interval",
         };
     }
   }
@@ -96,7 +98,7 @@ export class SSEPerformanceService {
    */
   isSignificantChange(
     current: HealthResponse,
-    previous: HealthResponse
+    previous: HealthResponse,
   ): boolean {
     // Always notify on status changes
     if (current.status !== previous.status) {
@@ -105,10 +107,11 @@ export class SSEPerformanceService {
 
     // Check database changes with thresholds
     const dbResponseTimeDiff = Math.abs(
-      current.database.response_time_ms - previous.database.response_time_ms
+      current.database.response_time_ms - previous.database.response_time_ms,
     );
     const dbConnectionDiff = Math.abs(
-      current.database.active_connections - previous.database.active_connections
+      current.database.active_connections -
+        previous.database.active_connections,
     );
 
     if (
@@ -121,10 +124,10 @@ export class SSEPerformanceService {
 
     // Check cache changes with thresholds
     const cacheResponseTimeDiff = Math.abs(
-      current.cache.response_time_ms - previous.cache.response_time_ms
+      current.cache.response_time_ms - previous.cache.response_time_ms,
     );
     const cacheClientDiff = Math.abs(
-      current.cache.connected_clients - previous.cache.connected_clients
+      current.cache.connected_clients - previous.cache.connected_clients,
     );
 
     if (
@@ -144,7 +147,7 @@ export class SSEPerformanceService {
    */
   createDebouncedFunction<T extends unknown[]>(
     fn: (...args: T) => void,
-    key: string
+    key: string,
   ): (...args: T) => void {
     return (...args: T) => {
       // Clear existing timer
@@ -168,7 +171,9 @@ export class SSEPerformanceService {
    * Implements connection limiting for performance protection
    */
   canAcceptConnection(): boolean {
-    return SSEPerformanceService.activeConnections < this.metrics.maxConnections;
+    return (
+      SSEPerformanceService.activeConnections < this.metrics.maxConnections
+    );
   }
 
   /**
@@ -197,7 +202,7 @@ export class SSEPerformanceService {
   getMetrics(): PerformanceMetrics & { activeConnections: number } {
     return {
       ...this.metrics,
-      activeConnections: SSEPerformanceService.activeConnections
+      activeConnections: SSEPerformanceService.activeConnections,
     };
   }
 
@@ -220,29 +225,33 @@ export class SSEPerformanceService {
     const statuses = [
       healthData.status,
       healthData.database.status,
-      healthData.cache.status
+      healthData.cache.status,
     ];
 
     // If any service is unhealthy, system is unhealthy
-    if (statuses.some(status => status === 'unhealthy' || status === 'error')) {
-      return 'unhealthy';
+    if (
+      statuses.some((status) => status === "unhealthy" || status === "error")
+    ) {
+      return "unhealthy";
     }
 
     // If any service is degraded, system is degraded
-    if (statuses.some(status => status === 'degraded' || status === 'warning')) {
-      return 'degraded';
+    if (
+      statuses.some((status) => status === "degraded" || status === "warning")
+    ) {
+      return "degraded";
     }
 
     // Check performance thresholds for degraded status
     if (
       healthData.database.response_time_ms > 100 || // 100ms threshold
-      healthData.cache.response_time_ms > 50 ||     // 50ms threshold
-      healthData.database.active_connections > 50   // High connection count
+      healthData.cache.response_time_ms > 50 || // 50ms threshold
+      healthData.database.active_connections > 50 // High connection count
     ) {
-      return 'degraded';
+      return "degraded";
     }
 
-    return 'healthy';
+    return "healthy";
   }
 }
 

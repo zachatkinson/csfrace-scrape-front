@@ -6,9 +6,9 @@
  * Dependency Inversion: Depends on authentication abstractions, not concrete implementations
  */
 
-import { createContextLogger } from '../utils/logger';
+import { createContextLogger } from "../utils/logger";
 
-const logger = createContextLogger('SignInButtonManager');
+const logger = createContextLogger("SignInButtonManager");
 
 // =============================================================================
 // TYPES & INTERFACES
@@ -60,13 +60,13 @@ export class SignInButtonManager {
   private config: SignInButtonConfig;
   private button: HTMLButtonElement | null = null;
   private isLoading: boolean = false;
-  private originalButtonContent: string = '';
+  private originalButtonContent: string = "";
 
   constructor(config: SignInButtonConfig) {
     this.config = {
-      authEndpoint: '/auth/login',
-      redirectUrl: '/dashboard',
-      ...config
+      authEndpoint: "/auth/login",
+      redirectUrl: "/dashboard",
+      ...config,
     };
   }
 
@@ -78,10 +78,10 @@ export class SignInButtonManager {
       this.cacheElements();
       this.setupEventListeners();
       this.setupUI();
-      
-      logger.info('Initialized successfully');
+
+      logger.info("Initialized successfully");
     } catch (error) {
-      logger.error('Failed to initialize', error);
+      logger.error("Failed to initialize", error);
     }
   }
 
@@ -89,9 +89,13 @@ export class SignInButtonManager {
    * Cache DOM elements
    */
   private cacheElements(): void {
-    this.button = document.getElementById(this.config.buttonId || '') as HTMLButtonElement;
+    this.button = document.getElementById(
+      this.config.buttonId || "",
+    ) as HTMLButtonElement;
     if (!this.button) {
-      throw new Error(`Sign-in button with ID "${this.config.buttonId}" not found`);
+      throw new Error(
+        `Sign-in button with ID "${this.config.buttonId}" not found`,
+      );
     }
 
     // Store original button content for restoration
@@ -104,12 +108,21 @@ export class SignInButtonManager {
   private setupEventListeners(): void {
     if (!this.button) return;
 
-    this.button.addEventListener('click', this.handleSignInClick.bind(this));
+    this.button.addEventListener("click", this.handleSignInClick.bind(this));
 
     // Listen for external authentication events
-    window.addEventListener('auth-success', this.handleAuthSuccess.bind(this) as EventListener);
-    window.addEventListener('auth-error', this.handleAuthError.bind(this) as EventListener);
-    window.addEventListener('auth-logout', this.handleLogout.bind(this) as EventListener);
+    window.addEventListener(
+      "auth-success",
+      this.handleAuthSuccess.bind(this) as EventListener,
+    );
+    window.addEventListener(
+      "auth-error",
+      this.handleAuthError.bind(this) as EventListener,
+    );
+    window.addEventListener(
+      "auth-logout",
+      this.handleLogout.bind(this) as EventListener,
+    );
   }
 
   /**
@@ -132,12 +145,12 @@ export class SignInButtonManager {
    */
   private async handleSignInClick(event: Event): Promise<void> {
     event.preventDefault();
-    
+
     if (this.isLoading) return;
 
     try {
       this.setLoadingState(true);
-      
+
       // Check if user is already authenticated
       const existingAuth = this.getStoredAuth();
       if (existingAuth) {
@@ -148,15 +161,14 @@ export class SignInButtonManager {
 
       // Initiate sign-in flow
       await this.initiateSignIn();
-      
     } catch (error) {
-      logger.error('Error during sign-in', error);
+      logger.error("Error during sign-in", error);
       this.handleAuthError({
         detail: {
-          code: 'SIGNIN_ERROR',
-          message: 'Failed to sign in. Please try again.',
-          details: error
-        }
+          code: "SIGNIN_ERROR",
+          message: "Failed to sign in. Please try again.",
+          details: error,
+        },
       } as CustomEvent);
     } finally {
       this.setLoadingState(false);
@@ -167,39 +179,42 @@ export class SignInButtonManager {
    * Initiate sign-in flow
    */
   private async initiateSignIn(): Promise<void> {
-    logger.info('Opening authentication modal');
+    logger.info("Opening authentication modal");
 
     // Dispatch event to open the authentication modal
-    window.dispatchEvent(new CustomEvent('open-auth-modal', {
-      detail: { mode: 'signin' }
-    }));
+    window.dispatchEvent(
+      new CustomEvent("open-auth-modal", {
+        detail: { mode: "signin" },
+      }),
+    );
   }
-
 
   /**
    * Handle successful authentication
    */
   private handleAuthSuccess(event: CustomEvent): void {
     const user: AuthUser = event.detail;
-    
-    logger.info('Authentication successful', { user });
-    
+
+    logger.info("Authentication successful", { user });
+
     // Store authentication data
     this.storeAuth(user);
-    
+
     // Update UI
     this.updateButtonForAuthenticatedState(user);
-    
+
     // Call success callback
     if (this.config.onSuccess) {
       this.config.onSuccess(user);
     }
-    
+
     // Emit global authentication event
-    window.dispatchEvent(new CustomEvent('user-authenticated', {
-      detail: user
-    }));
-    
+    window.dispatchEvent(
+      new CustomEvent("user-authenticated", {
+        detail: user,
+      }),
+    );
+
     // Redirect if specified
     if (this.config.redirectUrl) {
       // Use a small delay to allow UI updates to be seen
@@ -216,17 +231,17 @@ export class SignInButtonManager {
    */
   private handleAuthError(event: CustomEvent): void {
     const error: AuthError = event.detail;
-    
-    logger.error('Authentication error', error);
-    
+
+    logger.error("Authentication error", error);
+
     // Update UI to show error state
     this.updateButtonForErrorState(error);
-    
+
     // Call error callback
     if (this.config.onError) {
       this.config.onError(error);
     }
-    
+
     // Reset to normal state after delay
     setTimeout(() => {
       this.updateButtonForUnauthenticatedState();
@@ -238,22 +253,21 @@ export class SignInButtonManager {
    */
   private async handleSignOut(): Promise<void> {
     try {
-      logger.info('Signing out');
-      
+      logger.info("Signing out");
+
       // Clear stored authentication
       this.clearStoredAuth();
-      
+
       // Update UI
       this.updateButtonForUnauthenticatedState();
-      
+
       // Emit logout event
-      window.dispatchEvent(new CustomEvent('user-logged-out'));
-      
+      window.dispatchEvent(new CustomEvent("user-logged-out"));
+
       // Optional: Make API call to revoke tokens
       // await this.revokeTokens();
-      
     } catch (error) {
-      logger.error('Error during sign-out', error);
+      logger.error("Error during sign-out", error);
     }
   }
 
@@ -270,9 +284,9 @@ export class SignInButtonManager {
    */
   private setLoadingState(isLoading: boolean): void {
     this.isLoading = isLoading;
-    
+
     if (!this.button) return;
-    
+
     if (isLoading) {
       this.button.disabled = true;
       this.button.innerHTML = `
@@ -285,7 +299,7 @@ export class SignInButtonManager {
     } else {
       this.button.disabled = false;
     }
-    
+
     // Call loading callback
     if (this.config.onLoading) {
       this.config.onLoading(isLoading);
@@ -297,15 +311,17 @@ export class SignInButtonManager {
    */
   private updateButtonForUnauthenticatedState(): void {
     if (!this.button) return;
-    
-    this.button.innerHTML = this.originalButtonContent || `
+
+    this.button.innerHTML =
+      this.originalButtonContent ||
+      `
       <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
       </svg>
       Sign In
     `;
-    
-    this.button.classList.remove('authenticated', 'error');
+
+    this.button.classList.remove("authenticated", "error");
     this.button.disabled = false;
   }
 
@@ -314,18 +330,18 @@ export class SignInButtonManager {
    */
   private updateButtonForAuthenticatedState(user: AuthUser): void {
     if (!this.button) return;
-    
+
     this.button.innerHTML = `
       <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
       </svg>
       ${user.name || user.email}
     `;
-    
-    this.button.classList.add('authenticated');
-    this.button.classList.remove('error');
+
+    this.button.classList.add("authenticated");
+    this.button.classList.remove("error");
     this.button.disabled = false;
-    this.button.title = 'Click to sign out';
+    this.button.title = "Click to sign out";
   }
 
   /**
@@ -333,16 +349,16 @@ export class SignInButtonManager {
    */
   private updateButtonForErrorState(error: AuthError): void {
     if (!this.button) return;
-    
+
     this.button.innerHTML = `
       <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
       </svg>
       Sign In Failed
     `;
-    
-    this.button.classList.add('error');
-    this.button.classList.remove('authenticated');
+
+    this.button.classList.add("error");
+    this.button.classList.remove("authenticated");
     this.button.title = error.message;
   }
 
@@ -355,14 +371,14 @@ export class SignInButtonManager {
    */
   private storeAuth(user: AuthUser): void {
     try {
-      localStorage.setItem('auth_user', JSON.stringify(user));
-      
+      localStorage.setItem("auth_user", JSON.stringify(user));
+
       // Store tokens separately for security
       if (user.tokens) {
-        sessionStorage.setItem('auth_tokens', JSON.stringify(user.tokens));
+        sessionStorage.setItem("auth_tokens", JSON.stringify(user.tokens));
       }
     } catch (error) {
-      logger.error('Failed to store authentication data', error);
+      logger.error("Failed to store authentication data", error);
     }
   }
 
@@ -371,30 +387,30 @@ export class SignInButtonManager {
    */
   private getStoredAuth(): AuthUser | null {
     try {
-      const userJson = localStorage.getItem('auth_user');
-      const tokensJson = sessionStorage.getItem('auth_tokens');
-      
+      const userJson = localStorage.getItem("auth_user");
+      const tokensJson = sessionStorage.getItem("auth_tokens");
+
       if (userJson) {
         const user: AuthUser = JSON.parse(userJson);
-        
+
         // Add tokens if available
         if (tokensJson) {
           user.tokens = JSON.parse(tokensJson);
         }
-        
+
         // Check if tokens are expired
         if (user.tokens?.expires && user.tokens.expires < Date.now()) {
           this.clearStoredAuth();
           return null;
         }
-        
+
         return user;
       }
     } catch (error) {
-      logger.error('Failed to retrieve authentication data', error);
+      logger.error("Failed to retrieve authentication data", error);
       this.clearStoredAuth();
     }
-    
+
     return null;
   }
 
@@ -403,10 +419,10 @@ export class SignInButtonManager {
    */
   private clearStoredAuth(): void {
     try {
-      localStorage.removeItem('auth_user');
-      sessionStorage.removeItem('auth_tokens');
+      localStorage.removeItem("auth_user");
+      sessionStorage.removeItem("auth_tokens");
     } catch (error) {
-      logger.error('Failed to clear authentication data', error);
+      logger.error("Failed to clear authentication data", error);
     }
   }
 
@@ -457,16 +473,28 @@ export class SignInButtonManager {
   destroy(): void {
     // Remove event listeners
     if (this.button) {
-      this.button.removeEventListener('click', this.handleSignInClick.bind(this));
+      this.button.removeEventListener(
+        "click",
+        this.handleSignInClick.bind(this),
+      );
     }
-    
-    window.removeEventListener('auth-success', this.handleAuthSuccess.bind(this) as EventListener);
-    window.removeEventListener('auth-error', this.handleAuthError.bind(this) as EventListener);
-    window.removeEventListener('auth-logout', this.handleLogout.bind(this) as EventListener);
-    
+
+    window.removeEventListener(
+      "auth-success",
+      this.handleAuthSuccess.bind(this) as EventListener,
+    );
+    window.removeEventListener(
+      "auth-error",
+      this.handleAuthError.bind(this) as EventListener,
+    );
+    window.removeEventListener(
+      "auth-logout",
+      this.handleLogout.bind(this) as EventListener,
+    );
+
     // Clear references
     this.button = null;
-    
-    logger.info('Destroyed');
+
+    logger.info("Destroyed");
   }
 }

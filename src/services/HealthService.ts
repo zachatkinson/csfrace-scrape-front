@@ -4,8 +4,9 @@
  */
 
 // Use runtime environment variable for API base URL
-const SERVER_API_BASE_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
-import { ssePerformanceService } from './SSEPerformanceService';
+const SERVER_API_BASE_URL =
+  import.meta.env.PUBLIC_API_URL || "http://localhost:8000";
+import { ssePerformanceService } from "./SSEPerformanceService";
 
 export interface HealthResponse {
   status: string;
@@ -72,7 +73,7 @@ export class HealthService {
 
   constructor(
     backendUrl: string = SERVER_API_BASE_URL,
-    timeout: number = 5000
+    timeout: number = 5000,
   ) {
     this.backendUrl = backendUrl;
     this.timeout = timeout;
@@ -87,20 +88,20 @@ export class HealthService {
       const response = await fetch(`${this.backendUrl}/health/`, {
         signal: AbortSignal.timeout(this.timeout),
         headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'CSFrace-Frontend-Health/1.0'
-        }
+          Accept: "application/json",
+          "User-Agent": "CSFrace-Frontend-Health/1.0",
+        },
       });
 
       if (!response.ok) {
         throw new HealthServiceError(
           `Health check failed: ${response.status}`,
-          'HEALTH_CHECK_FAILED',
-          response.status
+          "HEALTH_CHECK_FAILED",
+          response.status,
         );
       }
 
-      return await response.json() as HealthResponse;
+      return (await response.json()) as HealthResponse;
     } catch (error) {
       if (error instanceof HealthServiceError) {
         throw error;
@@ -108,24 +109,20 @@ export class HealthService {
 
       // Handle network and timeout errors
       if (error instanceof Error) {
-        if (error.name === 'TimeoutError') {
+        if (error.name === "TimeoutError") {
           throw new HealthServiceError(
-            'Health check timed out',
-            'TIMEOUT',
-            408
+            "Health check timed out",
+            "TIMEOUT",
+            408,
           );
         }
-        throw new HealthServiceError(
-          error.message,
-          'NETWORK_ERROR',
-          0
-        );
+        throw new HealthServiceError(error.message, "NETWORK_ERROR", 0);
       }
 
       throw new HealthServiceError(
-        'Unknown error during health check',
-        'UNKNOWN_ERROR',
-        0
+        "Unknown error during health check",
+        "UNKNOWN_ERROR",
+        0,
       );
     }
   }
@@ -135,15 +132,15 @@ export class HealthService {
    */
   createFrontendServiceUpdate(timestamp: string): ServiceUpdate {
     return {
-      service: 'frontend',
-      status: 'healthy', // Frontend is healthy if we can run this code
+      service: "frontend",
+      status: "healthy", // Frontend is healthy if we can run this code
       timestamp,
       data: {
-        version: '5.13.7', // Will be replaced by astro:env
+        version: "5.13.7", // Will be replaced by astro:env
         port: 3000, // Will be replaced by astro:env
-        framework: 'Astro + React + TypeScript',
+        framework: "Astro + React + TypeScript",
         response_time_ms: 0, // Immediate for frontend
-      }
+      },
     };
   }
 
@@ -152,15 +149,15 @@ export class HealthService {
    */
   createBackendServiceUpdate(healthData: HealthResponse): ServiceUpdate {
     return {
-      service: 'backend',
+      service: "backend",
       status: healthData.status,
       timestamp: healthData.timestamp,
       data: {
         version: healthData.version,
-        framework: 'FastAPI + Python 3.13', // Will be replaced by astro:env
+        framework: "FastAPI + Python 3.13", // Will be replaced by astro:env
         port: 8000, // Will be replaced by astro:env
         response_time_ms: 1, // Minimal since we just fetched
-      }
+      },
     };
   }
 
@@ -169,10 +166,10 @@ export class HealthService {
    */
   createDatabaseServiceUpdate(healthData: HealthResponse): ServiceUpdate {
     return {
-      service: 'database',
+      service: "database",
       status: healthData.database.status,
       timestamp: healthData.timestamp,
-      data: healthData.database
+      data: healthData.database,
     };
   }
 
@@ -181,10 +178,10 @@ export class HealthService {
    */
   createCacheServiceUpdate(healthData: HealthResponse): ServiceUpdate {
     return {
-      service: 'cache',
+      service: "cache",
       status: healthData.cache.status,
       timestamp: healthData.timestamp,
-      data: healthData.cache
+      data: healthData.cache,
     };
   }
 
@@ -195,7 +192,7 @@ export class HealthService {
    */
   detectServiceChanges(
     current: HealthResponse,
-    previous: HealthResponse
+    previous: HealthResponse,
   ): ServiceUpdate[] {
     const changes: ServiceUpdate[] = [];
 
@@ -228,7 +225,7 @@ export class HealthService {
    */
   private isDatabaseChangeSignificant(
     current: HealthResponse,
-    previous: HealthResponse
+    previous: HealthResponse,
   ): boolean {
     // Status changes are always significant
     if (current.database.status !== previous.database.status) {
@@ -237,10 +234,11 @@ export class HealthService {
 
     // Use thresholds from performance service
     const responseTimeDiff = Math.abs(
-      current.database.response_time_ms - previous.database.response_time_ms
+      current.database.response_time_ms - previous.database.response_time_ms,
     );
     const connectionDiff = Math.abs(
-      current.database.active_connections - previous.database.active_connections
+      current.database.active_connections -
+        previous.database.active_connections,
     );
 
     const metrics = ssePerformanceService.getMetrics();
@@ -257,7 +255,7 @@ export class HealthService {
    */
   private isCacheChangeSignificant(
     current: HealthResponse,
-    previous: HealthResponse
+    previous: HealthResponse,
   ): boolean {
     // Status changes are always significant
     if (current.cache.status !== previous.cache.status) {
@@ -266,10 +264,10 @@ export class HealthService {
 
     // Use thresholds from performance service
     const responseTimeDiff = Math.abs(
-      current.cache.response_time_ms - previous.cache.response_time_ms
+      current.cache.response_time_ms - previous.cache.response_time_ms,
     );
     const clientDiff = Math.abs(
-      current.cache.connected_clients - previous.cache.connected_clients
+      current.cache.connected_clients - previous.cache.connected_clients,
     );
 
     const metrics = ssePerformanceService.getMetrics();
@@ -288,9 +286,9 @@ export class HealthServiceError extends Error {
   constructor(
     message: string,
     public readonly code: string,
-    public readonly statusCode: number
+    public readonly statusCode: number,
   ) {
     super(message);
-    this.name = 'HealthServiceError';
+    this.name = "HealthServiceError";
   }
 }

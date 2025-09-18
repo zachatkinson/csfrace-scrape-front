@@ -5,19 +5,19 @@
  * Following CLAUDE.md NO LOCAL SERVICES RULE
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import type { IJobData, JobFilter, JobSort } from '../../types/job.ts';
-import * as jobUtils from '../../utils/dashboard/jobUtils.ts';
-import { createContextLogger } from '../../utils/logger';
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import type { IJobData, JobFilter, JobSort } from "../../types/job.ts";
+import * as jobUtils from "../../utils/dashboard/jobUtils.ts";
+import { createContextLogger } from "../../utils/logger";
 
 // Focused hooks following SRP
-import { useJobData } from './hooks/useJobData.ts';
-import { useJobActions } from './hooks/useJobActions.ts';
-import { useConnectionStatus } from './hooks/useConnectionStatus.ts';
-import { useJobSelection } from './hooks/useJobSelection.ts';
-import { useAutoRefresh } from './hooks/useAutoRefresh.ts';
+import { useJobData } from "./hooks/useJobData.ts";
+import { useJobActions } from "./hooks/useJobActions.ts";
+import { useConnectionStatus } from "./hooks/useConnectionStatus.ts";
+import { useJobSelection } from "./hooks/useJobSelection.ts";
+import { useAutoRefresh } from "./hooks/useAutoRefresh.ts";
 
-const logger = createContextLogger('DashboardManager');
+const logger = createContextLogger("DashboardManager");
 
 interface DashboardManagerProps {
   initialJobs?: IJobData[];
@@ -28,40 +28,49 @@ interface DashboardManagerProps {
 const DashboardManager: React.FC<DashboardManagerProps> = ({
   initialJobs = [],
   autoRefresh = true,
-  refreshInterval = 10000
+  refreshInterval = 10000,
 }) => {
   // =============================================================================
   // UI STATE - Single Responsibility: UI filtering/sorting state only
   // =============================================================================
-  const [currentFilter, setCurrentFilter] = useState<JobFilter>('all');
-  const [currentSort, setCurrentSort] = useState<JobSort>('newest');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [currentFilter, setCurrentFilter] = useState<JobFilter>("all");
+  const [currentSort, setCurrentSort] = useState<JobSort>("newest");
+  const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [filteredJobs, setFilteredJobs] = useState<IJobData[]>([]);
-  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [notification, setNotification] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
 
   // =============================================================================
   // FOCUSED HOOKS - Single Responsibility per hook
   // =============================================================================
 
   // Job data management - memoize options to prevent infinite re-renders
-  const jobDataOptions = useMemo(() => ({
-    pageSize: 10,
-    autoRefresh,
-    refreshInterval
-  }), [autoRefresh, refreshInterval]);
-  
+  const jobDataOptions = useMemo(
+    () => ({
+      pageSize: 10,
+      autoRefresh,
+      refreshInterval,
+    }),
+    [autoRefresh, refreshInterval],
+  );
+
   const jobData = useJobData(jobDataOptions);
 
   // Connection status monitoring - memoize callback to prevent re-renders
   const onStatusChange = useCallback((status: string) => {
-    logger.info('Connection status changed', { status });
+    logger.info("Connection status changed", { status });
   }, []);
-  
-  const connectionStatusOptions = useMemo(() => ({
-    onStatusChange
-  }), [onStatusChange]);
-  
+
+  const connectionStatusOptions = useMemo(
+    () => ({
+      onStatusChange,
+    }),
+    [onStatusChange],
+  );
+
   const connectionStatus = useConnectionStatus(connectionStatusOptions);
 
   // Job selection management
@@ -72,52 +81,67 @@ const DashboardManager: React.FC<DashboardManagerProps> = ({
     jobData.refreshJobs();
   }, [jobData]);
 
-  const onJobError = useCallback((message: string) => {
-    setNotification({ type: 'error', message });
-    connectionStatus.markDisconnected();
-  }, [connectionStatus]);
+  const onJobError = useCallback(
+    (message: string) => {
+      setNotification({ type: "error", message });
+      connectionStatus.markDisconnected();
+    },
+    [connectionStatus],
+  );
 
-  const onJobSuccess = useCallback((message: string) => {
-    setNotification({ type: 'success', message });
-    connectionStatus.markConnected();
-  }, [connectionStatus]);
-  
-  const jobActionsOptions = useMemo(() => ({
-    onJobUpdated,
-    onError: onJobError,
-    onSuccess: onJobSuccess
-  }), [onJobUpdated, onJobError, onJobSuccess]);
-  
+  const onJobSuccess = useCallback(
+    (message: string) => {
+      setNotification({ type: "success", message });
+      connectionStatus.markConnected();
+    },
+    [connectionStatus],
+  );
+
+  const jobActionsOptions = useMemo(
+    () => ({
+      onJobUpdated,
+      onError: onJobError,
+      onSuccess: onJobSuccess,
+    }),
+    [onJobUpdated, onJobError, onJobSuccess],
+  );
+
   const jobActions = useJobActions(jobActionsOptions);
 
   // Auto-refresh coordination - memoize callback and options
   const refreshCallback = useCallback(() => {
     jobData.refreshJobs();
   }, [jobData]);
-  
-  const autoRefreshOptions = useMemo(() => ({
-    enabled: false, // ✅ DISABLED: SSE handles real-time updates now (DRY/SOLID)
-    interval: refreshInterval,
-    connectionStatus: connectionStatus.status,
-    isLoading: jobData.isLoading
-  }), [refreshInterval, connectionStatus.status, jobData.isLoading]);
-  
+
+  const autoRefreshOptions = useMemo(
+    () => ({
+      enabled: false, // ✅ DISABLED: SSE handles real-time updates now (DRY/SOLID)
+      interval: refreshInterval,
+      connectionStatus: connectionStatus.status,
+      isLoading: jobData.isLoading,
+    }),
+    [refreshInterval, connectionStatus.status, jobData.isLoading],
+  );
+
   useAutoRefresh(refreshCallback, autoRefreshOptions);
 
   // =============================================================================
   // UI EVENT HANDLERS - Single Responsibility: UI state updates only
   // =============================================================================
 
-  const handleFilterChange = useCallback((newFilter: JobFilter) => {
-    setCurrentFilter(newFilter);
-    setCurrentPage(1);
-    // Load jobs with new filter
-    const params: { page: number; statusFilter?: string } = { page: 1 };
-    if (newFilter !== 'all') {
-      params.statusFilter = newFilter as string;
-    }
-    jobData.loadJobs(params);
-  }, [jobData]);
+  const handleFilterChange = useCallback(
+    (newFilter: JobFilter) => {
+      setCurrentFilter(newFilter);
+      setCurrentPage(1);
+      // Load jobs with new filter
+      const params: { page: number; statusFilter?: string } = { page: 1 };
+      if (newFilter !== "all") {
+        params.statusFilter = newFilter as string;
+      }
+      jobData.loadJobs(params);
+    },
+    [jobData],
+  );
 
   const handleSortChange = useCallback((newSort: JobSort) => {
     setCurrentSort(newSort);
@@ -128,37 +152,43 @@ const DashboardManager: React.FC<DashboardManagerProps> = ({
     setCurrentPage(1);
   }, []);
 
-  const handlePageChange = useCallback((page: number) => {
-    setCurrentPage(page);
-    const params: { page: number; statusFilter?: string } = { page };
-    if (currentFilter !== 'all') {
-      params.statusFilter = currentFilter as string;
-    }
-    jobData.loadJobs(params);
-  }, [jobData, currentFilter]);
+  const handlePageChange = useCallback(
+    (page: number) => {
+      setCurrentPage(page);
+      const params: { page: number; statusFilter?: string } = { page };
+      if (currentFilter !== "all") {
+        params.statusFilter = currentFilter as string;
+      }
+      jobData.loadJobs(params);
+    },
+    [jobData, currentFilter],
+  );
 
   // =============================================================================
   // JOB ACTION HANDLERS - Single Responsibility: Delegate to job actions hook
   // =============================================================================
 
-  const handleJobAction = useCallback(async (action: string, jobId: number) => {
-    switch (action) {
-      case 'retry':
-        await jobActions.retryJob(jobId);
-        break;
-      case 'cancel':
-        await jobActions.cancelJob(jobId);
-        break;
-      case 'delete':
-        await jobActions.deleteJob(jobId);
-        break;
-      case 'download':
-        await jobActions.downloadJob(jobId, jobData.jobs);
-        break;
-      default:
-        logger.warn('Unknown job action', { action });
-    }
-  }, [jobActions, jobData.jobs]);
+  const handleJobAction = useCallback(
+    async (action: string, jobId: number) => {
+      switch (action) {
+        case "retry":
+          await jobActions.retryJob(jobId);
+          break;
+        case "cancel":
+          await jobActions.cancelJob(jobId);
+          break;
+        case "delete":
+          await jobActions.deleteJob(jobId);
+          break;
+        case "download":
+          await jobActions.downloadJob(jobId, jobData.jobs);
+          break;
+        default:
+          logger.warn("Unknown job action", { action });
+      }
+    },
+    [jobActions, jobData.jobs],
+  );
 
   // =============================================================================
   // EFFECTS - Single Responsibility: Coordinate state updates
@@ -179,7 +209,11 @@ const DashboardManager: React.FC<DashboardManagerProps> = ({
 
   // Update filtered jobs when data or filters change
   useEffect(() => {
-    const filtered = jobUtils.filterJobs(jobData.jobs, currentFilter, searchQuery);
+    const filtered = jobUtils.filterJobs(
+      jobData.jobs,
+      currentFilter,
+      searchQuery,
+    );
     const sorted = jobUtils.sortJobs(filtered, currentSort);
     setFilteredJobs(sorted);
   }, [jobData.jobs, currentFilter, searchQuery, currentSort]);
@@ -191,14 +225,21 @@ const DashboardManager: React.FC<DashboardManagerProps> = ({
       handleFilterChange(filter);
     };
 
-    window.addEventListener('filterUpdate', handleFilterUpdate as EventListener);
-    return () => window.removeEventListener('filterUpdate', handleFilterUpdate as EventListener);
+    window.addEventListener(
+      "filterUpdate",
+      handleFilterUpdate as EventListener,
+    );
+    return () =>
+      window.removeEventListener(
+        "filterUpdate",
+        handleFilterUpdate as EventListener,
+      );
   }, [handleFilterChange]);
 
   // Emit jobs data updates for other components
   useEffect(() => {
-    const event = new CustomEvent('jobsDataUpdate', {
-      detail: { jobs: jobData.jobs }
+    const event = new CustomEvent("jobsDataUpdate", {
+      detail: { jobs: jobData.jobs },
     });
     window.dispatchEvent(event);
 
@@ -224,7 +265,9 @@ const DashboardManager: React.FC<DashboardManagerProps> = ({
     <div className="dashboard-manager">
       {/* Notification Display */}
       {notification && (
-        <div className={`notification ${notification.type === 'error' ? 'error' : 'success'}`}>
+        <div
+          className={`notification ${notification.type === "error" ? "error" : "success"}`}
+        >
           {notification.message}
           <button onClick={() => setNotification(null)}>×</button>
         </div>
@@ -290,12 +333,14 @@ const DashboardManager: React.FC<DashboardManagerProps> = ({
         ) : filteredJobs.length === 0 ? (
           <div className="empty-state">No jobs found</div>
         ) : (
-          filteredJobs.map(job => (
+          filteredJobs.map((job) => (
             <div key={job.id} className="job-item">
               <input
                 type="checkbox"
                 checked={jobSelection.isSelected(job.id)}
-                onChange={(e) => jobSelection.toggleJobSelection(job.id, e.target.checked)}
+                onChange={(e) =>
+                  jobSelection.toggleJobSelection(job.id, e.target.checked)
+                }
               />
               <div className="job-details">
                 <h3>{job.title}</h3>
@@ -303,16 +348,24 @@ const DashboardManager: React.FC<DashboardManagerProps> = ({
                 <p>Progress: {job.progress}%</p>
               </div>
               <div className="job-actions">
-                {job.status === 'failed' && (
-                  <button onClick={() => handleJobAction('retry', job.id)}>Retry</button>
+                {job.status === "failed" && (
+                  <button onClick={() => handleJobAction("retry", job.id)}>
+                    Retry
+                  </button>
                 )}
-                {(job.status === 'pending' || job.status === 'running') && (
-                  <button onClick={() => handleJobAction('cancel', job.id)}>Cancel</button>
+                {(job.status === "pending" || job.status === "running") && (
+                  <button onClick={() => handleJobAction("cancel", job.id)}>
+                    Cancel
+                  </button>
                 )}
-                {job.status === 'completed' && (
-                  <button onClick={() => handleJobAction('download', job.id)}>Download</button>
+                {job.status === "completed" && (
+                  <button onClick={() => handleJobAction("download", job.id)}>
+                    Download
+                  </button>
                 )}
-                <button onClick={() => handleJobAction('delete', job.id)}>Delete</button>
+                <button onClick={() => handleJobAction("delete", job.id)}>
+                  Delete
+                </button>
               </div>
             </div>
           ))

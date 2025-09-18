@@ -4,7 +4,7 @@
  * ZERO TOLERANCE for duplicate validation patterns
  */
 
-import { TIMING_CONSTANTS } from '../constants/timing.ts';
+import { TIMING_CONSTANTS } from "../constants/timing.ts";
 
 // Validation result types
 export interface ValidationResult {
@@ -23,7 +23,7 @@ export interface FieldValidationResult {
 export interface ValidationRule {
   validator: (value: unknown) => boolean | Promise<boolean>;
   message: string;
-  severity?: 'error' | 'warning';
+  severity?: "error" | "warning";
 }
 
 // Common validation patterns
@@ -31,7 +31,8 @@ export const VALIDATION_PATTERNS = {
   EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
   URL: /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)$/,
   WORDPRESS_URL: /^https?:\/\/[^/\s]+.*$/,
-  PASSWORD_STRONG: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+  PASSWORD_STRONG:
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
   PHONE: /^[+]?[1-9][\d]{0,15}$/,
   USERNAME: /^[a-zA-Z0-9_]{3,20}$/,
 } as const;
@@ -39,8 +40,9 @@ export const VALIDATION_PATTERNS = {
 // Pre-built validation rules
 export const VALIDATION_RULES = {
   // Required field validation
-  required: (message = 'This field is required'): ValidationRule => ({
-    validator: (value: unknown) => value !== null && value !== undefined && String(value).trim() !== '',
+  required: (message = "This field is required"): ValidationRule => ({
+    validator: (value: unknown) =>
+      value !== null && value !== undefined && String(value).trim() !== "",
     message,
   }),
 
@@ -64,7 +66,7 @@ export const VALIDATION_RULES = {
   }),
 
   // Pattern validations
-  email: (message = 'Please enter a valid email address'): ValidationRule => ({
+  email: (message = "Please enter a valid email address"): ValidationRule => ({
     validator: (value: unknown) => {
       if (!value) return true;
       const stringValue = String(value);
@@ -73,7 +75,7 @@ export const VALIDATION_RULES = {
     message,
   }),
 
-  url: (message = 'Please enter a valid URL'): ValidationRule => ({
+  url: (message = "Please enter a valid URL"): ValidationRule => ({
     validator: (value: unknown) => {
       if (!value) return true;
       const stringValue = String(value);
@@ -82,26 +84,34 @@ export const VALIDATION_RULES = {
     message,
   }),
 
-  wordpressUrl: (message = 'Please enter a valid WordPress URL'): ValidationRule => ({
+  wordpressUrl: (
+    message = "Please enter a valid WordPress URL",
+  ): ValidationRule => ({
     validator: (value: unknown) => {
       if (!value) return true;
       const stringValue = String(value);
       const isValidUrl = VALIDATION_PATTERNS.WORDPRESS_URL.test(stringValue);
-      const hasWordPressIndicators = stringValue.includes('wp-') ||
-                                   stringValue.includes('wordpress') ||
-                                   stringValue.includes('/blog') ||
-                                   stringValue.includes('?p=') ||
-                                   stringValue.includes('/post/');
+      const hasWordPressIndicators =
+        stringValue.includes("wp-") ||
+        stringValue.includes("wordpress") ||
+        stringValue.includes("/blog") ||
+        stringValue.includes("?p=") ||
+        stringValue.includes("/post/");
       return isValidUrl && hasWordPressIndicators;
     },
     message,
   }),
 
-  password: (message = 'Password must be at least 8 characters with uppercase, lowercase, number, and special character'): ValidationRule => ({
+  password: (
+    message = "Password must be at least 8 characters with uppercase, lowercase, number, and special character",
+  ): ValidationRule => ({
     validator: (value: unknown) => {
       if (!value) return true;
       const stringValue = String(value);
-      return stringValue.length >= 8 && VALIDATION_PATTERNS.PASSWORD_STRONG.test(stringValue);
+      return (
+        stringValue.length >= 8 &&
+        VALIDATION_PATTERNS.PASSWORD_STRONG.test(stringValue)
+      );
     },
     message,
   }),
@@ -125,7 +135,7 @@ export const VALIDATION_RULES = {
     message: message || `Must be no more than ${max}`,
   }),
 
-  positiveNumber: (message = 'Must be a positive number'): ValidationRule => ({
+  positiveNumber: (message = "Must be a positive number"): ValidationRule => ({
     validator: (value: unknown) => {
       if (value === null || value === undefined) return true;
       const numValue = Number(value);
@@ -140,7 +150,9 @@ export const VALIDATION_RULES = {
       if (!value || !(value instanceof File)) return true;
       return value.size <= maxSizeBytes;
     },
-    message: message || `File size must be less than ${(maxSizeBytes / 1024 / 1024).toFixed(1)}MB`,
+    message:
+      message ||
+      `File size must be less than ${(maxSizeBytes / 1024 / 1024).toFixed(1)}MB`,
   }),
 
   fileType: (allowedTypes: string[], message?: string): ValidationRule => ({
@@ -148,24 +160,24 @@ export const VALIDATION_RULES = {
       if (!value || !(value instanceof File)) return true;
       return allowedTypes.includes(value.type);
     },
-    message: message || `File type must be one of: ${allowedTypes.join(', ')}`,
+    message: message || `File type must be one of: ${allowedTypes.join(", ")}`,
   }),
 
   // Custom async validations
-  asyncUrlCheck: (message = 'URL is not accessible'): ValidationRule => ({
+  asyncUrlCheck: (message = "URL is not accessible"): ValidationRule => ({
     validator: async (value: unknown): Promise<boolean> => {
       if (!value) return true;
       const stringValue = String(value);
       try {
         // Simple head request to check if URL is accessible
-        const response = await fetch(stringValue, { method: 'HEAD' });
+        const response = await fetch(stringValue, { method: "HEAD" });
         return response.ok;
       } catch {
         return false;
       }
     },
     message,
-    severity: 'warning', // Don't block form submission, just warn
+    severity: "warning", // Don't block form submission, just warn
   }),
 } as const;
 
@@ -212,7 +224,7 @@ export class FieldValidator {
       try {
         const isValid = await rule.validator(value);
         if (!isValid) {
-          if (rule.severity === 'warning') {
+          if (rule.severity === "warning") {
             warning = rule.message;
           } else {
             error = rule.message;
@@ -220,7 +232,7 @@ export class FieldValidator {
           }
         }
       } catch {
-        error = 'Validation failed';
+        error = "Validation failed";
         break;
       }
     }
@@ -238,7 +250,7 @@ export class FieldValidator {
   validateDebounced(
     value: unknown,
     callback: (result: FieldValidationResult) => void,
-    delay = TIMING_CONSTANTS.UI.INPUT_VALIDATION_DELAY
+    delay = TIMING_CONSTANTS.UI.INPUT_VALIDATION_DELAY,
   ): void {
     if (this.debounceTimeout) {
       clearTimeout(this.debounceTimeout);
@@ -278,7 +290,9 @@ export class FormValidator {
   /**
    * Validate entire form
    */
-  async validateForm(formData: Record<string, unknown>): Promise<ValidationResult> {
+  async validateForm(
+    formData: Record<string, unknown>,
+  ): Promise<ValidationResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
 
@@ -298,14 +312,14 @@ export class FormValidator {
       try {
         const isValid = await rule.validator(formData);
         if (!isValid) {
-          if (rule.severity === 'warning') {
+          if (rule.severity === "warning") {
             warnings.push(rule.message);
           } else {
             errors.push(rule.message);
           }
         }
       } catch {
-        errors.push('Form validation failed');
+        errors.push("Form validation failed");
       }
     }
 
@@ -319,7 +333,10 @@ export class FormValidator {
   /**
    * Validate single field
    */
-  async validateField(fieldName: string, value: unknown): Promise<FieldValidationResult> {
+  async validateField(
+    fieldName: string,
+    value: unknown,
+  ): Promise<FieldValidationResult> {
     const validator = this.fieldValidators.get(fieldName);
     if (!validator) {
       return { isValid: true };
@@ -337,18 +354,23 @@ export const FORM_VALIDATORS = {
    */
   wordpressScraping: (): FormValidator => {
     const validator = new FormValidator();
-    
-    validator.addField('url')
+
+    validator
+      .addField("url")
       .addRules([
-        VALIDATION_RULES.required('WordPress URL is required'),
+        VALIDATION_RULES.required("WordPress URL is required"),
         VALIDATION_RULES.url(),
-        VALIDATION_RULES.wordpressUrl('Please enter a valid WordPress URL'),
-        VALIDATION_RULES.asyncUrlCheck('WordPress site may not be accessible'),
+        VALIDATION_RULES.wordpressUrl("Please enter a valid WordPress URL"),
+        VALIDATION_RULES.asyncUrlCheck("WordPress site may not be accessible"),
       ]);
 
-    validator.addField('title')
+    validator
+      .addField("title")
       .addRules([
-        VALIDATION_RULES.maxLength(200, 'Title must be less than 200 characters'),
+        VALIDATION_RULES.maxLength(
+          200,
+          "Title must be less than 200 characters",
+        ),
       ]);
 
     return validator;
@@ -359,44 +381,44 @@ export const FORM_VALIDATORS = {
    */
   userRegistration: (): FormValidator => {
     const validator = new FormValidator();
-    
-    validator.addField('email')
+
+    validator
+      .addField("email")
       .addRules([
-        VALIDATION_RULES.required('Email is required'),
+        VALIDATION_RULES.required("Email is required"),
         VALIDATION_RULES.email(),
       ]);
 
-    validator.addField('password')
+    validator
+      .addField("password")
       .addRules([
-        VALIDATION_RULES.required('Password is required'),
+        VALIDATION_RULES.required("Password is required"),
         VALIDATION_RULES.password(),
       ]);
 
-    validator.addField('confirmPassword')
-      .addRule({
-        validator: (value: unknown) => {
-          // Note: This validation needs access to the form data context
-          // In practice, this should be handled in the form-level validation
-          // For now, we'll validate the structure but note the limitation
-          return typeof value === 'string' && value.length > 0;
-        },
-        message: 'Please confirm your password',
-      });
+    validator.addField("confirmPassword").addRule({
+      validator: (value: unknown) => {
+        // Note: This validation needs access to the form data context
+        // In practice, this should be handled in the form-level validation
+        // For now, we'll validate the structure but note the limitation
+        return typeof value === "string" && value.length > 0;
+      },
+      message: "Please confirm your password",
+    });
 
-    validator.addField('username')
-      .addRules([
-        VALIDATION_RULES.required('Username is required'),
-        VALIDATION_RULES.minLength(3),
-        VALIDATION_RULES.maxLength(20),
-        {
-          validator: (value: unknown) => {
-            if (!value) return true;
-            const stringValue = String(value);
-            return VALIDATION_PATTERNS.USERNAME.test(stringValue);
-          },
-          message: 'Username can only contain letters, numbers, and underscores',
+    validator.addField("username").addRules([
+      VALIDATION_RULES.required("Username is required"),
+      VALIDATION_RULES.minLength(3),
+      VALIDATION_RULES.maxLength(20),
+      {
+        validator: (value: unknown) => {
+          if (!value) return true;
+          const stringValue = String(value);
+          return VALIDATION_PATTERNS.USERNAME.test(stringValue);
         },
-      ]);
+        message: "Username can only contain letters, numbers, and underscores",
+      },
+    ]);
 
     return validator;
   },
@@ -404,12 +426,16 @@ export const FORM_VALIDATORS = {
   /**
    * File upload form
    */
-  fileUpload: (maxSizeMB = 10, allowedTypes = ['text/plain', 'text/csv']): FormValidator => {
+  fileUpload: (
+    maxSizeMB = 10,
+    allowedTypes = ["text/plain", "text/csv"],
+  ): FormValidator => {
     const validator = new FormValidator();
-    
-    validator.addField('file')
+
+    validator
+      .addField("file")
       .addRules([
-        VALIDATION_RULES.required('Please select a file'),
+        VALIDATION_RULES.required("Please select a file"),
         VALIDATION_RULES.fileSize(maxSizeMB * 1024 * 1024),
         VALIDATION_RULES.fileType(allowedTypes),
       ]);
@@ -422,25 +448,31 @@ export const FORM_VALIDATORS = {
    */
   settings: (): FormValidator => {
     const validator = new FormValidator();
-    
-    validator.addField('apiTimeout')
+
+    validator
+      .addField("apiTimeout")
       .addRules([
-        VALIDATION_RULES.required('API timeout is required'),
+        VALIDATION_RULES.required("API timeout is required"),
         VALIDATION_RULES.positiveNumber(),
-        VALIDATION_RULES.minValue(1000, 'Timeout must be at least 1 second'),
-        VALIDATION_RULES.maxValue(300000, 'Timeout must be less than 5 minutes'),
+        VALIDATION_RULES.minValue(1000, "Timeout must be at least 1 second"),
+        VALIDATION_RULES.maxValue(
+          300000,
+          "Timeout must be less than 5 minutes",
+        ),
       ]);
 
-    validator.addField('maxRetries')
+    validator
+      .addField("maxRetries")
       .addRules([
-        VALIDATION_RULES.required('Max retries is required'),
-        VALIDATION_RULES.minValue(0, 'Must be 0 or greater'),
-        VALIDATION_RULES.maxValue(10, 'Must be 10 or less'),
+        VALIDATION_RULES.required("Max retries is required"),
+        VALIDATION_RULES.minValue(0, "Must be 0 or greater"),
+        VALIDATION_RULES.maxValue(10, "Must be 10 or less"),
       ]);
 
-    validator.addField('apiUrl')
+    validator
+      .addField("apiUrl")
       .addRules([
-        VALIDATION_RULES.required('API URL is required'),
+        VALIDATION_RULES.required("API URL is required"),
         VALIDATION_RULES.url(),
       ]);
 
@@ -456,9 +488,9 @@ export const ValidationHelpers = {
    * Format validation errors for display
    */
   formatErrors: (errors: string[]): string => {
-    if (errors.length === 0) return '';
-    if (errors.length === 1) return errors[0] || '';
-    return `• ${errors.join('\n• ')}`;
+    if (errors.length === 0) return "";
+    if (errors.length === 1) return errors[0] || "";
+    return `• ${errors.join("\n• ")}`;
   },
 
   /**
@@ -479,7 +511,7 @@ export const ValidationHelpers = {
    * Sanitize input value
    */
   sanitizeInput: (value: string): string => {
-    return value.trim().replace(/[<>]/g, '');
+    return value.trim().replace(/[<>]/g, "");
   },
 
   /**
@@ -487,7 +519,7 @@ export const ValidationHelpers = {
    */
   validateFormElement: async (
     formElement: HTMLFormElement,
-    validator: FormValidator
+    validator: FormValidator,
   ): Promise<ValidationResult> => {
     const formData = new FormData(formElement);
     const data: Record<string, unknown> = {};
@@ -503,19 +535,21 @@ export const ValidationHelpers = {
    * Show validation errors in form
    */
   displayFormErrors: (
-    formElement: HTMLFormElement, 
-    result: ValidationResult
+    formElement: HTMLFormElement,
+    result: ValidationResult,
   ): void => {
     // Clear existing errors
-    formElement.querySelectorAll('.validation-error').forEach(el => el.remove());
-    
+    formElement
+      .querySelectorAll(".validation-error")
+      .forEach((el) => el.remove());
+
     // Add new errors
-    result.errors.forEach(error => {
-      const [fieldName, message] = error.split(': ');
+    result.errors.forEach((error) => {
+      const [fieldName, message] = error.split(": ");
       const field = formElement.querySelector(`[name="${fieldName}"]`);
       if (field && message) {
-        const errorElement = document.createElement('div');
-        errorElement.className = 'validation-error text-red-400 text-xs mt-1';
+        const errorElement = document.createElement("div");
+        errorElement.className = "validation-error text-red-400 text-xs mt-1";
         errorElement.textContent = message;
         field.parentNode?.insertBefore(errorElement, field.nextSibling);
       }

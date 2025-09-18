@@ -1,6 +1,7 @@
 # CSFRACE Scrape Frontend - Development Standards
 
 ## Project Overview
+
 This is an Astro-based frontend application for scraping and displaying content from URLs, built with React components and Tailwind CSS.
 
 ## 🚨 CRITICAL: DOCKER LIGHTNINGCSS FIX 🚨
@@ -8,6 +9,7 @@ This is an Astro-based frontend application for scraping and displaying content 
 **MANDATORY DOCKER LIGHTNINGCSS ARM64 SOLUTION - NEVER FORGET THIS!**
 
 If you EVER see this error in Docker containers:
+
 ```
 Cannot find module '../pkg'
 Require stack:
@@ -35,11 +37,13 @@ COPY . .
 **Root Cause**: lightningcss native binaries don't work properly in ARM64 Docker environments, causing the `../pkg` directory to be missing, which breaks Tailwind 4 CSS processing.
 
 **Why This Works**:
+
 1. `--platform=linux/amd64` forces AMD64 emulation (works on ARM64 Macs)
 2. `lightningcss-wasm` provides WASM fallback when native binaries fail
 3. Manual `pkg` directory creation bridges the gap between native and WASM versions
 
 **NEVER try these failed approaches again:**
+
 - ❌ Environment variables (CSS_TRANSFORMER_WASM=1) - doesn't work
 - ❌ Architecture-specific npm install flags - doesn't work
 - ❌ Manual binary downloads - too complex and fragile
@@ -52,6 +56,7 @@ COPY . .
 **NEVER CREATE LOCAL AUTHENTICATION OR API SERVICES IN THE FRONTEND**
 
 This project has a **complete Docker backend** at `http://localhost:8000` with enterprise-grade APIs:
+
 - ✅ **Authentication**: `/auth/token`, `/auth/register`, `/auth/me`, `/auth/refresh`
 - ✅ **OAuth**: `/auth/oauth/providers`, `/auth/oauth/login`, `/auth/oauth/{provider}/callback`
 - ✅ **Passkeys**: `/auth/passkeys/register/begin`, `/auth/passkeys/authenticate/complete`
@@ -59,18 +64,21 @@ This project has a **complete Docker backend** at `http://localhost:8000` with e
 - ✅ **User Management**: `/auth/users`, `/auth/change-password`, `/auth/password-reset`
 
 **Frontend should ONLY:**
+
 - Make simple `fetch()` calls to Docker backend APIs
 - Manage browser state (React Context for UI)
 - Handle forms and UI interactions
 - Store tokens in localStorage/sessionStorage
 
 **Frontend should NEVER:**
+
 - Create `AuthProvider`, `TokenManager`, `OAuthHandler` services
 - Implement JWT token validation or refresh logic
 - Create database models or ORM abstractions
 - Duplicate functionality that exists in Docker backend
 
 **Example of CORRECT approach:**
+
 ```typescript
 // ✅ GOOD: Simple API client
 const login = async (email, password) => {
@@ -83,16 +91,20 @@ const login = async (email, password) => {
 ```
 
 **Example of WRONG approach:**
+
 ```typescript
 // ❌ BAD: Local services that duplicate Docker functionality
 class AuthService {
   private tokenManager = new TokenManager();
   private oauthHandler = new OAuthHandler();
-  async login() { /* complex logic */ }
+  async login() {
+    /* complex logic */
+  }
 }
 ```
 
 **When in doubt: Check if the endpoint exists in Docker first!**
+
 ```bash
 curl -s http://localhost:8000/openapi.json | jq -r '.paths | keys[]'
 ```
@@ -100,6 +112,7 @@ curl -s http://localhost:8000/openapi.json | jq -r '.paths | keys[]'
 ## Core Development Principles
 
 ### 1. SOLID Principles
+
 - **Single Responsibility**: Each component/function should have one clear purpose
 - **Open/Closed**: Code should be open for extension but closed for modification
 - **Liskov Substitution**: Derived classes must be substitutable for their base classes
@@ -107,12 +120,14 @@ curl -s http://localhost:8000/openapi.json | jq -r '.paths | keys[]'
 - **Dependency Inversion**: Depend on abstractions, not concretions
 
 ### 2. DRY (Don't Repeat Yourself)
+
 - No duplicate code blocks
 - Extract common functionality into reusable utilities
 - Use custom hooks for shared React logic
 - Create reusable Astro components for common layouts
 
 ### 3. Zero Technical Debt Policy
+
 - Fix issues immediately when discovered
 - Refactor code before adding new features if needed
 - Document all workarounds with TODO comments and tickets
@@ -120,6 +135,7 @@ curl -s http://localhost:8000/openapi.json | jq -r '.paths | keys[]'
 ## TypeScript Standards
 
 ### Configuration Requirements
+
 ```json
 {
   "compilerOptions": {
@@ -143,6 +159,7 @@ curl -s http://localhost:8000/openapi.json | jq -r '.paths | keys[]'
 ```
 
 ### Type Safety Rules
+
 - **NO `any` types** - Use `unknown` if type is truly unknown
 - All function parameters must be typed
 - All function return types must be explicitly declared
@@ -150,6 +167,7 @@ curl -s http://localhost:8000/openapi.json | jq -r '.paths | keys[]'
 - Prefer const assertions for literal types
 
 ### Naming Conventions
+
 - **Interfaces**: PascalCase with 'I' prefix (e.g., `IScrapedData`)
 - **Types**: PascalCase (e.g., `ScrapingStatus`)
 - **Enums**: PascalCase for name, UPPER_SNAKE_CASE for values
@@ -161,6 +179,7 @@ curl -s http://localhost:8000/openapi.json | jq -r '.paths | keys[]'
 ## React/Astro Component Standards
 
 ### Component Structure
+
 ```typescript
 // 1. Imports
 import { useState, useEffect } from 'react';
@@ -175,17 +194,17 @@ interface ILocalState {
 export const ComponentName: React.FC<IComponentProps> = ({ prop1, prop2 }) => {
   // 4. Hooks
   const [state, setState] = useState<ILocalState>();
-  
+
   // 5. Effects
   useEffect(() => {
     // ...
   }, []);
-  
+
   // 6. Handlers
   const handleClick = () => {
     // ...
   };
-  
+
   // 7. Render
   return (
     <div>
@@ -196,6 +215,7 @@ export const ComponentName: React.FC<IComponentProps> = ({ prop1, prop2 }) => {
 ```
 
 ### Astro Component Standards
+
 - Use TypeScript in frontmatter
 - Separate data fetching from rendering
 - Use content collections for structured data
@@ -204,12 +224,14 @@ export const ComponentName: React.FC<IComponentProps> = ({ prop1, prop2 }) => {
 ## Scraping Standards
 
 ### Data Validation
+
 - Validate all scraped data against schemas
 - Sanitize HTML content before display
 - Implement rate limiting for scraping requests
 - Handle network errors gracefully
 
 ### Error Handling
+
 ```typescript
 interface IScrapingError {
   code: string;
@@ -222,12 +244,13 @@ interface IScrapingError {
 class ScrapingError extends Error {
   constructor(public readonly error: IScrapingError) {
     super(error.message);
-    this.name = 'ScrapingError';
+    this.name = "ScrapingError";
   }
 }
 ```
 
 ### Rate Limiting
+
 - Implement exponential backoff for retries
 - Respect robots.txt and rate limits
 - Queue scraping requests appropriately
@@ -236,12 +259,14 @@ class ScrapingError extends Error {
 ## Security Requirements
 
 ### Input Validation
+
 - Validate all URLs before scraping
 - Sanitize scraped content to prevent XSS
 - Use Content Security Policy headers
 - Implement CORS properly
 
 ### Data Protection
+
 - Never expose API keys in frontend code
 - Use environment variables for sensitive config
 - Implement proper authentication if needed
@@ -250,12 +275,14 @@ class ScrapingError extends Error {
 ## State Management
 
 ### Guidelines
+
 - Use React Context for global state
 - Implement proper loading/error states
 - Use optimistic updates where appropriate
 - Cache scraped data appropriately
 
 ### State Structure
+
 ```typescript
 interface IAppState {
   scraping: {
@@ -274,9 +301,11 @@ interface IAppState {
 ## Backend Integration Standards
 
 ### Architecture Overview
+
 The frontend communicates with a Python-based backend (csfrace-scrape) that handles WordPress to Shopify content conversion. The backend follows async/concurrent patterns and provides REST APIs for job management.
 
 ### Backend Repository Structure
+
 - **Backend**: `https://github.com/zachatkinson/csfrace-scrape` (Python/FastAPI)
 - **Frontend**: Current repository (Astro/React/TypeScript)
 - **Development Wrapper**: Future repository combining both projects
@@ -284,37 +313,39 @@ The frontend communicates with a Python-based backend (csfrace-scrape) that hand
 ### API Communication Standards
 
 #### Expected Backend Endpoints
+
 ```typescript
 interface IBackendEndpoints {
   // Content conversion
-  '/api/convert': {
-    method: 'POST';
+  "/api/convert": {
+    method: "POST";
     body: IConversionRequest;
     response: IConversionResponse;
   };
-  
+
   // Batch processing
-  '/api/batch': {
-    method: 'POST';
+  "/api/batch": {
+    method: "POST";
     body: IBatchRequest;
     response: IBatchJobResponse;
   };
-  
+
   // Job status
-  '/api/jobs/:jobId': {
-    method: 'GET';
+  "/api/jobs/:jobId": {
+    method: "GET";
     response: IJobStatus;
   };
-  
+
   // Health check
-  '/api/health': {
-    method: 'GET';
+  "/api/health": {
+    method: "GET";
     response: IHealthStatus;
   };
 }
 ```
 
 #### Request/Response Types
+
 ```typescript
 interface IConversionRequest {
   url: string;
@@ -327,7 +358,7 @@ interface IConversionRequest {
 
 interface IConversionResponse {
   jobId: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
+  status: "pending" | "processing" | "completed" | "failed";
   result?: {
     html: string;
     images: string[];
@@ -340,7 +371,9 @@ interface IConversionResponse {
 ### Cross-Repository Standards
 
 #### Shared Types
+
 Create a shared types package or maintain synchronized type definitions:
+
 ```typescript
 // shared-types.ts
 export interface IWordPressContent {
@@ -368,21 +401,22 @@ export interface IShopifyContent {
 ```
 
 #### Error Handling Coordination
+
 ```typescript
 // Align with backend error codes
 enum BackendErrorCode {
-  RATE_LIMIT = 'RATE_LIMIT',
-  INVALID_URL = 'INVALID_URL',
-  PARSE_ERROR = 'PARSE_ERROR',
-  NETWORK_ERROR = 'NETWORK_ERROR',
-  TIMEOUT = 'TIMEOUT',
+  RATE_LIMIT = "RATE_LIMIT",
+  INVALID_URL = "INVALID_URL",
+  PARSE_ERROR = "PARSE_ERROR",
+  NETWORK_ERROR = "NETWORK_ERROR",
+  TIMEOUT = "TIMEOUT",
 }
 
 class BackendError extends Error {
   constructor(
     public code: BackendErrorCode,
     public message: string,
-    public retryable: boolean = false
+    public retryable: boolean = false,
   ) {
     super(message);
   }
@@ -392,6 +426,7 @@ class BackendError extends Error {
 ### Development Environment Setup
 
 #### Environment Variables
+
 ```env
 # Backend connection
 VITE_API_URL=http://localhost:8000
@@ -407,10 +442,12 @@ VITE_MAX_CONCURRENT_JOBS=5
 ```
 
 #### Docker Compose Development
+
 When using the development wrapper repository:
+
 ```yaml
 # docker-compose.dev.yml
-version: '3.8'
+version: "3.8"
 services:
   backend:
     build: ./csfrace-scrape
@@ -418,7 +455,7 @@ services:
       - "8000:8000"
     environment:
       - ENV=development
-  
+
   frontend:
     build: ./csfrace-scrape-front
     ports:
@@ -432,15 +469,16 @@ services:
 ## API/Network Standards
 
 ### Axios Configuration
+
 ```typescript
-import axios from 'axios';
+import axios from "axios";
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
   timeout: Number(import.meta.env.VITE_API_TIMEOUT) || 30000,
   headers: {
-    'Content-Type': 'application/json',
-    'X-API-Key': import.meta.env.VITE_API_KEY,
+    "Content-Type": "application/json",
+    "X-API-Key": import.meta.env.VITE_API_KEY,
   },
 });
 
@@ -448,7 +486,7 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     // Add auth token if available
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem("auth_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -456,7 +494,7 @@ apiClient.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response interceptor with retry logic
@@ -464,29 +502,30 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    
+
     // Retry on 503 or timeout
     if (
-      (error.response?.status === 503 || error.code === 'ECONNABORTED') &&
+      (error.response?.status === 503 || error.code === "ECONNABORTED") &&
       !originalRequest._retry &&
       originalRequest._retryCount < 3
     ) {
       originalRequest._retry = true;
       originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
-      
+
       // Exponential backoff
       const delay = Math.pow(2, originalRequest._retryCount) * 1000;
-      await new Promise(resolve => setTimeout(resolve, delay));
-      
+      await new Promise((resolve) => setTimeout(resolve, delay));
+
       return apiClient(originalRequest);
     }
-    
+
     return Promise.reject(error);
-  }
+  },
 );
 ```
 
 ### WebSocket Standards (Socket.io)
+
 - Implement reconnection logic with exponential backoff
 - Handle connection state properly in React context
 - Clean up listeners on component unmount
@@ -496,12 +535,14 @@ apiClient.interceptors.response.use(
 ## Styling Standards
 
 ### Tailwind CSS Guidelines
+
 - Use utility classes for styling
 - Create component classes for repeated patterns
 - Follow mobile-first responsive design
 - Use CSS variables for theming
 
 ### Component Styling
+
 ```tsx
 // Prefer utility classes
 <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-md">
@@ -513,26 +554,28 @@ const cardStyles = "p-4 bg-white rounded-lg shadow-md";
 ## Testing Requirements
 
 ### Test Coverage
+
 - Minimum 80% code coverage
 - 100% coverage for critical paths
 - Test all error scenarios
 - Test edge cases
 
 ### Test Structure
+
 ```typescript
-describe('ComponentName', () => {
-  describe('when mounted', () => {
-    it('should render without errors', () => {
+describe("ComponentName", () => {
+  describe("when mounted", () => {
+    it("should render without errors", () => {
       // ...
     });
   });
-  
-  describe('when scraping', () => {
-    it('should handle successful response', () => {
+
+  describe("when scraping", () => {
+    it("should handle successful response", () => {
       // ...
     });
-    
-    it('should handle network errors', () => {
+
+    it("should handle network errors", () => {
       // ...
     });
   });
@@ -542,6 +585,7 @@ describe('ComponentName', () => {
 ## Performance Standards
 
 ### Optimization Requirements
+
 - Lazy load components where appropriate
 - Implement virtual scrolling for large lists
 - Optimize images and assets
@@ -549,6 +593,7 @@ describe('ComponentName', () => {
 - Implement proper caching strategies
 
 ### Bundle Size
+
 - Monitor bundle size with each build
 - Code split by route
 - Tree shake unused dependencies
@@ -557,6 +602,7 @@ describe('ComponentName', () => {
 ## Git Workflow
 
 ### Branch Strategy
+
 - `main` - Production-ready code
 - `develop` - Integration branch
 - `feature/*` - New features
@@ -564,7 +610,9 @@ describe('ComponentName', () => {
 - `chore/*` - Maintenance tasks
 
 ### Commit Messages
+
 Follow Conventional Commits:
+
 ```
 type(scope): description
 
@@ -574,6 +622,7 @@ type(scope): description
 ```
 
 Types:
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation
@@ -583,6 +632,7 @@ Types:
 - `chore`: Maintenance
 
 ### Pre-commit Checks
+
 - TypeScript compilation must pass
 - No ESLint errors
 - All tests must pass
@@ -591,6 +641,7 @@ Types:
 ## Deployment Standards
 
 ### Environment Variables
+
 ```env
 # Required environment variables
 PUBLIC_API_URL=
@@ -601,6 +652,7 @@ RATE_LIMIT_WINDOW=
 ```
 
 ### Build Process
+
 1. Run `npm run build`
 2. Verify TypeScript compilation
 3. Run tests
@@ -608,6 +660,7 @@ RATE_LIMIT_WINDOW=
 5. Deploy to Netlify
 
 ### Monitoring
+
 - Implement error tracking (e.g., Sentry)
 - Monitor performance metrics
 - Track scraping success rates
@@ -616,12 +669,14 @@ RATE_LIMIT_WINDOW=
 ## Documentation Requirements
 
 ### Code Documentation
+
 - JSDoc for all public functions
 - README for each major module
 - Inline comments for complex logic
 - Type definitions must be self-documenting
 
 ### API Documentation
+
 - Document all endpoints
 - Include request/response examples
 - Document error codes
@@ -630,6 +685,7 @@ RATE_LIMIT_WINDOW=
 ## Code Review Checklist
 
 Before submitting PR:
+
 - [ ] TypeScript compiles without errors
 - [ ] All tests pass
 - [ ] Code coverage meets requirements
@@ -644,12 +700,14 @@ Before submitting PR:
 ## Continuous Improvement
 
 ### Regular Tasks
+
 - Weekly dependency updates
 - Monthly performance audits
 - Quarterly security reviews
 - Continuous refactoring
 
 ### Technical Debt Management
+
 - Document all debt in issues
 - Prioritize debt reduction
 - Allocate time for refactoring

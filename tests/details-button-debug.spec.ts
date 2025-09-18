@@ -1,33 +1,39 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
-test.describe('Details Button Debug', () => {
-  test('capture details button behavior with video and screenshots', async ({ page }) => {
+test.describe("Details Button Debug", () => {
+  test("capture details button behavior with video and screenshots", async ({
+    page,
+  }) => {
     // Enable video recording
     const videoPath = await page.video()?.path();
-    console.log('Video will be saved to:', videoPath);
+    console.log("Video will be saved to:", videoPath);
 
     // Create a test error to trigger the ErrorBoundary
-    await test.step('Navigate and trigger error boundary', async () => {
-      await page.goto('/');
-      
+    await test.step("Navigate and trigger error boundary", async () => {
+      await page.goto("/");
+
       // Inject an error to trigger the ErrorBoundary
       await page.evaluate(() => {
         // Create a mock React error
-        const errorEvent = new Error('Test error for details button debugging');
-        
+        const errorEvent = new Error("Test error for details button debugging");
+
         // Try to find a React component and trigger an error
-        const reactRoot = document.querySelector('#root, [data-reactroot], .App');
+        const reactRoot = document.querySelector(
+          "#root, [data-reactroot], .App",
+        );
         if (reactRoot) {
           // Simulate a React component error
-          const event = new CustomEvent('error', { detail: errorEvent });
+          const event = new CustomEvent("error", { detail: errorEvent });
           window.dispatchEvent(event);
-          
+
           // Alternative: try to trigger through React devtools if available
-          if ((window as Record<string, unknown>).__REACT_DEVTOOLS_GLOBAL_HOOK__) {
+          if (
+            (window as Record<string, unknown>).__REACT_DEVTOOLS_GLOBAL_HOOK__
+          ) {
             throw errorEvent;
           }
         }
-        
+
         // Fallback: manually insert error boundary content for testing
         const errorBoundaryHTML = `
           <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-red-100">
@@ -69,198 +75,217 @@ Error: Test error for details button debugging
             </div>
           </div>
         `;
-        
+
         document.body.innerHTML = errorBoundaryHTML;
       });
 
       await page.waitForTimeout(1000);
     });
 
-    await test.step('Take initial screenshot', async () => {
-      await page.screenshot({ 
-        path: 'test-results/details-button-before.png',
-        fullPage: true 
+    await test.step("Take initial screenshot", async () => {
+      await page.screenshot({
+        path: "test-results/details-button-before.png",
+        fullPage: true,
       });
     });
 
-    await test.step('Test details button behavior with detailed capture', async () => {
-      const detailsElement = page.locator('details[data-testid="error-details"]');
-      const summaryElement = page.locator('details[data-testid="error-details"] summary');
-      
+    await test.step("Test details button behavior with detailed capture", async () => {
+      const detailsElement = page.locator(
+        'details[data-testid="error-details"]',
+      );
+      const summaryElement = page.locator(
+        'details[data-testid="error-details"] summary',
+      );
+
       // Wait for the details element to be visible
       await expect(detailsElement).toBeVisible();
       await expect(summaryElement).toBeVisible();
-      
+
       // Take screenshot before clicking
-      await page.screenshot({ 
-        path: 'test-results/details-button-ready.png',
-        fullPage: true 
+      await page.screenshot({
+        path: "test-results/details-button-ready.png",
+        fullPage: true,
       });
-      
+
       // Check initial state
-      const initialState = await detailsElement.getAttribute('open');
-      console.log('Initial details state:', initialState);
-      
+      const initialState = await detailsElement.getAttribute("open");
+      console.log("Initial details state:", initialState);
+
       // Click the summary and capture the sequence
-      await test.step('Click and capture sequence', async () => {
+      await test.step("Click and capture sequence", async () => {
         // Take screenshot just before click
-        await page.screenshot({ 
-          path: 'test-results/details-button-pre-click.png',
-          fullPage: true 
+        await page.screenshot({
+          path: "test-results/details-button-pre-click.png",
+          fullPage: true,
         });
-        
+
         // Click the summary element
         await summaryElement.click();
-        
+
         // Take rapid screenshots to capture the transition
-        await page.screenshot({ 
-          path: 'test-results/details-button-just-after-click.png',
-          fullPage: true 
+        await page.screenshot({
+          path: "test-results/details-button-just-after-click.png",
+          fullPage: true,
         });
-        
+
         // Wait a bit and capture again
         await page.waitForTimeout(100);
-        await page.screenshot({ 
-          path: 'test-results/details-button-100ms-after.png',
-          fullPage: true 
+        await page.screenshot({
+          path: "test-results/details-button-100ms-after.png",
+          fullPage: true,
         });
-        
+
         await page.waitForTimeout(200);
-        await page.screenshot({ 
-          path: 'test-results/details-button-300ms-after.png',
-          fullPage: true 
+        await page.screenshot({
+          path: "test-results/details-button-300ms-after.png",
+          fullPage: true,
         });
-        
+
         await page.waitForTimeout(500);
-        await page.screenshot({ 
-          path: 'test-results/details-button-800ms-after.png',
-          fullPage: true 
+        await page.screenshot({
+          path: "test-results/details-button-800ms-after.png",
+          fullPage: true,
         });
-        
+
         await page.waitForTimeout(1000);
-        await page.screenshot({ 
-          path: 'test-results/details-button-1800ms-after.png',
-          fullPage: true 
+        await page.screenshot({
+          path: "test-results/details-button-1800ms-after.png",
+          fullPage: true,
         });
       });
-      
+
       // Check state after clicking
-      const afterClickState = await detailsElement.getAttribute('open');
-      console.log('Details state after click:', afterClickState);
-      
+      const afterClickState = await detailsElement.getAttribute("open");
+      console.log("Details state after click:", afterClickState);
+
       // Check if content is visible
-      const detailsContent = page.locator('details[data-testid="error-details"] div');
+      const detailsContent = page.locator(
+        'details[data-testid="error-details"] div',
+      );
       const isContentVisible = await detailsContent.isVisible();
-      console.log('Details content visible:', isContentVisible);
-      
+      console.log("Details content visible:", isContentVisible);
+
       // Monitor for any automatic state changes
-      await test.step('Monitor for auto-close behavior', async () => {
+      await test.step("Monitor for auto-close behavior", async () => {
         for (let i = 0; i < 10; i++) {
           await page.waitForTimeout(200);
-          const currentState = await detailsElement.getAttribute('open');
+          const currentState = await detailsElement.getAttribute("open");
           const contentVisible = await detailsContent.isVisible();
-          
-          console.log(`Check ${i + 1}: open=${currentState}, contentVisible=${contentVisible}`);
-          
-          if (i === 4) { // Middle of monitoring
-            await page.screenshot({ 
-              path: 'test-results/details-button-monitoring.png',
-              fullPage: true 
+
+          console.log(
+            `Check ${i + 1}: open=${currentState}, contentVisible=${contentVisible}`,
+          );
+
+          if (i === 4) {
+            // Middle of monitoring
+            await page.screenshot({
+              path: "test-results/details-button-monitoring.png",
+              fullPage: true,
             });
           }
         }
       });
     });
 
-    await test.step('Test with different click methods', async () => {
-      const detailsElement = page.locator('details[data-testid="error-details"]');
-      const summaryElement = page.locator('details[data-testid="error-details"] summary');
-      
+    await test.step("Test with different click methods", async () => {
+      const detailsElement = page.locator(
+        'details[data-testid="error-details"]',
+      );
+      const summaryElement = page.locator(
+        'details[data-testid="error-details"] summary',
+      );
+
       // Reset state by clicking if open
-      const currentState = await detailsElement.getAttribute('open');
+      const currentState = await detailsElement.getAttribute("open");
       if (currentState !== null) {
         await summaryElement.click();
         await page.waitForTimeout(500);
       }
-      
+
       // Try double-click
-      await test.step('Test double-click behavior', async () => {
+      await test.step("Test double-click behavior", async () => {
         await summaryElement.dblclick();
         await page.waitForTimeout(500);
-        await page.screenshot({ 
-          path: 'test-results/details-button-double-click.png',
-          fullPage: true 
+        await page.screenshot({
+          path: "test-results/details-button-double-click.png",
+          fullPage: true,
         });
-        
-        const stateAfterDblClick = await detailsElement.getAttribute('open');
-        console.log('State after double-click:', stateAfterDblClick);
+
+        const stateAfterDblClick = await detailsElement.getAttribute("open");
+        console.log("State after double-click:", stateAfterDblClick);
       });
-      
+
       // Try programmatic toggle
-      await test.step('Test programmatic toggle', async () => {
+      await test.step("Test programmatic toggle", async () => {
         await page.evaluate(() => {
-          const details = document.querySelector('details[data-testid="error-details"]') as HTMLDetailsElement;
+          const details = document.querySelector(
+            'details[data-testid="error-details"]',
+          ) as HTMLDetailsElement;
           if (details) {
-            console.log('Before toggle:', details.open);
+            console.log("Before toggle:", details.open);
             details.open = !details.open;
-            console.log('After toggle:', details.open);
+            console.log("After toggle:", details.open);
           }
         });
-        
+
         await page.waitForTimeout(500);
-        await page.screenshot({ 
-          path: 'test-results/details-button-programmatic.png',
-          fullPage: true 
+        await page.screenshot({
+          path: "test-results/details-button-programmatic.png",
+          fullPage: true,
         });
       });
     });
 
-    await test.step('Check for JavaScript errors and event listeners', async () => {
+    await test.step("Check for JavaScript errors and event listeners", async () => {
       const errors: string[] = [];
-      page.on('console', msg => {
-        if (msg.type() === 'error') {
+      page.on("console", (msg) => {
+        if (msg.type() === "error") {
           errors.push(msg.text());
         }
       });
-      
+
       // Check for conflicting event listeners
       const eventListenerInfo = await page.evaluate(() => {
-        const details = document.querySelector('details[data-testid="error-details"]');
-        const summary = document.querySelector('details[data-testid="error-details"] summary');
-        
+        const details = document.querySelector(
+          'details[data-testid="error-details"]',
+        );
+        const summary = document.querySelector(
+          'details[data-testid="error-details"] summary',
+        );
+
         const getEventListeners = (element: Element | null) => {
           if (!element) return [];
           // This is a simplified check - in real browsers you might need devtools
           const events: string[] = [];
-          const eventTypes = ['click', 'toggle', 'change', 'focus', 'blur'];
-          eventTypes.forEach(type => {
+          const eventTypes = ["click", "toggle", "change", "focus", "blur"];
+          eventTypes.forEach((type) => {
             if ((element as Record<string, unknown>)[`on${type}`]) {
               events.push(type);
             }
           });
           return events;
         };
-        
+
         return {
           detailsEvents: getEventListeners(details),
           summaryEvents: getEventListeners(summary),
-          detailsOpen: (details as HTMLDetailsElement)?.open
+          detailsOpen: (details as HTMLDetailsElement)?.open,
         };
       });
-      
-      console.log('Event listener info:', eventListenerInfo);
-      console.log('JavaScript errors:', errors);
+
+      console.log("Event listener info:", eventListenerInfo);
+      console.log("JavaScript errors:", errors);
     });
 
-    await test.step('Final screenshot', async () => {
-      await page.screenshot({ 
-        path: 'test-results/details-button-final.png',
-        fullPage: true 
+    await test.step("Final screenshot", async () => {
+      await page.screenshot({
+        path: "test-results/details-button-final.png",
+        fullPage: true,
       });
     });
   });
 
-  test('test details element in isolation', async ({ page }) => {
+  test("test details element in isolation", async ({ page }) => {
     // Test a simple details element to compare behavior
     await page.setContent(`
       <!DOCTYPE html>
@@ -306,9 +331,9 @@ Error: Test error for details button debugging
       </html>
     `);
 
-    await page.screenshot({ 
-      path: 'test-results/details-isolation-initial.png',
-      fullPage: true 
+    await page.screenshot({
+      path: "test-results/details-isolation-initial.png",
+      fullPage: true,
     });
 
     // Test each details element
@@ -316,26 +341,26 @@ Error: Test error for details button debugging
       await test.step(`Test details element ${i}`, async () => {
         const details = page.locator(`#test-details-${i}`);
         const summary = page.locator(`#test-details-${i} summary`);
-        
-        const initialState = await details.getAttribute('open');
+
+        const initialState = await details.getAttribute("open");
         console.log(`Details ${i} initial state:`, initialState);
-        
+
         await summary.click();
         await page.waitForTimeout(500);
-        
-        const afterClickState = await details.getAttribute('open');
+
+        const afterClickState = await details.getAttribute("open");
         console.log(`Details ${i} after click state:`, afterClickState);
-        
-        await page.screenshot({ 
+
+        await page.screenshot({
           path: `test-results/details-isolation-${i}-clicked.png`,
-          fullPage: true 
+          fullPage: true,
         });
-        
+
         // Wait and check if it auto-closes
         await page.waitForTimeout(2000);
-        const finalState = await details.getAttribute('open');
+        const finalState = await details.getAttribute("open");
         console.log(`Details ${i} final state:`, finalState);
-        
+
         if (finalState !== afterClickState) {
           console.log(`⚠️  Details ${i} changed state automatically!`);
         }

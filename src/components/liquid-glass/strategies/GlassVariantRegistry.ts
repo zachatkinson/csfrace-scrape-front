@@ -4,16 +4,20 @@
  * Fixes Open/Closed Principle violation - extensible without modification
  */
 
-import type { IGlassVariantStrategy, GlassVariantProps, GlassVariantConfig } from './GlassVariantStrategy.ts';
+import type {
+  IGlassVariantStrategy,
+  GlassVariantProps,
+  GlassVariantConfig,
+} from "./GlassVariantStrategy.ts";
 
 // Import all variant strategies
-import { DefaultGlassStrategy } from './variants/DefaultGlassStrategy.ts';
-import { CardGlassStrategy } from './variants/CardGlassStrategy.ts';
-import { ButtonGlassStrategy } from './variants/ButtonGlassStrategy.ts';
-import { InputGlassStrategy } from './variants/InputGlassStrategy.ts';
-import { ModalGlassStrategy } from './variants/ModalGlassStrategy.ts';
-import { NavGlassStrategy } from './variants/NavGlassStrategy.ts';
-import { StatusGlassStrategy } from './variants/StatusGlassStrategy.ts';
+import { DefaultGlassStrategy } from "./variants/DefaultGlassStrategy.ts";
+import { CardGlassStrategy } from "./variants/CardGlassStrategy.ts";
+import { ButtonGlassStrategy } from "./variants/ButtonGlassStrategy.ts";
+import { InputGlassStrategy } from "./variants/InputGlassStrategy.ts";
+import { ModalGlassStrategy } from "./variants/ModalGlassStrategy.ts";
+import { NavGlassStrategy } from "./variants/NavGlassStrategy.ts";
+import { StatusGlassStrategy } from "./variants/StatusGlassStrategy.ts";
 
 /**
  * Registry for managing glass variant strategies
@@ -21,7 +25,7 @@ import { StatusGlassStrategy } from './variants/StatusGlassStrategy.ts';
  */
 export class GlassVariantRegistry {
   private strategies = new Map<string, IGlassVariantStrategy>();
-  
+
   constructor() {
     this.registerDefaultStrategies();
   }
@@ -46,16 +50,18 @@ export class GlassVariantRegistry {
    */
   getConfig(variantName: string, props: GlassVariantProps): GlassVariantConfig {
     const strategy = this.strategies.get(variantName);
-    
+
     if (!strategy) {
-      console.warn(`Glass variant '${variantName}' not found. Falling back to 'default'.`);
-      const defaultStrategy = this.strategies.get('default');
+      console.warn(
+        `Glass variant '${variantName}' not found. Falling back to 'default'.`,
+      );
+      const defaultStrategy = this.strategies.get("default");
       if (!defaultStrategy) {
-        throw new Error('Default glass variant strategy not found');
+        throw new Error("Default glass variant strategy not found");
       }
       return defaultStrategy.getConfig(props);
     }
-    
+
     return strategy.getConfig(props);
   }
 
@@ -76,10 +82,12 @@ export class GlassVariantRegistry {
   /**
    * Get strategy metadata for a variant
    */
-  getVariantInfo(variantName: string): { name: string; description: string } | null {
+  getVariantInfo(
+    variantName: string,
+  ): { name: string; description: string } | null {
     const strategy = this.strategies.get(variantName);
     if (!strategy) return null;
-    
+
     return {
       name: strategy.name,
       description: strategy.description,
@@ -90,7 +98,7 @@ export class GlassVariantRegistry {
    * Get all registered strategies with metadata
    */
   getAllVariants(): Array<{ name: string; description: string }> {
-    return Array.from(this.strategies.values()).map(strategy => ({
+    return Array.from(this.strategies.values()).map((strategy) => ({
       name: strategy.name,
       description: strategy.description,
     }));
@@ -114,7 +122,7 @@ export class GlassVariantRegistry {
    * Bulk register multiple strategies
    */
   registerMultiple(strategies: IGlassVariantStrategy[]): void {
-    strategies.forEach(strategy => this.register(strategy));
+    strategies.forEach((strategy) => this.register(strategy));
   }
 
   /**
@@ -122,13 +130,13 @@ export class GlassVariantRegistry {
    */
   clone(): GlassVariantRegistry {
     const newRegistry = new GlassVariantRegistry();
-    
+
     // Clear default strategies and copy from this registry
     newRegistry.strategies.clear();
     this.strategies.forEach((strategy, name) => {
       newRegistry.strategies.set(name, strategy);
     });
-    
+
     return newRegistry;
   }
 
@@ -149,14 +157,22 @@ export class GlassVariantRegistry {
     builtinStrategies: string[];
     customStrategies: string[];
   } {
-    const builtinNames = ['default', 'card', 'button', 'input', 'modal', 'nav', 'status'];
+    const builtinNames = [
+      "default",
+      "card",
+      "button",
+      "input",
+      "modal",
+      "nav",
+      "status",
+    ];
     const allNames = this.getAvailableVariants();
-    
+
     return {
       totalStrategies: allNames.length,
       variantNames: allNames,
-      builtinStrategies: allNames.filter(name => builtinNames.includes(name)),
-      customStrategies: allNames.filter(name => !builtinNames.includes(name)),
+      builtinStrategies: allNames.filter((name) => builtinNames.includes(name)),
+      customStrategies: allNames.filter((name) => !builtinNames.includes(name)),
     };
   }
 }
@@ -199,7 +215,10 @@ export function registerGlassVariant(strategy: IGlassVariantStrategy): void {
 /**
  * Convenience function to get config from global registry
  */
-export function getGlassVariantConfig(variantName: string, props: GlassVariantProps): GlassVariantConfig {
+export function getGlassVariantConfig(
+  variantName: string,
+  props: GlassVariantProps,
+): GlassVariantConfig {
   return getGlassVariantRegistry().getConfig(variantName, props);
 }
 

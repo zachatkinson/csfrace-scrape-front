@@ -4,7 +4,7 @@
  * Allows extensible glass variants without modifying core component
  */
 
-import type { CSSProperties } from 'react';
+import type { CSSProperties } from "react";
 
 /**
  * Glass variant configuration interface
@@ -35,7 +35,7 @@ export interface GlassVariantProps {
   adaptive?: boolean;
   lensing?: boolean;
   loading?: boolean;
-  blur?: 'subtle' | 'default' | 'strong';
+  blur?: "subtle" | "default" | "strong";
   reducedMotion?: boolean;
   highContrast?: boolean;
 }
@@ -43,10 +43,12 @@ export interface GlassVariantProps {
 /**
  * Abstract base strategy with common functionality
  */
-export abstract class BaseGlassVariantStrategy implements IGlassVariantStrategy {
+export abstract class BaseGlassVariantStrategy
+  implements IGlassVariantStrategy
+{
   constructor(
     public readonly name: string,
-    public readonly description: string
+    public readonly description: string,
   ) {}
 
   abstract getConfig(props: GlassVariantProps): GlassVariantConfig;
@@ -55,39 +57,39 @@ export abstract class BaseGlassVariantStrategy implements IGlassVariantStrategy 
    * Get common interaction classes
    */
   protected getInteractiveClasses(interactive?: boolean): string[] {
-    return interactive ? ['liquid-glass-interactive'] : [];
+    return interactive ? ["liquid-glass-interactive"] : [];
   }
 
   /**
    * Get common adaptive classes
    */
   protected getAdaptiveClasses(adaptive?: boolean): string[] {
-    return adaptive ? ['liquid-glass-adaptive'] : [];
+    return adaptive ? ["liquid-glass-adaptive"] : [];
   }
 
   /**
    * Get common lensing classes
    */
   protected getLensingClasses(lensing?: boolean): string[] {
-    return lensing ? ['liquid-glass-lens'] : [];
+    return lensing ? ["liquid-glass-lens"] : [];
   }
 
   /**
    * Get common loading classes
    */
   protected getLoadingClasses(loading?: boolean): string[] {
-    return loading ? ['glass-loading'] : [];
+    return loading ? ["glass-loading"] : [];
   }
 
   /**
    * Get blur-specific classes
    */
-  protected getBlurClasses(blur?: 'subtle' | 'default' | 'strong'): string[] {
+  protected getBlurClasses(blur?: "subtle" | "default" | "strong"): string[] {
     switch (blur) {
-      case 'subtle':
-        return ['backdrop-blur-glass-subtle'];
-      case 'strong':
-        return ['backdrop-blur-glass-strong'];
+      case "subtle":
+        return ["backdrop-blur-glass-subtle"];
+      case "strong":
+        return ["backdrop-blur-glass-strong"];
       default:
         return [];
     }
@@ -98,27 +100,29 @@ export abstract class BaseGlassVariantStrategy implements IGlassVariantStrategy 
    */
   protected getAccessibilityClasses(props: GlassVariantProps): string[] {
     const classes: string[] = [];
-    
+
     if (props.reducedMotion) {
-      classes.push('motion-reduce');
+      classes.push("motion-reduce");
     }
-    
+
     if (props.highContrast) {
-      classes.push('contrast-more');
+      classes.push("contrast-more");
     }
-    
+
     return classes;
   }
 
   /**
    * Get custom CSS properties for blur
    */
-  protected getBlurCustomProperties(blur?: 'subtle' | 'default' | 'strong'): CSSProperties & Record<string, string> {
+  protected getBlurCustomProperties(
+    blur?: "subtle" | "default" | "strong",
+  ): CSSProperties & Record<string, string> {
     switch (blur) {
-      case 'subtle':
-        return { '--glass-blur': '10px' };
-      case 'strong':
-        return { '--glass-blur': '40px' };
+      case "subtle":
+        return { "--glass-blur": "10px" };
+      case "strong":
+        return { "--glass-blur": "40px" };
       default:
         return {};
     }
@@ -129,7 +133,7 @@ export abstract class BaseGlassVariantStrategy implements IGlassVariantStrategy 
    */
   protected getCommonClasses(props: GlassVariantProps): string[] {
     return [
-      'liquid-glass',
+      "liquid-glass",
       ...this.getInteractiveClasses(props.interactive),
       ...this.getAdaptiveClasses(props.adaptive),
       ...this.getLensingClasses(props.lensing),
@@ -142,7 +146,9 @@ export abstract class BaseGlassVariantStrategy implements IGlassVariantStrategy 
   /**
    * Get common custom properties
    */
-  protected getCommonCustomProperties(props: GlassVariantProps): CSSProperties & Record<string, string> {
+  protected getCommonCustomProperties(
+    props: GlassVariantProps,
+  ): CSSProperties & Record<string, string> {
     return {
       ...this.getBlurCustomProperties(props.blur),
     };

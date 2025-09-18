@@ -5,11 +5,14 @@
  */
 
 // Core Components
-export { OAuthButton } from './OAuthButton';
-export { OAuthProviderList } from './OAuthProviderList';
+export { OAuthButton } from "./OAuthButton";
+export { OAuthProviderList } from "./OAuthProviderList";
 
 // Provider System
-export { oauthProviderRegistry, useOAuthProviders } from './OAuthProviderRegistry';
+export {
+  oauthProviderRegistry,
+  useOAuthProviders,
+} from "./OAuthProviderRegistry";
 
 // Icon Components
 export {
@@ -19,7 +22,7 @@ export {
   FacebookIcon,
   AppleIcon,
   createProviderIcon,
-} from './OAuthProviderIcons';
+} from "./OAuthProviderIcons";
 
 // Type Definitions (re-export from types)
 export type {
@@ -30,4 +33,4 @@ export type {
   IOAuthButtonProps,
   IOAuthProviderListProps,
   IOAuthProviderRegistry,
-} from '../../../types/oauth';
+} from "../../../types/oauth";

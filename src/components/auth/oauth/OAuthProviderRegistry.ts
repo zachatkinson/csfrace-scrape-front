@@ -5,8 +5,12 @@
  * Open/Closed: Extensible for new providers without modification
  */
 
-import type { IOAuthProvider, IOAuthProviderRegistry, OAuthProviderId } from '../../../types/oauth';
-import { createProviderIcon } from './OAuthProviderIcons';
+import type {
+  IOAuthProvider,
+  IOAuthProviderRegistry,
+  OAuthProviderId,
+} from "../../../types/oauth";
+import { createProviderIcon } from "./OAuthProviderIcons";
 
 /**
  * OAuth Provider Configuration
@@ -14,59 +18,59 @@ import { createProviderIcon } from './OAuthProviderIcons';
  */
 const OAUTH_PROVIDER_DEFINITIONS: readonly IOAuthProvider[] = [
   {
-    id: 'google',
-    name: 'google',
-    displayName: 'Google',
-    icon: createProviderIcon('google'),
-    brandColor: '#4285F4',
-    description: 'Sign in with your Google account',
-    loginText: 'Continue with Google',
-    registerText: 'Sign up with Google',
-    loadingText: 'Connecting to Google...',
+    id: "google",
+    name: "google",
+    displayName: "Google",
+    icon: createProviderIcon("google"),
+    brandColor: "#4285F4",
+    description: "Sign in with your Google account",
+    loginText: "Continue with Google",
+    registerText: "Sign up with Google",
+    loadingText: "Connecting to Google...",
   },
   {
-    id: 'github',
-    name: 'github',
-    displayName: 'GitHub',
-    icon: createProviderIcon('github'),
-    brandColor: '#333333',
-    description: 'Sign in with your GitHub account',
-    loginText: 'Continue with GitHub',
-    registerText: 'Sign up with GitHub',
-    loadingText: 'Connecting to GitHub...',
+    id: "github",
+    name: "github",
+    displayName: "GitHub",
+    icon: createProviderIcon("github"),
+    brandColor: "#333333",
+    description: "Sign in with your GitHub account",
+    loginText: "Continue with GitHub",
+    registerText: "Sign up with GitHub",
+    loadingText: "Connecting to GitHub...",
   },
   {
-    id: 'microsoft',
-    name: 'microsoft',
-    displayName: 'Microsoft',
-    icon: createProviderIcon('microsoft'),
-    brandColor: '#00A4EF',
-    description: 'Sign in with your Microsoft account',
-    loginText: 'Continue with Microsoft',
-    registerText: 'Sign up with Microsoft',
-    loadingText: 'Connecting to Microsoft...',
+    id: "microsoft",
+    name: "microsoft",
+    displayName: "Microsoft",
+    icon: createProviderIcon("microsoft"),
+    brandColor: "#00A4EF",
+    description: "Sign in with your Microsoft account",
+    loginText: "Continue with Microsoft",
+    registerText: "Sign up with Microsoft",
+    loadingText: "Connecting to Microsoft...",
   },
   {
-    id: 'facebook',
-    name: 'facebook',
-    displayName: 'Facebook',
-    icon: createProviderIcon('facebook'),
-    brandColor: '#1877F2',
-    description: 'Sign in with your Facebook account',
-    loginText: 'Continue with Facebook',
-    registerText: 'Sign up with Facebook',
-    loadingText: 'Connecting to Facebook...',
+    id: "facebook",
+    name: "facebook",
+    displayName: "Facebook",
+    icon: createProviderIcon("facebook"),
+    brandColor: "#1877F2",
+    description: "Sign in with your Facebook account",
+    loginText: "Continue with Facebook",
+    registerText: "Sign up with Facebook",
+    loadingText: "Connecting to Facebook...",
   },
   {
-    id: 'apple',
-    name: 'apple',
-    displayName: 'Apple',
-    icon: createProviderIcon('apple'),
-    brandColor: '#000000',
-    description: 'Sign in with your Apple ID',
-    loginText: 'Continue with Apple',
-    registerText: 'Sign up with Apple',
-    loadingText: 'Connecting to Apple...',
+    id: "apple",
+    name: "apple",
+    displayName: "Apple",
+    icon: createProviderIcon("apple"),
+    brandColor: "#000000",
+    description: "Sign in with your Apple ID",
+    loginText: "Continue with Apple",
+    registerText: "Sign up with Apple",
+    loadingText: "Connecting to Apple...",
   },
 ] as const;
 
@@ -82,7 +86,7 @@ class OAuthProviderRegistryImpl implements IOAuthProviderRegistry {
   constructor() {
     // Initialize provider map for O(1) lookups
     this.providers = new Map();
-    OAUTH_PROVIDER_DEFINITIONS.forEach(provider => {
+    OAUTH_PROVIDER_DEFINITIONS.forEach((provider) => {
       this.providers.set(provider.id, provider);
     });
 
@@ -96,18 +100,18 @@ class OAuthProviderRegistryImpl implements IOAuthProviderRegistry {
    */
   private loadEnabledProviders(): Set<OAuthProviderId> {
     const enabledProvidersEnv = import.meta.env.VITE_ENABLED_OAUTH_PROVIDERS;
-    
+
     if (enabledProvidersEnv) {
       const enabledIds = enabledProvidersEnv
-        .split(',')
+        .split(",")
         .map((id: string) => id.trim() as OAuthProviderId)
         .filter((id: OAuthProviderId) => this.providers.has(id));
-      
+
       return new Set(enabledIds);
     }
 
     // Default: All providers enabled
-    return new Set(OAUTH_PROVIDER_DEFINITIONS.map(p => p.id));
+    return new Set(OAUTH_PROVIDER_DEFINITIONS.map((p) => p.id));
   }
 
   /**
@@ -132,8 +136,8 @@ class OAuthProviderRegistryImpl implements IOAuthProviderRegistry {
    * @returns Readonly array of enabled provider definitions
    */
   getEnabledProviders(): readonly IOAuthProvider[] {
-    return OAUTH_PROVIDER_DEFINITIONS.filter(provider => 
-      this.enabledProviders.has(provider.id)
+    return OAUTH_PROVIDER_DEFINITIONS.filter((provider) =>
+      this.enabledProviders.has(provider.id),
     );
   }
 
@@ -169,7 +173,8 @@ class OAuthProviderRegistryImpl implements IOAuthProviderRegistry {
  * Singleton OAuth Provider Registry Instance
  * Export for application-wide provider access
  */
-export const oauthProviderRegistry: IOAuthProviderRegistry = new OAuthProviderRegistryImpl();
+export const oauthProviderRegistry: IOAuthProviderRegistry =
+  new OAuthProviderRegistryImpl();
 
 /**
  * Convenience hook for accessing OAuth providers
@@ -180,6 +185,7 @@ export const useOAuthProviders = () => {
     getAllProviders: () => oauthProviderRegistry.getAllProviders(),
     getEnabledProviders: () => oauthProviderRegistry.getEnabledProviders(),
     getProvider: (id: OAuthProviderId) => oauthProviderRegistry.getProvider(id),
-    isProviderEnabled: (id: OAuthProviderId) => oauthProviderRegistry.isProviderEnabled(id),
+    isProviderEnabled: (id: OAuthProviderId) =>
+      oauthProviderRegistry.isProviderEnabled(id),
   };
 };

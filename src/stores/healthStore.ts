@@ -10,11 +10,11 @@
  * - Framework-agnostic (works with Astro, React, vanilla JS)
  */
 
-import { atom, map, computed } from 'nanostores';
-import type { IServiceResult } from '../utils/serviceCheckers.ts';
-import { createContextLogger } from '../utils/logger';
+import { atom, map, computed } from "nanostores";
+import type { IServiceResult } from "../utils/serviceCheckers.ts";
+import { createContextLogger } from "../utils/logger";
 
-const logger = createContextLogger('HealthStore');
+const logger = createContextLogger("HealthStore");
 
 // =============================================================================
 // WINDOW GLOBAL TYPES (for migration purposes)
@@ -49,16 +49,30 @@ export interface IHealthMetadata {
 }
 
 export interface IOverallStatus {
-  status: 'up' | 'degraded' | 'down' | 'unknown';
+  status: "up" | "degraded" | "down" | "unknown";
   text: string;
   summary: string;
   color: string;
+}
+
+export interface IPerformanceMetrics {
+  cpu_usage: number;
+  memory_usage: number;
+  disk_usage: number;
+  network_io: number;
+  avg_response: number;
+  p95_response: number;
+  max_response: number;
+  active_connections: number;
+  queue_length: number;
+  uptime: string;
 }
 
 export interface IConsolidatedHealthData {
   services: IHealthServiceStatuses;
   overallStatus: IOverallStatus;
   metadata: IHealthMetadata;
+  performanceMetrics?: IPerformanceMetrics;
 }
 
 // =============================================================================
@@ -77,17 +91,29 @@ export const $healthData = map<IConsolidatedHealthData>({
     cache: null,
   },
   overallStatus: {
-    status: 'unknown',
-    text: 'Loading System Status',
-    summary: 'Initializing health monitoring...',
-    color: 'bg-gray-500'
+    status: "unknown",
+    text: "Loading System Status",
+    summary: "Initializing health monitoring...",
+    color: "bg-gray-500",
   },
   metadata: {
     timestamp: 0,
     isPolling: false,
     isVisible: true,
-    lastUpdateFormatted: 'Never'
-  }
+    lastUpdateFormatted: "Never",
+  },
+  performanceMetrics: {
+    cpu_usage: 0,
+    memory_usage: 0,
+    disk_usage: 0,
+    network_io: 0,
+    avg_response: 0,
+    p95_response: 0,
+    max_response: 0,
+    active_connections: 0,
+    queue_length: 0,
+    uptime: "Unknown",
+  },
 });
 
 /**
@@ -111,22 +137,43 @@ export const $lastHealthTimestamp = atom<Date | null>(null);
  * Automatically recalculates when health data changes
  */
 export const $serviceMetrics = computed($healthData, (healthData) => {
-  const serviceList = ['frontend', 'backend', 'database', 'cache'] as const;
+  const serviceList = ["frontend", "backend", "database", "cache"] as const;
   const services = healthData.services;
 
-  const loadedServices = serviceList.filter(service =>
-    services[service] && services[service]?.status
+  const loadedServices = serviceList.filter(
+    (service) => services[service] && services[service]?.status,
   );
-  const upServices = serviceList.filter(service =>
-    services[service] && services[service]?.status === 'up'
+  const upServices = serviceList.filter(
+    (service) => services[service] && services[service]?.status === "up",
   );
 
   return {
     total: serviceList.length,
     loaded: loadedServices.length,
     up: upServices.length,
-    hasAnyData: loadedServices.length > 0
+    hasAnyData: loadedServices.length > 0,
   };
+});
+
+/**
+ * Computed store for performance metrics
+ * Automatically recalculates when health data changes
+ */
+export const $performanceMetrics = computed($healthData, (healthData) => {
+  return (
+    healthData.performanceMetrics || {
+      cpu_usage: 0,
+      memory_usage: 0,
+      disk_usage: 0,
+      network_io: 0,
+      avg_response: 0,
+      p95_response: 0,
+      max_response: 0,
+      active_connections: 0,
+      queue_length: 0,
+      uptime: "Unknown",
+    }
+  );
 });
 
 /**
@@ -135,33 +182,36 @@ export const $serviceMetrics = computed($healthData, (healthData) => {
  */
 export const $computedOverallStatus = computed(
   [$healthData, $serviceMetrics],
-  (_healthData: IConsolidatedHealthData, metrics: { total: number; loaded: number; up: number; hasAnyData: boolean }) => {
+  (
+    _healthData: IConsolidatedHealthData,
+    metrics: { total: number; loaded: number; up: number; hasAnyData: boolean },
+  ) => {
     if (metrics.loaded === 0) {
       // No data loaded yet - loading state
       return {
-        status: 'unknown' as const,
-        text: 'Loading System Status',
-        summary: 'Initializing health monitoring...',
-        color: 'bg-blue-500'
+        status: "unknown" as const,
+        text: "Loading System Status",
+        summary: "Initializing health monitoring...",
+        color: "bg-blue-500",
       };
     } else if (metrics.up === metrics.total) {
       // All services operational
       return {
-        status: 'up' as const,
-        text: '✅ All Services Operational',
+        status: "up" as const,
+        text: "✅ All Services Operational",
         summary: `${metrics.up} of ${metrics.total} services operational`,
-        color: 'bg-green-500'
+        color: "bg-green-500",
       };
     } else {
       // Some services have issues
       return {
-        status: 'degraded' as const,
-        text: '⚠️ Service Issues, Please Review Details',
+        status: "degraded" as const,
+        text: "⚠️ Service Issues, Please Review Details",
         summary: `${metrics.up} of ${metrics.total} services operational`,
-        color: 'bg-red-500'
+        color: "bg-red-500",
       };
     }
-  }
+  },
 );
 
 // =============================================================================
@@ -176,23 +226,28 @@ export function updateHealthData(data: {
   services: IHealthServiceStatuses;
   overallStatus: IOverallStatus;
   metadata: IHealthMetadata;
+  performanceMetrics?: IPerformanceMetrics;
 }): void {
-  logger.debug('Updating health data', { data });
+  logger.debug("Updating health data", { data });
 
   // Update the main health data store
   $healthData.set(data);
 
   // Update the timestamp store if we have real service data
-  const realServices = ['frontend', 'backend', 'database', 'cache'];
-  const hasRealServiceData = Object.keys(data.services).some(service =>
-    realServices.includes(service) && data.services[service as keyof IHealthServiceStatuses]
+  const realServices = ["frontend", "backend", "database", "cache"];
+  const hasRealServiceData = Object.keys(data.services).some(
+    (service) =>
+      realServices.includes(service) &&
+      data.services[service as keyof IHealthServiceStatuses],
   );
 
   if (hasRealServiceData && data.metadata.timestamp > 0) {
     $lastHealthTimestamp.set(new Date(data.metadata.timestamp));
-    logger.debug('Updated timestamp with real service data', { timestamp: new Date(data.metadata.timestamp) });
+    logger.debug("Updated timestamp with real service data", {
+      timestamp: new Date(data.metadata.timestamp),
+    });
   } else {
-    logger.debug('No real service data yet, keeping timestamp as null');
+    logger.debug("No real service data yet, keeping timestamp as null");
   }
 }
 
@@ -202,11 +257,20 @@ export function updateHealthData(data: {
  */
 export function updateFormattedTimestamp(formatted: string): void {
   const currentData = $healthData.get();
-  $healthData.setKey('metadata', {
+  $healthData.setKey("metadata", {
     ...currentData.metadata,
-    lastUpdateFormatted: formatted
+    lastUpdateFormatted: formatted,
   });
-  logger.debug('Updated formatted timestamp only', { formatted });
+  logger.debug("Updated formatted timestamp only", { formatted });
+}
+
+/**
+ * Update only performance metrics
+ * Useful for real-time performance data updates
+ */
+export function updatePerformanceMetrics(metrics: IPerformanceMetrics): void {
+  $healthData.setKey("performanceMetrics", metrics);
+  logger.debug("Updated performance metrics", { metrics });
 }
 
 /**
@@ -215,7 +279,7 @@ export function updateFormattedTimestamp(formatted: string): void {
  */
 export function markHealthInitialized(): void {
   $healthInitialized.set(true);
-  logger.debug('Marked health monitoring as initialized');
+  logger.debug("Marked health monitoring as initialized");
 }
 
 /**
@@ -232,19 +296,31 @@ export function resetHealthState(): void {
       cache: null,
     },
     overallStatus: {
-      status: 'unknown',
-      text: 'Loading System Status',
-      summary: 'Initializing health monitoring...',
-      color: 'bg-gray-500'
+      status: "unknown",
+      text: "Loading System Status",
+      summary: "Initializing health monitoring...",
+      color: "bg-gray-500",
     },
     metadata: {
       timestamp: 0,
       isPolling: false,
       isVisible: true,
-      lastUpdateFormatted: 'Never'
-    }
+      lastUpdateFormatted: "Never",
+    },
+    performanceMetrics: {
+      cpu_usage: 0,
+      memory_usage: 0,
+      disk_usage: 0,
+      network_io: 0,
+      avg_response: 0,
+      p95_response: 0,
+      max_response: 0,
+      active_connections: 0,
+      queue_length: 0,
+      uptime: "Unknown",
+    },
   });
-  logger.debug('Reset health state to initial values');
+  logger.debug("Reset health state to initial values");
 }
 
 // =============================================================================
@@ -295,7 +371,7 @@ export function migrateFromWindowGlobals(): void {
   const windowHealthState = window.__healthStatusState;
 
   if (windowHealthData) {
-    logger.info('Migrating from window global data');
+    logger.info("Migrating from window global data");
     updateHealthData(windowHealthData);
 
     // Clean up window globals
@@ -303,7 +379,7 @@ export function migrateFromWindowGlobals(): void {
   }
 
   if (windowHealthState) {
-    logger.info('Migrating timestamp state from window globals');
+    logger.info("Migrating timestamp state from window globals");
     if (windowHealthState.lastHealthTimestamp) {
       $lastHealthTimestamp.set(new Date(windowHealthState.lastHealthTimestamp));
     }

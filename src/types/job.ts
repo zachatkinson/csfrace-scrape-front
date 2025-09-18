@@ -11,22 +11,30 @@ export interface WordPressContent {
   excerpt?: string | undefined;
   slug?: string | undefined;
   type?: string | undefined;
-  status?: 'publish' | 'draft' | 'private' | undefined;
-  author?: {
-    id?: string | undefined;
-    name?: string | undefined;
-    email?: string | undefined;
-  } | string | undefined;
+  status?: "publish" | "draft" | "private" | undefined;
+  author?:
+    | {
+        id?: string | undefined;
+        name?: string | undefined;
+        email?: string | undefined;
+      }
+    | string
+    | undefined;
   publishedAt?: string | undefined;
   modifiedAt?: string | undefined;
-  featuredImage?: {
-    url: string;
-    alt?: string | undefined;
-    caption?: string | undefined;
-  } | string | undefined;
+  featuredImage?:
+    | {
+        url: string;
+        alt?: string | undefined;
+        caption?: string | undefined;
+      }
+    | string
+    | undefined;
   categories?: string[] | undefined;
   tags?: string[] | undefined;
-  metadata?: Record<string, string | number | boolean | null | unknown> | undefined;
+  metadata?:
+    | Record<string, string | number | boolean | null | unknown>
+    | undefined;
 }
 
 export interface ShopifyContent {
@@ -37,30 +45,46 @@ export interface ShopifyContent {
   vendor?: string | undefined;
   productType?: string | undefined;
   tags: string[];
-  images?: {
-    src: string;
-    alt?: string | undefined;
-    position: number;
-  }[] | undefined;
-  image?: {
-    src: string;
-    alt?: string | undefined;
-  } | undefined;
-  variants?: {
-    title: string;
-    price: string;
-    sku?: string | undefined;
-    inventoryQuantity?: number | undefined;
-  }[] | undefined;
-  seo?: {
-    title?: string | undefined;
-    description?: string | undefined;
-  } | undefined;
+  images?:
+    | {
+        src: string;
+        alt?: string | undefined;
+        position: number;
+      }[]
+    | undefined;
+  image?:
+    | {
+        src: string;
+        alt?: string | undefined;
+      }
+    | undefined;
+  variants?:
+    | {
+        title: string;
+        price: string;
+        sku?: string | undefined;
+        inventoryQuantity?: number | undefined;
+      }[]
+    | undefined;
+  seo?:
+    | {
+        title?: string | undefined;
+        description?: string | undefined;
+      }
+    | undefined;
   publishedAt?: string | undefined;
   metadata?: Record<string, unknown> | undefined;
 }
 
-export type JobStatus = 'pending' | 'validating' | 'scraping' | 'running' | 'completed' | 'error' | 'failed' | 'cancelled';
+export type JobStatus =
+  | "pending"
+  | "validating"
+  | "scraping"
+  | "running"
+  | "completed"
+  | "error"
+  | "failed"
+  | "cancelled";
 
 // =============================================================================
 // SEGREGATED JOB INTERFACES - Following Interface Segregation Principle
@@ -139,14 +163,16 @@ export interface JobContent {
 export interface JobMetadata {
   domain?: string | undefined;
   duration?: string | undefined;
-  metadata?: {
-    title?: string | undefined;
-    type?: string | undefined;
-    wordCount?: number | undefined;
-    imageCount?: number | undefined;
-    estimatedSize?: string | undefined;
-    processingTime?: number | undefined;
-  } | undefined;
+  metadata?:
+    | {
+        title?: string | undefined;
+        type?: string | undefined;
+        wordCount?: number | undefined;
+        imageCount?: number | undefined;
+        estimatedSize?: string | undefined;
+        processingTime?: number | undefined;
+      }
+    | undefined;
 }
 
 /**
@@ -155,10 +181,10 @@ export interface JobMetadata {
  */
 export interface ConversionJob
   extends JobIdentity,
-          JobProgress,
-          JobErrorInfo,
-          JobContent,
-          JobMetadata {}
+    JobProgress,
+    JobErrorInfo,
+    JobContent,
+    JobMetadata {}
 
 /**
  * Dashboard Job Data
@@ -166,11 +192,11 @@ export interface ConversionJob
  */
 export interface IJobData
   extends JobIdentity,
-          JobProgress,
-          JobErrorInfo,
-          JobContentMetrics,
-          JobProcessingConfig,
-          JobMetadata {
+    JobProgress,
+    JobErrorInfo,
+    JobContentMetrics,
+    JobProcessingConfig,
+    JobMetadata {
   // Override for API compatibility
   id: number;
   title: string;
@@ -179,32 +205,27 @@ export interface IJobData
 /**
  * Job priority levels
  */
-export type JobPriority = 
-  | 'low'
-  | 'normal'
-  | 'high'
-  | 'urgent';
+export type JobPriority = "low" | "normal" | "high" | "urgent";
 
 /**
  * Extended job status for dashboard (includes original statuses)
  */
-export type DashboardJobStatus = JobStatus | 'queued' | 'processing' | 'skipped' | 'partial';
+export type DashboardJobStatus =
+  | JobStatus
+  | "queued"
+  | "processing"
+  | "skipped"
+  | "partial";
 
 /**
  * Filter options for job dashboard
  */
-export type JobFilter = 
-  | 'all'
-  | DashboardJobStatus;
+export type JobFilter = "all" | DashboardJobStatus;
 
 /**
  * Sort options for job dashboard
  */
-export type JobSort = 
-  | 'newest'
-  | 'oldest'
-  | 'status'
-  | 'progress';
+export type JobSort = "newest" | "oldest" | "status" | "progress";
 
 /**
  * Backend API job response (before conversion to IJobData)
@@ -234,12 +255,12 @@ export interface IBackendJob {
 /**
  * Job action types for dashboard interactions
  */
-export type JobAction = 
-  | 'view-details'
-  | 'download'
-  | 'retry'
-  | 'cancel'
-  | 'delete';
+export type JobAction =
+  | "view-details"
+  | "download"
+  | "retry"
+  | "cancel"
+  | "delete";
 
 /**
  * Job filter configuration
@@ -271,7 +292,7 @@ export interface IJobQueryParams {
   status_filter?: string | undefined;
   search?: string | undefined;
   sort_by?: string | undefined;
-  sort_order?: 'asc' | 'desc' | undefined;
+  sort_order?: "asc" | "desc" | undefined;
 }
 
 /**
@@ -304,9 +325,9 @@ export interface JobBackendConfig {
  * SOLID: ISP - Only conversion-specific settings
  */
 export interface JobConverterConfig {
-  format?: 'html' | 'markdown' | 'json' | undefined;
+  format?: "html" | "markdown" | "json" | undefined;
   includeImages?: boolean | undefined;
-  imageQuality?: 'low' | 'medium' | 'high' | undefined;
+  imageQuality?: "low" | "medium" | "high" | undefined;
   customCSS?: string | undefined;
   preserveStyles?: boolean | undefined;
   stripScripts?: boolean | undefined;
@@ -333,10 +354,10 @@ export interface JobProcessingOptions {
  */
 export interface BackendJob
   extends JobIdentity,
-          JobProgress,
-          JobErrorInfo,
-          JobProcessingConfig,
-          JobBackendConfig {
+    JobProgress,
+    JobErrorInfo,
+    JobProcessingConfig,
+    JobBackendConfig {
   // Backend-specific fields
   success: boolean;
   content_size_bytes?: number | undefined;
@@ -429,7 +450,7 @@ export interface IDashboardState {
   currentPage: number;
   jobsPerPage: number;
   isLoading: boolean;
-  connectionStatus: 'connected' | 'disconnected' | 'reconnecting';
+  connectionStatus: "connected" | "disconnected" | "reconnecting";
   stats: IJobStats;
 }
 

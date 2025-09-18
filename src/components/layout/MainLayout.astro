@@ -276,11 +276,18 @@ const {
         handleRetry(): void;
       }
 
+      interface PerformanceSSEService {
+        connect(): Promise<void>;
+        disconnect(): void;
+        getConnectionStatus(): { isConnected: boolean; retryCount: number };
+      }
+
       declare global {
         interface Window {
           CSFRACE_TIMING: CSFRaceTiming;
           __healthSSEService?: HealthSSEService;
           __jobSSEService?: JobSSEService;
+          __performanceSSEService?: PerformanceSSEService;
         }
       }
 
@@ -407,6 +414,9 @@ const {
                   console.error('❌ SSEService: Error processing update:', error);
                 }
               });
+
+              // Performance metrics now handled by dedicated PerformanceSSEService
+              // Following SOLID principles: Single Responsibility - health SSE only handles health events
 
               this.eventSource.onerror = (error: Event) => {
                 this.isConnected = false;
@@ -546,6 +556,31 @@ const {
         // Cleanup on unload
         window.addEventListener('beforeunload', () => {
           window.__jobSSEService?.disconnect();
+        });
+      }
+    </script>
+
+    <!-- ASTRO MCP BEST PRACTICE: Global Performance SSE Service in MainLayout (SOLID pattern) -->
+    <script>
+      import { performanceSSEService } from '/src/services/PerformanceSSEService.ts';
+      import { createContextLogger } from '/src/utils/logger.js';
+
+      const performanceLogger = createContextLogger('PerformanceSSEMain');
+
+      // SINGLETON PATTERN: Global performance SSE service (following SOLID principles)
+      if (!window.__performanceSSEService) {
+        performanceLogger.info('Creating global SSE performance service');
+
+        window.__performanceSSEService = performanceSSEService;
+
+        // Initialize performance SSE service
+        document.addEventListener('DOMContentLoaded', () => {
+          window.__performanceSSEService?.connect();
+        });
+
+        // Cleanup on unload
+        window.addEventListener('beforeunload', () => {
+          window.__performanceSSEService?.disconnect();
         });
       }
     </script>

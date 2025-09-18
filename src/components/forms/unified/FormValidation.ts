@@ -9,19 +9,19 @@
 import type {
   FieldValidationRule,
   IFieldValidationState,
-  IFieldValidationRules
-} from './FormFieldTypes';
+  IFieldValidationRules,
+} from "./FormFieldTypes";
 
 /**
  * Validation Error Types
  * Single Responsibility: Defines validation error categories
  */
 export enum ValidationErrorType {
-  REQUIRED = 'required',
-  FORMAT = 'format',
-  LENGTH = 'length',
-  RANGE = 'range',
-  CUSTOM = 'custom'
+  REQUIRED = "required",
+  FORMAT = "format",
+  LENGTH = "length",
+  RANGE = "range",
+  CUSTOM = "custom",
 }
 
 /**
@@ -52,24 +52,24 @@ export class UnifiedValidationRules implements IFieldValidationRules {
   /**
    * Required field validation
    */
-  required(message = 'This field is required'): FieldValidationRule<unknown> {
+  required(message = "This field is required"): FieldValidationRule<unknown> {
     return (value: unknown): string | undefined => {
       if (value === null || value === undefined) {
         return message;
       }
-      
-      if (typeof value === 'string' && value.trim() === '') {
+
+      if (typeof value === "string" && value.trim() === "") {
         return message;
       }
-      
+
       if (Array.isArray(value) && value.length === 0) {
         return message;
       }
-      
-      if (typeof value === 'boolean' && !value) {
+
+      if (typeof value === "boolean" && !value) {
         return message;
       }
-      
+
       return undefined;
     };
   }
@@ -77,9 +77,12 @@ export class UnifiedValidationRules implements IFieldValidationRules {
   /**
    * Email format validation
    */
-  email(message = 'Please enter a valid email address'): FieldValidationRule<string> {
-    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-    
+  email(
+    message = "Please enter a valid email address",
+  ): FieldValidationRule<string> {
+    const emailRegex =
+      /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+
     return (value: string): string | undefined => {
       if (!value) return undefined; // Let required rule handle empty values
       return emailRegex.test(value.trim()) ? undefined : message;
@@ -89,10 +92,10 @@ export class UnifiedValidationRules implements IFieldValidationRules {
   /**
    * URL format validation
    */
-  url(message = 'Please enter a valid URL'): FieldValidationRule<string> {
+  url(message = "Please enter a valid URL"): FieldValidationRule<string> {
     return (value: string): string | undefined => {
       if (!value) return undefined;
-      
+
       try {
         new URL(value);
         return undefined;
@@ -105,13 +108,17 @@ export class UnifiedValidationRules implements IFieldValidationRules {
   /**
    * Phone number validation
    */
-  phone(message = 'Please enter a valid phone number'): FieldValidationRule<string> {
+  phone(
+    message = "Please enter a valid phone number",
+  ): FieldValidationRule<string> {
     const phoneRegex = /^\+?[\d\s\-()]+$/;
-    
+
     return (value: string): string | undefined => {
       if (!value) return undefined;
-      const cleaned = value.replace(/\s/g, '');
-      return phoneRegex.test(cleaned) && cleaned.length >= 7 ? undefined : message;
+      const cleaned = value.replace(/\s/g, "");
+      return phoneRegex.test(cleaned) && cleaned.length >= 7
+        ? undefined
+        : message;
     };
   }
 
@@ -120,10 +127,10 @@ export class UnifiedValidationRules implements IFieldValidationRules {
    */
   minLength(min: number, message?: string): FieldValidationRule<string> {
     const defaultMessage = `Must be at least ${min} characters`;
-    
+
     return (value: string): string | undefined => {
       if (!value) return undefined;
-      return value.length >= min ? undefined : (message || defaultMessage);
+      return value.length >= min ? undefined : message || defaultMessage;
     };
   }
 
@@ -132,17 +139,20 @@ export class UnifiedValidationRules implements IFieldValidationRules {
    */
   maxLength(max: number, message?: string): FieldValidationRule<string> {
     const defaultMessage = `Must be no more than ${max} characters`;
-    
+
     return (value: string): string | undefined => {
       if (!value) return undefined;
-      return value.length <= max ? undefined : (message || defaultMessage);
+      return value.length <= max ? undefined : message || defaultMessage;
     };
   }
 
   /**
    * Pattern matching validation
    */
-  pattern(pattern: RegExp, message = 'Invalid format'): FieldValidationRule<string> {
+  pattern(
+    pattern: RegExp,
+    message = "Invalid format",
+  ): FieldValidationRule<string> {
     return (value: string): string | undefined => {
       if (!value) return undefined;
       return pattern.test(value) ? undefined : message;
@@ -154,10 +164,10 @@ export class UnifiedValidationRules implements IFieldValidationRules {
    */
   min(min: number, message?: string): FieldValidationRule<number> {
     const defaultMessage = `Must be at least ${min}`;
-    
+
     return (value: number): string | undefined => {
       if (value === null || value === undefined) return undefined;
-      return value >= min ? undefined : (message || defaultMessage);
+      return value >= min ? undefined : message || defaultMessage;
     };
   }
 
@@ -166,17 +176,20 @@ export class UnifiedValidationRules implements IFieldValidationRules {
    */
   max(max: number, message?: string): FieldValidationRule<number> {
     const defaultMessage = `Must be no more than ${max}`;
-    
+
     return (value: number): string | undefined => {
       if (value === null || value === undefined) return undefined;
-      return value <= max ? undefined : (message || defaultMessage);
+      return value <= max ? undefined : message || defaultMessage;
     };
   }
 
   /**
    * Custom validation rule
    */
-  custom<T>(validator: (value: T) => boolean, message: string): FieldValidationRule<T> {
+  custom<T>(
+    validator: (value: T) => boolean,
+    message: string,
+  ): FieldValidationRule<T> {
     return (value: T): string | undefined => {
       return validator(value) ? undefined : message;
     };
@@ -191,30 +204,48 @@ export class UnifiedValidationRules implements IFieldValidationRules {
     requireLowercase = true,
     requireNumbers = true,
     requireSpecialChars = true,
-    message = 'Password must meet strength requirements'
+    message = "Password must meet strength requirements",
   ): FieldValidationRule<string> {
     return (value: string): string | undefined => {
       if (!value) return undefined;
 
       const checks = [
-        { test: value.length >= minLength, msg: `at least ${minLength} characters` },
-        { test: !requireUppercase || /[A-Z]/.test(value), msg: 'uppercase letter' },
-        { test: !requireLowercase || /[a-z]/.test(value), msg: 'lowercase letter' },
-        { test: !requireNumbers || /\d/.test(value), msg: 'number' },
-        { test: !requireSpecialChars || /[!@#$%^&*(),.?":{}|<>]/.test(value), msg: 'special character' }
+        {
+          test: value.length >= minLength,
+          msg: `at least ${minLength} characters`,
+        },
+        {
+          test: !requireUppercase || /[A-Z]/.test(value),
+          msg: "uppercase letter",
+        },
+        {
+          test: !requireLowercase || /[a-z]/.test(value),
+          msg: "lowercase letter",
+        },
+        { test: !requireNumbers || /\d/.test(value), msg: "number" },
+        {
+          test: !requireSpecialChars || /[!@#$%^&*(),.?":{}|<>]/.test(value),
+          msg: "special character",
+        },
       ];
 
-      const failures = checks.filter(check => !check.test).map(check => check.msg);
-      
-      return failures.length === 0 ? undefined : 
-        `${message}: ${failures.join(', ')}`;
+      const failures = checks
+        .filter((check) => !check.test)
+        .map((check) => check.msg);
+
+      return failures.length === 0
+        ? undefined
+        : `${message}: ${failures.join(", ")}`;
     };
   }
 
   /**
    * Confirm password validation
    */
-  confirmPassword(originalPassword: string, message = 'Passwords do not match'): FieldValidationRule<string> {
+  confirmPassword(
+    originalPassword: string,
+    message = "Passwords do not match",
+  ): FieldValidationRule<string> {
     return (value: string): string | undefined => {
       if (!value || !originalPassword) return undefined;
       return value === originalPassword ? undefined : message;
@@ -249,12 +280,14 @@ export class UnifiedValidationRules implements IFieldValidationRules {
 
         // Check file type
         if (options.allowedTypes && options.allowedTypes.length > 0) {
-          const isAllowed = options.allowedTypes.some(type => 
-            file.type.includes(type) || file.name.toLowerCase().endsWith(type.toLowerCase())
+          const isAllowed = options.allowedTypes.some(
+            (type) =>
+              file.type.includes(type) ||
+              file.name.toLowerCase().endsWith(type.toLowerCase()),
           );
-          
+
           if (!isAllowed) {
-            return `File "${file.name}" is not an allowed type. Allowed types: ${options.allowedTypes.join(', ')}`;
+            return `File "${file.name}" is not an allowed type. Allowed types: ${options.allowedTypes.join(", ")}`;
           }
         }
       }
@@ -293,7 +326,7 @@ export class FieldValidationEngine {
    */
   validateSync<T>(value: T): IFieldValidationState {
     const errors: string[] = [];
-    
+
     for (const rule of this.rules) {
       const error = rule(value);
       if (error) {
@@ -325,11 +358,11 @@ export class FieldValidationEngine {
     }
 
     const asyncResults = await Promise.all(
-      this.asyncValidators.map(validator => validator.validate(value))
+      this.asyncValidators.map((validator) => validator.validate(value)),
     );
 
-    const allErrors = asyncResults.flatMap(result => result.errors);
-    const allWarnings = asyncResults.flatMap(result => result.warnings);
+    const allErrors = asyncResults.flatMap((result) => result.errors);
+    const allWarnings = asyncResults.flatMap((result) => result.warnings);
 
     return {
       isValid: allErrors.length === 0,
@@ -374,7 +407,10 @@ export class FormValidationCoordinator {
   /**
    * Validate single field
    */
-  async validateField<T>(name: string, value: T): Promise<IFieldValidationState> {
+  async validateField<T>(
+    name: string,
+    value: T,
+  ): Promise<IFieldValidationState> {
     const engine = this.fieldEngines.get(name);
     if (!engine) {
       return { isValid: true, isInvalid: false, isPending: false };
@@ -386,7 +422,9 @@ export class FormValidationCoordinator {
   /**
    * Validate all registered fields
    */
-  async validateAllFields(formData: Record<string, unknown>): Promise<Record<string, IFieldValidationState>> {
+  async validateAllFields(
+    formData: Record<string, unknown>,
+  ): Promise<Record<string, IFieldValidationState>> {
     const results: Record<string, IFieldValidationState> = {};
 
     const validationPromises = Array.from(this.fieldEngines.entries()).map(
@@ -394,11 +432,11 @@ export class FormValidationCoordinator {
         const value = formData[fieldName];
         const result = await engine.validateAsync(value);
         return { fieldName, result };
-      }
+      },
     );
 
     const validationResults = await Promise.all(validationPromises);
-    
+
     validationResults.forEach(({ fieldName, result }) => {
       results[fieldName] = result;
     });
@@ -409,8 +447,10 @@ export class FormValidationCoordinator {
   /**
    * Check if form is valid
    */
-  isFormValid(validationResults: Record<string, IFieldValidationState>): boolean {
-    return Object.values(validationResults).every(result => result.isValid);
+  isFormValid(
+    validationResults: Record<string, IFieldValidationState>,
+  ): boolean {
+    return Object.values(validationResults).every((result) => result.isValid);
   }
 }
 
@@ -419,28 +459,35 @@ export class FormValidationCoordinator {
  * Open/Closed: New rule sets can be added without modifying existing ones
  */
 export const CommonValidationSets = {
-  email: () => new FieldValidationEngine()
-    .addRule(new UnifiedValidationRules().required())
-    .addRule(new UnifiedValidationRules().email()),
+  email: () =>
+    new FieldValidationEngine()
+      .addRule(new UnifiedValidationRules().required())
+      .addRule(new UnifiedValidationRules().email()),
 
-  password: () => new FieldValidationEngine()
-    .addRule(new UnifiedValidationRules().required())
-    .addRule(new UnifiedValidationRules().passwordStrength()),
+  password: () =>
+    new FieldValidationEngine()
+      .addRule(new UnifiedValidationRules().required())
+      .addRule(new UnifiedValidationRules().passwordStrength()),
 
-  url: () => new FieldValidationEngine()
-    .addRule(new UnifiedValidationRules().required())
-    .addRule(new UnifiedValidationRules().url()),
+  url: () =>
+    new FieldValidationEngine()
+      .addRule(new UnifiedValidationRules().required())
+      .addRule(new UnifiedValidationRules().url()),
 
-  phone: () => new FieldValidationEngine()
-    .addRule(new UnifiedValidationRules().phone()),
+  phone: () =>
+    new FieldValidationEngine().addRule(new UnifiedValidationRules().phone()),
 
-  required: () => new FieldValidationEngine()
-    .addRule(new UnifiedValidationRules().required()),
+  required: () =>
+    new FieldValidationEngine().addRule(
+      new UnifiedValidationRules().required(),
+    ),
 
   text: (minLength?: number, maxLength?: number) => {
     const engine = new FieldValidationEngine();
-    if (minLength) engine.addRule(new UnifiedValidationRules().minLength(minLength));
-    if (maxLength) engine.addRule(new UnifiedValidationRules().maxLength(maxLength));
+    if (minLength)
+      engine.addRule(new UnifiedValidationRules().minLength(minLength));
+    if (maxLength)
+      engine.addRule(new UnifiedValidationRules().maxLength(maxLength));
     return engine;
   },
 };

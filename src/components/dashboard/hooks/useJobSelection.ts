@@ -4,13 +4,13 @@
  * DRY: Consolidates selection patterns from DashboardManager
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
 
 export function useJobSelection() {
   const [selectedJobs, setSelectedJobs] = useState<Set<number>>(new Set());
 
   const selectJob = useCallback((jobId: number) => {
-    setSelectedJobs(prev => {
+    setSelectedJobs((prev) => {
       const newSelection = new Set(prev);
       newSelection.add(jobId);
       return newSelection;
@@ -18,20 +18,23 @@ export function useJobSelection() {
   }, []);
 
   const deselectJob = useCallback((jobId: number) => {
-    setSelectedJobs(prev => {
+    setSelectedJobs((prev) => {
       const newSelection = new Set(prev);
       newSelection.delete(jobId);
       return newSelection;
     });
   }, []);
 
-  const toggleJobSelection = useCallback((jobId: number, selected: boolean) => {
-    if (selected) {
-      selectJob(jobId);
-    } else {
-      deselectJob(jobId);
-    }
-  }, [selectJob, deselectJob]);
+  const toggleJobSelection = useCallback(
+    (jobId: number, selected: boolean) => {
+      if (selected) {
+        selectJob(jobId);
+      } else {
+        deselectJob(jobId);
+      }
+    },
+    [selectJob, deselectJob],
+  );
 
   const selectAll = useCallback((jobIds: number[]) => {
     setSelectedJobs(new Set(jobIds));
@@ -41,9 +44,12 @@ export function useJobSelection() {
     setSelectedJobs(new Set());
   }, []);
 
-  const isSelected = useCallback((jobId: number) => {
-    return selectedJobs.has(jobId);
-  }, [selectedJobs]);
+  const isSelected = useCallback(
+    (jobId: number) => {
+      return selectedJobs.has(jobId);
+    },
+    [selectedJobs],
+  );
 
   const selectedCount = selectedJobs.size;
   const hasSelection = selectedCount > 0;
@@ -57,6 +63,6 @@ export function useJobSelection() {
     clearSelection,
     isSelected,
     selectedCount,
-    hasSelection
+    hasSelection,
   };
 }

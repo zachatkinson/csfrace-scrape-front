@@ -2,15 +2,15 @@
  * Job API utilities for fetching and managing conversion jobs
  */
 
-import { getApiBaseUrl } from '../constants/api';
-import { TIMING_CONSTANTS } from '../constants/timing';
+import { getApiBaseUrl } from "../constants/api";
+import { TIMING_CONSTANTS } from "../constants/timing";
 import type {
   SimpleJob as Job,
-  SimpleJobListResponse as JobListResponse
-} from '../types/job';
-import { createContextLogger } from '../utils/logger';
+  SimpleJobListResponse as JobListResponse,
+} from "../types/job";
+import { createContextLogger } from "../utils/logger";
 
-const logger = createContextLogger('JobAPI');
+const logger = createContextLogger("JobAPI");
 
 class JobAPI {
   private baseUrl: string;
@@ -22,15 +22,19 @@ class JobAPI {
     this.apiKey = import.meta.env.PUBLIC_API_KEY;
   }
 
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {},
+  ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     const headers: HeadersInit = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...options.headers,
     };
 
     if (this.apiKey) {
-      (headers as Record<string, string>)['Authorization'] = `Bearer ${this.apiKey}`;
+      (headers as Record<string, string>)["Authorization"] =
+        `Bearer ${this.apiKey}`;
     }
 
     try {
@@ -40,12 +44,14 @@ class JobAPI {
       });
 
       if (!response.ok) {
-        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `API request failed: ${response.status} ${response.statusText}`,
+        );
       }
 
       return await response.json();
     } catch (error) {
-      logger.error('API request failed', { endpoint, error });
+      logger.error("API request failed", { endpoint, error });
       throw error;
     }
   }
@@ -56,11 +62,11 @@ class JobAPI {
   async getRecentJobs(limit: number = 10): Promise<Job[]> {
     try {
       const response = await this.request<JobListResponse>(
-        `/jobs?page=1&page_size=${limit}&sort=created_at:desc`
+        `/jobs?page=1&page_size=${limit}&sort=created_at:desc`,
       );
       return response.jobs;
     } catch (error) {
-      logger.error('Failed to fetch recent jobs', { error });
+      logger.error("Failed to fetch recent jobs", { error });
       // Return empty array on error to prevent UI breaking
       return [];
     }
@@ -73,7 +79,7 @@ class JobAPI {
     try {
       return await this.request<Job>(`/jobs/${jobId}`);
     } catch (error) {
-      logger.error('Failed to fetch job', { jobId, error });
+      logger.error("Failed to fetch job", { jobId, error });
       return null;
     }
   }
@@ -84,10 +90,10 @@ class JobAPI {
   async retryJob(jobId: number): Promise<Job | null> {
     try {
       return await this.request<Job>(`/jobs/${jobId}/retry`, {
-        method: 'POST',
+        method: "POST",
       });
     } catch (error) {
-      logger.error('Failed to retry job', { jobId, error });
+      logger.error("Failed to retry job", { jobId, error });
       return null;
     }
   }
@@ -98,10 +104,10 @@ class JobAPI {
   async cancelJob(jobId: number): Promise<Job | null> {
     try {
       return await this.request<Job>(`/jobs/${jobId}/cancel`, {
-        method: 'POST',
+        method: "POST",
       });
     } catch (error) {
-      logger.error('Failed to cancel job', { jobId, error });
+      logger.error("Failed to cancel job", { jobId, error });
       return null;
     }
   }
@@ -109,17 +115,20 @@ class JobAPI {
   /**
    * Create a new conversion job
    */
-  async createJob(url: string, options: Record<string, string | number | boolean> = {}): Promise<Job | null> {
+  async createJob(
+    url: string,
+    options: Record<string, string | number | boolean> = {},
+  ): Promise<Job | null> {
     try {
-      return await this.request<Job>('/jobs', {
-        method: 'POST',
+      return await this.request<Job>("/jobs", {
+        method: "POST",
         body: JSON.stringify({
           url,
           options,
         }),
       });
     } catch (error) {
-      logger.error('Failed to create job', { error });
+      logger.error("Failed to create job", { error });
       return null;
     }
   }
@@ -127,17 +136,20 @@ class JobAPI {
   /**
    * Create a batch of jobs
    */
-  async createBatch(urls: string[], options: Record<string, string | number | boolean> = {}): Promise<{ batch_id: string; jobs: Job[] } | null> {
+  async createBatch(
+    urls: string[],
+    options: Record<string, string | number | boolean> = {},
+  ): Promise<{ batch_id: string; jobs: Job[] } | null> {
     try {
-      return await this.request<{ batch_id: string; jobs: Job[] }>('/batches', {
-        method: 'POST',
+      return await this.request<{ batch_id: string; jobs: Job[] }>("/batches", {
+        method: "POST",
         body: JSON.stringify({
           urls,
           options,
         }),
       });
     } catch (error) {
-      logger.error('Failed to create batch', { error });
+      logger.error("Failed to create batch", { error });
       return null;
     }
   }
@@ -147,9 +159,9 @@ class JobAPI {
    */
   async healthCheck(): Promise<{ status: string; version: string } | null> {
     try {
-      return await this.request<{ status: string; version: string }>('/health');
+      return await this.request<{ status: string; version: string }>("/health");
     } catch (error) {
-      logger.error('Health check failed', { error });
+      logger.error("Health check failed", { error });
       return null;
     }
   }
@@ -162,27 +174,27 @@ export const jobAPI = new JobAPI();
  * Format job title from URL if no title is provided
  */
 export function formatJobTitle(job: Job): string {
-  if (job.title && job.title.trim() !== '') {
+  if (job.title && job.title.trim() !== "") {
     return job.title;
   }
-  
+
   try {
     const url = new URL(job.source_url);
     const pathname = url.pathname;
-    const segments = pathname.split('/').filter(Boolean);
-    
+    const segments = pathname.split("/").filter(Boolean);
+
     if (segments.length === 0) {
       return url.hostname;
     }
-    
+
     // Get the last segment and format it nicely
     const lastSegment = segments[segments.length - 1];
     if (!lastSegment) {
       return url.hostname;
     }
     return lastSegment
-      .replace(/[-_]/g, ' ')
-      .replace(/\b\w/g, l => l.toUpperCase());
+      .replace(/[-_]/g, " ")
+      .replace(/\b\w/g, (l) => l.toUpperCase());
   } catch {
     return job.source_url;
   }
@@ -199,9 +211,9 @@ export function formatRelativeTime(dateString: string): string {
     const diffMins = Math.floor(diffMs / TIMING_CONSTANTS.HELPERS.minutes(1));
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
-    
+
     if (diffMins < 1) {
-      return 'Just now';
+      return "Just now";
     } else if (diffMins < 60) {
       return `${diffMins}m ago`;
     } else if (diffHours < 24) {
@@ -212,7 +224,7 @@ export function formatRelativeTime(dateString: string): string {
       return date.toLocaleDateString();
     }
   } catch {
-    return 'Unknown';
+    return "Unknown";
   }
 }
 
@@ -221,28 +233,28 @@ export function formatRelativeTime(dateString: string): string {
  */
 export function getProgressMessage(job: Job): string {
   switch (job.status) {
-    case 'pending':
-      return 'Waiting to start...';
-    case 'running':
+    case "pending":
+      return "Waiting to start...";
+    case "running":
       if (job.progress !== undefined) {
         if (job.progress < 25) {
-          return 'Fetching content...';
+          return "Fetching content...";
         } else if (job.progress < 50) {
-          return 'Processing images...';
+          return "Processing images...";
         } else if (job.progress < 75) {
-          return 'Converting content...';
+          return "Converting content...";
         } else {
-          return 'Finalizing conversion...';
+          return "Finalizing conversion...";
         }
       }
-      return 'Processing...';
-    case 'completed':
-      return 'Ready for download';
-    case 'failed':
-      return job.error_message || 'Conversion failed';
-    case 'cancelled':
-      return 'Conversion cancelled';
+      return "Processing...";
+    case "completed":
+      return "Ready for download";
+    case "failed":
+      return job.error_message || "Conversion failed";
+    case "cancelled":
+      return "Conversion cancelled";
     default:
-      return 'Unknown status';
+      return "Unknown status";
   }
 }

@@ -3,19 +3,19 @@
  * Following SOLID principles and Astro Islands Architecture
  */
 
-import type { ISearchManager } from '../types/filter.types';
-import { EventUtils } from '../utils/filter.utils';
-import { domUtils, waitForDOM, debounce } from '../utils/dom.utils';
-import { createContextLogger } from '../../../utils/logger';
+import type { ISearchManager } from "../types/filter.types";
+import { EventUtils } from "../utils/filter.utils";
+import { domUtils, waitForDOM, debounce } from "../utils/dom.utils";
+import { createContextLogger } from "../../../utils/logger";
 
-const logger = createContextLogger('SearchManager');
+const logger = createContextLogger("SearchManager");
 
 // =============================================================================
 // SEARCH MANAGER CLASS (Single Responsibility Principle)
 // =============================================================================
 
 class SearchManager implements ISearchManager {
-  private currentQuery: string = '';
+  private currentQuery: string = "";
   private searchInput: HTMLInputElement | null = null;
   private debouncedSearch: (query: string) => void;
 
@@ -35,20 +35,22 @@ class SearchManager implements ISearchManager {
 
   private async init(): Promise<void> {
     await waitForDOM();
-    
+
     this.loadInitialState();
     this.attachEventListeners();
     this.emitInitialState();
-    
-    logger.info('SearchManager initialized with debounced search');
+
+    logger.info("SearchManager initialized with debounced search");
   }
 
   private loadInitialState(): void {
     const panel = domUtils.querySelector('[data-component="filter-panel"]');
     if (!panel) return;
 
-    this.currentQuery = domUtils.getDataAttribute(panel, 'search-query') || '';
-    this.searchInput = domUtils.querySelector('#search-input') as HTMLInputElement;
+    this.currentQuery = domUtils.getDataAttribute(panel, "search-query") || "";
+    this.searchInput = domUtils.querySelector(
+      "#search-input",
+    ) as HTMLInputElement;
 
     // Ensure input value matches current state
     if (this.searchInput) {
@@ -66,10 +68,10 @@ class SearchManager implements ISearchManager {
 
   setSearchQuery(query: string): void {
     const normalizedQuery = query.trim();
-    
+
     if (this.currentQuery !== normalizedQuery) {
       this.currentQuery = normalizedQuery;
-      
+
       // Update input value if different
       if (this.searchInput && this.searchInput.value !== normalizedQuery) {
         this.searchInput.value = normalizedQuery;
@@ -78,7 +80,7 @@ class SearchManager implements ISearchManager {
       // Update component data attribute for state persistence
       const panel = domUtils.querySelector('[data-component="filter-panel"]');
       if (panel) {
-        domUtils.setDataAttribute(panel, 'search-query', normalizedQuery);
+        domUtils.setDataAttribute(panel, "search-query", normalizedQuery);
       }
 
       this.emitSearchUpdate();
@@ -86,7 +88,7 @@ class SearchManager implements ISearchManager {
   }
 
   clearSearch(): void {
-    this.setSearchQuery('');
+    this.setSearchQuery("");
   }
 
   // =========================================================================
@@ -97,55 +99,63 @@ class SearchManager implements ISearchManager {
     if (!this.searchInput) return;
 
     // Input event for real-time search (debounced)
-    domUtils.addEventListener(this.searchInput, 'input', (event) => {
+    domUtils.addEventListener(this.searchInput, "input", (event) => {
       const target = event.target as HTMLInputElement;
       const query = target.value;
-      
+
       // Update current query immediately for UI responsiveness
       this.currentQuery = query;
-      
+
       // Debounced search execution
       this.debouncedSearch(query);
     });
 
     // Handle Enter key for immediate search
-    domUtils.addEventListener(this.searchInput, 'keydown', (event: KeyboardEvent) => {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        const target = event.target as HTMLInputElement;
-        this.performSearch(target.value);
-      }
-    });
+    domUtils.addEventListener(
+      this.searchInput,
+      "keydown",
+      (event: KeyboardEvent) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          const target = event.target as HTMLInputElement;
+          this.performSearch(target.value);
+        }
+      },
+    );
 
     // Handle Escape key to clear search
-    domUtils.addEventListener(this.searchInput, 'keydown', (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        this.clearSearch();
-        this.searchInput?.blur();
-      }
-    });
+    domUtils.addEventListener(
+      this.searchInput,
+      "keydown",
+      (event: KeyboardEvent) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          this.clearSearch();
+          this.searchInput?.blur();
+        }
+      },
+    );
 
     // Focus/blur events for enhanced UX
-    domUtils.addEventListener(this.searchInput, 'focus', () => {
+    domUtils.addEventListener(this.searchInput, "focus", () => {
       this.addSearchFocusStyles();
     });
 
-    domUtils.addEventListener(this.searchInput, 'blur', () => {
+    domUtils.addEventListener(this.searchInput, "blur", () => {
       this.removeSearchFocusStyles();
     });
   }
 
   private performSearch(query: string): void {
     const normalizedQuery = query.trim();
-    
+
     if (this.currentQuery !== normalizedQuery) {
       this.currentQuery = normalizedQuery;
-      
+
       // Update component data attribute
       const panel = domUtils.querySelector('[data-component="filter-panel"]');
       if (panel) {
-        domUtils.setDataAttribute(panel, 'search-query', normalizedQuery);
+        domUtils.setDataAttribute(panel, "search-query", normalizedQuery);
       }
 
       this.emitSearchUpdate();
@@ -156,20 +166,22 @@ class SearchManager implements ISearchManager {
     const panel = domUtils.querySelector('[data-component="filter-panel"]');
     if (!panel) return;
 
-    const currentFilter = domUtils.getDataAttribute(panel, 'current-filter') || 'all';
-    const currentSort = domUtils.getDataAttribute(panel, 'current-sort') || 'newest';
+    const currentFilter =
+      domUtils.getDataAttribute(panel, "current-filter") || "all";
+    const currentSort =
+      domUtils.getDataAttribute(panel, "current-sort") || "newest";
 
     const event = EventUtils.createFilterUpdateEvent(
       currentFilter,
       currentSort,
-      this.currentQuery
+      this.currentQuery,
     );
 
     EventUtils.dispatchEvent(event);
-    
-    logger.debug('Search updated', {
+
+    logger.debug("Search updated", {
       query: this.currentQuery,
-      length: this.currentQuery.length
+      length: this.currentQuery.length,
     });
   }
 
@@ -186,7 +198,7 @@ class SearchManager implements ISearchManager {
     if (!this.searchInput) return;
 
     domUtils.updateClasses(this.searchInput, {
-      add: ['ring-2', 'ring-blue-500/50', 'bg-white/20']
+      add: ["ring-2", "ring-blue-500/50", "bg-white/20"],
     });
   }
 
@@ -194,7 +206,7 @@ class SearchManager implements ISearchManager {
     if (!this.searchInput) return;
 
     domUtils.updateClasses(this.searchInput, {
-      remove: ['ring-2', 'ring-blue-500/50', 'bg-white/20']
+      remove: ["ring-2", "ring-blue-500/50", "bg-white/20"],
     });
   }
 }
@@ -204,22 +216,24 @@ class SearchManager implements ISearchManager {
 // =============================================================================
 
 class SearchUtils {
-  
   /**
    * Highlight search terms in text (for future enhancement)
    */
   static highlightSearchTerms(text: string, query: string): string {
     if (!query.trim()) return text;
 
-    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-    return text.replace(regex, '<mark>$1</mark>');
+    const regex = new RegExp(
+      `(${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`,
+      "gi",
+    );
+    return text.replace(regex, "<mark>$1</mark>");
   }
 
   /**
    * Validate search query
    */
   static isValidSearchQuery(query: string): boolean {
-    return typeof query === 'string' && query.trim().length > 0;
+    return typeof query === "string" && query.trim().length > 0;
   }
 
   /**
@@ -238,13 +252,21 @@ class SearchUtils {
     const normalizedQuery = this.normalizeSearchQuery(query);
     const suggestions = new Set<string>();
 
-    data.forEach(item => {
-      if (item && typeof item === 'object' && item !== null) {
+    data.forEach((item) => {
+      if (item && typeof item === "object" && item !== null) {
         const typedItem = item as { title?: string; url?: string };
-        if (typedItem.title && typeof typedItem.title === 'string' && typedItem.title.toLowerCase().includes(normalizedQuery)) {
+        if (
+          typedItem.title &&
+          typeof typedItem.title === "string" &&
+          typedItem.title.toLowerCase().includes(normalizedQuery)
+        ) {
           suggestions.add(typedItem.title);
         }
-        if (typedItem.url && typeof typedItem.url === 'string' && typedItem.url.toLowerCase().includes(normalizedQuery)) {
+        if (
+          typedItem.url &&
+          typeof typedItem.url === "string" &&
+          typedItem.url.toLowerCase().includes(normalizedQuery)
+        ) {
           suggestions.add(typedItem.url);
         }
       }
@@ -262,13 +284,17 @@ class SearchUtils {
 const searchManager = new SearchManager();
 
 // Expose manager globally for debugging and external access
-if (typeof window !== 'undefined') {
-  (window as Window & {
-    searchManager?: SearchManager;
-    SearchUtils?: typeof SearchUtils;
-  }).searchManager = searchManager;
-  (window as Window & {
-    searchManager?: SearchManager;
-    SearchUtils?: typeof SearchUtils;
-  }).SearchUtils = SearchUtils;
+if (typeof window !== "undefined") {
+  (
+    window as Window & {
+      searchManager?: SearchManager;
+      SearchUtils?: typeof SearchUtils;
+    }
+  ).searchManager = searchManager;
+  (
+    window as Window & {
+      searchManager?: SearchManager;
+      SearchUtils?: typeof SearchUtils;
+    }
+  ).SearchUtils = SearchUtils;
 }

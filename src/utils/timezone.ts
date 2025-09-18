@@ -6,9 +6,9 @@
  * Dependency Inversion: Depends on browser APIs, not concrete implementations
  */
 
-import { createContextLogger } from './logger';
+import { createContextLogger } from "./logger";
 
-const logger = createContextLogger('TimezoneUtils');
+const logger = createContextLogger("TimezoneUtils");
 
 // =============================================================================
 // TYPES & INTERFACES
@@ -17,7 +17,7 @@ const logger = createContextLogger('TimezoneUtils');
 export interface TimezoneOptions {
   locale?: string;
   timeZone?: string;
-  format?: 'short' | 'medium' | 'long' | 'full';
+  format?: "short" | "medium" | "long" | "full";
   includeSeconds?: boolean;
   use24Hour?: boolean;
 }
@@ -31,9 +31,9 @@ export interface TimezoneChangeListener {
 // =============================================================================
 
 const DEFAULT_TIMEZONE_OPTIONS: TimezoneOptions = {
-  locale: 'en-US',
+  locale: "en-US",
   timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  format: 'medium',
+  format: "medium",
   includeSeconds: false,
   use24Hour: false,
 };
@@ -50,21 +50,21 @@ const DEFAULT_TIMEZONE_OPTIONS: TimezoneOptions = {
  */
 export function formatTimestamp(
   date: Date | string | number,
-  options: Partial<TimezoneOptions> = {}
+  options: Partial<TimezoneOptions> = {},
 ): string {
   try {
     const dateObj = new Date(date);
     if (isNaN(dateObj.getTime())) {
-      logger.warn('Invalid date provided to formatTimestamp', { date });
-      return 'Invalid Date';
+      logger.warn("Invalid date provided to formatTimestamp", { date });
+      return "Invalid Date";
     }
 
     const mergedOptions = { ...DEFAULT_TIMEZONE_OPTIONS, ...options };
-    
+
     return formatDateWithOptions(dateObj, mergedOptions);
   } catch (error) {
-    logger.error('Error formatting timestamp', { error });
-    return 'Format Error';
+    logger.error("Error formatting timestamp", { error });
+    return "Format Error";
   }
 }
 
@@ -76,28 +76,32 @@ export function formatTimestamp(
  */
 export function formatDateTime(
   date: Date | string | number,
-  options: Partial<TimezoneOptions> = {}
+  options: Partial<TimezoneOptions> = {},
 ): { date: string; time: string; full: string } {
   try {
     const dateObj = new Date(date);
     if (isNaN(dateObj.getTime())) {
-      return { date: 'Invalid Date', time: 'Invalid Date', full: 'Invalid Date' };
+      return {
+        date: "Invalid Date",
+        time: "Invalid Date",
+        full: "Invalid Date",
+      };
     }
 
     const mergedOptions = { ...DEFAULT_TIMEZONE_OPTIONS, ...options };
-    
+
     const dateFormatter = new Intl.DateTimeFormat(mergedOptions.locale, {
       timeZone: mergedOptions.timeZone,
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
 
     const timeFormatter = new Intl.DateTimeFormat(mergedOptions.locale, {
       timeZone: mergedOptions.timeZone,
-      hour: 'numeric',
-      minute: '2-digit',
-      second: mergedOptions.includeSeconds ? '2-digit' : undefined,
+      hour: "numeric",
+      minute: "2-digit",
+      second: mergedOptions.includeSeconds ? "2-digit" : undefined,
       hour12: !mergedOptions.use24Hour,
     });
 
@@ -107,8 +111,8 @@ export function formatDateTime(
 
     return { date: date_part, time: time_part, full };
   } catch (error) {
-    logger.error('Error formatting date/time', { error });
-    const errorMsg = 'Format Error';
+    logger.error("Error formatting date/time", { error });
+    const errorMsg = "Format Error";
     return { date: errorMsg, time: errorMsg, full: errorMsg };
   }
 }
@@ -121,12 +125,12 @@ export function formatDateTime(
  */
 export function getRelativeTime(
   date: Date | string | number,
-  options: Partial<TimezoneOptions> = {}
+  options: Partial<TimezoneOptions> = {},
 ): string {
   try {
     const dateObj = new Date(date);
     if (isNaN(dateObj.getTime())) {
-      return 'Invalid Date';
+      return "Invalid Date";
     }
 
     const now = new Date();
@@ -134,9 +138,12 @@ export function getRelativeTime(
     const absDiffMs = Math.abs(diffMs);
 
     // Use Intl.RelativeTimeFormat for proper localization
-    const rtf = new Intl.RelativeTimeFormat(options.locale || DEFAULT_TIMEZONE_OPTIONS.locale, {
-      numeric: 'auto'
-    });
+    const rtf = new Intl.RelativeTimeFormat(
+      options.locale || DEFAULT_TIMEZONE_OPTIONS.locale,
+      {
+        numeric: "auto",
+      },
+    );
 
     // Determine the appropriate unit
     const seconds = Math.floor(absDiffMs / 1000);
@@ -145,17 +152,17 @@ export function getRelativeTime(
     const days = Math.floor(hours / 24);
 
     if (days > 0) {
-      return rtf.format(diffMs > 0 ? days : -days, 'day');
+      return rtf.format(diffMs > 0 ? days : -days, "day");
     } else if (hours > 0) {
-      return rtf.format(diffMs > 0 ? hours : -hours, 'hour');
+      return rtf.format(diffMs > 0 ? hours : -hours, "hour");
     } else if (minutes > 0) {
-      return rtf.format(diffMs > 0 ? minutes : -minutes, 'minute');
+      return rtf.format(diffMs > 0 ? minutes : -minutes, "minute");
     } else {
-      return rtf.format(diffMs > 0 ? seconds : -seconds, 'second');
+      return rtf.format(diffMs > 0 ? seconds : -seconds, "second");
     }
   } catch (error) {
-    logger.error('Error getting relative time', { error });
-    return 'Time Error';
+    logger.error("Error getting relative time", { error });
+    return "Time Error";
   }
 }
 
@@ -163,8 +170,8 @@ export function getRelativeTime(
 // TIMEZONE PREFERENCE MANAGEMENT (Single Responsibility)
 // =============================================================================
 
-const TIMEZONE_STORAGE_KEY = 'user_timezone_preferences';
-const TIMEZONE_CHANGE_EVENT = 'timezonePreferencesChanged';
+const TIMEZONE_STORAGE_KEY = "user_timezone_preferences";
+const TIMEZONE_CHANGE_EVENT = "timezonePreferencesChanged";
 
 /**
  * Get user's timezone preferences from localStorage
@@ -178,9 +185,9 @@ export function getTimezonePreferences(): TimezoneOptions {
       return { ...DEFAULT_TIMEZONE_OPTIONS, ...parsed };
     }
   } catch (error) {
-    logger.warn('Error loading timezone preferences', { error });
+    logger.warn("Error loading timezone preferences", { error });
   }
-  
+
   return { ...DEFAULT_TIMEZONE_OPTIONS };
 }
 
@@ -188,19 +195,23 @@ export function getTimezonePreferences(): TimezoneOptions {
  * Save user's timezone preferences to localStorage
  * @param options - Timezone options to save
  */
-export function setTimezonePreferences(options: Partial<TimezoneOptions>): void {
+export function setTimezonePreferences(
+  options: Partial<TimezoneOptions>,
+): void {
   try {
     const current = getTimezonePreferences();
     const updated = { ...current, ...options };
-    
+
     localStorage.setItem(TIMEZONE_STORAGE_KEY, JSON.stringify(updated));
-    
+
     // Emit change event for reactive components
-    window.dispatchEvent(new CustomEvent(TIMEZONE_CHANGE_EVENT, {
-      detail: updated
-    }));
+    window.dispatchEvent(
+      new CustomEvent(TIMEZONE_CHANGE_EVENT, {
+        detail: updated,
+      }),
+    );
   } catch (error) {
-    logger.error('Error saving timezone preferences', { error });
+    logger.error("Error saving timezone preferences", { error });
   }
 }
 
@@ -211,9 +222,9 @@ export function setTimezonePreferences(options: Partial<TimezoneOptions>): void 
  */
 export function onTimezoneChange(listener: TimezoneChangeListener): () => void {
   const handleChange = () => listener();
-  
+
   window.addEventListener(TIMEZONE_CHANGE_EVENT, handleChange);
-  
+
   // Return cleanup function
   return () => {
     window.removeEventListener(TIMEZONE_CHANGE_EVENT, handleChange);
@@ -237,45 +248,45 @@ function formatDateWithOptions(date: Date, options: TimezoneOptions): string {
 
   // Configure format based on format option
   switch (options.format) {
-    case 'short':
-      formatOptions.year = '2-digit';
-      formatOptions.month = 'numeric';
-      formatOptions.day = 'numeric';
-      formatOptions.hour = 'numeric';
-      formatOptions.minute = '2-digit';
+    case "short":
+      formatOptions.year = "2-digit";
+      formatOptions.month = "numeric";
+      formatOptions.day = "numeric";
+      formatOptions.hour = "numeric";
+      formatOptions.minute = "2-digit";
       break;
-    
-    case 'medium':
-      formatOptions.year = 'numeric';
-      formatOptions.month = 'short';
-      formatOptions.day = 'numeric';
-      formatOptions.hour = 'numeric';
-      formatOptions.minute = '2-digit';
+
+    case "medium":
+      formatOptions.year = "numeric";
+      formatOptions.month = "short";
+      formatOptions.day = "numeric";
+      formatOptions.hour = "numeric";
+      formatOptions.minute = "2-digit";
       break;
-    
-    case 'long':
-      formatOptions.year = 'numeric';
-      formatOptions.month = 'long';
-      formatOptions.day = 'numeric';
-      formatOptions.hour = 'numeric';
-      formatOptions.minute = '2-digit';
-      formatOptions.timeZoneName = 'short';
+
+    case "long":
+      formatOptions.year = "numeric";
+      formatOptions.month = "long";
+      formatOptions.day = "numeric";
+      formatOptions.hour = "numeric";
+      formatOptions.minute = "2-digit";
+      formatOptions.timeZoneName = "short";
       break;
-    
-    case 'full':
-      formatOptions.weekday = 'long';
-      formatOptions.year = 'numeric';
-      formatOptions.month = 'long';
-      formatOptions.day = 'numeric';
-      formatOptions.hour = 'numeric';
-      formatOptions.minute = '2-digit';
-      formatOptions.timeZoneName = 'long';
+
+    case "full":
+      formatOptions.weekday = "long";
+      formatOptions.year = "numeric";
+      formatOptions.month = "long";
+      formatOptions.day = "numeric";
+      formatOptions.hour = "numeric";
+      formatOptions.minute = "2-digit";
+      formatOptions.timeZoneName = "long";
       break;
   }
 
   // Add seconds if requested
   if (options.includeSeconds) {
-    formatOptions.second = '2-digit';
+    formatOptions.second = "2-digit";
   }
 
   // Set 12/24 hour format
@@ -292,8 +303,8 @@ export function getDetectedTimezone(): string {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone;
   } catch (error) {
-    logger.warn('Error detecting timezone', { error });
-    return 'UTC';
+    logger.warn("Error detecting timezone", { error });
+    return "UTC";
   }
 }
 
@@ -304,17 +315,17 @@ export function getDetectedTimezone(): string {
 export function getAvailableTimezones(): string[] {
   // Common timezones - can be extended as needed
   return [
-    'UTC',
-    'America/New_York',
-    'America/Chicago',
-    'America/Denver',
-    'America/Los_Angeles',
-    'Europe/London',
-    'Europe/Paris',
-    'Europe/Berlin',
-    'Asia/Tokyo',
-    'Asia/Shanghai',
-    'Australia/Sydney',
+    "UTC",
+    "America/New_York",
+    "America/Chicago",
+    "America/Denver",
+    "America/Los_Angeles",
+    "Europe/London",
+    "Europe/Paris",
+    "Europe/Berlin",
+    "Asia/Tokyo",
+    "Asia/Shanghai",
+    "Australia/Sydney",
     // Add more as needed
   ];
 }
@@ -345,26 +356,29 @@ export function isValidTimezone(timezone: string): boolean {
 export function sanitizeTimezoneOptions(options: unknown): TimezoneOptions {
   const sanitized: TimezoneOptions = { ...DEFAULT_TIMEZONE_OPTIONS };
 
-  if (options && typeof options === 'object') {
+  if (options && typeof options === "object") {
     const opts = options as Record<string, unknown>;
 
-    if (typeof opts.locale === 'string') {
+    if (typeof opts.locale === "string") {
       sanitized.locale = opts.locale;
     }
 
-    if (typeof opts.timeZone === 'string' && isValidTimezone(opts.timeZone)) {
+    if (typeof opts.timeZone === "string" && isValidTimezone(opts.timeZone)) {
       sanitized.timeZone = opts.timeZone;
     }
 
-    if (typeof opts.format === 'string' && ['short', 'medium', 'long', 'full'].includes(opts.format)) {
-      sanitized.format = opts.format as 'short' | 'medium' | 'long' | 'full';
+    if (
+      typeof opts.format === "string" &&
+      ["short", "medium", "long", "full"].includes(opts.format)
+    ) {
+      sanitized.format = opts.format as "short" | "medium" | "long" | "full";
     }
 
-    if (typeof opts.includeSeconds === 'boolean') {
+    if (typeof opts.includeSeconds === "boolean") {
       sanitized.includeSeconds = opts.includeSeconds;
     }
 
-    if (typeof opts.use24Hour === 'boolean') {
+    if (typeof opts.use24Hour === "boolean") {
       sanitized.use24Hour = opts.use24Hour;
     }
   }

@@ -4,10 +4,10 @@
  * Open for extension (new event types), closed for modification
  */
 
-import { createContextLogger } from '../utils/logger';
-import type { ServiceUpdate } from './HealthService';
+import { createContextLogger } from "../utils/logger";
+import type { ServiceUpdate } from "./HealthService";
 
-const logger = createContextLogger('SSEStreamService');
+const logger = createContextLogger("SSEStreamService");
 
 export interface SSEMessage {
   type: string;
@@ -16,22 +16,22 @@ export interface SSEMessage {
 }
 
 export interface SSEConnectionMessage extends SSEMessage {
-  type: 'connection';
+  type: "connection";
   data: {
     message: string;
   };
 }
 
 export interface SSEServiceUpdateMessage extends SSEMessage {
-  type: 'service-update';
+  type: "service-update";
   data: ServiceUpdate;
 }
 
 export interface SSEErrorMessage extends SSEMessage {
-  type: 'error';
+  type: "error";
   data: {
     service: string;
-    status: 'unhealthy';
+    status: "unhealthy";
     error: string;
   };
 }
@@ -41,22 +41,34 @@ export interface SSEErrorMessage extends SSEMessage {
  * Follows Open/Closed Principle - extend for new message types
  */
 export abstract class SSEMessageHandler {
-  abstract handle(controller: ReadableStreamDefaultController, message: SSEMessage): void;
+  abstract handle(
+    controller: ReadableStreamDefaultController,
+    message: SSEMessage,
+  ): void;
 }
 
 /**
  * Handler for connection messages
  */
 export class ConnectionMessageHandler extends SSEMessageHandler {
-  handle(controller: ReadableStreamDefaultController, message: SSEConnectionMessage): void {
-    this.safeEnqueue(controller, `data: ${JSON.stringify({
-      type: message.type,
-      message: message.data.message,
-      timestamp: message.timestamp
-    })}\n\n`);
+  handle(
+    controller: ReadableStreamDefaultController,
+    message: SSEConnectionMessage,
+  ): void {
+    this.safeEnqueue(
+      controller,
+      `data: ${JSON.stringify({
+        type: message.type,
+        message: message.data.message,
+        timestamp: message.timestamp,
+      })}\n\n`,
+    );
   }
 
-  private safeEnqueue(controller: ReadableStreamDefaultController, data: string): boolean {
+  private safeEnqueue(
+    controller: ReadableStreamDefaultController,
+    data: string,
+  ): boolean {
     try {
       if (controller.desiredSize === null) {
         return false; // Controller closed
@@ -73,12 +85,18 @@ export class ConnectionMessageHandler extends SSEMessageHandler {
  * Handler for service update messages
  */
 export class ServiceUpdateMessageHandler extends SSEMessageHandler {
-  handle(controller: ReadableStreamDefaultController, message: SSEServiceUpdateMessage): void {
+  handle(
+    controller: ReadableStreamDefaultController,
+    message: SSEServiceUpdateMessage,
+  ): void {
     this.safeEnqueue(controller, `event: service-update\n`);
     this.safeEnqueue(controller, `data: ${JSON.stringify(message.data)}\n\n`);
   }
 
-  private safeEnqueue(controller: ReadableStreamDefaultController, data: string): boolean {
+  private safeEnqueue(
+    controller: ReadableStreamDefaultController,
+    data: string,
+  ): boolean {
     try {
       if (controller.desiredSize === null) {
         return false; // Controller closed
@@ -95,12 +113,18 @@ export class ServiceUpdateMessageHandler extends SSEMessageHandler {
  * Handler for error messages
  */
 export class ErrorMessageHandler extends SSEMessageHandler {
-  handle(controller: ReadableStreamDefaultController, message: SSEErrorMessage): void {
+  handle(
+    controller: ReadableStreamDefaultController,
+    message: SSEErrorMessage,
+  ): void {
     this.safeEnqueue(controller, `event: error\n`);
     this.safeEnqueue(controller, `data: ${JSON.stringify(message.data)}\n\n`);
   }
 
-  private safeEnqueue(controller: ReadableStreamDefaultController, data: string): boolean {
+  private safeEnqueue(
+    controller: ReadableStreamDefaultController,
+    data: string,
+  ): boolean {
     try {
       if (controller.desiredSize === null) {
         return false; // Controller closed
@@ -123,9 +147,12 @@ export class SSEStreamService {
   constructor() {
     // Dependency Inversion: Register handlers (can be injected)
     this.messageHandlers = new Map<string, SSEMessageHandler>();
-    this.messageHandlers.set('connection', new ConnectionMessageHandler());
-    this.messageHandlers.set('service-update', new ServiceUpdateMessageHandler());
-    this.messageHandlers.set('error', new ErrorMessageHandler());
+    this.messageHandlers.set("connection", new ConnectionMessageHandler());
+    this.messageHandlers.set(
+      "service-update",
+      new ServiceUpdateMessageHandler(),
+    );
+    this.messageHandlers.set("error", new ErrorMessageHandler());
   }
 
   /**
@@ -140,11 +167,13 @@ export class SSEStreamService {
    */
   sendMessage(
     controller: ReadableStreamDefaultController,
-    message: SSEMessage
+    message: SSEMessage,
   ): boolean {
     const handler = this.messageHandlers.get(message.type);
     if (!handler) {
-      logger.warn('No handler found for message type', { messageType: message.type });
+      logger.warn("No handler found for message type", {
+        messageType: message.type,
+      });
       return false;
     }
 
@@ -152,7 +181,7 @@ export class SSEStreamService {
       handler.handle(controller, message);
       return true;
     } catch (error) {
-      logger.error('Error handling SSE message', { error });
+      logger.error("Error handling SSE message", { error });
       return false;
     }
   }
@@ -162,22 +191,24 @@ export class SSEStreamService {
    */
   createConnectionMessage(): SSEConnectionMessage {
     return {
-      type: 'connection',
+      type: "connection",
       data: {
-        message: 'Health monitoring connected'
+        message: "Health monitoring connected",
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
   /**
    * Create service update message
    */
-  createServiceUpdateMessage(serviceData: ServiceUpdate): SSEServiceUpdateMessage {
+  createServiceUpdateMessage(
+    serviceData: ServiceUpdate,
+  ): SSEServiceUpdateMessage {
     return {
-      type: 'service-update',
+      type: "service-update",
       data: serviceData,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -186,13 +217,13 @@ export class SSEStreamService {
    */
   createErrorMessage(service: string, error: string): SSEErrorMessage {
     return {
-      type: 'error',
+      type: "error",
       data: {
         service,
-        status: 'unhealthy',
-        error
+        status: "unhealthy",
+        error,
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -201,7 +232,7 @@ export class SSEStreamService {
    */
   isControllerOpen(
     controller: ReadableStreamDefaultController,
-    request?: Request
+    request?: Request,
   ): boolean {
     try {
       return controller.desiredSize !== null && !request?.signal?.aborted;
@@ -215,11 +246,11 @@ export class SSEStreamService {
    */
   getSSEHeaders(): Headers {
     return new Headers({
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Cache-Control',
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Cache-Control",
     });
   }
 }

@@ -3,7 +3,7 @@
  * Single Responsibility: Type definitions for health monitoring system
  */
 
-export type ServiceStatus = 'up' | 'degraded' | 'down' | 'error';
+export type ServiceStatus = "up" | "degraded" | "down" | "error" | "unknown";
 
 export interface IServiceResult {
   status: ServiceStatus;
@@ -34,7 +34,11 @@ export interface ILatencyTest {
 }
 
 export interface IHealthDataConsumer {
-  getLatestHealthData(): {services: IHealthServiceStatuses, overallStatus: ServiceStatus, timestamp: number} | null;
+  getLatestHealthData(): {
+    services: IHealthServiceStatuses;
+    overallStatus: ServiceStatus;
+    timestamp: number;
+  } | null;
   requestRefresh(): void;
 }
 

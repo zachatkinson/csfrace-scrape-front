@@ -6,21 +6,33 @@
 // Frontend only manages browser state and makes simple API calls
 // =============================================================================
 
-import type { IJobsResponse, IJobQueryParams, IBackendJob } from '../../types/job.ts';
-import { apiFetch } from '../api-utils.ts';
-import { getApiBaseUrl } from '../../constants/api.ts';
+import type {
+  IJobsResponse,
+  IJobQueryParams,
+  IBackendJob,
+} from "../../types/job.ts";
+import { apiFetch } from "../api-utils.ts";
+import { getApiBaseUrl } from "../../constants/api.ts";
 
 /**
  * Simple API call wrapper using shared utilities - NOT a service class
  * SOLID: DRY - Uses centralized fetch patterns from api-utils
  */
-const apiCall = async <T = unknown>(endpoint: string, options: RequestInit = {}): Promise<T> => {
+const apiCall = async <T = unknown>(
+  endpoint: string,
+  options: RequestInit = {},
+): Promise<T> => {
   const apiBaseUrl = getApiBaseUrl();
   return apiFetch(`${apiBaseUrl}${endpoint}`, {
-    method: (options.method || 'GET') as 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
+    method: (options.method || "GET") as
+      | "GET"
+      | "POST"
+      | "PUT"
+      | "DELETE"
+      | "PATCH",
     headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers as Record<string, string> || {}),
+      "Content-Type": "application/json",
+      ...((options.headers as Record<string, string>) || {}),
     },
     body: options.body as string | FormData,
     signal: options.signal || undefined,
@@ -37,17 +49,21 @@ const apiCall = async <T = unknown>(endpoint: string, options: RequestInit = {})
 /**
  * Get jobs list from backend API
  */
-export const getJobs = async (params: IJobQueryParams = {}): Promise<IJobsResponse> => {
+export const getJobs = async (
+  params: IJobQueryParams = {},
+): Promise<IJobsResponse> => {
   const searchParams = new URLSearchParams();
 
-  if (params.page) searchParams.set('page', params.page.toString());
-  if (params.page_size) searchParams.set('page_size', params.page_size.toString());
-  if (params.status_filter) searchParams.set('status_filter', params.status_filter);
-  if (params.search) searchParams.set('search', params.search);
-  if (params.sort_by) searchParams.set('sort_by', params.sort_by);
-  if (params.sort_order) searchParams.set('sort_order', params.sort_order);
+  if (params.page) searchParams.set("page", params.page.toString());
+  if (params.page_size)
+    searchParams.set("page_size", params.page_size.toString());
+  if (params.status_filter)
+    searchParams.set("status_filter", params.status_filter);
+  if (params.search) searchParams.set("search", params.search);
+  if (params.sort_by) searchParams.set("sort_by", params.sort_by);
+  if (params.sort_order) searchParams.set("sort_order", params.sort_order);
 
-  const endpoint = `/jobs${searchParams.toString() ? `?${searchParams}` : ''}`;
+  const endpoint = `/jobs${searchParams.toString() ? `?${searchParams}` : ""}`;
   return apiCall<IJobsResponse>(endpoint);
 };
 
@@ -63,7 +79,7 @@ export const getJob = async (jobId: number): Promise<IBackendJob> => {
  */
 export const deleteJob = async (jobId: number): Promise<void> => {
   await apiCall(`/jobs/${jobId}`, {
-    method: 'DELETE',
+    method: "DELETE",
   });
 };
 
@@ -72,7 +88,7 @@ export const deleteJob = async (jobId: number): Promise<void> => {
  */
 export const retryJob = async (jobId: number): Promise<void> => {
   await apiCall(`/jobs/${jobId}/retry`, {
-    method: 'POST',
+    method: "POST",
   });
 };
 
@@ -81,7 +97,7 @@ export const retryJob = async (jobId: number): Promise<void> => {
  */
 export const cancelJob = async (jobId: number): Promise<void> => {
   await apiCall(`/jobs/${jobId}/cancel`, {
-    method: 'POST',
+    method: "POST",
   });
 };
 
@@ -93,7 +109,9 @@ export const downloadJobContent = async (jobId: number): Promise<string> => {
   const response = await fetch(`${apiBaseUrl}/jobs/${jobId}/download`);
 
   if (!response.ok) {
-    throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+    throw new Error(
+      `Download failed: ${response.status} ${response.statusText}`,
+    );
   }
 
   return response.text();
@@ -102,6 +120,9 @@ export const downloadJobContent = async (jobId: number): Promise<string> => {
 /**
  * Health check for backend connection
  */
-export const checkBackendHealth = async (): Promise<{ status: string; timestamp: string }> => {
-  return apiCall<{ status: string; timestamp: string }>('/health');
+export const checkBackendHealth = async (): Promise<{
+  status: string;
+  timestamp: string;
+}> => {
+  return apiCall<{ status: string; timestamp: string }>("/health");
 };

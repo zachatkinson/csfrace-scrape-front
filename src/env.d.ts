@@ -33,7 +33,7 @@ declare global {
 
 interface HealthStatus {
   service: string;
-  status: 'up' | 'down' | 'error';
+  status: "up" | "down" | "error";
   responseTime?: number;
   lastChecked: Date;
   error?: string;
@@ -42,7 +42,7 @@ interface HealthStatus {
 interface AppSettings {
   apiUrl: string;
   pollingInterval: number;
-  theme: 'light' | 'dark' | 'system';
+  theme: "light" | "dark" | "system";
   timezone: string;
   dateFormat: string;
   soundEnabled: boolean;
@@ -71,8 +71,16 @@ interface RequestOptions {
 interface ApiClient {
   setBaseURL(url: string): void;
   get<T = unknown>(endpoint: string, options?: RequestOptions): Promise<T>;
-  post<T = unknown>(endpoint: string, data: unknown, options?: RequestOptions): Promise<T>;
-  put<T = unknown>(endpoint: string, data: unknown, options?: RequestOptions): Promise<T>;
+  post<T = unknown>(
+    endpoint: string,
+    data: unknown,
+    options?: RequestOptions,
+  ): Promise<T>;
+  put<T = unknown>(
+    endpoint: string,
+    data: unknown,
+    options?: RequestOptions,
+  ): Promise<T>;
   delete<T = unknown>(endpoint: string, options?: RequestOptions): Promise<T>;
 }
 

@@ -4,13 +4,13 @@
  * Following SOLID principles and proper event-driven architecture
  */
 
-import type { IJobData } from './types/filter.types';
+import type { IJobData } from "./types/filter.types";
 import type {
   IApiJobData,
   IApiJobsResponse,
-  IExtendedWindow
-} from '../../types/global.types';
-import { apiLogger, uiLogger } from '../../utils/logger';
+  IExtendedWindow,
+} from "../../types/global.types";
+import { apiLogger, uiLogger } from "../../utils/logger";
 
 // =============================================================================
 // EXAMPLE: HOW EXTERNAL COMPONENTS INTEGRATE WITH FILTERPANEL
@@ -32,21 +32,21 @@ class JobsListIntegration {
    */
   private attachFilterPanelListeners(): void {
     // Listen for filter/sort/search changes
-    window.addEventListener('filterPanel:stateUpdate', (event) => {
+    window.addEventListener("filterPanel:stateUpdate", (event) => {
       const customEvent = event as CustomEvent;
       const { filter, sort, search } = customEvent.detail;
-      
+
       this.applyFilters(filter, sort, search);
     });
 
     // Listen for select all requests
-    window.addEventListener('filterPanel:requestSelectAll', () => {
-      const allJobIds = this.filteredJobs.map(job => job.id);
+    window.addEventListener("filterPanel:requestSelectAll", () => {
+      const allJobIds = this.filteredJobs.map((job) => job.id);
       this.updateFilterPanelSelection(allJobIds);
     });
 
     // Listen for delete requests
-    window.addEventListener('filterPanel:requestDelete', (event) => {
+    window.addEventListener("filterPanel:requestDelete", (event) => {
       const customEvent = event as CustomEvent;
       const { selectedJobIds } = customEvent.detail;
       this.deleteJobs(selectedJobIds);
@@ -58,7 +58,7 @@ class JobsListIntegration {
    */
   updateJobsData(jobs: IJobData[]): void {
     this.jobs = jobs;
-    
+
     // Notify FilterPanel about new data
     if (window.filterPanelCoordinator) {
       window.filterPanelCoordinator.updateJobsData(jobs);
@@ -72,38 +72,50 @@ class JobsListIntegration {
     let filtered = [...this.jobs];
 
     // Apply status filter
-    if (filter !== 'all') {
-      filtered = filtered.filter(job => job.status === filter);
+    if (filter !== "all") {
+      filtered = filtered.filter((job) => job.status === filter);
     }
 
     // Apply search filter
     if (search.trim()) {
       const query = search.toLowerCase();
-      filtered = filtered.filter(job =>
-        job.title.toLowerCase().includes(query) ||
-        job.url.toLowerCase().includes(query) ||
-        job.id.toLowerCase().includes(query)
+      filtered = filtered.filter(
+        (job) =>
+          job.title.toLowerCase().includes(query) ||
+          job.url.toLowerCase().includes(query) ||
+          job.id.toLowerCase().includes(query),
       );
     }
 
     // Apply sorting
     switch (sort) {
-      case 'newest':
-        filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      case "newest":
+        filtered.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        );
         break;
-      case 'oldest':
-        filtered.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      case "oldest":
+        filtered.sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+        );
         break;
-      case 'status':
+      case "status":
         filtered.sort((a, b) => a.status.localeCompare(b.status));
         break;
-      case 'progress': {
+      case "progress": {
         // Custom sorting logic
         const statusPriority: Record<string, number> = {
-          'failed': 0, 'processing': 1, 'queued': 2, 'completed': 3
+          failed: 0,
+          processing: 1,
+          queued: 2,
+          completed: 3,
         };
-        filtered.sort((a, b) =>
-          (statusPriority[a.status] || 999) - (statusPriority[b.status] || 999)
+        filtered.sort(
+          (a, b) =>
+            (statusPriority[a.status] || 999) -
+            (statusPriority[b.status] || 999),
         );
         break;
       }
@@ -128,21 +140,20 @@ class JobsListIntegration {
   private async deleteJobs(jobIds: readonly string[]): Promise<void> {
     try {
       // Simulate API call to delete jobs
-      uiLogger.info('Deleting jobs', { jobIds });
-      
+      uiLogger.info("Deleting jobs", { jobIds });
+
       // Remove from local state
-      this.jobs = this.jobs.filter(job => !jobIds.includes(job.id));
-      
+      this.jobs = this.jobs.filter((job) => !jobIds.includes(job.id));
+
       // Update FilterPanel with new data
       this.updateJobsData(this.jobs);
-      
+
       // Clear selection
       this.updateFilterPanelSelection([]);
-      
+
       uiLogger.info(`Successfully deleted ${jobIds.length} jobs`);
-      
     } catch (error) {
-      uiLogger.error('Failed to delete jobs', error as Error);
+      uiLogger.error("Failed to delete jobs", error as Error);
       // Could emit error event for FilterPanel to display
     }
   }
@@ -164,7 +175,7 @@ class JobsListIntegration {
  * Example API service that feeds data to FilterPanel
  */
 class JobsApiService {
-  private apiUrl: string = '/jobs';
+  private apiUrl: string = "/jobs";
 
   /**
    * Fetch jobs from API and update FilterPanel
@@ -175,14 +186,20 @@ class JobsApiService {
       const data: IApiJobsResponse = await response.json();
 
       // Validate and normalize job data
-      const jobs: IJobData[] = data.data?.jobs?.map((job: IApiJobData) => ({
-        id: job.id,
-        status: job.status as 'pending' | 'processing' | 'completed' | 'failed' | 'queued',
-        title: job.title,
-        url: job.source_url,
-        createdAt: new Date(job.created_at),
-        updatedAt: new Date(job.updated_at)
-      })) || [];
+      const jobs: IJobData[] =
+        data.data?.jobs?.map((job: IApiJobData) => ({
+          id: job.id,
+          status: job.status as
+            | "pending"
+            | "processing"
+            | "completed"
+            | "failed"
+            | "queued",
+          title: job.title,
+          url: job.source_url,
+          createdAt: new Date(job.created_at),
+          updatedAt: new Date(job.updated_at),
+        })) || [];
 
       // Update FilterPanel via coordinator
       if (window.filterPanelCoordinator) {
@@ -190,10 +207,9 @@ class JobsApiService {
       }
 
       apiLogger.info(`Fetched ${jobs.length} jobs from API`);
-
     } catch (error) {
-      apiLogger.error('Failed to fetch jobs', error as Error);
-      
+      apiLogger.error("Failed to fetch jobs", error as Error);
+
       // Update FilterPanel with empty data
       if (window.filterPanelCoordinator) {
         window.filterPanelCoordinator.updateJobsData([]);
@@ -206,7 +222,7 @@ class JobsApiService {
    */
   startPolling(intervalMs: number = 30000): void {
     this.fetchAndUpdateJobs(); // Initial fetch
-    
+
     setInterval(() => {
       this.fetchAndUpdateJobs();
     }, intervalMs);
@@ -234,15 +250,15 @@ class DashboardPageIntegration {
   private async init(): Promise<void> {
     // Wait for FilterPanel to be ready
     await this.waitForFilterPanel();
-    
+
     // Start fetching data
     this.apiService.startPolling();
-    
+
     // Set up additional dashboard features
     this.setupKeyboardShortcuts();
     this.setupAutoRefresh();
-    
-    uiLogger.info('Dashboard initialized with FilterPanel integration');
+
+    uiLogger.info("Dashboard initialized with FilterPanel integration");
   }
 
   /**
@@ -266,22 +282,22 @@ class DashboardPageIntegration {
    * Setup keyboard shortcuts for FilterPanel
    */
   private setupKeyboardShortcuts(): void {
-    document.addEventListener('keydown', (event) => {
+    document.addEventListener("keydown", (event) => {
       if (event.ctrlKey || event.metaKey) {
         switch (event.key) {
-          case 'a':
+          case "a":
             // Ctrl/Cmd + A: Select all
             event.preventDefault();
-            document.getElementById('select-all-btn')?.click();
+            document.getElementById("select-all-btn")?.click();
             break;
-            
-          case 'f':
+
+          case "f":
             // Ctrl/Cmd + F: Focus search
             event.preventDefault();
-            document.getElementById('search-input')?.focus();
+            document.getElementById("search-input")?.focus();
             break;
-            
-          case 'Escape':
+
+          case "Escape":
             // Escape: Reset filters
             event.preventDefault();
             if ((window as IExtendedWindow).filterPanelCoordinator) {
@@ -299,8 +315,8 @@ class DashboardPageIntegration {
   private setupAutoRefresh(): void {
     // Pause auto-refresh when user is actively filtering
     let userActivityTimeout: ReturnType<typeof setTimeout>;
-    
-    window.addEventListener('filterPanel:stateUpdate', () => {
+
+    window.addEventListener("filterPanel:stateUpdate", () => {
       clearTimeout(userActivityTimeout);
       userActivityTimeout = setTimeout(() => {
         this.apiService.fetchAndUpdateJobs();
@@ -313,9 +329,17 @@ class DashboardPageIntegration {
    */
   getCurrentFilterCriteria(): object {
     if ((window as IExtendedWindow).filterPanelCoordinator) {
-      return (window as IExtendedWindow).filterPanelCoordinator?.getFilterCriteria() || { filter: 'all', sort: 'newest', search: '' };
+      return (
+        (
+          window as IExtendedWindow
+        ).filterPanelCoordinator?.getFilterCriteria() || {
+          filter: "all",
+          sort: "newest",
+          search: "",
+        }
+      );
     }
-    return { filter: 'all', sort: 'newest', search: '' };
+    return { filter: "all", sort: "newest", search: "" };
   }
 }
 
@@ -323,28 +347,29 @@ class DashboardPageIntegration {
 // EXPORT FOR EXTERNAL USE
 // =============================================================================
 
-export {
-  JobsListIntegration,
-  JobsApiService,
-  DashboardPageIntegration
-};
+export { JobsListIntegration, JobsApiService, DashboardPageIntegration };
 
 // =============================================================================
 // AUTO-INITIALIZATION FOR DASHBOARD PAGE
 // =============================================================================
 
 // Auto-initialize if we're on the dashboard page
-if (typeof window !== 'undefined' && document.location.pathname.includes('/dashboard')) {
+if (
+  typeof window !== "undefined" &&
+  document.location.pathname.includes("/dashboard")
+) {
   // Wait for DOM to be ready
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener("DOMContentLoaded", () => {
     // Initialize dashboard integration
     const dashboard = new DashboardPageIntegration();
-    
+
     // Expose for debugging
     if (import.meta.env.DEV) {
-      (window as { dashboardIntegration?: DashboardPageIntegration }).dashboardIntegration = dashboard;
+      (
+        window as { dashboardIntegration?: DashboardPageIntegration }
+      ).dashboardIntegration = dashboard;
     }
-    
-    uiLogger.info('🎯 Dashboard integration initialized successfully');
+
+    uiLogger.info("🎯 Dashboard integration initialized successfully");
   });
 }

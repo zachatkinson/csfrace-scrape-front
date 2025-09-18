@@ -7,11 +7,14 @@
  * =============================================================================
  */
 
-import { domUtils, waitForDOM } from '../utils/dom.utils';
-import type { IDashboardState, IDashboardStats } from '../types/dashboard.types';
-import { createContextLogger } from '../../../utils/logger';
+import { domUtils, waitForDOM } from "../utils/dom.utils";
+import type {
+  IDashboardState,
+  IDashboardStats,
+} from "../types/dashboard.types";
+import { createContextLogger } from "../../../utils/logger";
 
-const logger = createContextLogger('DashboardCoordinator');
+const logger = createContextLogger("DashboardCoordinator");
 
 // Type definitions for event data
 interface DataUpdateEvent {
@@ -27,13 +30,13 @@ interface FilterUpdateEvent {
 }
 
 interface JobActionEvent {
-  action: 'view' | 'delete' | 'retry' | 'cancel';
+  action: "view" | "delete" | "retry" | "cancel";
   jobId: string | number;
   [key: string]: unknown;
 }
 
 interface ConnectionStatusEvent {
-  status: 'connected' | 'disconnected' | 'reconnecting';
+  status: "connected" | "disconnected" | "reconnecting";
   timestamp: number;
   [key: string]: unknown;
 }
@@ -55,11 +58,11 @@ export class DashboardCoordinator {
         completed: 0,
         failed: 0,
         queued: 0,
-        processing: 0
+        processing: 0,
       },
-      connectionStatus: 'connected',
+      connectionStatus: "connected",
       isLoading: false,
-      lastUpdated: new Date()
+      lastUpdated: new Date(),
     };
   }
 
@@ -75,29 +78,31 @@ export class DashboardCoordinator {
     this.startPeriodicUpdates();
     this.isInitialized = true;
 
-    logger.info('Initialized as central communication hub');
+    logger.info("Initialized as central communication hub");
   }
 
   /**
    * Load initial data from DOM attributes (avoiding define:vars)
    */
   private loadInitialData(): void {
-    const dashboardElement = domUtils.querySelector('[data-component="dashboard"]');
+    const dashboardElement = domUtils.querySelector(
+      '[data-component="dashboard"]',
+    );
     if (!dashboardElement) return;
 
     try {
       // Load configuration (available for future use)
-      dashboardElement.getAttribute('data-config');
-      const statsData = dashboardElement.getAttribute('data-initial-stats');
+      dashboardElement.getAttribute("data-config");
+      const statsData = dashboardElement.getAttribute("data-initial-stats");
 
       if (statsData) {
         const initialStats = JSON.parse(statsData);
         this.updateStats(initialStats);
       }
 
-      logger.debug('Initial data loaded from DOM attributes');
+      logger.debug("Initial data loaded from DOM attributes");
     } catch (error) {
-      logger.warn('Failed to load initial data', { error });
+      logger.warn("Failed to load initial data", { error });
     }
   }
 
@@ -106,27 +111,27 @@ export class DashboardCoordinator {
    */
   private setupEventListeners(): void {
     // Listen for data updates from Server Islands
-    window.addEventListener('dashboardDataLoaded', (event) => {
+    window.addEventListener("dashboardDataLoaded", (event) => {
       this.handleDataUpdate((event as CustomEvent).detail);
     });
 
     // Listen for filter changes
-    window.addEventListener('filter:update', (event) => {
+    window.addEventListener("filter:update", (event) => {
       this.handleFilterUpdate((event as CustomEvent).detail);
     });
 
     // Listen for job actions
-    window.addEventListener('job:action', (event) => {
+    window.addEventListener("job:action", (event) => {
       this.handleJobAction((event as CustomEvent).detail);
     });
 
     // Listen for connection status changes
-    window.addEventListener('connection:statusChanged', (event) => {
+    window.addEventListener("connection:statusChanged", (event) => {
       this.handleConnectionStatusChange((event as CustomEvent).detail);
     });
 
     // Listen for page visibility changes
-    document.addEventListener('visibilitychange', () => {
+    document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
         this.pauseUpdates();
       } else {
@@ -134,14 +139,14 @@ export class DashboardCoordinator {
       }
     });
 
-    logger.debug('Event listeners setup complete');
+    logger.debug("Event listeners setup complete");
   }
 
   /**
    * Handle data updates from Server Islands
    */
   private handleDataUpdate(data: DataUpdateEvent): void {
-    logger.debug('Received data update', { data });
+    logger.debug("Received data update", { data });
 
     this.updateStats(data.stats);
     this.state.lastUpdated = new Date(data.timestamp);
@@ -154,54 +159,58 @@ export class DashboardCoordinator {
    * Handle filter updates
    */
   private handleFilterUpdate(filterData: FilterUpdateEvent): void {
-    logger.debug('Filter update received', { filterData });
+    logger.debug("Filter update received", { filterData });
 
     // Update loading state
     this.state.isLoading = true;
     this.emitStateUpdate();
 
     // Trigger job list refresh
-    window.dispatchEvent(new CustomEvent('jobs:refresh', {
-      detail: {
-        filter: filterData.filter,
-        sort: filterData.sort,
-        search: filterData.search,
-        timestamp: Date.now()
-      }
-    }));
+    window.dispatchEvent(
+      new CustomEvent("jobs:refresh", {
+        detail: {
+          filter: filterData.filter,
+          sort: filterData.sort,
+          search: filterData.search,
+          timestamp: Date.now(),
+        },
+      }),
+    );
   }
 
   /**
    * Handle job actions (view, delete, etc.)
    */
   private handleJobAction(actionData: JobActionEvent): void {
-    logger.debug('Job action received', { actionData });
+    logger.debug("Job action received", { actionData });
 
     const jobIdString = String(actionData.jobId);
 
     switch (actionData.action) {
-      case 'view':
+      case "view":
         this.showJobDetails(jobIdString);
         break;
-      case 'delete':
+      case "delete":
         this.deleteJob(jobIdString);
         break;
-      case 'retry':
+      case "retry":
         this.retryJob(jobIdString);
         break;
       default:
-        logger.warn('Unknown job action', { action: actionData.action });
+        logger.warn("Unknown job action", { action: actionData.action });
     }
   }
 
   /**
    * Handle connection status changes
    */
-  private handleConnectionStatusChange(statusData: ConnectionStatusEvent): void {
+  private handleConnectionStatusChange(
+    statusData: ConnectionStatusEvent,
+  ): void {
     this.state.connectionStatus = statusData.status;
     this.state.lastUpdated = new Date(statusData.timestamp);
 
-    logger.info('Connection status changed', { status: statusData.status });
+    logger.info("Connection status changed", { status: statusData.status });
 
     // Update UI elements
     this.updateConnectionIndicator();
@@ -220,8 +229,8 @@ export class DashboardCoordinator {
    * Update stats display in header
    */
   private updateStatsDisplay(): void {
-    const totalElement = domUtils.querySelector('#total-jobs');
-    const activeElement = domUtils.querySelector('#active-jobs');
+    const totalElement = domUtils.querySelector("#total-jobs");
+    const activeElement = domUtils.querySelector("#active-jobs");
 
     if (totalElement) {
       totalElement.textContent = `${this.state.stats.total} Jobs`;
@@ -236,36 +245,36 @@ export class DashboardCoordinator {
    * Update connection indicator
    */
   private updateConnectionIndicator(): void {
-    const indicator = domUtils.querySelector('#connection-indicator');
-    const text = domUtils.querySelector('#connection-text');
+    const indicator = domUtils.querySelector("#connection-indicator");
+    const text = domUtils.querySelector("#connection-text");
 
     if (indicator) {
       // Remove all status classes
-      domUtils.removeClass(indicator, 'bg-green-400');
-      domUtils.removeClass(indicator, 'bg-red-400');
-      domUtils.removeClass(indicator, 'bg-yellow-400');
+      domUtils.removeClass(indicator, "bg-green-400");
+      domUtils.removeClass(indicator, "bg-red-400");
+      domUtils.removeClass(indicator, "bg-yellow-400");
 
       // Add appropriate status class
       switch (this.state.connectionStatus) {
-        case 'connected':
-          domUtils.addClass(indicator, 'bg-green-400');
+        case "connected":
+          domUtils.addClass(indicator, "bg-green-400");
           break;
-        case 'disconnected':
-          domUtils.addClass(indicator, 'bg-red-400');
+        case "disconnected":
+          domUtils.addClass(indicator, "bg-red-400");
           break;
-        case 'reconnecting':
-          domUtils.addClass(indicator, 'bg-yellow-400');
+        case "reconnecting":
+          domUtils.addClass(indicator, "bg-yellow-400");
           break;
       }
     }
 
     if (text) {
       const statusTexts = {
-        connected: 'Connected',
-        disconnected: 'Disconnected',
-        reconnecting: 'Reconnecting...'
+        connected: "Connected",
+        disconnected: "Disconnected",
+        reconnecting: "Reconnecting...",
       };
-      text.textContent = statusTexts[this.state.connectionStatus] || 'Unknown';
+      text.textContent = statusTexts[this.state.connectionStatus] || "Unknown";
     }
   }
 
@@ -273,9 +282,11 @@ export class DashboardCoordinator {
    * Show job details in modal
    */
   private showJobDetails(jobId: string): void {
-    window.dispatchEvent(new CustomEvent('job:showDetails', {
-      detail: { jobId }
-    }));
+    window.dispatchEvent(
+      new CustomEvent("job:showDetails", {
+        detail: { jobId },
+      }),
+    );
   }
 
   /**
@@ -284,17 +295,19 @@ export class DashboardCoordinator {
   private async deleteJob(jobId: string): Promise<void> {
     try {
       // This would call your API to delete the job
-      logger.info('Deleting job', { jobId });
+      logger.info("Deleting job", { jobId });
 
       // Emit job deleted event
-      window.dispatchEvent(new CustomEvent('job:deleted', {
-        detail: { jobId }
-      }));
+      window.dispatchEvent(
+        new CustomEvent("job:deleted", {
+          detail: { jobId },
+        }),
+      );
 
       // Refresh job list
       this.refreshData();
     } catch (error) {
-      logger.error('Failed to delete job', { error });
+      logger.error("Failed to delete job", { error });
     }
   }
 
@@ -304,17 +317,19 @@ export class DashboardCoordinator {
   private async retryJob(jobId: string): Promise<void> {
     try {
       // This would call your API to retry the job
-      logger.info('Retrying job', { jobId });
+      logger.info("Retrying job", { jobId });
 
       // Emit job retry event
-      window.dispatchEvent(new CustomEvent('job:retried', {
-        detail: { jobId }
-      }));
+      window.dispatchEvent(
+        new CustomEvent("job:retried", {
+          detail: { jobId },
+        }),
+      );
 
       // Refresh job list
       this.refreshData();
     } catch (error) {
-      logger.error('Failed to retry job', { error });
+      logger.error("Failed to retry job", { error });
     }
   }
 
@@ -328,7 +343,7 @@ export class DashboardCoordinator {
       }
     }, 5000); // Refresh every 5 seconds
 
-    logger.debug('Periodic updates started');
+    logger.debug("Periodic updates started");
   }
 
   /**
@@ -356,18 +371,19 @@ export class DashboardCoordinator {
   private async refreshData(): Promise<void> {
     try {
       // This would fetch fresh data from your API
-      logger.debug('Refreshing data');
+      logger.debug("Refreshing data");
 
       // Emit refresh event for components to handle
-      window.dispatchEvent(new CustomEvent('dashboard:refresh', {
-        detail: { timestamp: Date.now() }
-      }));
-
+      window.dispatchEvent(
+        new CustomEvent("dashboard:refresh", {
+          detail: { timestamp: Date.now() },
+        }),
+      );
     } catch (error) {
-      logger.error('Failed to refresh data', { error });
-      this.handleConnectionStatusChange({ 
-        status: 'disconnected', 
-        timestamp: Date.now() 
+      logger.error("Failed to refresh data", { error });
+      this.handleConnectionStatusChange({
+        status: "disconnected",
+        timestamp: Date.now(),
       });
     }
   }
@@ -376,12 +392,14 @@ export class DashboardCoordinator {
    * Emit state update to all components
    */
   private emitStateUpdate(): void {
-    window.dispatchEvent(new CustomEvent('dashboard:stateUpdate', {
-      detail: {
-        state: this.state,
-        timestamp: Date.now()
-      }
-    }));
+    window.dispatchEvent(
+      new CustomEvent("dashboard:stateUpdate", {
+        detail: {
+          state: this.state,
+          timestamp: Date.now(),
+        },
+      }),
+    );
   }
 
   /**

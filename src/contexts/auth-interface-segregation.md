@@ -14,22 +14,22 @@ The original `AuthContextValue` interface violated the Interface Segregation Pri
 interface AuthContextValue {
   // 7 state properties
   user, tokens, isAuthenticated, isLoading, isInitialized, error, ...
-  
+
   // 4 basic auth methods
   login(), register(), logout(), refreshToken()
-  
-  // 3 password methods  
+
+  // 3 password methods
   changePassword(), requestPasswordReset(), confirmPasswordReset()
-  
+
   // 2 OAuth methods
   loginWithOAuth(), handleOAuthCallback()
-  
+
   // 4 WebAuthn methods
   registerPasskey(), authenticateWithPasskey(), deletePasskey(), refreshPasskeys()
-  
+
   // 2 profile methods
   updateProfile(), refreshUser()
-  
+
   // 2 utility methods
   clearError(), checkAuthStatus()
 }
@@ -40,7 +40,9 @@ interface AuthContextValue {
 ## Solution: Focused Interfaces
 
 ### 1. BasicAuthContext
+
 **Use for**: Login forms, logout buttons, auth guards
+
 ```typescript
 interface BasicAuthContext {
   user: User | null;
@@ -49,7 +51,7 @@ interface BasicAuthContext {
   isLoading: boolean;
   isInitialized: boolean;
   error: string | null;
-  
+
   login(credentials: LoginCredentials): Promise<void>;
   register(data: RegisterData): Promise<void>;
   logout(): Promise<void>;
@@ -60,12 +62,14 @@ interface BasicAuthContext {
 ```
 
 ### 2. PasswordAuthContext
+
 **Use for**: Password change forms, reset password flows
+
 ```typescript
 interface PasswordAuthContext {
   isLoading: boolean;
   error: string | null;
-  
+
   changePassword(data: PasswordChangeData): Promise<void>;
   requestPasswordReset(data: PasswordResetRequest): Promise<void>;
   confirmPasswordReset(data: PasswordResetConfirm): Promise<void>;
@@ -74,28 +78,36 @@ interface PasswordAuthContext {
 ```
 
 ### 3. OAuthContext
+
 **Use for**: OAuth login buttons, provider selection
+
 ```typescript
 interface OAuthContext {
   oauthProviders: OAuthProvider[];
   isLoading: boolean;
   error: string | null;
-  
+
   loginWithOAuth(provider: string, redirectUri?: string): Promise<void>;
-  handleOAuthCallback(code: string, state: string, provider: string): Promise<void>;
+  handleOAuthCallback(
+    code: string,
+    state: string,
+    provider: string,
+  ): Promise<void>;
   clearError(): void;
 }
 ```
 
 ### 4. WebAuthnContext
+
 **Use for**: Passkey registration, biometric auth
+
 ```typescript
 interface WebAuthnContext {
   webauthnSupported: boolean;
   userCredentials: WebAuthnCredential[];
   isLoading: boolean;
   error: string | null;
-  
+
   registerPasskey(name?: string): Promise<void>;
   authenticateWithPasskey(): Promise<void>;
   deletePasskey(credentialId: string): Promise<void>;
@@ -105,13 +117,15 @@ interface WebAuthnContext {
 ```
 
 ### 5. UserProfileContext
+
 **Use for**: Profile forms, user settings, account management
+
 ```typescript
 interface UserProfileContext {
   user: User | null;
   isLoading: boolean;
   error: string | null;
-  
+
   updateProfile(profile: Partial<UserProfile>): Promise<void>;
   refreshUser(): Promise<void>;
   clearError(): void;
@@ -124,15 +138,15 @@ interface UserProfileContext {
 
 ```typescript
 // Login Form - Only needs basic authentication
-import { useBasicAuth } from '../../contexts/AuthContext';
+import { useBasicAuth } from "../../contexts/AuthContext";
 
 export const LoginForm = () => {
   const { login, isLoading, error, clearError } = useBasicAuth();
   // Component only receives 4 methods instead of 24!
 };
 
-// Password Reset Form - Only needs password management  
-import { usePasswordAuth } from '../../contexts/AuthContext';
+// Password Reset Form - Only needs password management
+import { usePasswordAuth } from "../../contexts/AuthContext";
 
 export const PasswordResetForm = () => {
   const { requestPasswordReset, isLoading, error } = usePasswordAuth();
@@ -140,7 +154,7 @@ export const PasswordResetForm = () => {
 };
 
 // OAuth Login Button - Only needs OAuth functionality
-import { useOAuth } from '../../contexts/AuthContext';
+import { useOAuth } from "../../contexts/AuthContext";
 
 export const OAuthButton = () => {
   const { loginWithOAuth, oauthProviders, isLoading } = useOAuth();
@@ -152,20 +166,30 @@ export const OAuthButton = () => {
 
 ```typescript
 // DON'T DO THIS - Forces dependency on 24 methods!
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from "../../contexts/AuthContext";
 
 export const LoginForm = () => {
   // Gets all 24 methods but only needs 4
-  const { 
-    login, isLoading, error, clearError,
+  const {
+    login,
+    isLoading,
+    error,
+    clearError,
     // UNUSED: OAuth methods
-    loginWithOAuth, handleOAuthCallback,
-    // UNUSED: WebAuthn methods  
-    registerPasskey, authenticateWithPasskey, deletePasskey, refreshPasskeys,
+    loginWithOAuth,
+    handleOAuthCallback,
+    // UNUSED: WebAuthn methods
+    registerPasskey,
+    authenticateWithPasskey,
+    deletePasskey,
+    refreshPasskeys,
     // UNUSED: Profile methods
-    updateProfile, refreshUser,
+    updateProfile,
+    refreshUser,
     // UNUSED: Password methods
-    changePassword, requestPasswordReset, confirmPasswordReset,
+    changePassword,
+    requestPasswordReset,
+    confirmPasswordReset,
     // ... 10+ more unused methods
   } = useAuth();
 };
@@ -174,6 +198,7 @@ export const LoginForm = () => {
 ## Migration Guide
 
 ### Step 1: Identify Component Needs
+
 ```typescript
 // Analyze what each component actually uses
 const LoginForm = () => {
@@ -184,23 +209,25 @@ const LoginForm = () => {
 ```
 
 ### Step 2: Replace with Focused Hook
+
 ```typescript
 // Before
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from "../../contexts/AuthContext";
 const { login, isLoading, error, clearError } = useAuth();
 
-// After  
-import { useBasicAuth } from '../../contexts/AuthContext';
+// After
+import { useBasicAuth } from "../../contexts/AuthContext";
 const { login, isLoading, error, clearError } = useBasicAuth();
 ```
 
 ### Step 3: For Multiple Concerns
+
 ```typescript
 // If component needs multiple auth features
-import { useFocusedAuth } from '../../contexts/AuthContext';
+import { useFocusedAuth } from "../../contexts/AuthContext";
 
 const AccountSettings = () => {
-  const auth = useFocusedAuth(['basic', 'password', 'profile']);
+  const auth = useFocusedAuth(["basic", "password", "profile"]);
   // Gets only methods for basic auth, password management, and profiles
   // Still excludes OAuth and WebAuthn methods
 };
@@ -208,55 +235,66 @@ const AccountSettings = () => {
 
 ## Benefits Achieved
 
-### 1. **Clearer Dependencies** 
+### 1. **Clearer Dependencies**
+
 - Components explicitly declare which auth features they need
 - Easy to understand component requirements at a glance
 
 ### 2. **Better Testability**
-- Smaller surface area for mocking in tests  
+
+- Smaller surface area for mocking in tests
 - Only need to mock the interface methods actually used
 
 ### 3. **Reduced Coupling**
+
 - Components aren't coupled to authentication features they don't use
 - Easier to refactor individual auth features
 
 ### 4. **Improved Performance**
+
 - React can better optimize renders when dependencies are focused
 - Smaller hook objects mean less memory usage
 
 ### 5. **Better Developer Experience**
+
 - IDEs can provide better autocomplete on focused interfaces
 - Easier to reason about component behavior
 
 ## Component Categories
 
 ### Basic Auth Only
+
 - LoginForm → `useBasicAuth()`
-- LogoutButton → `useBasicAuth()` 
+- LogoutButton → `useBasicAuth()`
 - ProtectedRoute → `useBasicAuth()`
 - AuthenticatedHeader → `useBasicAuth()`
 
 ### Password Management
+
 - PasswordChangeForm → `usePasswordAuth()`
 - ForgotPasswordForm → `usePasswordAuth()`
 - ResetPasswordForm → `usePasswordAuth()`
 
 ### OAuth Features
+
 - OAuthButton → `useOAuth()`
 - SocialLoginPanel → `useOAuth()`
 - OAuthCallbackHandler → `useOAuth()`
 
-### WebAuthn Features  
+### WebAuthn Features
+
 - PasskeyButton → `useWebAuthn()`
 - BiometricAuthForm → `useWebAuthn()`
 - SecurityKeyManager → `useWebAuthn()`
 
 ### Profile Management
+
 - ProfileForm → `useUserProfile()`
 - AccountSettings → `useUserProfile()`
 - UserAvatar → `useUserProfile()`
 
 ### Multiple Concerns
+
 - ComprehensiveAuthModal → `useFocusedAuth(['basic', 'oauth', 'webauthn'])`
 - CompleteAccountPage → `useFocusedAuth(['basic', 'password', 'profile'])`
 
@@ -278,6 +316,6 @@ const { login, ... } = useBasicAuth();  // 6 methods
 ✅ **Open/Closed**: New auth features can be added without changing existing interfaces  
 ✅ **Liskov Substitution**: All focused contexts can be substituted consistently  
 ✅ **Interface Segregation**: Clients only depend on methods they use  
-✅ **Dependency Inversion**: Components depend on abstractions, not concrete implementations  
+✅ **Dependency Inversion**: Components depend on abstractions, not concrete implementations
 
 This refactoring exemplifies how proper Interface Segregation leads to cleaner, more maintainable, and better-performing code!

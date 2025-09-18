@@ -4,15 +4,15 @@
  * All form components can inherit from this to ensure substitutability
  */
 
-import React, { forwardRef } from 'react';
-import { LiquidCard, LiquidButton } from '../liquid-glass';
-import { useBaseForm } from '../../hooks/useBaseForm.ts';
+import React, { forwardRef } from "react";
+import { LiquidCard, LiquidButton } from "../liquid-glass";
+import { useBaseForm } from "../../hooks/useBaseForm.ts";
 import type {
   FormComponentProps,
   StandardFormComponent,
   FormValidationSchema,
-  FormSubmissionResult
-} from '../../interfaces/forms.ts';
+  FormSubmissionResult,
+} from "../../interfaces/forms.ts";
 
 // =============================================================================
 // BASE FORM COMPONENT
@@ -28,8 +28,10 @@ export const BaseForm = forwardRef<
   FormComponentProps<unknown> & {
     // Common form structure
     renderFields: (formHook: ReturnType<typeof useBaseForm>) => React.ReactNode;
-    renderActions?: ((formHook: ReturnType<typeof useBaseForm>) => React.ReactNode) | undefined;
-    
+    renderActions?:
+      | ((formHook: ReturnType<typeof useBaseForm>) => React.ReactNode)
+      | undefined;
+
     // Form configuration
     showTitle?: boolean | undefined;
     showReset?: boolean | undefined;
@@ -40,187 +42,213 @@ export const BaseForm = forwardRef<
     cardClassName?: string | undefined;
     formClassName?: string | undefined;
   }
->(({
-  // Base form props
-  initialData,
-  validationSchema,
-  onSubmit,
-  onSuccess,
-  onError,
-  onStateChange,
-  validateOnChange = false,
-  validateOnBlur = true,
-  className = '',
-  title,
-  subtitle,
-  disabled = false,
-  isLoading = false,
-  autoFocus: _autoFocus = true,
-  resetOnSuccess = false,
-  
-  // Component-specific props
-  renderFields,
-  renderActions,
-  showTitle = true,
-  showReset = false,
-  submitButtonText = 'Submit',
-  resetButtonText = 'Reset',
-  cardClassName = '',
-  formClassName = '',
-  
-  children,
-  ...props
-}, ref) => {
+>(
+  (
+    {
+      // Base form props
+      initialData,
+      validationSchema,
+      onSubmit,
+      onSuccess,
+      onError,
+      onStateChange,
+      validateOnChange = false,
+      validateOnBlur = true,
+      className = "",
+      title,
+      subtitle,
+      disabled = false,
+      isLoading = false,
+      autoFocus: _autoFocus = true,
+      resetOnSuccess = false,
 
-  // =============================================================================
-  // FORM HOOK - CONSISTENT BEHAVIOR
-  // =============================================================================
+      // Component-specific props
+      renderFields,
+      renderActions,
+      showTitle = true,
+      showReset = false,
+      submitButtonText = "Submit",
+      resetButtonText = "Reset",
+      cardClassName = "",
+      formClassName = "",
 
-  const formHook = useBaseForm({
-    initialData,
-    validationSchema,
-    onSubmit: async (data) => {
-      try {
-        const result = onSubmit
-          ? await onSubmit(data)
-          : { success: true, data, error: undefined, fieldErrors: undefined } as FormSubmissionResult<unknown>;
-
-        if (result.success) {
-          onSuccess?.(result.data as unknown);
-        } else {
-          onError?.(result.error || 'Submission failed', result.fieldErrors);
-        }
-        
-        return result;
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Submission failed';
-        onError?.(errorMessage);
-        return { success: false, error: errorMessage };
-      }
+      children,
+      ...props
     },
-    validateOnChange,
-    validateOnBlur,
-    resetOnSuccess,
-  });
+    ref,
+  ) => {
+    // =============================================================================
+    // FORM HOOK - CONSISTENT BEHAVIOR
+    // =============================================================================
 
-  const { state, computed, handlers } = formHook;
+    const formHook = useBaseForm({
+      initialData,
+      validationSchema,
+      onSubmit: async (data) => {
+        try {
+          const result = onSubmit
+            ? await onSubmit(data)
+            : ({
+                success: true,
+                data,
+                error: undefined,
+                fieldErrors: undefined,
+              } as FormSubmissionResult<unknown>);
 
-  // Notify parent of state changes
-  React.useEffect(() => {
-    onStateChange?.(state);
-  }, [state, onStateChange]);
+          if (result.success) {
+            onSuccess?.(result.data as unknown);
+          } else {
+            onError?.(result.error || "Submission failed", result.fieldErrors);
+          }
 
-  // =============================================================================
-  // CONSISTENT ERROR DISPLAY
-  // =============================================================================
+          return result;
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : "Submission failed";
+          onError?.(errorMessage);
+          return { success: false, error: errorMessage };
+        }
+      },
+      validateOnChange,
+      validateOnBlur,
+      resetOnSuccess,
+    });
 
-  const renderGlobalError = () => {
-    if (!state.globalError) return null;
-    
-    return (
-      <div className="p-4 rounded-glass bg-red-500/20 border border-red-500/30 text-red-100 text-sm mb-6">
-        <div className="flex items-start space-x-3">
-          <svg className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div>
-            <p className="font-medium">Form Error</p>
-            <p className="mt-1">{state.globalError}</p>
+    const { state, computed, handlers } = formHook;
+
+    // Notify parent of state changes
+    React.useEffect(() => {
+      onStateChange?.(state);
+    }, [state, onStateChange]);
+
+    // =============================================================================
+    // CONSISTENT ERROR DISPLAY
+    // =============================================================================
+
+    const renderGlobalError = () => {
+      if (!state.globalError) return null;
+
+      return (
+        <div className="p-4 rounded-glass bg-red-500/20 border border-red-500/30 text-red-100 text-sm mb-6">
+          <div className="flex items-start space-x-3">
+            <svg
+              className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <div>
+              <p className="font-medium">Form Error</p>
+              <p className="mt-1">{state.globalError}</p>
+            </div>
           </div>
         </div>
-      </div>
-    );
-  };
+      );
+    };
 
-  // =============================================================================
-  // CONSISTENT ACTION BUTTONS
-  // =============================================================================
+    // =============================================================================
+    // CONSISTENT ACTION BUTTONS
+    // =============================================================================
 
-  const renderDefaultActions = () => (
-    <div className="flex gap-4">
-      <LiquidButton
-        type="submit"
-        variant="primary"
-        size="lg"
-        fullWidth={!showReset}
-        loading={state.isSubmitting || isLoading}
-        disabled={!computed.canSubmit || disabled}
-        leftIcon={
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-        }
-      >
-        {state.isSubmitting ? 'Submitting...' : submitButtonText}
-      </LiquidButton>
-      
-      {showReset && (
+    const renderDefaultActions = () => (
+      <div className="flex gap-4">
         <LiquidButton
-          type="button"
-          variant="secondary"
+          type="submit"
+          variant="primary"
           size="lg"
-          onClick={handlers.handleReset}
-          disabled={state.isSubmitting || isLoading || disabled}
+          fullWidth={!showReset}
+          loading={state.isSubmitting || isLoading}
+          disabled={!computed.canSubmit || disabled}
+          leftIcon={
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          }
         >
-          {resetButtonText}
+          {state.isSubmitting ? "Submitting..." : submitButtonText}
         </LiquidButton>
-      )}
-    </div>
-  );
 
-  // =============================================================================
-  // CONSISTENT FORM STRUCTURE
-  // =============================================================================
-
-  const formContent = (
-    <form 
-      ref={ref}
-      onSubmit={handlers.handleSubmit}
-      onReset={handlers.handleReset}
-      className={`space-y-6 ${formClassName}`.trim()}
-      noValidate
-      {...props}
-    >
-      {/* Global Error Display */}
-      {renderGlobalError()}
-
-      {/* Form Fields */}
-      {renderFields(formHook)}
-      
-      {/* Render children if provided (for custom content) */}
-      {typeof children === 'function' ? children(formHook) : children}
-
-      {/* Action Buttons */}
-      {renderActions ? renderActions(formHook) : renderDefaultActions()}
-    </form>
-  );
-
-  // =============================================================================
-  // CONSISTENT WRAPPER
-  // =============================================================================
-
-  if (showTitle && (title || subtitle)) {
-    return (
-      <div className={className}>
-        <LiquidCard
-          title={title}
-          subtitle={subtitle}
-          className={`w-full ${cardClassName}`.trim()}
-        >
-          {formContent}
-        </LiquidCard>
+        {showReset && (
+          <LiquidButton
+            type="button"
+            variant="secondary"
+            size="lg"
+            onClick={handlers.handleReset}
+            disabled={state.isSubmitting || isLoading || disabled}
+          >
+            {resetButtonText}
+          </LiquidButton>
+        )}
       </div>
     );
-  }
 
-  return (
-    <div className={className}>
-      {formContent}
-    </div>
-  );
-});
+    // =============================================================================
+    // CONSISTENT FORM STRUCTURE
+    // =============================================================================
 
-BaseForm.displayName = 'BaseForm';
+    const formContent = (
+      <form
+        ref={ref}
+        onSubmit={handlers.handleSubmit}
+        onReset={handlers.handleReset}
+        className={`space-y-6 ${formClassName}`.trim()}
+        noValidate
+        {...props}
+      >
+        {/* Global Error Display */}
+        {renderGlobalError()}
+
+        {/* Form Fields */}
+        {renderFields(formHook)}
+
+        {/* Render children if provided (for custom content) */}
+        {typeof children === "function" ? children(formHook) : children}
+
+        {/* Action Buttons */}
+        {renderActions ? renderActions(formHook) : renderDefaultActions()}
+      </form>
+    );
+
+    // =============================================================================
+    // CONSISTENT WRAPPER
+    // =============================================================================
+
+    if (showTitle && (title || subtitle)) {
+      return (
+        <div className={className}>
+          <LiquidCard
+            title={title}
+            subtitle={subtitle}
+            className={`w-full ${cardClassName}`.trim()}
+          >
+            {formContent}
+          </LiquidCard>
+        </div>
+      );
+    }
+
+    return <div className={className}>{formContent}</div>;
+  },
+);
+
+BaseForm.displayName = "BaseForm";
 
 // =============================================================================
 // FORM FIELD COMPONENTS
@@ -234,13 +262,23 @@ export const FormField: React.FC<{
   children: React.ReactNode;
   error?: string | undefined;
   className?: string | undefined;
-}> = ({ children, error, className = '' }) => (
+}> = ({ children, error, className = "" }) => (
   <div className={`form-field ${className}`.trim()}>
     {children}
     {error && (
       <p className="mt-2 text-sm text-red-400 flex items-center">
-        <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <svg
+          className="w-4 h-4 mr-1"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
         </svg>
         {error}
       </p>
@@ -261,7 +299,7 @@ export const FormSection: React.FC<{
   subtitle?: string;
   children: React.ReactNode;
   className?: string;
-}> = ({ title, subtitle, children, className = '' }) => (
+}> = ({ title, subtitle, children, className = "" }) => (
   <div className={`form-section ${className}`.trim()}>
     {(title || subtitle) && (
       <div className="form-section-header mb-4">
@@ -269,9 +307,7 @@ export const FormSection: React.FC<{
         {subtitle && <p className="text-sm text-white/60 mt-1">{subtitle}</p>}
       </div>
     )}
-    <div className="form-section-content space-y-4">
-      {children}
-    </div>
+    <div className="form-section-content space-y-4">{children}</div>
   </div>
 );
 
@@ -283,17 +319,20 @@ export const FormSection: React.FC<{
  * Create a standardized form component
  * Ensures all forms follow Liskov Substitution Principle
  */
-export function createFormComponent<TData extends Record<string, unknown>>(
-  config: {
-    displayName: string;
-    defaultTitle?: string;
-    defaultSubtitle?: string;
-    validationSchema?: FormValidationSchema<TData>;
-    renderFields: (formHook: ReturnType<typeof useBaseForm<TData>>) => React.ReactNode;
-    renderActions?: ((formHook: ReturnType<typeof useBaseForm<TData>>) => React.ReactNode) | undefined;
-  }
-): StandardFormComponent<TData> {
-  
+export function createFormComponent<
+  TData extends Record<string, unknown>,
+>(config: {
+  displayName: string;
+  defaultTitle?: string;
+  defaultSubtitle?: string;
+  validationSchema?: FormValidationSchema<TData>;
+  renderFields: (
+    formHook: ReturnType<typeof useBaseForm<TData>>,
+  ) => React.ReactNode;
+  renderActions?:
+    | ((formHook: ReturnType<typeof useBaseForm<TData>>) => React.ReactNode)
+    | undefined;
+}): StandardFormComponent<TData> {
   const FormComponent: StandardFormComponent<TData> = (props) => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars -- children is required by interface but intentionally unused in HOC pattern
     const { children, onSubmit, onSuccess, ...baseProps } = props;
@@ -302,17 +341,36 @@ export function createFormComponent<TData extends Record<string, unknown>>(
         {...baseProps}
         title={props.title || config.defaultTitle}
         subtitle={props.subtitle || config.defaultSubtitle}
-        validationSchema={(props.validationSchema || config.validationSchema) as FormValidationSchema<unknown>}
-        onSubmit={onSubmit as ((data: unknown) => FormSubmissionResult<unknown> | Promise<FormSubmissionResult<unknown>>) | undefined}
+        validationSchema={
+          (props.validationSchema ||
+            config.validationSchema) as FormValidationSchema<unknown>
+        }
+        onSubmit={
+          onSubmit as
+            | ((
+                data: unknown,
+              ) =>
+                | FormSubmissionResult<unknown>
+                | Promise<FormSubmissionResult<unknown>>)
+            | undefined
+        }
         onSuccess={onSuccess as ((data?: unknown) => void) | undefined}
-        renderFields={config.renderFields as (formHook: ReturnType<typeof useBaseForm>) => React.ReactNode}
-        renderActions={config.renderActions as ((formHook: ReturnType<typeof useBaseForm>) => React.ReactNode) | undefined}
+        renderFields={
+          config.renderFields as (
+            formHook: ReturnType<typeof useBaseForm>,
+          ) => React.ReactNode
+        }
+        renderActions={
+          config.renderActions as
+            | ((formHook: ReturnType<typeof useBaseForm>) => React.ReactNode)
+            | undefined
+        }
       />
     );
   };
-  
+
   FormComponent.displayName = config.displayName;
-  
+
   return FormComponent;
 }
 

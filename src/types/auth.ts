@@ -108,11 +108,11 @@ export interface WebAuthnRegistrationOptions {
   }>;
   timeout: number;
   authenticatorSelection?: {
-    authenticatorAttachment?: 'platform' | 'cross-platform';
-    userVerification?: 'required' | 'preferred' | 'discouraged';
-    residentKey?: 'required' | 'preferred' | 'discouraged';
+    authenticatorAttachment?: "platform" | "cross-platform";
+    userVerification?: "required" | "preferred" | "discouraged";
+    residentKey?: "required" | "preferred" | "discouraged";
   };
-  attestation?: 'none' | 'indirect' | 'direct';
+  attestation?: "none" | "indirect" | "direct";
 }
 
 export interface WebAuthnAuthenticationOptions {
@@ -124,7 +124,7 @@ export interface WebAuthnAuthenticationOptions {
     id: string;
     transports?: string[];
   }>;
-  userVerification?: 'required' | 'preferred' | 'discouraged';
+  userVerification?: "required" | "preferred" | "discouraged";
 }
 
 export interface AuthState {
@@ -154,13 +154,13 @@ export interface BasicAuthContext {
   isLoading: boolean;
   isInitialized: boolean;
   error: string | null;
-  
+
   // Basic authentication methods
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<void>;
-  
+
   // Core utilities
   clearError: () => void;
   checkAuthStatus: () => Promise<boolean>;
@@ -175,7 +175,7 @@ export interface PasswordAuthContext {
   changePassword: (data: PasswordChangeData) => Promise<void>;
   requestPasswordReset: (data: PasswordResetRequest) => Promise<void>;
   confirmPasswordReset: (data: PasswordResetConfirm) => Promise<void>;
-  
+
   // Minimal required state
   isLoading: boolean;
   error: string | null;
@@ -191,11 +191,15 @@ export interface OAuthContext {
   oauthProviders: OAuthProvider[];
   isLoading: boolean;
   error: string | null;
-  
+
   // OAuth methods
   loginWithOAuth: (provider: string, redirectUri?: string) => Promise<void>;
-  handleOAuthCallback: (code: string, state: string, provider: string) => Promise<void>;
-  
+  handleOAuthCallback: (
+    code: string,
+    state: string,
+    provider: string,
+  ) => Promise<void>;
+
   // Utilities
   clearError: () => void;
 }
@@ -210,13 +214,13 @@ export interface WebAuthnContext {
   userCredentials: WebAuthnCredential[];
   isLoading: boolean;
   error: string | null;
-  
+
   // WebAuthn methods
   registerPasskey: (name?: string) => Promise<void>;
   authenticateWithPasskey: () => Promise<void>;
   deletePasskey: (credentialId: string) => Promise<void>;
   refreshPasskeys: () => Promise<void>;
-  
+
   // Utilities
   clearError: () => void;
 }
@@ -230,11 +234,11 @@ export interface UserProfileContext {
   user: User | null;
   isLoading: boolean;
   error: string | null;
-  
+
   // Profile methods
   updateProfile: (profile: Partial<UserProfile>) => Promise<void>;
   refreshUser: () => Promise<void>;
-  
+
   // Utilities
   clearError: () => void;
 }
@@ -243,7 +247,7 @@ export interface UserProfileContext {
  * Complete Authentication Context (Legacy)
  * @deprecated Use focused interfaces instead: BasicAuthContext, OAuthContext, etc.
  * This interface will be removed in a future version.
- * 
+ *
  * Components should depend only on the interfaces they actually need:
  * - BasicAuthContext for login/logout
  * - PasswordAuthContext for password management
@@ -257,26 +261,30 @@ export interface AuthContextValue extends AuthState {
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<void>;
-  
+
   // Password Management
   changePassword: (data: PasswordChangeData) => Promise<void>;
   requestPasswordReset: (data: PasswordResetRequest) => Promise<void>;
   confirmPasswordReset: (data: PasswordResetConfirm) => Promise<void>;
-  
+
   // OAuth
   loginWithOAuth: (provider: string, redirectUri?: string) => Promise<void>;
-  handleOAuthCallback: (code: string, state: string, provider: string) => Promise<void>;
-  
+  handleOAuthCallback: (
+    code: string,
+    state: string,
+    provider: string,
+  ) => Promise<void>;
+
   // WebAuthn/Passkeys
   registerPasskey: (name?: string) => Promise<void>;
   authenticateWithPasskey: () => Promise<void>;
   deletePasskey: (credentialId: string) => Promise<void>;
   refreshPasskeys: () => Promise<void>;
-  
+
   // User Management
   updateProfile: (profile: Partial<UserProfile>) => Promise<void>;
   refreshUser: () => Promise<void>;
-  
+
   // Utilities
   clearError: () => void;
   checkAuthStatus: () => Promise<boolean>;
@@ -287,12 +295,12 @@ export interface AuthContextValue extends AuthState {
  * For components that need multiple authentication features
  * Use this sparingly - prefer focused interfaces when possible
  */
-export interface CompositeAuthContext extends 
-  BasicAuthContext,
-  PasswordAuthContext,
-  OAuthContext,
-  WebAuthnContext,
-  UserProfileContext {}
+export interface CompositeAuthContext
+  extends BasicAuthContext,
+    PasswordAuthContext,
+    OAuthContext,
+    WebAuthnContext,
+    UserProfileContext {}
 
 /**
  * Auth Context Provider Configuration
@@ -324,21 +332,21 @@ export interface AuthResponse<T = unknown> {
 
 // Storage Keys
 export const AUTH_STORAGE_KEYS = {
-  ACCESS_TOKEN: 'csfrace_access_token',
-  REFRESH_TOKEN: 'csfrace_refresh_token',
-  USER: 'csfrace_user',
-  EXPIRES_AT: 'csfrace_expires_at',
-  OAUTH_STATE: 'csfrace_oauth_state',
+  ACCESS_TOKEN: "csfrace_access_token",
+  REFRESH_TOKEN: "csfrace_refresh_token",
+  USER: "csfrace_user",
+  EXPIRES_AT: "csfrace_expires_at",
+  OAUTH_STATE: "csfrace_oauth_state",
 } as const;
 
 // Auth Event Types
 export enum AuthEventType {
-  LOGIN = 'auth:login',
-  LOGOUT = 'auth:logout',
-  TOKEN_REFRESH = 'auth:token_refresh',
-  SESSION_EXPIRED = 'auth:session_expired',
-  USER_UPDATED = 'auth:user_updated',
-  ERROR = 'auth:error',
+  LOGIN = "auth:login",
+  LOGOUT = "auth:logout",
+  TOKEN_REFRESH = "auth:token_refresh",
+  SESSION_EXPIRED = "auth:session_expired",
+  USER_UPDATED = "auth:user_updated",
+  ERROR = "auth:error",
 }
 
 export interface AuthEvent {
@@ -348,14 +356,14 @@ export interface AuthEvent {
 }
 
 // Utility Types
-export type AuthAction = 
-  | { type: 'AUTH_INIT' }
-  | { type: 'AUTH_LOADING'; payload: boolean }
-  | { type: 'AUTH_SUCCESS'; payload: { user: User; tokens: AuthTokens } }
-  | { type: 'AUTH_ERROR'; payload: string }
-  | { type: 'AUTH_LOGOUT' }
-  | { type: 'AUTH_CLEAR_ERROR' }
-  | { type: 'AUTH_UPDATE_USER'; payload: User }
-  | { type: 'AUTH_UPDATE_TOKENS'; payload: AuthTokens }
-  | { type: 'AUTH_SET_OAUTH_PROVIDERS'; payload: OAuthProvider[] }
-  | { type: 'AUTH_SET_WEBAUTHN_CREDENTIALS'; payload: WebAuthnCredential[] };
+export type AuthAction =
+  | { type: "AUTH_INIT" }
+  | { type: "AUTH_LOADING"; payload: boolean }
+  | { type: "AUTH_SUCCESS"; payload: { user: User; tokens: AuthTokens } }
+  | { type: "AUTH_ERROR"; payload: string }
+  | { type: "AUTH_LOGOUT" }
+  | { type: "AUTH_CLEAR_ERROR" }
+  | { type: "AUTH_UPDATE_USER"; payload: User }
+  | { type: "AUTH_UPDATE_TOKENS"; payload: AuthTokens }
+  | { type: "AUTH_SET_OAUTH_PROVIDERS"; payload: OAuthProvider[] }
+  | { type: "AUTH_SET_WEBAUTHN_CREDENTIALS"; payload: WebAuthnCredential[] };

@@ -3,11 +3,18 @@
  * Standard glass effect with balanced transparency and blur
  */
 
-import { BaseGlassVariantStrategy, type GlassVariantConfig, type GlassVariantProps } from '../GlassVariantStrategy.ts';
+import {
+  BaseGlassVariantStrategy,
+  type GlassVariantConfig,
+  type GlassVariantProps,
+} from "../GlassVariantStrategy.ts";
 
 export class DefaultGlassStrategy extends BaseGlassVariantStrategy {
   constructor() {
-    super('default', 'Standard glass effect with balanced transparency and blur');
+    super(
+      "default",
+      "Standard glass effect with balanced transparency and blur",
+    );
   }
 
   getConfig(props: GlassVariantProps): GlassVariantConfig {

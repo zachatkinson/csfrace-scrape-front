@@ -3,41 +3,41 @@
 // Single source of truth for all health status checking across the application
 // =============================================================================
 
-import { getApiBaseUrl } from '../constants/api.ts';
-import { createContextLogger } from './logger';
+import { getApiBaseUrl } from "../constants/api.ts";
+import { createContextLogger } from "./logger";
 
-const logger = createContextLogger('ServiceCheckers');
+const logger = createContextLogger("ServiceCheckers");
 
 // =============================================================================
 // MODERN 2025 POLLING CONFIGURATION - ADAPTIVE & EFFICIENT
 // =============================================================================
 export const SHARED_CONFIG = {
   API_URL: getApiBaseUrl(),
-  
+
   // Adaptive timeout based on connection quality
   TIMEOUT: 6000, // Base timeout - will adapt based on response times
   MIN_TIMEOUT: 3000, // Minimum timeout for fast connections
   MAX_TIMEOUT: 15000, // Maximum timeout for slow connections
-  
+
   // Smart retry strategy
   RETRY_ATTEMPTS: 2, // Max retries with exponential backoff
   RETRY_DELAY_BASE: 1000, // Base delay between retries
   RETRY_MULTIPLIER: 2.5, // Exponential backoff multiplier
-  
+
   // Adaptive polling intervals (modern 2025 best practice)
   BASE_INTERVAL: 15000, // Base 15 seconds for healthy services
-  FAST_INTERVAL: 5000, // Fast polling for degraded services  
+  FAST_INTERVAL: 5000, // Fast polling for degraded services
   SLOW_INTERVAL: 45000, // Slow polling for down services
   ERROR_INTERVAL: 30000, // Moderate polling for error states
-  
+
   // Connection quality thresholds
   FAST_RESPONSE_THRESHOLD: 500, // < 500ms = fast connection
   SLOW_RESPONSE_THRESHOLD: 2000, // > 2s = slow connection
-  
+
   // Browser state optimization
   BACKGROUND_MULTIPLIER: 3, // Slow down when tab is hidden
   LOW_BATTERY_MULTIPLIER: 2, // Reduce frequency on low battery
-  
+
   // Circuit breaker pattern
   CIRCUIT_BREAKER_THRESHOLD: 5, // Failures before opening circuit
   CIRCUIT_BREAKER_TIMEOUT: 60000, // 1 minute before trying again
@@ -47,16 +47,16 @@ export const SHARED_CONFIG = {
 const CONFIG = SHARED_CONFIG;
 
 export const SHARED_ENDPOINTS = {
-  HEALTH: '/health/',
+  HEALTH: "/health/",
   // Note: Prometheus and Grafana are checked via backend proxy to avoid CORS issues
-  PROMETHEUS: '/health/prometheus', // Proxy through backend
-  GRAFANA: '/health/grafana' // Proxy through backend  
+  PROMETHEUS: "/health/prometheus", // Proxy through backend
+  GRAFANA: "/health/grafana", // Proxy through backend
 };
 
-// Keep internal ENDPOINTS for backward compatibility  
+// Keep internal ENDPOINTS for backward compatibility
 const ENDPOINTS = SHARED_ENDPOINTS;
 
-export type ServiceStatus = 'up' | 'degraded' | 'down' | 'error';
+export type ServiceStatus = "up" | "degraded" | "down" | "error";
 
 export interface IServiceResult {
   status: ServiceStatus;
@@ -70,15 +70,21 @@ export interface IServiceResult {
 // HTTP CLIENT WITH RETRY LOGIC (Shared across all checkers)
 // =============================================================================
 export class HttpClient {
-  static async fetchWithTimeout(url: string, timeout: number = CONFIG.TIMEOUT): Promise<Response> {
+  static async fetchWithTimeout(
+    url: string,
+    timeout: number = CONFIG.TIMEOUT,
+  ): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
-    
+
     try {
       const response = await fetch(url, {
-        method: 'GET',
-        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-        signal: controller.signal
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        signal: controller.signal,
       });
       clearTimeout(timeoutId);
       return response;
@@ -88,7 +94,10 @@ export class HttpClient {
     }
   }
 
-  static async getWithRetry(url: string, retries: number = CONFIG.RETRY_ATTEMPTS): Promise<Response> {
+  static async getWithRetry(
+    url: string,
+    retries: number = CONFIG.RETRY_ATTEMPTS,
+  ): Promise<Response> {
     let lastError: Error | null = null;
 
     for (let i = 0; i <= retries; i++) {
@@ -103,11 +112,14 @@ export class HttpClient {
       }
     }
 
-    throw lastError || new Error(`Failed to fetch ${url} after ${retries + 1} attempts`);
+    throw (
+      lastError ||
+      new Error(`Failed to fetch ${url} after ${retries + 1} attempts`)
+    );
   }
 
   private static delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
 
@@ -116,37 +128,41 @@ export class HttpClient {
 // =============================================================================
 export class ErrorHandler {
   static createErrorResult(error: Error, serviceName: string): IServiceResult {
-    const isTimeout = error.name === 'AbortError' || error.message.includes('timeout');
-    const isNetworkError = error.message.includes('fetch') || error.message.includes('network');
-    
+    const isTimeout =
+      error.name === "AbortError" || error.message.includes("timeout");
+    const isNetworkError =
+      error.message.includes("fetch") || error.message.includes("network");
+
     let status: ServiceStatus;
     let message: string;
-    
+
     if (isTimeout) {
-      status = 'degraded';
+      status = "degraded";
       message = `${serviceName} Timeout`;
     } else if (isNetworkError) {
-      status = 'down';
+      status = "down";
       message = `${serviceName} Offline`;
     } else {
-      status = 'error';
+      status = "error";
       message = `${serviceName} Error`;
     }
-    
+
     return {
       status,
       message,
       metrics: {},
       error: error.message,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
   }
-  
+
   static isRetryableError(error: Error): boolean {
-    return error.name === 'AbortError' || 
-           error.message.includes('timeout') ||
-           error.message.includes('fetch') ||
-           error.message.includes('network');
+    return (
+      error.name === "AbortError" ||
+      error.message.includes("timeout") ||
+      error.message.includes("fetch") ||
+      error.message.includes("network")
+    );
   }
 }
 
@@ -155,45 +171,49 @@ export class ErrorHandler {
 // =============================================================================
 export class EnvironmentDetector {
   static isServerSide(): boolean {
-    return typeof window === 'undefined';
+    return typeof window === "undefined";
   }
 
   static isBrowserSide(): boolean {
-    return typeof window !== 'undefined';
+    return typeof window !== "undefined";
   }
 
   static getCurrentPort(): number | string {
-    if (this.isServerSide()) return 'Server-side';
-    
+    if (this.isServerSide()) return "Server-side";
+
     // ASTRO 2025 ULTIMATE EFFICIENCY: Build-time injected port (zero runtime overhead)
     const configuredPort = import.meta.env.VITE_SERVER_PORT;
     if (configuredPort && import.meta.env.DEV) {
       // Use build-time injected port from astro.config.ts
       return parseInt(configuredPort);
     }
-    
+
     // Runtime fallback for production/staging where port might vary
     const port = window.location.port;
-    return port ? parseInt(port) : (window.location.protocol === 'https:' ? 443 : 80);
+    return port
+      ? parseInt(port)
+      : window.location.protocol === "https:"
+        ? 443
+        : 80;
   }
 
   static getEnvironmentType(): string {
-    if (this.isServerSide()) return 'Server-side Rendering';
-    
+    if (this.isServerSide()) return "Server-side Rendering";
+
     // ASTRO 2025 BEST PRACTICE: Direct mode detection (most efficient)
     // No conditional checks needed - import.meta.env.MODE is always available
     const mode = import.meta.env.MODE;
-    
+
     // Map Astro/Vite modes to user-friendly names
     switch (mode) {
-      case 'development':
-        return 'Development';
-      case 'production': 
-        return 'Production';
-      case 'staging':
-        return 'Staging';
-      case 'test':
-        return 'Testing';
+      case "development":
+        return "Development";
+      case "production":
+        return "Production";
+      case "staging":
+        return "Staging";
+      case "test":
+        return "Testing";
       default:
         // Fallback with mode info for custom modes
         return `${mode.charAt(0).toUpperCase() + mode.slice(1)} Mode`;
@@ -203,12 +223,12 @@ export class EnvironmentDetector {
   // ASTRO 2025 ULTIMATE EFFICIENCY: Build time tracking
   static getBuildTime(): string {
     const buildTime = import.meta.env.VITE_BUILD_TIME;
-    if (!buildTime || this.isServerSide()) return 'Unknown';
-    
+    if (!buildTime || this.isServerSide()) return "Unknown";
+
     try {
       return new Date(buildTime).toLocaleString();
     } catch {
-      return 'Invalid build time';
+      return "Invalid build time";
     }
   }
 }
@@ -221,15 +241,17 @@ export class PerformanceMetrics {
     if (EnvironmentDetector.isServerSide()) return 0;
 
     // Use modern Navigation Timing API Level 2
-    if ('performance' in window && 'getEntriesByType' in performance) {
-      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+    if ("performance" in window && "getEntriesByType" in performance) {
+      const navigation = performance.getEntriesByType(
+        "navigation",
+      )[0] as PerformanceNavigationTiming;
       if (navigation && navigation.loadEventEnd > 0) {
         return navigation.loadEventEnd - navigation.fetchStart;
       }
     }
 
     // Alternative modern approach using performance.now() from page start
-    if ('performance' in window && 'now' in performance) {
+    if ("performance" in window && "now" in performance) {
       return performance.now();
     }
 
@@ -237,7 +259,7 @@ export class PerformanceMetrics {
   }
 
   static getMemoryUsage(): string {
-    if (EnvironmentDetector.isServerSide()) return 'Server-side';
+    if (EnvironmentDetector.isServerSide()) return "Server-side";
 
     // Use performance.memory API if available (Chrome, Edge)
     interface PerformanceMemory {
@@ -246,84 +268,90 @@ export class PerformanceMetrics {
       jsHeapSizeLimit: number;
     }
 
-    if ('memory' in performance) {
-      const memory = (performance as unknown as { memory: PerformanceMemory }).memory;
+    if ("memory" in performance) {
+      const memory = (performance as unknown as { memory: PerformanceMemory })
+        .memory;
       const usedJSHeapSize = memory.usedJSHeapSize;
       const totalJSHeapSize = memory.totalJSHeapSize;
       const jsHeapSizeLimit = memory.jsHeapSizeLimit;
-      
+
       // Convert bytes to MB for readability
-      const usedMB = Math.round(usedJSHeapSize / 1024 / 1024 * 100) / 100;
-      const totalMB = Math.round(totalJSHeapSize / 1024 / 1024 * 100) / 100;
-      const limitMB = Math.round(jsHeapSizeLimit / 1024 / 1024 * 100) / 100;
-      
+      const usedMB = Math.round((usedJSHeapSize / 1024 / 1024) * 100) / 100;
+      const totalMB = Math.round((totalJSHeapSize / 1024 / 1024) * 100) / 100;
+      const limitMB = Math.round((jsHeapSizeLimit / 1024 / 1024) * 100) / 100;
+
       return `${usedMB}MB / ${totalMB}MB (Limit: ${limitMB}MB)`;
     }
-    
+
     // Fallback: Use navigator.deviceMemory if available
     interface NavigatorWithDeviceMemory extends Navigator {
       deviceMemory?: number;
     }
 
-    if ('deviceMemory' in navigator) {
-      const deviceMemory = (navigator as NavigatorWithDeviceMemory).deviceMemory;
+    if ("deviceMemory" in navigator) {
+      const deviceMemory = (navigator as NavigatorWithDeviceMemory)
+        .deviceMemory;
       return `Device: ${deviceMemory}GB RAM`;
     }
-    
+
     // Dynamic estimation based on actual page load performance
     const loadTime = this.getPageLoadTime();
-    
-    if (loadTime === 0) return 'Memory info unavailable';
-    
+
+    if (loadTime === 0) return "Memory info unavailable";
+
     if (loadTime < 1000) {
-      return 'Estimated: 8-16GB (Fast Load)';
+      return "Estimated: 8-16GB (Fast Load)";
     } else if (loadTime < 3000) {
-      return 'Estimated: 4-8GB (Normal Load)';
+      return "Estimated: 4-8GB (Normal Load)";
     } else {
-      return 'Estimated: 2-4GB (Slow Load)';
+      return "Estimated: 2-4GB (Slow Load)";
     }
   }
 
   static getBundleSize(): string {
-    if (EnvironmentDetector.isServerSide()) return 'N/A (SSR)';
-    
+    if (EnvironmentDetector.isServerSide()) return "N/A (SSR)";
+
     let totalSize = 0;
-    
+
     // Use Resource Timing API for accurate size calculation
-    if ('performance' in window && performance.getEntriesByType) {
-      const resources = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
-      
-      resources.forEach(resource => {
-        if (resource.name.includes('.ts') || resource.name.includes('.css')) {
+    if ("performance" in window && performance.getEntriesByType) {
+      const resources = performance.getEntriesByType(
+        "resource",
+      ) as PerformanceResourceTiming[];
+
+      resources.forEach((resource) => {
+        if (resource.name.includes(".ts") || resource.name.includes(".css")) {
           totalSize += resource.transferSize || resource.encodedBodySize || 0;
         }
       });
     }
-    
+
     if (totalSize > 0) {
       if (totalSize < 1024) {
         return `${totalSize}B (Actual)`;
       } else if (totalSize < 1024 * 1024) {
-        const sizeKB = Math.round(totalSize / 1024 * 100) / 100;
+        const sizeKB = Math.round((totalSize / 1024) * 100) / 100;
         return `${sizeKB}KB (Actual)`;
       } else {
-        const sizeMB = Math.round(totalSize / 1024 / 1024 * 100) / 100;
+        const sizeMB = Math.round((totalSize / 1024 / 1024) * 100) / 100;
         return `${sizeMB}MB (Actual)`;
       }
     }
-    
+
     // Dynamic estimation based on DOM complexity
-    const scriptCount = document.querySelectorAll('script').length;
-    const linkCount = document.querySelectorAll('link[rel="stylesheet"]').length;
+    const scriptCount = document.querySelectorAll("script").length;
+    const linkCount = document.querySelectorAll(
+      'link[rel="stylesheet"]',
+    ).length;
     const totalAssets = scriptCount + linkCount;
-    
+
     // More sophisticated estimation based on asset count and page complexity
     const estimatedKB = Math.max(200, totalAssets * 50); // Base 200KB + 50KB per asset
-    
+
     if (estimatedKB < 1024) {
       return `~${estimatedKB}KB (Estimated)`;
     } else {
-      const estimatedMB = Math.round(estimatedKB / 1024 * 100) / 100;
+      const estimatedMB = Math.round((estimatedKB / 1024) * 100) / 100;
       return `~${estimatedMB}MB (Estimated)`;
     }
   }
@@ -334,19 +362,21 @@ export class PerformanceMetrics {
 // =============================================================================
 export class FrameworkDetector {
   static getFrameworkInfo(): string {
-    if (EnvironmentDetector.isServerSide()) return 'Astro (Server-side)';
-    
+    if (EnvironmentDetector.isServerSide()) return "Astro (Server-side)";
+
     // ASTRO 2025 ULTIMATE EFFICIENCY: Build-time version injection from package.tson
-    const astroVersion = import.meta.env.VITE_ASTRO_VERSION || '5.13.5';
+    const astroVersion = import.meta.env.VITE_ASTRO_VERSION || "5.13.5";
     const buildTime = import.meta.env.VITE_BUILD_TIME;
-    
+
     // Use build-time environment detection for optimal performance
     if (import.meta.env.DEV) {
       // Development mode - indicate HMR capabilities and integrations
       return `Astro v${astroVersion} + React + Vite`;
     } else {
       // Production mode - optimized build with build timestamp
-      const buildDate = buildTime ? new Date(buildTime).toLocaleDateString() : '';
+      const buildDate = buildTime
+        ? new Date(buildTime).toLocaleDateString()
+        : "";
       return `Astro v${astroVersion} (Built: ${buildDate})`;
     }
   }
@@ -358,46 +388,50 @@ export class FrameworkDetector {
 
     return {
       // Astro-specific features
-      astroIslands: !!document.querySelector('[data-astro-cid]'),
-      
+      astroIslands: !!document.querySelector("[data-astro-cid]"),
+
       // React integration - improved detection for Astro + React
       reactComponents: this.detectReactComponents(),
-      
+
       // TypeScript (assume true if this code is running)
       typescriptSupport: true,
-      
+
       // Tailwind CSS detection
       tailwindCSS: this.detectTailwindCSS(),
-      
+
       // Development features - improved HMR detection
       hotModuleReload: this.detectHotModuleReload(),
-      
+
       // Browser APIs
-      serviceWorker: 'serviceWorker' in navigator,
-      webAssembly: typeof WebAssembly === 'object',
-      intersectionObserver: 'IntersectionObserver' in window,
-      performanceAPI: 'performance' in window && 'getEntriesByType' in performance
+      serviceWorker: "serviceWorker" in navigator,
+      webAssembly: typeof WebAssembly === "object",
+      intersectionObserver: "IntersectionObserver" in window,
+      performanceAPI:
+        "performance" in window && "getEntriesByType" in performance,
     };
   }
 
   private static detectReactComponents(): boolean {
     // Check for traditional React selectors
-    if (document.querySelector('[data-react-component]') || 
-        document.querySelector('[data-reactroot]')) {
+    if (
+      document.querySelector("[data-react-component]") ||
+      document.querySelector("[data-reactroot]")
+    ) {
       return true;
     }
 
     // Check for Astro islands with React components
-    if (document.querySelector('[data-astro-cid]')) {
+    if (document.querySelector("[data-astro-cid]")) {
       return true; // Astro can render React components as islands
     }
 
     // Check for React in script tags or modules
-    const scripts = Array.from(document.querySelectorAll('script'));
-    const hasReact = scripts.some(script => 
-      script.src?.includes('react') || 
-      script.textContent?.includes('React') ||
-      script.textContent?.includes('_react')
+    const scripts = Array.from(document.querySelectorAll("script"));
+    const hasReact = scripts.some(
+      (script) =>
+        script.src?.includes("react") ||
+        script.textContent?.includes("React") ||
+        script.textContent?.includes("_react"),
     );
 
     // Check for React in global scope
@@ -407,14 +441,16 @@ export class FrameworkDetector {
     }
 
     const windowWithReact = window as WindowWithReact;
-    const hasReactGlobal = !!windowWithReact.React || !!windowWithReact.__REACT_DEVTOOLS_GLOBAL_HOOK__;
+    const hasReactGlobal =
+      !!windowWithReact.React ||
+      !!windowWithReact.__REACT_DEVTOOLS_GLOBAL_HOOK__;
 
     return hasReact || hasReactGlobal;
   }
 
   private static detectHotModuleReload(): boolean {
     // Astro best practice: Use built-in environment variables
-    if (typeof import.meta !== 'undefined' && import.meta.env?.DEV) {
+    if (typeof import.meta !== "undefined" && import.meta.env?.DEV) {
       return true; // Development mode always has HMR in Astro
     }
 
@@ -440,7 +476,7 @@ export class FrameworkDetector {
     }
 
     // Check for Vite dev attributes in DOM (indicates development mode)
-    if (document.querySelector('[data-vite-dev-id]')) {
+    if (document.querySelector("[data-vite-dev-id]")) {
       return true;
     }
 
@@ -450,21 +486,25 @@ export class FrameworkDetector {
   private static detectTailwindCSS(): boolean {
     // Check for Tailwind in stylesheets
     try {
-      return !!Array.from(document.styleSheets).some(sheet => {
+      return !!Array.from(document.styleSheets).some((sheet) => {
         try {
           interface StyleSheetWithLegacyRules {
             rules?: CSSRuleList;
           }
 
-          const rules = sheet.cssRules || (sheet as unknown as StyleSheetWithLegacyRules).rules; // Legacy support
+          const rules =
+            sheet.cssRules ||
+            (sheet as unknown as StyleSheetWithLegacyRules).rules; // Legacy support
           if (!rules) return false;
-          
-          return Array.from(rules).some(rule => {
+
+          return Array.from(rules).some((rule) => {
             const cssText = (rule as CSSRule).cssText;
-            return cssText?.includes('tailwind') || 
-                   cssText?.includes('tw-') ||
-                   cssText?.includes('prose') ||
-                   cssText?.includes('container');
+            return (
+              cssText?.includes("tailwind") ||
+              cssText?.includes("tw-") ||
+              cssText?.includes("prose") ||
+              cssText?.includes("container")
+            );
           });
         } catch {
           // CORS or other errors accessing stylesheet
@@ -483,31 +523,42 @@ export class FrameworkDetector {
 export class StatusMapper {
   static mapBackendStatus(backendStatus: string): ServiceStatus {
     switch (backendStatus) {
-      case 'healthy': return 'up';
-      case 'degraded': return 'degraded'; 
-      case 'unhealthy': return 'down';
-      default: return 'error';
+      case "healthy":
+        return "up";
+      case "degraded":
+        return "degraded";
+      case "unhealthy":
+        return "down";
+      default:
+        return "error";
     }
   }
 
   static mapDatabaseStatus(dbStatus: string): ServiceStatus {
     switch (dbStatus) {
-      case 'healthy': return 'up';
-      case 'degraded': return 'degraded'; 
-      case 'unhealthy': return 'down';
-      default: return 'error';
+      case "healthy":
+        return "up";
+      case "degraded":
+        return "degraded";
+      case "unhealthy":
+        return "down";
+      default:
+        return "error";
     }
   }
 
-  static mapCacheStatus(cacheStatus: string | undefined, cacheData: unknown): ServiceStatus {
-    if (!cacheData || cacheStatus === 'not_configured') {
-      return 'down';
-    } else if (cacheStatus === 'healthy') {
-      return 'up';
-    } else if (cacheStatus === 'degraded') {
-      return 'degraded';
+  static mapCacheStatus(
+    cacheStatus: string | undefined,
+    cacheData: unknown,
+  ): ServiceStatus {
+    if (!cacheData || cacheStatus === "not_configured") {
+      return "down";
+    } else if (cacheStatus === "healthy") {
+      return "up";
+    } else if (cacheStatus === "degraded") {
+      return "degraded";
     } else {
-      return 'error';
+      return "error";
     }
   }
 }
@@ -520,11 +571,12 @@ export class AdaptivePollingManager {
   // Note: pollingIntervals removed - using direct interval management for better performance
   private responseTimeHistory: Map<string, number[]> = new Map();
   private failureCount: Map<string, number> = new Map();
-  private circuitBreakerState: Map<string, 'closed' | 'open' | 'half-open'> = new Map();
+  private circuitBreakerState: Map<string, "closed" | "open" | "half-open"> =
+    new Map();
   private lastFailureTime: Map<string, number> = new Map();
   private isTabVisible: boolean = true;
   private batteryLevel: number = 1.0;
-  private networkQuality: 'fast' | 'normal' | 'slow' = 'normal';
+  private networkQuality: "fast" | "normal" | "slow" = "normal";
 
   static getInstance(): AdaptivePollingManager {
     if (!AdaptivePollingManager.instance) {
@@ -538,10 +590,10 @@ export class AdaptivePollingManager {
   }
 
   private initializeBrowserOptimizations(): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     // Track tab visibility for background optimization
-    document.addEventListener('visibilitychange', () => {
+    document.addEventListener("visibilitychange", () => {
       this.isTabVisible = !document.hidden;
     });
 
@@ -553,11 +605,11 @@ export class AdaptivePollingManager {
       }>;
     }
 
-    if ('getBattery' in navigator) {
+    if ("getBattery" in navigator) {
       const navWithBattery = navigator as NavigatorWithBattery;
       navWithBattery.getBattery?.().then((battery) => {
         this.batteryLevel = battery.level;
-        battery.addEventListener('levelchange', () => {
+        battery.addEventListener("levelchange", () => {
           this.batteryLevel = battery.level;
         });
       });
@@ -571,12 +623,12 @@ export class AdaptivePollingManager {
       };
     }
 
-    if ('connection' in navigator) {
+    if ("connection" in navigator) {
       const navWithConnection = navigator as NavigatorWithConnection;
       const connection = navWithConnection.connection;
       if (connection) {
         this.updateNetworkQuality(connection.effectiveType);
-        connection.addEventListener('change', () => {
+        connection.addEventListener("change", () => {
           this.updateNetworkQuality(connection.effectiveType);
         });
       }
@@ -585,18 +637,18 @@ export class AdaptivePollingManager {
 
   private updateNetworkQuality(effectiveType: string): void {
     switch (effectiveType) {
-      case '4g':
-        this.networkQuality = 'fast';
+      case "4g":
+        this.networkQuality = "fast";
         break;
-      case '3g':
-        this.networkQuality = 'normal';
+      case "3g":
+        this.networkQuality = "normal";
         break;
-      case '2g':
-      case 'slow-2g':
-        this.networkQuality = 'slow';
+      case "2g":
+      case "slow-2g":
+        this.networkQuality = "slow";
         break;
       default:
-        this.networkQuality = 'normal';
+        this.networkQuality = "normal";
     }
   }
 
@@ -605,8 +657,9 @@ export class AdaptivePollingManager {
     let baseTimeout = SHARED_CONFIG.TIMEOUT;
 
     if (history.length > 0) {
-      const avgResponseTime = history.reduce((a, b) => a + b, 0) / history.length;
-      
+      const avgResponseTime =
+        history.reduce((a, b) => a + b, 0) / history.length;
+
       if (avgResponseTime < SHARED_CONFIG.FAST_RESPONSE_THRESHOLD) {
         baseTimeout = SHARED_CONFIG.MIN_TIMEOUT;
       } else if (avgResponseTime > SHARED_CONFIG.SLOW_RESPONSE_THRESHOLD) {
@@ -616,15 +669,18 @@ export class AdaptivePollingManager {
 
     // Adjust for network quality
     switch (this.networkQuality) {
-      case 'slow':
+      case "slow":
         baseTimeout *= 1.5;
         break;
-      case 'fast':
+      case "fast":
         baseTimeout *= 0.8;
         break;
     }
 
-    return Math.min(Math.max(baseTimeout, SHARED_CONFIG.MIN_TIMEOUT), SHARED_CONFIG.MAX_TIMEOUT);
+    return Math.min(
+      Math.max(baseTimeout, SHARED_CONFIG.MIN_TIMEOUT),
+      SHARED_CONFIG.MAX_TIMEOUT,
+    );
   }
 
   getAdaptiveInterval(serviceName: string, lastResult: IServiceResult): number {
@@ -632,16 +688,16 @@ export class AdaptivePollingManager {
 
     // Choose base interval based on service status
     switch (lastResult.status) {
-      case 'up':
+      case "up":
         baseInterval = SHARED_CONFIG.BASE_INTERVAL;
         break;
-      case 'degraded':
+      case "degraded":
         baseInterval = SHARED_CONFIG.FAST_INTERVAL; // Poll faster for degraded services
         break;
-      case 'down':
+      case "down":
         baseInterval = SHARED_CONFIG.SLOW_INTERVAL; // Poll slower for down services
         break;
-      case 'error':
+      case "error":
         baseInterval = SHARED_CONFIG.ERROR_INTERVAL;
         break;
       default:
@@ -658,15 +714,19 @@ export class AdaptivePollingManager {
     }
 
     // Circuit breaker logic
-    const circuitState = this.circuitBreakerState.get(serviceName) || 'closed';
-    if (circuitState === 'open') {
+    const circuitState = this.circuitBreakerState.get(serviceName) || "closed";
+    if (circuitState === "open") {
       baseInterval = SHARED_CONFIG.CIRCUIT_BREAKER_TIMEOUT;
     }
 
     return baseInterval;
   }
 
-  recordResponse(serviceName: string, responseTime: number, success: boolean): void {
+  recordResponse(
+    serviceName: string,
+    responseTime: number,
+    success: boolean,
+  ): void {
     // Track response times for adaptive timeouts
     const history = this.responseTimeHistory.get(serviceName) || [];
     history.push(responseTime);
@@ -676,27 +736,29 @@ export class AdaptivePollingManager {
     // Circuit breaker logic
     if (success) {
       this.failureCount.set(serviceName, 0);
-      this.circuitBreakerState.set(serviceName, 'closed');
+      this.circuitBreakerState.set(serviceName, "closed");
     } else {
       const failures = (this.failureCount.get(serviceName) || 0) + 1;
       this.failureCount.set(serviceName, failures);
-      
+
       if (failures >= SHARED_CONFIG.CIRCUIT_BREAKER_THRESHOLD) {
-        this.circuitBreakerState.set(serviceName, 'open');
+        this.circuitBreakerState.set(serviceName, "open");
         this.lastFailureTime.set(serviceName, Date.now());
       }
     }
 
     // Check if circuit should move to half-open
     const lastFailure = this.lastFailureTime.get(serviceName) || 0;
-    if (this.circuitBreakerState.get(serviceName) === 'open' && 
-        Date.now() - lastFailure > SHARED_CONFIG.CIRCUIT_BREAKER_TIMEOUT) {
-      this.circuitBreakerState.set(serviceName, 'half-open');
+    if (
+      this.circuitBreakerState.get(serviceName) === "open" &&
+      Date.now() - lastFailure > SHARED_CONFIG.CIRCUIT_BREAKER_TIMEOUT
+    ) {
+      this.circuitBreakerState.set(serviceName, "half-open");
     }
   }
 
   shouldSkipPoll(serviceName: string): boolean {
-    return this.circuitBreakerState.get(serviceName) === 'open';
+    return this.circuitBreakerState.get(serviceName) === "open";
   }
 }
 
@@ -715,78 +777,98 @@ export class BackendServiceChecker {
   static async checkHealth(): Promise<IServiceResult> {
     try {
       const startTime = Date.now();
-      const response = await HttpClient.getWithRetry(`${CONFIG.API_URL}${ENDPOINTS.HEALTH}`);
+      const response = await HttpClient.getWithRetry(
+        `${CONFIG.API_URL}${ENDPOINTS.HEALTH}`,
+      );
       const responseTime = Date.now() - startTime;
-      
+
       if (response.ok) {
         const data = await response.json();
-        logger.debug('Raw backend health response', { data });
+        logger.debug("Raw backend health response", { data });
         const status = StatusMapper.mapBackendStatus(data.status);
-        
+
         return {
           status,
           message: `Backend ${status.toUpperCase()}`,
           metrics: this.buildMetrics(data, responseTime),
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       } else {
         return this.createErrorResponse(responseTime, response.status);
       }
     } catch (error) {
-      return ErrorHandler.createErrorResult(error as Error, 'Backend');
+      return ErrorHandler.createErrorResult(error as Error, "Backend");
     }
   }
 
   // SOLID: Single Responsibility - Metric processing
-  private static buildMetrics(data: Record<string, unknown>, responseTime: number): Record<string, unknown> {
-    logger.debug('Building metrics from data', {
+  private static buildMetrics(
+    data: Record<string, unknown>,
+    responseTime: number,
+  ): Record<string, unknown> {
+    logger.debug("Building metrics from data", {
       uptime: data.uptime,
       memory: data.memory,
       cpu: data.cpu,
       version: data.version,
       // Check for alternative field names
       system_info: data.system_info,
-      metrics: data.metrics
+      metrics: data.metrics,
     });
 
     // Handle different possible response structures with proper type guards
-    const systemInfo = (data.system_info as Record<string, unknown>) || (data.metrics as Record<string, unknown>) || {};
+    const systemInfo =
+      (data.system_info as Record<string, unknown>) ||
+      (data.metrics as Record<string, unknown>) ||
+      {};
     const database = (data.database as Record<string, unknown>) || {};
     const cache = (data.cache as Record<string, unknown>) || {};
 
     const result = {
       responseTime,
       // Try multiple possible field names for system metrics
-      uptime: this.formatUptime(data.uptime || systemInfo.uptime || systemInfo.uptime_seconds),
-      memory: this.formatMemory(data.memory || systemInfo.memory || systemInfo.memory_usage || systemInfo.memory_used),
-      cpu: this.formatCpu(data.cpu || systemInfo.cpu || systemInfo.cpu_percent || systemInfo.cpu_usage),
+      uptime: this.formatUptime(
+        data.uptime || systemInfo.uptime || systemInfo.uptime_seconds,
+      ),
+      memory: this.formatMemory(
+        data.memory ||
+          systemInfo.memory ||
+          systemInfo.memory_usage ||
+          systemInfo.memory_used,
+      ),
+      cpu: this.formatCpu(
+        data.cpu ||
+          systemInfo.cpu ||
+          systemInfo.cpu_percent ||
+          systemInfo.cpu_usage,
+      ),
       version: data.version || systemInfo.version || this.getDefaultVersion(),
-      database: database.status || 'Unknown',
-      cache: cache.status || 'Unknown',
+      database: database.status || "Unknown",
+      cache: cache.status || "Unknown",
       // Enhanced metrics for monitoring
-      monitoring: this.extractMonitoringInfo(data)
+      monitoring: this.extractMonitoringInfo(data),
     };
 
-    logger.debug('Formatted metrics result', { result });
+    logger.debug("Formatted metrics result", { result });
     return result;
   }
 
   // ASTRO 2025 BEST PRACTICE: Use build-time efficiency for static info
   private static getDefaultVersion(): string {
     const buildTimeVersion = import.meta.env.VITE_BACKEND_VERSION;
-    return buildTimeVersion || '1.0.0'; // Fallback version
+    return buildTimeVersion || "1.0.0"; // Fallback version
   }
 
   // ASTRO 2025 BEST PRACTICE: Build-time fallback for uptime
   private static getDefaultUptime(): string {
     const buildTimeUptime = import.meta.env.VITE_BACKEND_DEFAULT_UPTIME;
-    return buildTimeUptime || '< 1 hour'; // Fallback uptime
+    return buildTimeUptime || "< 1 hour"; // Fallback uptime
   }
 
   // DRY: Reusable formatting methods
   private static formatUptime(uptime: unknown): string {
     if (!uptime) return this.getDefaultUptime(); // Use build-time fallback
-    if (typeof uptime === 'number') {
+    if (typeof uptime === "number") {
       // Convert seconds to human readable
       const hours = Math.floor(uptime / 3600);
       const minutes = Math.floor((uptime % 3600) / 60);
@@ -796,8 +878,8 @@ export class BackendServiceChecker {
   }
 
   private static formatMemory(memory: unknown): string {
-    if (!memory) return 'Offline'; // Better indicator when backend is down
-    if (typeof memory === 'number') {
+    if (!memory) return "Offline"; // Better indicator when backend is down
+    if (typeof memory === "number") {
       // Convert bytes to MB
       return `${Math.round(memory / 1024 / 1024)}MB`;
     }
@@ -805,40 +887,45 @@ export class BackendServiceChecker {
   }
 
   private static formatCpu(cpu: unknown): string {
-    if (!cpu) return 'Offline'; // Better indicator when backend is down
-    if (typeof cpu === 'number') {
+    if (!cpu) return "Offline"; // Better indicator when backend is down
+    if (typeof cpu === "number") {
       return `${Math.round(cpu)}%`;
     }
     return String(cpu);
   }
 
   // SOLID: Open/Closed - Extensible for new monitoring types
-  private static extractMonitoringInfo(data: Record<string, unknown>): Record<string, unknown> {
+  private static extractMonitoringInfo(
+    data: Record<string, unknown>,
+  ): Record<string, unknown> {
     const monitoring = (data.monitoring as Record<string, unknown>) || {};
     return {
-      metricsCollector: monitoring.metricsCollector || 'unknown',
-      healthChecker: monitoring.healthChecker || 'unknown',
-      alertManager: monitoring.alertManager || 'unknown',
-      performanceMonitor: monitoring.performanceMonitor || 'unknown',
-      observabilityManager: monitoring.observabilityManager || 'unknown'
+      metricsCollector: monitoring.metricsCollector || "unknown",
+      healthChecker: monitoring.healthChecker || "unknown",
+      alertManager: monitoring.alertManager || "unknown",
+      performanceMonitor: monitoring.performanceMonitor || "unknown",
+      observabilityManager: monitoring.observabilityManager || "unknown",
     };
   }
 
   // DRY: Reusable error response creation
-  private static createErrorResponse(responseTime: number, status: number): IServiceResult {
+  private static createErrorResponse(
+    responseTime: number,
+    status: number,
+  ): IServiceResult {
     return {
-      status: 'error',
+      status: "error",
       message: `Backend HTTP ${status}`,
       metrics: { responseTime },
       error: `HTTP ${status}`,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
   }
 
   // ASTRO 2025 EFFICIENCY: Static framework info (build-time)
   static getFrameworkInfo(): string {
     const buildTimeFramework = import.meta.env.VITE_BACKEND_FRAMEWORK;
-    return buildTimeFramework || 'FastAPI + Python 3.13';
+    return buildTimeFramework || "FastAPI + Python 3.13";
   }
 
   // ASTRO 2025 EFFICIENCY: Static port info (build-time)
@@ -852,39 +939,46 @@ export class DatabaseServiceChecker {
   static async checkHealth(): Promise<IServiceResult> {
     try {
       const startTime = Date.now();
-      const response = await HttpClient.getWithRetry(`${CONFIG.API_URL}${ENDPOINTS.HEALTH}`);
+      const response = await HttpClient.getWithRetry(
+        `${CONFIG.API_URL}${ENDPOINTS.HEALTH}`,
+      );
       const responseTime = Date.now() - startTime;
-      
+
       if (response.ok) {
         const data = await response.json();
         const dbStatus = data.database?.status;
-        
+
         // SINGLE SOURCE OF TRUTH: Use shared StatusMapper
         const status = StatusMapper.mapDatabaseStatus(dbStatus);
-        
+
         return {
           status,
           message: `Database ${status.toUpperCase()}`,
-          metrics: { 
+          metrics: {
             responseTime,
             connections: data.database?.active_connections || 0,
-            size: data.database?.size || 'Unknown',
+            size: data.database?.size || "Unknown",
             sizeBytes: data.database?.size_bytes || 0,
-            queryTime: (data.database?.response_time_ms !== undefined && data.database?.response_time_ms !== null && data.database?.response_time_ms > 0) ? `${data.database.response_time_ms} ms` : 'Unknown',
-            cache_hit_ratio: data.database?.cache_hit_ratio || null
+            queryTime:
+              data.database?.response_time_ms !== undefined &&
+              data.database?.response_time_ms !== null &&
+              data.database?.response_time_ms > 0
+                ? `${data.database.response_time_ms} ms`
+                : "Unknown",
+            cache_hit_ratio: data.database?.cache_hit_ratio || null,
           },
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       } else {
         return {
-          status: 'error',
-          message: 'Database Check Failed',
+          status: "error",
+          message: "Database Check Failed",
           metrics: { responseTime },
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       }
     } catch (error) {
-      return ErrorHandler.createErrorResult(error as Error, 'Database');
+      return ErrorHandler.createErrorResult(error as Error, "Database");
     }
   }
 }
@@ -893,58 +987,66 @@ export class CacheServiceChecker {
   static async checkHealth(): Promise<IServiceResult> {
     try {
       const startTime = Date.now();
-      const response = await HttpClient.getWithRetry(`${CONFIG.API_URL}${ENDPOINTS.HEALTH}`);
+      const response = await HttpClient.getWithRetry(
+        `${CONFIG.API_URL}${ENDPOINTS.HEALTH}`,
+      );
       const responseTime = Date.now() - startTime;
-      
+
       if (response.ok) {
         const data = await response.json();
         const cacheData = data.cache;
-        
+
         // SINGLE SOURCE OF TRUTH: Use shared StatusMapper
-        const status = StatusMapper.mapCacheStatus(cacheData?.status, cacheData);
-        
+        const status = StatusMapper.mapCacheStatus(
+          cacheData?.status,
+          cacheData,
+        );
+
         // Comprehensive Redis metrics following same pattern as PostgreSQL
         return {
           status,
           message: `Cache ${status.toUpperCase()}`,
-          metrics: { 
+          metrics: {
             responseTime,
             // Core Redis metrics
-            version: cacheData?.version || 'unknown',
-            mode: cacheData?.mode || 'standalone',
-            backend: cacheData?.backend || 'unknown',
-            
+            version: cacheData?.version || "unknown",
+            mode: cacheData?.mode || "standalone",
+            backend: cacheData?.backend || "unknown",
+
             // Memory & Performance
-            memoryUsed: cacheData?.used_memory || 'Unknown',
-            hitRate: (cacheData?.hit_rate !== undefined && cacheData?.hit_rate !== null && cacheData?.hit_rate > 0) 
-              ? `${cacheData.hit_rate}%` 
-              : 'Unknown',
-            
-            // Connection & Stats  
+            memoryUsed: cacheData?.used_memory || "Unknown",
+            hitRate:
+              cacheData?.hit_rate !== undefined &&
+              cacheData?.hit_rate !== null &&
+              cacheData?.hit_rate > 0
+                ? `${cacheData.hit_rate}%`
+                : "Unknown",
+
+            // Connection & Stats
             connectedClients: cacheData?.connected_clients || 0,
-            uptime: cacheData?.uptime || 'Unknown',
+            uptime: cacheData?.uptime || "Unknown",
             totalEntries: cacheData?.total_entries || 0,
             totalOperations: cacheData?.total_operations || 0,
-            
+
             // System Info
-            architecture: cacheData?.architecture || 'unknown',
-            os: cacheData?.os || 'unknown',
-            
+            architecture: cacheData?.architecture || "unknown",
+            os: cacheData?.os || "unknown",
+
             // Monitoring stats
-            monitoring: cacheData?.monitoring || {}
+            monitoring: cacheData?.monitoring || {},
           },
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       } else {
         return {
-          status: 'error',
-          message: 'Cache Check Failed',
+          status: "error",
+          message: "Cache Check Failed",
           metrics: { responseTime },
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       }
     } catch (error) {
-      return ErrorHandler.createErrorResult(error as Error, 'Cache');
+      return ErrorHandler.createErrorResult(error as Error, "Cache");
     }
   }
 }
@@ -954,61 +1056,69 @@ export class PrometheusServiceChecker {
     try {
       const startTime = Date.now();
       // Use backend health endpoint (best practice - single source of truth)
-      const response = await HttpClient.getWithRetry(`${CONFIG.API_URL}${ENDPOINTS.HEALTH}`);
+      const response = await HttpClient.getWithRetry(
+        `${CONFIG.API_URL}${ENDPOINTS.HEALTH}`,
+      );
       const responseTime = Date.now() - startTime;
-      
+
       if (response.ok) {
         const healthData = await response.json();
         const monitoring = healthData.monitoring || {};
-        
+
         // Check if backend monitors external services (future enhancement)
-        const prometheusHealthy = monitoring.prometheus === 'healthy';
-        const metricsHealthy = monitoring.metricsCollector === 'healthy';
-        const observabilityHealthy = monitoring.observabilityManager === 'healthy';
-        
+        const prometheusHealthy = monitoring.prometheus === "healthy";
+        const metricsHealthy = monitoring.metricsCollector === "healthy";
+        const observabilityHealthy =
+          monitoring.observabilityManager === "healthy";
+
         // Graceful degradation: if backend doesn't monitor Prometheus directly,
         // use metricsCollector + observability as proxy indicators
-        const hasPrometheusCheck = 'prometheus' in monitoring;
-        const isHealthy = hasPrometheusCheck ? prometheusHealthy : (metricsHealthy && observabilityHealthy);
-        
-        const status = isHealthy ? 'up' : 'degraded';
-        
+        const hasPrometheusCheck = "prometheus" in monitoring;
+        const isHealthy = hasPrometheusCheck
+          ? prometheusHealthy
+          : metricsHealthy && observabilityHealthy;
+
+        const status = isHealthy ? "up" : "degraded";
+
         return {
           status,
-          message: status === 'up' ? 'Prometheus OPERATIONAL' : 'Prometheus DEGRADED - monitoring unavailable',
-          metrics: { 
+          message:
+            status === "up"
+              ? "Prometheus OPERATIONAL"
+              : "Prometheus DEGRADED - monitoring unavailable",
+          metrics: {
             responseTime,
-            version: 'v2.40.0',
-            build: 'c08d76b3',
-            goVersion: 'go1.19.3',
-            buildDate: '2022-11-07',
-            retention: '30 Days',
+            version: "v2.40.0",
+            build: "c08d76b3",
+            goVersion: "go1.19.3",
+            buildDate: "2022-11-07",
+            retention: "30 Days",
             totalTargets: 2,
             activeTargets: 2,
             failedTargets: 0,
-            uptime: 'Active',
-            scrapeInterval: '15s',
-            tsdbSize: 'Unknown',
-            samples: 'Unknown',
+            uptime: "Active",
+            scrapeInterval: "15s",
+            tsdbSize: "Unknown",
+            samples: "Unknown",
             enabled: isHealthy,
             // Debug info
             hasDirectCheck: hasPrometheusCheck,
             prometheusHealthy: prometheusHealthy || false,
             metricsHealthy: metricsHealthy || false,
-            observabilityHealthy: observabilityHealthy || false
+            observabilityHealthy: observabilityHealthy || false,
           },
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       } else {
         return {
-          status: 'error',
+          status: "error",
           message: `Backend Health Check Failed (HTTP ${response.status})`,
           metrics: { responseTime },
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       }
     } catch (error) {
-      return ErrorHandler.createErrorResult(error as Error, 'Prometheus');
+      return ErrorHandler.createErrorResult(error as Error, "Prometheus");
     }
   }
 }
@@ -1017,33 +1127,35 @@ export class FrontendServiceChecker {
   static async checkHealth(): Promise<IServiceResult> {
     // Frontend is self-checking - if this code is running, frontend is operational
     const startTime = Date.now();
-    
+
     // Test API connectivity to backend
     let apiConnected = false;
     let responseTime = 0;
-    
+
     try {
-      const response = await HttpClient.fetchWithTimeout(`${CONFIG.API_URL}${ENDPOINTS.HEALTH}`);
+      const response = await HttpClient.fetchWithTimeout(
+        `${CONFIG.API_URL}${ENDPOINTS.HEALTH}`,
+      );
       responseTime = Date.now() - startTime;
       apiConnected = response.ok;
     } catch {
       responseTime = Date.now() - startTime;
       // API error doesn't make frontend down - just affects API connection status
     }
-    
+
     // Collect dynamic runtime metrics using shared utilities (SOLID/DRY)
     const runtimeMetrics = this.getRuntimeMetrics();
-    
+
     return {
-      status: 'up', // Frontend is always up if code is executing
-      message: 'Frontend OPERATIONAL',
+      status: "up", // Frontend is always up if code is executing
+      message: "Frontend OPERATIONAL",
       metrics: {
         responseTime,
         apiConnected,
         pageLoadTime: PerformanceMetrics.getPageLoadTime(),
-        ...runtimeMetrics
+        ...runtimeMetrics,
       },
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
   }
 
@@ -1051,11 +1163,11 @@ export class FrontendServiceChecker {
     // Use shared utilities following DRY principle
     if (EnvironmentDetector.isServerSide()) {
       return {
-        framework: 'Astro (Server-side)',
-        port: 'Server-side',
-        environment: 'Server-side Rendering',
-        bundleSize: 'N/A (SSR)',
-        memory: 'N/A (SSR - Client-side Only)'
+        framework: "Astro (Server-side)",
+        port: "Server-side",
+        environment: "Server-side Rendering",
+        bundleSize: "N/A (SSR)",
+        memory: "N/A (SSR - Client-side Only)",
       };
     }
 
@@ -1066,7 +1178,7 @@ export class FrontendServiceChecker {
       environment: EnvironmentDetector.getEnvironmentType(),
       bundleSize: PerformanceMetrics.getBundleSize(),
       memory: PerformanceMetrics.getMemoryUsage(),
-      features: FrameworkDetector.getFeatureDetection()
+      features: FrameworkDetector.getFeatureDetection(),
     };
   }
 }
@@ -1076,59 +1188,67 @@ export class GrafanaServiceChecker {
     try {
       const startTime = Date.now();
       // Use backend health endpoint (best practice - single source of truth)
-      const response = await HttpClient.getWithRetry(`${CONFIG.API_URL}${ENDPOINTS.HEALTH}`);
+      const response = await HttpClient.getWithRetry(
+        `${CONFIG.API_URL}${ENDPOINTS.HEALTH}`,
+      );
       const responseTime = Date.now() - startTime;
-      
+
       if (response.ok) {
         const healthData = await response.json();
         const monitoring = healthData.monitoring || {};
-        
+
         // Check if backend monitors external services (future enhancement)
-        const grafanaHealthy = monitoring.grafana === 'healthy';
-        const alertManagerHealthy = monitoring.alertManager === 'healthy';
-        const observabilityHealthy = monitoring.observabilityManager === 'healthy';
-        
+        const grafanaHealthy = monitoring.grafana === "healthy";
+        const alertManagerHealthy = monitoring.alertManager === "healthy";
+        const observabilityHealthy =
+          monitoring.observabilityManager === "healthy";
+
         // Graceful degradation: if backend doesn't monitor Grafana directly,
         // use alertManager + observability as proxy indicators
-        const hasGrafanaCheck = 'grafana' in monitoring;
-        const isHealthy = hasGrafanaCheck ? grafanaHealthy : (alertManagerHealthy && observabilityHealthy);
-        
-        const status = isHealthy ? 'up' : 'degraded';
-        
+        const hasGrafanaCheck = "grafana" in monitoring;
+        const isHealthy = hasGrafanaCheck
+          ? grafanaHealthy
+          : alertManagerHealthy && observabilityHealthy;
+
+        const status = isHealthy ? "up" : "degraded";
+
         return {
           status,
-          message: status === 'up' ? 'Grafana OPERATIONAL' : 'Grafana DEGRADED - monitoring unavailable',
-          metrics: { 
+          message:
+            status === "up"
+              ? "Grafana OPERATIONAL"
+              : "Grafana DEGRADED - monitoring unavailable",
+          metrics: {
             responseTime,
-            version: 'v11.3.0',
-            database: 'ok',
-            commit: 'd9455ff7',
-            enterpriseCommit: '05545369',
+            version: "v11.3.0",
+            database: "ok",
+            commit: "d9455ff7",
+            enterpriseCommit: "05545369",
             dashboards: 3,
             datasources: 1,
             users: 1,
             alerts: 0,
-            uptime: 'Active',
-            plugins: ['monitoring-panel', 'worldmap-panel', 'piechart-panel'],
+            uptime: "Active",
+            plugins: ["monitoring-panel", "worldmap-panel", "piechart-panel"],
             enabled: isHealthy,
             // Debug info
             hasDirectCheck: hasGrafanaCheck,
             grafanaHealthy: grafanaHealthy || false,
             alertManagerHealthy: alertManagerHealthy || false,
-            observabilityHealthy: observabilityHealthy || false
+            observabilityHealthy: observabilityHealthy || false,
           },
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       } else {
         return {
-          status: 'error',
+          status: "error",
           message: `Backend Health Check Failed (HTTP ${response.status})`,
           metrics: { responseTime },
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       }
     } catch (error) {
-      return ErrorHandler.createErrorResult(error as Error, 'Grafana');
+      return ErrorHandler.createErrorResult(error as Error, "Grafana");
     }
   }
 }

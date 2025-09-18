@@ -14,22 +14,24 @@ export function calculateJobProgress(job: {
   end_time?: number;
   duration_seconds?: number;
 }): number {
-  if (job.status === 'completed') {
+  if (job.status === "completed") {
     return 100;
   }
 
-  if (job.status === 'failed' || job.status === 'cancelled') {
+  if (job.status === "failed" || job.status === "cancelled") {
     return 0;
   }
 
-  if (job.status === 'pending') {
+  if (job.status === "pending") {
     return 0;
   }
 
-  if (job.status === 'running' && job.start_time) {
+  if (job.status === "running" && job.start_time) {
     const now = Date.now();
     const elapsed = now - job.start_time;
-    const estimated = job.duration_seconds ? job.duration_seconds * 1000 : 30000; // 30s default
+    const estimated = job.duration_seconds
+      ? job.duration_seconds * 1000
+      : 30000; // 30s default
     return Math.min(95, Math.round((elapsed / estimated) * 100)); // Cap at 95% for running jobs
   }
 
@@ -44,7 +46,11 @@ export function calculateJobEfficiency(job: {
   content_size_bytes?: number;
   duration_seconds?: number;
 }): number {
-  if (!job.content_size_bytes || !job.duration_seconds || job.duration_seconds === 0) {
+  if (
+    !job.content_size_bytes ||
+    !job.duration_seconds ||
+    job.duration_seconds === 0
+  ) {
     return 0;
   }
 
@@ -65,7 +71,7 @@ export function isJobRetryable(job: {
   retry_count: number;
   max_retries: number;
 }): boolean {
-  return job.status === 'failed' && job.retry_count < job.max_retries;
+  return job.status === "failed" && job.retry_count < job.max_retries;
 }
 
 /**
@@ -113,19 +119,19 @@ export function calculateAverage(numbers: number[]): number {
  */
 export function calculateProcessingRate(
   contentSize: number,
-  processingTime: number
+  processingTime: number,
 ): { rate: number; unit: string } {
   if (processingTime === 0) {
-    return { rate: 0, unit: 'B/s' };
+    return { rate: 0, unit: "B/s" };
   }
 
   const bytesPerSecond = contentSize / processingTime;
 
   if (bytesPerSecond >= 1024 * 1024) {
-    return { rate: bytesPerSecond / (1024 * 1024), unit: 'MB/s' };
+    return { rate: bytesPerSecond / (1024 * 1024), unit: "MB/s" };
   } else if (bytesPerSecond >= 1024) {
-    return { rate: bytesPerSecond / 1024, unit: 'KB/s' };
+    return { rate: bytesPerSecond / 1024, unit: "KB/s" };
   } else {
-    return { rate: bytesPerSecond, unit: 'B/s' };
+    return { rate: bytesPerSecond, unit: "B/s" };
   }
 }

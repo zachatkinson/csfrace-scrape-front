@@ -4,17 +4,17 @@
  * Shows how complex forms can be built with zero duplication
  */
 
-import React from 'react';
+import React from "react";
 import {
   UnifiedFormBuilder,
   Field,
   CommonValidationSets,
   validationRules,
-  type IUnifiedFormConfig
-} from '../unified';
-import { createContextLogger } from '../../../utils/logger';
+  type IUnifiedFormConfig,
+} from "../unified";
+import { createContextLogger } from "../../../utils/logger";
 
-const logger = createContextLogger('ContactForm');
+const logger = createContextLogger("ContactForm");
 
 interface ContactFormProps {
   onSubmit?: (data: ContactFormData) => Promise<void>;
@@ -28,8 +28,8 @@ interface ContactFormData {
   phone?: string;
   subject: string;
   message: string;
-  priority: 'low' | 'medium' | 'high';
-  contactPreference: 'email' | 'phone' | 'any';
+  priority: "low" | "medium" | "high";
+  contactPreference: "email" | "phone" | "any";
   newsletter: boolean;
   attachments?: FileList;
 }
@@ -39,110 +39,112 @@ interface ContactFormData {
  * Declarative form definition using the unified system
  */
 const contactFormConfig: IUnifiedFormConfig = {
-  id: 'contact-form',
-  title: 'Contact Us',
-  subtitle: 'We\'d love to hear from you. Send us a message and we\'ll respond as soon as possible.',
+  id: "contact-form",
+  title: "Contact Us",
+  subtitle:
+    "We'd love to hear from you. Send us a message and we'll respond as soon as possible.",
   validateOnBlur: true,
   validateOnChange: false,
   submitOnEnter: true,
   fields: [
     // Name field with validation
-    Field.create('name', 'text')
-      .label('Full Name')
-      .placeholder('Enter your full name')
+    Field.create("name", "text")
+      .label("Full Name")
+      .placeholder("Enter your full name")
       .required()
       .validation(CommonValidationSets.text(2, 100))
-      .autoComplete('name')
+      .autoComplete("name")
       .build(),
 
     // Email field with built-in validation
-    Field.create('email', 'email')
-      .label('Email Address')
-      .placeholder('your.email@example.com')
+    Field.create("email", "email")
+      .label("Email Address")
+      .placeholder("your.email@example.com")
       .required()
       .validation(CommonValidationSets.email())
-      .autoComplete('email')
+      .autoComplete("email")
       .build(),
 
     // Phone field (optional)
-    Field.create('phone', 'tel')
-      .label('Phone Number')
-      .placeholder('(555) 123-4567')
-      .helpText('Optional - only if you prefer phone contact')
+    Field.create("phone", "tel")
+      .label("Phone Number")
+      .placeholder("(555) 123-4567")
+      .helpText("Optional - only if you prefer phone contact")
       .validation(CommonValidationSets.phone())
-      .autoComplete('tel')
+      .autoComplete("tel")
       .build(),
 
     // Subject field
-    Field.create('subject', 'text')
-      .label('Subject')
-      .placeholder('What is this regarding?')
+    Field.create("subject", "text")
+      .label("Subject")
+      .placeholder("What is this regarding?")
       .required()
       .validation(CommonValidationSets.text(5, 200))
       .build(),
 
     // Message textarea
-    Field.create('message', 'textarea')
-      .label('Message')
-      .placeholder('Tell us more about your inquiry...')
+    Field.create("message", "textarea")
+      .label("Message")
+      .placeholder("Tell us more about your inquiry...")
       .required()
       .validation(CommonValidationSets.text(10, 2000))
       .build(),
 
     // Priority select
-    Field.create('priority', 'select')
-      .label('Priority Level')
-      .defaultValue('medium')
+    Field.create("priority", "select")
+      .label("Priority Level")
+      .defaultValue("medium")
       .options([
-        { value: 'low', label: 'Low - General inquiry' },
-        { value: 'medium', label: 'Medium - Need response soon' },
-        { value: 'high', label: 'High - Urgent matter' }
+        { value: "low", label: "Low - General inquiry" },
+        { value: "medium", label: "Medium - Need response soon" },
+        { value: "high", label: "High - Urgent matter" },
       ])
       .build(),
 
     // Contact preference radio
-    Field.create('contactPreference', 'radio')
-      .label('Preferred Contact Method')
-      .defaultValue('email')
+    Field.create("contactPreference", "radio")
+      .label("Preferred Contact Method")
+      .defaultValue("email")
       .options([
-        { 
-          value: 'email', 
-          label: 'Email', 
-          description: 'We\'ll respond via email' 
+        {
+          value: "email",
+          label: "Email",
+          description: "We'll respond via email",
         },
-        { 
-          value: 'phone', 
-          label: 'Phone', 
-          description: 'We\'ll call you during business hours' 
+        {
+          value: "phone",
+          label: "Phone",
+          description: "We'll call you during business hours",
         },
-        { 
-          value: 'any', 
-          label: 'Either', 
-          description: 'Use whichever method is most convenient' 
-        }
+        {
+          value: "any",
+          label: "Either",
+          description: "Use whichever method is most convenient",
+        },
       ])
       .build(),
 
     // File attachments
-    Field.create('attachments', 'file')
-      .label('Attachments (Optional)')
-      .helpText('Upload any relevant files (max 5MB each)')
+    Field.create("attachments", "file")
+      .label("Attachments (Optional)")
+      .helpText("Upload any relevant files (max 5MB each)")
       .validation(
-        CommonValidationSets.required()
-          .addRule(validationRules.fileValidation({
+        CommonValidationSets.required().addRule(
+          validationRules.fileValidation({
             maxSize: 5 * 1024 * 1024, // 5MB
             maxFiles: 3,
-            allowedTypes: ['image/', 'application/pdf', '.doc', '.docx']
-          }))
+            allowedTypes: ["image/", "application/pdf", ".doc", ".docx"],
+          }),
+        ),
       )
       .build(),
 
     // Newsletter subscription checkbox
-    Field.create('newsletter', 'checkbox')
-      .label('Subscribe to our newsletter for updates and tips')
+    Field.create("newsletter", "checkbox")
+      .label("Subscribe to our newsletter for updates and tips")
       .defaultValue(false)
       .build(),
-  ]
+  ],
 };
 
 /**
@@ -152,34 +154,44 @@ const contactFormConfig: IUnifiedFormConfig = {
 export const ContactForm: React.FC<ContactFormProps> = ({
   onSubmit,
   onCancel,
-  className = ''
+  className = "",
 }) => {
   const handleSubmit = async (data: Record<string, unknown>) => {
     const formData = data as unknown as ContactFormData;
 
-    logger.info('Contact form submitted', { formData });
-    
+    logger.info("Contact form submitted", { formData });
+
     try {
       await onSubmit?.(formData);
-      
+
       // Show success message or redirect
-      alert('Thank you for your message! We\'ll get back to you soon.');
+      alert("Thank you for your message! We'll get back to you soon.");
     } catch (error) {
-      console.error('Failed to submit contact form:', error);
-      alert('Sorry, there was an error sending your message. Please try again.');
+      console.error("Failed to submit contact form:", error);
+      alert(
+        "Sorry, there was an error sending your message. Please try again.",
+      );
     }
   };
 
   return (
     <div className={className}>
       <UnifiedFormBuilder
-        id={contactFormConfig.id || 'contact-form'}
+        id={contactFormConfig.id || "contact-form"}
         {...(contactFormConfig.title && { title: contactFormConfig.title })}
-        {...(contactFormConfig.subtitle && { subtitle: contactFormConfig.subtitle })}
+        {...(contactFormConfig.subtitle && {
+          subtitle: contactFormConfig.subtitle,
+        })}
         fields={contactFormConfig.fields || []}
-        {...(contactFormConfig.validateOnBlur !== undefined && { validateOnBlur: contactFormConfig.validateOnBlur })}
-        {...(contactFormConfig.validateOnChange !== undefined && { validateOnChange: contactFormConfig.validateOnChange })}
-        {...(contactFormConfig.submitOnEnter !== undefined && { submitOnEnter: contactFormConfig.submitOnEnter })}
+        {...(contactFormConfig.validateOnBlur !== undefined && {
+          validateOnBlur: contactFormConfig.validateOnBlur,
+        })}
+        {...(contactFormConfig.validateOnChange !== undefined && {
+          validateOnChange: contactFormConfig.validateOnChange,
+        })}
+        {...(contactFormConfig.submitOnEnter !== undefined && {
+          submitOnEnter: contactFormConfig.submitOnEnter,
+        })}
         onSubmit={handleSubmit}
         {...(onCancel && { onCancel })}
         showCancel={!!onCancel}
