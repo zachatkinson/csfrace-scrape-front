@@ -5,13 +5,16 @@
  */
 
 import React from 'react';
-import { 
-  UnifiedFormBuilder, 
-  Field, 
+import {
+  UnifiedFormBuilder,
+  Field,
   CommonValidationSets,
   validationRules,
-  type IUnifiedFormConfig 
+  type IUnifiedFormConfig
 } from '../unified';
+import { createContextLogger } from '../../../utils/logger';
+
+const logger = createContextLogger('ContactForm');
 
 interface ContactFormProps {
   onSubmit?: (data: ContactFormData) => Promise<void>;
@@ -151,10 +154,10 @@ export const ContactForm: React.FC<ContactFormProps> = ({
   onCancel,
   className = ''
 }) => {
-  const handleSubmit = async (data: Record<string, any>) => {
-    const formData = data as ContactFormData;
-    
-    console.log('Contact form submitted:', formData);
+  const handleSubmit = async (data: Record<string, unknown>) => {
+    const formData = data as unknown as ContactFormData;
+
+    logger.info('Contact form submitted', { formData });
     
     try {
       await onSubmit?.(formData);
@@ -170,10 +173,10 @@ export const ContactForm: React.FC<ContactFormProps> = ({
   return (
     <div className={className}>
       <UnifiedFormBuilder
-        id={contactFormConfig.id!}
+        id={contactFormConfig.id || 'contact-form'}
         {...(contactFormConfig.title && { title: contactFormConfig.title })}
         {...(contactFormConfig.subtitle && { subtitle: contactFormConfig.subtitle })}
-        fields={contactFormConfig.fields!}
+        fields={contactFormConfig.fields || []}
         {...(contactFormConfig.validateOnBlur !== undefined && { validateOnBlur: contactFormConfig.validateOnBlur })}
         {...(contactFormConfig.validateOnChange !== undefined && { validateOnChange: contactFormConfig.validateOnChange })}
         {...(contactFormConfig.submitOnEnter !== undefined && { submitOnEnter: contactFormConfig.submitOnEnter })}

@@ -35,8 +35,8 @@ export interface AppSettings {
 
 export interface SettingsChangeEvent {
   key: string;
-  oldValue: any;
-  newValue: any;
+  oldValue: unknown;
+  newValue: unknown;
   timestamp: number;
 }
 
@@ -98,7 +98,9 @@ export class SettingsManager {
     // Set up change listener if provided
     if (this.config.onSettingsChange) {
       this.listeners.add((_event: SettingsChangeEvent) => {
-        this.config.onSettingsChange!(this.settings);
+        if (this.config.onSettingsChange) {
+          this.config.onSettingsChange(this.settings);
+        }
       });
     }
   }
@@ -146,33 +148,33 @@ export class SettingsManager {
    * @param loaded - Loaded settings from storage
    * @returns Merged settings with defaults
    */
-  private mergeWithDefaults(loaded: any): AppSettings {
+  private mergeWithDefaults(loaded: Record<string, unknown>): AppSettings {
     const merged = { ...DEFAULT_SETTINGS };
     
     if (loaded && typeof loaded === 'object') {
       // Safely merge each section
-      if (loaded.theme && ['light', 'dark', 'auto'].includes(loaded.theme)) {
-        merged.theme = loaded.theme;
+      if (loaded.theme && typeof loaded.theme === 'string' && ['light', 'dark', 'auto'].includes(loaded.theme)) {
+        merged.theme = loaded.theme as 'light' | 'dark' | 'auto';
       }
       
       if (typeof loaded.timezone === 'string') {
         merged.timezone = loaded.timezone;
       }
       
-      if (loaded.dateFormat && ['short', 'medium', 'long', 'full'].includes(loaded.dateFormat)) {
-        merged.dateFormat = loaded.dateFormat;
+      if (loaded.dateFormat && typeof loaded.dateFormat === 'string' && ['short', 'medium', 'long', 'full'].includes(loaded.dateFormat)) {
+        merged.dateFormat = loaded.dateFormat as 'short' | 'medium' | 'long' | 'full';
       }
       
-      if (loaded.notifications && typeof loaded.notifications === 'object') {
-        merged.notifications = { ...merged.notifications, ...loaded.notifications };
+      if (loaded.notifications && typeof loaded.notifications === 'object' && loaded.notifications !== null) {
+        merged.notifications = { ...merged.notifications, ...(loaded.notifications as Record<string, unknown>) };
       }
       
-      if (loaded.ui && typeof loaded.ui === 'object') {
-        merged.ui = { ...merged.ui, ...loaded.ui };
+      if (loaded.ui && typeof loaded.ui === 'object' && loaded.ui !== null) {
+        merged.ui = { ...merged.ui, ...(loaded.ui as Record<string, unknown>) };
       }
       
-      if (loaded.conversion && typeof loaded.conversion === 'object') {
-        merged.conversion = { ...merged.conversion, ...loaded.conversion };
+      if (loaded.conversion && typeof loaded.conversion === 'object' && loaded.conversion !== null) {
+        merged.conversion = { ...merged.conversion, ...(loaded.conversion as Record<string, unknown>) };
       }
     }
 
@@ -221,7 +223,7 @@ export class SettingsManager {
    * @param oldValue - Previous value
    * @param newValue - New value
    */
-  private emitChange(key: string, oldValue: any, newValue: any): void {
+  private emitChange(key: string, oldValue: unknown, newValue: unknown): void {
     const event: SettingsChangeEvent = {
       key,
       oldValue,
@@ -261,13 +263,17 @@ export class SettingsManager {
    * @param key - Dot-notation key (e.g., 'ui.compactMode')
    * @returns Setting value
    */
-  getSetting(key: string): any {
+  getSetting(key: string): unknown {
     const keys = key.split('.');
-    let value: any = this.settings;
+    let value: unknown = this.settings;
     
     for (const k of keys) {
-      value = value?.[k];
-      if (value === undefined) break;
+      if (value && typeof value === 'object' && k in (value as Record<string, unknown>)) {
+        value = (value as Record<string, unknown>)[k];
+      } else {
+        value = undefined;
+        break;
+      }
     }
     
     return value;
@@ -278,18 +284,24 @@ export class SettingsManager {
    * @param key - Dot-notation key (e.g., 'ui.compactMode')
    * @param value - New value
    */
-  setSetting(key: string, value: any): void {
+  setSetting(key: string, value: unknown): void {
     const keys = key.split('.');
     const lastKey = keys.pop();
     if (!lastKey) return;
 
     // Navigate to the parent object
-    let target: any = this.settings;
+    let target: Record<string, unknown> = this.settings as unknown as Record<string, unknown>;
     for (const k of keys) {
       if (!(k in target)) {
         target[k] = {};
       }
-      target = target[k];
+      const nextTarget = target[k];
+      if (typeof nextTarget === 'object' && nextTarget !== null) {
+        target = nextTarget as Record<string, unknown>;
+      } else {
+        target[k] = {};
+        target = target[k] as Record<string, unknown>;
+      }
     }
 
     const oldValue = target[lastKey];
@@ -395,12 +407,12 @@ export class SettingsManager {
    * @param settings - Settings object to validate
    * @returns True if valid, false otherwise
    */
-  validateSettings(settings: any): boolean {
+  validateSettings(settings: unknown): boolean {
     if (!settings || typeof settings !== 'object') return false;
 
     try {
       // Basic validation - ensure required structure
-      const merged = this.mergeWithDefaults(settings);
+      const merged = this.mergeWithDefaults(settings as Record<string, unknown>);
       return merged !== null;
     } catch {
       return false;
@@ -454,19 +466,19 @@ export function getSettingsManager(): SettingsManager {
  * Quick access functions for common settings
  */
 export const Settings = {
-  get theme() { return getSettingsManager().getSetting('theme'); },
+  get theme() { return getSettingsManager().getSetting('theme') as 'light' | 'dark' | 'auto'; },
   set theme(value: 'light' | 'dark' | 'auto') { getSettingsManager().setSetting('theme', value); },
   
-  get timezone() { return getSettingsManager().getSetting('timezone'); },
+  get timezone() { return getSettingsManager().getSetting('timezone') as string; },
   set timezone(value: string) { getSettingsManager().setSetting('timezone', value); },
   
-  get compactMode() { return getSettingsManager().getSetting('ui.compactMode'); },
+  get compactMode() { return getSettingsManager().getSetting('ui.compactMode') as boolean; },
   set compactMode(value: boolean) { getSettingsManager().setSetting('ui.compactMode', value); },
   
-  get autoRefresh() { return getSettingsManager().getSetting('ui.autoRefresh'); },
+  get autoRefresh() { return getSettingsManager().getSetting('ui.autoRefresh') as boolean; },
   set autoRefresh(value: boolean) { getSettingsManager().setSetting('ui.autoRefresh', value); },
   
-  get refreshInterval() { return getSettingsManager().getSetting('ui.refreshInterval'); },
+  get refreshInterval() { return getSettingsManager().getSetting('ui.refreshInterval') as number; },
   set refreshInterval(value: number) { getSettingsManager().setSetting('ui.refreshInterval', value); },
 };
 

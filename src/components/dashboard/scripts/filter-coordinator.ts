@@ -4,14 +4,18 @@
  * Implements Observer pattern for component communication
  */
 
-import type { 
-  IFilterUpdateEvent, 
-  IBatchActionEvent, 
+import type {
+  IFilterUpdateEvent,
+  IBatchActionEvent,
   IJobsDataUpdateEvent,
-  IFilterState 
+  IFilterState
 } from '../types/filter.types';
 import { ValidationUtils, EventUtils } from '../utils/filter.utils';
 import { domUtils, waitForDOM } from '../utils/dom.utils';
+import { createContextLogger } from '../../../utils/logger';
+import type { IFilterPanelCoordinator, IJobData } from '../../../types/global.types';
+
+const logger = createContextLogger('FilterCoordinator');
 
 // =============================================================================
 // FILTER COORDINATOR CLASS (Single Responsibility Principle)
@@ -37,7 +41,7 @@ class FilterCoordinator {
     this.attachEventListeners();
     this.isInitialized = true;
     
-    console.log('🎯 FilterCoordinator: Initialized as central communication hub');
+    logger.info('FilterCoordinator initialized as central communication hub');
   }
 
   private loadInitialState(): void {
@@ -112,7 +116,7 @@ class FilterCoordinator {
     // Emit consolidated update for external listeners
     this.emitConsolidatedUpdate();
 
-    console.log('🎯 FilterCoordinator: Filter state updated', this.currentState);
+    logger.debug('Filter state updated', { state: this.currentState });
   }
 
   private handleBatchAction(event: CustomEvent<IBatchActionEvent>): void {
@@ -133,7 +137,7 @@ class FilterCoordinator {
         break;
     }
 
-    console.log('🎯 FilterCoordinator: Batch action processed', { action, count: selectedIds.length });
+    logger.info('Batch action processed', { action, count: selectedIds.length });
   }
 
   private handleJobsDataUpdate(event: CustomEvent<IJobsDataUpdateEvent>): void {
@@ -154,9 +158,9 @@ class FilterCoordinator {
 
     this.persistStateToDom();
 
-    console.log('🎯 FilterCoordinator: Jobs data updated', { 
-      totalJobs: jobs.length, 
-      availableStatuses 
+    logger.debug('Jobs data updated', {
+      totalJobs: jobs.length,
+      availableStatuses
     });
   }
 
@@ -258,12 +262,9 @@ class FilterCoordinator {
     if (typeof window === 'undefined') return;
 
     // Expose methods for external components to interact with filter panel
-    (window as any).filterPanelCoordinator = {
-      // Get current state
-      getCurrentState: () => ({ ...this.currentState }),
-
+    (window as Window & { filterPanelCoordinator?: IFilterPanelCoordinator }).filterPanelCoordinator = {
       // Update jobs data from external source
-      updateJobsData: (jobs: any[]) => {
+      updateJobsData: (jobs: IJobData[]) => {
         const validatedJobs = ValidationUtils.validateJobsData(jobs);
         const event = EventUtils.createJobsDataUpdateEvent(validatedJobs);
         EventUtils.dispatchEvent(event);
@@ -274,13 +275,6 @@ class FilterCoordinator {
         this.updateSelectedJobs(jobIds);
       },
 
-      // Toggle individual job selection
-      toggleJobSelection: (jobId: string, selected: boolean) => {
-        const event = new CustomEvent('job:selectionToggle', {
-          detail: { jobId, selected }
-        });
-        EventUtils.dispatchEvent(event);
-      },
 
       // Reset filter panel to default state
       reset: () => {
@@ -326,10 +320,14 @@ class CoordinatorUtils {
   /**
    * Validate event structure
    */
-  static isValidFilterEvent(event: any): boolean {
-    return event && 
-           event.detail && 
-           typeof event.detail.timestamp === 'number';
+  static isValidFilterEvent(event: unknown): boolean {
+    return !!(event &&
+           typeof event === 'object' &&
+           'detail' in event &&
+           event.detail &&
+           typeof event.detail === 'object' &&
+           'timestamp' in event.detail &&
+           typeof (event.detail as { timestamp?: unknown }).timestamp === 'number');
   }
 
   /**
@@ -370,6 +368,12 @@ const filterCoordinator = new FilterCoordinator();
 
 // Expose coordinator globally for debugging and external access
 if (typeof window !== 'undefined') {
-  (window as any).filterCoordinator = filterCoordinator;
-  (window as any).CoordinatorUtils = CoordinatorUtils;
+  (window as Window & {
+    filterCoordinator?: FilterCoordinator;
+    CoordinatorUtils?: typeof CoordinatorUtils;
+  }).filterCoordinator = filterCoordinator;
+  (window as Window & {
+    filterCoordinator?: FilterCoordinator;
+    CoordinatorUtils?: typeof CoordinatorUtils;
+  }).CoordinatorUtils = CoordinatorUtils;
 }

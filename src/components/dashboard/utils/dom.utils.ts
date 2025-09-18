@@ -7,6 +7,14 @@
 
 import type { IDOMUtils } from '../types/filter.types.ts';
 
+/**
+ * Type-safe event map for DOM elements
+ * Following Interface Segregation Principle with proper browser API types
+ */
+type DOMEventMap = {
+  [K in keyof HTMLElementEventMap]: HTMLElementEventMap[K];
+};
+
 // =============================================================================
 // DOM UTILITIES CLASS (Single Responsibility Principle)
 // =============================================================================
@@ -71,11 +79,12 @@ export class DOMUtils implements IDOMUtils {
 
   /**
    * Add event listener with error handling and proper typing
+   * Following SOLID principles with proper type safety
    */
-  addEventListener<K extends keyof HTMLElementEventMap>(
+  addEventListener<K extends keyof DOMEventMap>(
     element: Element,
     type: K,
-    listener: (event: HTMLElementEventMap[K]) => void
+    listener: (event: DOMEventMap[K]) => void
   ): void;
   addEventListener(
     element: Element,
@@ -169,13 +178,13 @@ export function waitForDOM(): Promise<void> {
 /**
  * Debounce function for performance (DRY pattern)
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
   let timeout: ReturnType<typeof setTimeout>;
-  
-  return function(this: any, ...args: Parameters<T>) {
+
+  return function(this: ThisParameterType<T>, ...args: Parameters<T>) {
     clearTimeout(timeout);
     timeout = setTimeout(() => func.apply(this, args), wait);
   };
@@ -184,13 +193,13 @@ export function debounce<T extends (...args: any[]) => any>(
 /**
  * Throttle function for performance (DRY pattern)
  */
-export function throttle<T extends (...args: any[]) => any>(
+export function throttle<T extends (...args: unknown[]) => unknown>(
   func: T,
   limit: number
 ): (...args: Parameters<T>) => void {
   let inThrottle: boolean;
-  
-  return function(this: any, ...args: Parameters<T>) {
+
+  return function(this: ThisParameterType<T>, ...args: Parameters<T>) {
     if (!inThrottle) {
       func.apply(this, args);
       inThrottle = true;

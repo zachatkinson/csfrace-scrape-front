@@ -19,6 +19,9 @@ import {
   type AdaptivePollingResult
 } from '../../../services/SSEPerformanceService';
 import { webSocketFallbackService } from '../../../services/WebSocketFallbackService';
+import { createContextLogger } from '../../../utils/logger';
+
+const logger = createContextLogger('HealthStreamAPI');
 
 export const GET: APIRoute = async ({ request }) => {
   // Check connection limits following performance optimization principles
@@ -66,7 +69,7 @@ export const GET: APIRoute = async ({ request }) => {
 
       // Create debounced update function to prevent rapid-fire updates
       const debouncedSendUpdates = ssePerformanceService.createDebouncedFunction(
-        (changes: any[]) => {
+        (changes: ServiceUpdate[]) => {
           for (const change of changes) {
             const updateMessage = sseService.createServiceUpdateMessage(change);
             if (!sseService.sendMessage(controller, updateMessage)) {
@@ -80,7 +83,7 @@ export const GET: APIRoute = async ({ request }) => {
       const fetchAndCompareHealth = async () => {
         // Check if controller is still open
         if (!sseService.isControllerOpen(controller, request)) {
-          console.log('SSE Controller closed or request aborted, stopping health fetch');
+          logger.info('SSE Controller closed or request aborted, stopping health fetch');
           return;
         }
 
@@ -94,7 +97,7 @@ export const GET: APIRoute = async ({ request }) => {
 
             // Set initial adaptive polling
             currentPollingConfig = ssePerformanceService.getAdaptivePollingInterval(currentHealthData);
-            console.log(`Initial SSE polling: ${currentPollingConfig.interval}ms (${currentPollingConfig.strategy}) - ${currentPollingConfig.reason}`);
+            logger.info(`Initial SSE polling: ${currentPollingConfig.interval}ms (${currentPollingConfig.strategy}) - ${currentPollingConfig.reason}`);
 
             // Enable WebSocket fallback if needed for critical scenarios
             webSocketFallbackService.enableForCriticalScenarios(currentHealthData);
@@ -113,7 +116,7 @@ export const GET: APIRoute = async ({ request }) => {
           const newPollingConfig = ssePerformanceService.getAdaptivePollingInterval(currentHealthData);
           if (newPollingConfig.interval !== currentPollingConfig.interval) {
             currentPollingConfig = newPollingConfig;
-            console.log(`SSE polling adjusted: ${currentPollingConfig.interval}ms (${currentPollingConfig.strategy}) - ${currentPollingConfig.reason}`);
+            logger.info(`SSE polling adjusted: ${currentPollingConfig.interval}ms (${currentPollingConfig.strategy}) - ${currentPollingConfig.reason}`);
 
             // Restart interval with new timing
             clearInterval(intervalId);
@@ -170,12 +173,12 @@ export const GET: APIRoute = async ({ request }) => {
         ssePerformanceService.cleanup();
         // Clean up WebSocket fallback
         webSocketFallbackService.cleanup();
-        console.log('SSE connection cleaned up, active connections:', ssePerformanceService.getMetrics().activeConnections);
+        logger.info('SSE connection cleaned up, active connections:', { activeConnections: ssePerformanceService.getMetrics().activeConnections });
       };
 
       // Handle client disconnect
       request.signal?.addEventListener('abort', () => {
-        console.log('Client disconnected, cleaning up SSE stream');
+        logger.info('Client disconnected, cleaning up SSE stream');
         cleanup();
       });
     },

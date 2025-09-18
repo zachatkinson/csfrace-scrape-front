@@ -234,8 +234,58 @@ const {
 
     <!-- Modal and Panel JavaScript -->
     <script>
+
+      // Define global window interfaces for type safety
+      interface CSFRaceTiming {
+        JOB: {
+          STATUS_CHECK_INTERVAL: number;
+          TIMEOUT: number;
+          POLL_INTERVAL: number;
+        };
+        API: {
+          DEFAULT_TIMEOUT: number;
+          RETRY_DELAY_BASE: number;
+          RETRY_MAX_ATTEMPTS: number;
+        };
+        UI: {
+          NORMAL_ANIMATION: number;
+          FAST_ANIMATION: number;
+          LOADING_MIN_DISPLAY: number;
+        };
+      }
+
+      interface HealthSSEService {
+        eventSource: EventSource | null;
+        isConnected: boolean;
+        retryCount: number;
+        maxRetries: number;
+        retryDelay: number;
+        connect(): Promise<void>;
+        disconnect(): void;
+        handleRetry(): void;
+      }
+
+      interface JobSSEService {
+        eventSource: EventSource | null;
+        isConnected: boolean;
+        retryCount: number;
+        maxRetries: number;
+        retryDelay: number;
+        connect(): Promise<void>;
+        disconnect(): void;
+        handleRetry(): void;
+      }
+
+      declare global {
+        interface Window {
+          CSFRACE_TIMING: CSFRaceTiming;
+          __healthSSEService?: HealthSSEService;
+          __jobSSEService?: JobSSEService;
+        }
+      }
+
       // Initialize global timing constants
-      (window as any).CSFRACE_TIMING = {
+      window.CSFRACE_TIMING = {
         JOB: {
           STATUS_CHECK_INTERVAL: 2000,
           TIMEOUT: 300000,
@@ -271,12 +321,15 @@ const {
     <script>
       import { formatTimestamp } from '/src/utils/timezone';
       import { getApiBaseUrl } from '/src/constants/api';
+      import { createContextLogger } from '/src/utils/logger.js';
+
+      const sseLogger = createContextLogger('SSEService');
 
       // SINGLETON PATTERN: Global health SSE service (Astro MCP best practice)
-      if (!(window as any).__healthSSEService) {
-        console.log('🚀 MainLayout: Creating global SSE health service');
+      if (!window.__healthSSEService) {
+        sseLogger.info('Creating global SSE health service');
 
-        (window as any).__healthSSEService = {
+        window.__healthSSEService = {
           eventSource: null,
           isConnected: false,
           retryCount: 0,
@@ -285,54 +338,58 @@ const {
 
           async connect() {
             if (this.eventSource && this.isConnected) {
-              console.log('✅ SSEService: Already connected, skipping');
+              sseLogger.info('Already connected, skipping');
               return;
             }
 
             try {
               const backendUrl = getApiBaseUrl();
               const sseUrl = `${backendUrl}/health/stream`;
-              console.log('🔗 SSEService: Establishing connection to:', sseUrl);
+              sseLogger.info('Establishing connection', { sseUrl });
               this.eventSource = new EventSource(sseUrl);
 
               this.eventSource.onopen = () => {
                 this.isConnected = true;
                 this.retryCount = 0;
-                console.log('✅ SSEService: Connection established');
+                sseLogger.info('Connection established');
               };
 
-              this.eventSource.addEventListener('service-update', async (event: any) => {
+              this.eventSource.addEventListener('service-update', async (event: MessageEvent) => {
                 try {
                   const serviceUpdate = JSON.parse(event.data);
-                  console.log('🎯 SSEService: Service update received:', serviceUpdate);
+                  sseLogger.info('Service update received', { serviceUpdate });
 
                   // Update nanostore (Astro MCP pattern)
                   const { updateHealthData, getCurrentHealthData } = await import('/src/stores/healthStore');
                   const updateTime = new Date(serviceUpdate.timestamp || Date.now());
 
-                  let services: any = {};
+                  const currentData = getCurrentHealthData();
+                  let services = { ...currentData.services };
 
                   if (serviceUpdate.services) {
-                    services = serviceUpdate.services;
+                    // Update all services from bulk update
+                    Object.assign(services, serviceUpdate.services);
                   } else if (serviceUpdate.service && serviceUpdate.status) {
-                    const currentData = getCurrentHealthData();
-                    services = { ...currentData.services };
-
-                    services[serviceUpdate.service] = {
-                      status: serviceUpdate.status === 'healthy' ? 'up' : serviceUpdate.status,
-                      message: `${serviceUpdate.service} service updated`,
-                      metrics: {
-                        responseTime: serviceUpdate.data?.response_time_ms || 0,
-                        ...serviceUpdate.data
-                      },
-                      timestamp: updateTime
-                    };
+                    // Update specific service
+                    const serviceKey = serviceUpdate.service as keyof typeof services;
+                    if (Object.prototype.hasOwnProperty.call(services, serviceKey)) {
+                      services[serviceKey] = {
+                        status: serviceUpdate.status === 'healthy' ? 'up' : serviceUpdate.status,
+                        message: `${serviceUpdate.service} service updated`,
+                        metrics: {
+                          responseTime: serviceUpdate.data?.response_time_ms || 0,
+                          ...serviceUpdate.data
+                        },
+                        error: serviceUpdate.error,
+                        timestamp: updateTime.getTime()
+                      };
+                    }
                   }
 
-                  const healthData: any = {
+                  const healthData = {
                     services,
                     overallStatus: {
-                      status: 'up',
+                      status: 'up' as const,
                       text: 'Services Updated',
                       summary: 'Services updated via SSE',
                       color: 'bg-green-500'
@@ -351,14 +408,14 @@ const {
                 }
               });
 
-              this.eventSource.onerror = (error: any) => {
+              this.eventSource.onerror = (error: Event) => {
                 this.isConnected = false;
-                console.error('❌ SSEService: Connection error:', error);
+                sseLogger.error('Connection error', { error });
                 this.handleRetry();
               };
 
             } catch (error) {
-              console.error('💥 SSEService: Failed to create connection:', error);
+              sseLogger.error('Failed to create connection', { error });
               this.handleRetry();
             }
           },
@@ -367,7 +424,7 @@ const {
             if (this.retryCount < this.maxRetries) {
               const delay = this.retryDelay * Math.pow(2, this.retryCount);
               this.retryCount++;
-              console.log(`🔄 SSEService: Retrying in ${delay}ms (${this.retryCount}/${this.maxRetries})`);
+              sseLogger.info('Retrying connection', { delay, retryCount: this.retryCount, maxRetries: this.maxRetries });
               setTimeout(() => this.connect(), delay);
             }
           },
@@ -383,12 +440,12 @@ const {
 
         // Initialize SSE service
         document.addEventListener('DOMContentLoaded', () => {
-          (window as any).__healthSSEService.connect();
+          window.__healthSSEService?.connect();
         });
 
         // Cleanup on unload
         window.addEventListener('beforeunload', () => {
-          (window as any).__healthSSEService.disconnect();
+          window.__healthSSEService?.disconnect();
         });
       }
     </script>
@@ -396,12 +453,15 @@ const {
     <!-- ASTRO MCP BEST PRACTICE: Global Job SSE Service in MainLayout (DRY pattern) -->
     <script>
       import { getApiBaseUrl } from '/src/constants/api';
+      import { createContextLogger } from '/src/utils/logger.js';
+
+      const jobLogger = createContextLogger('JobSSEService');
 
       // SINGLETON PATTERN: Global job SSE service (following same pattern as health SSE)
-      if (!(window as any).__jobSSEService) {
-        console.log('🚀 MainLayout: Creating global SSE job service');
+      if (!window.__jobSSEService) {
+        jobLogger.info('Creating global SSE job service');
 
-        (window as any).__jobSSEService = {
+        window.__jobSSEService = {
           eventSource: null,
           isConnected: false,
           retryCount: 0,
@@ -410,26 +470,26 @@ const {
 
           async connect() {
             if (this.eventSource && this.isConnected) {
-              console.log('✅ JobSSEService: Already connected, skipping');
+              jobLogger.info('Already connected, skipping');
               return;
             }
 
             try {
               const backendUrl = getApiBaseUrl();
               const sseUrl = `${backendUrl}/jobs/stream`;
-              console.log('🔗 JobSSEService: Establishing connection to:', sseUrl);
+              jobLogger.info('Establishing connection to:', { sseUrl });
               this.eventSource = new EventSource(sseUrl);
 
               this.eventSource.onopen = () => {
                 this.isConnected = true;
                 this.retryCount = 0;
-                console.log('✅ JobSSEService: Connection established');
+                jobLogger.info('Connection established');
               };
 
-              this.eventSource.addEventListener('job-update', async (event: any) => {
+              this.eventSource.addEventListener('job-update', async (event: MessageEvent) => {
                 try {
                   const jobUpdate = JSON.parse(event.data);
-                  console.log('🎯 JobSSEService: Job update received:', jobUpdate);
+                  jobLogger.info('Job update received', { jobUpdate });
 
                   // Dispatch custom event for React components to listen to
                   const jobUpdateEvent = new CustomEvent('jobSSEUpdate', {
@@ -448,7 +508,7 @@ const {
                 }
               });
 
-              this.eventSource.onerror = (error: any) => {
+              this.eventSource.onerror = (error: Event) => {
                 this.isConnected = false;
                 console.error('❌ JobSSEService: Connection error:', error);
                 this.handleRetry();
@@ -464,7 +524,7 @@ const {
             if (this.retryCount < this.maxRetries) {
               const delay = this.retryDelay * Math.pow(2, this.retryCount);
               this.retryCount++;
-              console.log(`🔄 JobSSEService: Retrying in ${delay}ms (${this.retryCount}/${this.maxRetries})`);
+              jobLogger.info(`Retrying in ${delay}ms (${this.retryCount}/${this.maxRetries})`);
               setTimeout(() => this.connect(), delay);
             }
           },
@@ -480,12 +540,12 @@ const {
 
         // Initialize job SSE service
         document.addEventListener('DOMContentLoaded', () => {
-          (window as any).__jobSSEService?.connect();
+          window.__jobSSEService?.connect();
         });
 
         // Cleanup on unload
         window.addEventListener('beforeunload', () => {
-          (window as any).__jobSSEService?.disconnect();
+          window.__jobSSEService?.disconnect();
         });
       }
     </script>

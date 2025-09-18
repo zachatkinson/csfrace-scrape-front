@@ -247,7 +247,7 @@ export function useBaseForm<TData extends Record<string, unknown>>(
     } finally {
       setStateInternal(prev => ({ ...prev, isSubmitting: false }));
     }
-  }, [data, validate, config.onSubmit, config.resetOnSuccess, reset]);
+  }, [data, validate, reset, config]);
 
   // =============================================================================
   // EVENT HANDLERS

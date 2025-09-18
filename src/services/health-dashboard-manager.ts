@@ -102,8 +102,8 @@ export class HealthDashboardManager {
   private updateOverallStatus(results: Array<{name: string, result: IServiceResult | null, success: boolean}>): void {
     const successfulResults = results.filter(r => r.success && r.result);
     const totalServices = results.length;
-    const healthyServices = successfulResults.filter(r => r.result!.status === 'up').length;
-    const degradedServices = successfulResults.filter(r => r.result!.status === 'degraded').length;
+    const healthyServices = successfulResults.filter(r => r.result?.status === 'up').length;
+    const degradedServices = successfulResults.filter(r => r.result?.status === 'degraded').length;
     const downServices = totalServices - healthyServices - degradedServices;
 
     let overallStatus: 'up' | 'degraded' | 'down';

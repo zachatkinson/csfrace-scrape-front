@@ -6,6 +6,9 @@
 // =============================================================================
 
 import { GrafanaServiceChecker } from '../utils/serviceCheckers.ts';
+import { createContextLogger } from '../utils/logger.js';
+
+const moduleLogger = createContextLogger('GrafanaMetricsModule');
 
 interface GrafanaMetrics {
   version: string;
@@ -20,6 +23,7 @@ interface GrafanaMetrics {
 
 class GrafanaMetricsUpdater {
   private static instance: GrafanaMetricsUpdater;
+  private readonly logger = createContextLogger('GrafanaMetricsUpdater');
   
   static getInstance(): GrafanaMetricsUpdater {
     if (!GrafanaMetricsUpdater.instance) {
@@ -29,7 +33,7 @@ class GrafanaMetricsUpdater {
   }
 
   async updateGrafanaMetrics(): Promise<void> {
-    console.log('📈 Updating Grafana dashboard service metrics...');
+    this.logger.info('Updating Grafana dashboard service metrics');
     
     try {
       // Get health data from Grafana
@@ -61,13 +65,13 @@ class GrafanaMetricsUpdater {
       // Update overall service status
       this.updateServiceStatus(healthResult.status, healthResult.message);
       
-      console.log('✅ Grafana dashboard metrics updated successfully', metrics);
-      
+      this.logger.info('Grafana dashboard metrics updated successfully', { metrics });
+
       // NEW: Emit completion event for header aggregation (DRY + Single Source of Truth)
       this.emitServiceCardCompleteEvent(healthResult);
-      
+
     } catch (error) {
-      console.error('❌ Failed to update Grafana dashboard metrics:', error);
+      this.logger.error('Failed to update Grafana dashboard metrics', error);
       this.updateServiceStatus('error', 'Failed to fetch dashboard metrics');
     }
   }
@@ -186,7 +190,7 @@ class GrafanaMetricsUpdater {
   // Note: Method reserved for future hardcoded element updates
 
   // NEW: Emit completion event for header aggregation (DRY + Single Source of Truth)
-  private emitServiceCardCompleteEvent(healthResult: any): void {
+  private emitServiceCardCompleteEvent(healthResult: { status: string; message: string; metrics?: Record<string, unknown> }): void {
     const event = new CustomEvent('serviceCardComplete', {
       detail: {
         serviceName: 'grafana',
@@ -199,7 +203,7 @@ class GrafanaMetricsUpdater {
       }
     });
     
-    console.log('📡 Grafana card emitting completion event:', event.detail);
+    this.logger.info('Grafana card emitting completion event', event.detail);
     window.dispatchEvent(event);
   }
 }
@@ -207,24 +211,24 @@ class GrafanaMetricsUpdater {
 // Auto-initialize when script loads (following same pattern as other services)
 if (typeof window !== 'undefined') {
   const updater = GrafanaMetricsUpdater.getInstance();
-  
-  console.log('📈 Grafana dashboard metrics script loaded');
-  
+
+  moduleLogger.info('Grafana dashboard metrics script loaded');
+
   // Initial update after page load
   if (document.readyState === 'complete') {
-    console.log('📊 Document ready - updating Grafana dashboard metrics immediately');
+    moduleLogger.info('Document ready - updating Grafana dashboard metrics immediately');
     updater.updateGrafanaMetrics();
   } else {
-    console.log('⏳ Waiting for page load');
+    moduleLogger.info('Waiting for page load');
     window.addEventListener('load', () => {
-      console.log('📊 Page loaded - updating Grafana dashboard metrics now');
+      moduleLogger.info('Page loaded - updating Grafana dashboard metrics now');
       updater.updateGrafanaMetrics();
     });
   }
-  
+
   // Set up periodic updates (every 1 minute for dynamic data)
   setInterval(() => {
-    console.log('🔄 Periodic Grafana dashboard metrics update (1-minute poll)');
+    moduleLogger.info('Periodic Grafana dashboard metrics update (1-minute poll)');
     updater.updateGrafanaMetrics();
   }, 60000);
 }

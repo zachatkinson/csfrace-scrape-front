@@ -152,6 +152,32 @@ const authPanelId = `auth-panel-${Math.random().toString(36).substring(2, 11)}`;
 
 <!-- Astro Islands script for client-side functionality -->
 <script>
+  import { createContextLogger } from '/src/utils/logger.js';
+
+  const logger = createContextLogger('AuthenticatedHeader');
+
+  // Define OAuth Provider interface for type safety
+  interface OAuthProvider {
+    name: string;
+    display_name: string;
+    enabled: boolean;
+  }
+
+  // Define simplified AuthState interface
+  interface AuthState {
+    user: {
+      email: string;
+      username?: string;
+      profile?: {
+        display_name?: string;
+        first_name?: string;
+        last_name?: string;
+      };
+    } | null;
+    isAuthenticated: boolean;
+    isLoading: boolean;
+  }
+
   // Header management class for authentication and navigation - Astro MCP best practice
   class AuthenticatedHeader {
     private headerId: string | undefined;
@@ -159,8 +185,8 @@ const authPanelId = `auth-panel-${Math.random().toString(36).substring(2, 11)}`;
     private header: HTMLElement | null;
     private authPanel: HTMLElement | null;
     private isInitialized: boolean;
-    private authState: any;
-    private oauthProviders: any[];
+    private authState: AuthState | null;
+    private oauthProviders: OAuthProvider[];
 
     constructor() {
       // Get IDs from data attributes (Astro MCP best practice)
@@ -189,7 +215,7 @@ const authPanelId = `auth-panel-${Math.random().toString(36).substring(2, 11)}`;
       this.updateAuthUI();
 
       this.isInitialized = true;
-      console.log('🔐 AuthenticatedHeader: Initialized with auth state management');
+      logger.info('Initialized with auth state management');
     }
 
     setupEventListeners() {
@@ -247,7 +273,7 @@ const authPanelId = `auth-panel-${Math.random().toString(36).substring(2, 11)}`;
           this.oauthProviders = await providersResponse.json();
         }
       } catch (error) {
-        console.log('🔐 AuthenticatedHeader: No authentication available', error);
+        logger.info('No authentication available', { error });
         this.authState = null;
       }
     }
@@ -299,7 +325,7 @@ const authPanelId = `auth-panel-${Math.random().toString(36).substring(2, 11)}`;
                         `${user.profile?.first_name || ''} ${user.profile?.last_name || ''}`.trim() ||
                         user.username ||
                         user.email.split('@')[0];
-        userName.textContent = fullName;
+        userName.textContent = fullName || null;
       }
     }
 
@@ -353,12 +379,13 @@ const authPanelId = `auth-panel-${Math.random().toString(36).substring(2, 11)}`;
     }
 
     getAuthenticatedPanelHTML() {
+      if (!this.authState?.user) return '';
       const user = this.authState.user;
       const displayName = user.profile?.display_name ||
                          `${user.profile?.first_name || ''} ${user.profile?.last_name || ''}`.trim() ||
                          user.username ||
                          user.email.split('@')[0];
-      const avatar = displayName[0]?.toUpperCase() || '?';
+      const avatar = displayName?.[0]?.toUpperCase() || '?';
 
       return `
         <div class="space-y-6">
@@ -526,7 +553,7 @@ const authPanelId = `auth-panel-${Math.random().toString(36).substring(2, 11)}`;
         github: 'text-gray-300 hover:text-gray-200 hover:bg-gray-500/20',
         microsoft: 'text-blue-300 hover:text-blue-200 hover:bg-blue-500/20'
       };
-      return (classes as any)[provider] || 'text-white/80 hover:text-white hover:bg-white/10';
+      return (classes as Record<string, string>)[provider] || 'text-white/80 hover:text-white hover:bg-white/10';
     }
 
     getOAuthIcon(provider: string) {
@@ -544,7 +571,7 @@ const authPanelId = `auth-panel-${Math.random().toString(36).substring(2, 11)}`;
           <path d="M0 0h11v11H0V0zm13 0h11v11H13V0zM0 13h11v11H0V13zm13 0h11v11H13V13z"/>
         </svg>`
       };
-      return (icons as any)[provider] || '';
+      return (icons as Record<string, string>)[provider] || '';
     }
 
     setupPanelEventListeners() {

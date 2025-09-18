@@ -268,7 +268,7 @@ export function useErrorHandler() {
 // Custom hook for error reporting
 export function useErrorReporting() {
   const reportError = React.useCallback(
-    async (error: Error, context?: Record<string, any>) => {
+    async (error: Error, context?: Record<string, unknown>) => {
       try {
         const errorId = SecurityUtils.generateCSRFToken().substring(0, 8);
         

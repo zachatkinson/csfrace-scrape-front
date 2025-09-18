@@ -8,6 +8,7 @@
  */
 
 import { BaseModalManager, type ModalConfig } from './baseModalManager';
+import { createContextLogger } from '../utils/logger.js';
 
 // =============================================================================
 // TYPES & INTERFACES
@@ -48,7 +49,7 @@ export interface AuthError {
   code: string;
   message: string;
   field?: string;
-  details?: any;
+  details?: Record<string, unknown>;
 }
 
 export interface AuthFormData {
@@ -64,7 +65,8 @@ export interface AuthFormData {
 
 export class AuthModalManager extends BaseModalManager {
   protected override config: AuthModalConfig;
-  
+  protected override readonly logger = createContextLogger('AuthModalManager');
+
   // Form elements
   private authForm: HTMLFormElement | null = null;
   private emailInput: HTMLInputElement | null = null;
@@ -99,7 +101,7 @@ export class AuthModalManager extends BaseModalManager {
    * Set up authentication-specific handlers
    * Implementation of abstract method from BaseModalManager
    */
-  protected setupModalSpecificHandlers(): void {
+  protected override setupModalSpecificHandlers(): void {
     this.cacheAuthElements();
     this.setupFormHandlers();
     this.setupModeToggle();
@@ -107,7 +109,7 @@ export class AuthModalManager extends BaseModalManager {
     this.setupValidation();
     this.setupCustomEventListeners();
 
-    console.log('🔐 AuthModalManager: Authentication handlers set up');
+    this.logger.info('Authentication handlers set up');
   }
 
   /**
@@ -115,11 +117,12 @@ export class AuthModalManager extends BaseModalManager {
    */
   private setupCustomEventListeners(): void {
     // Listen for open-auth-modal events from SignInButton
-    window.addEventListener('open-auth-modal', (event: any) => {
-      const { mode } = event.detail || {};
-      console.log('🔐 AuthModalManager: Received open-auth-modal event', { mode });
+    window.addEventListener('open-auth-modal', (event: Event) => {
+      const customEvent = event as CustomEvent<{ mode?: string }>;
+      const { mode } = customEvent.detail || {};
+      this.logger.info('Received open-auth-modal event', { mode });
 
-      if (mode) {
+      if (mode && (mode === 'signin' || mode === 'signup')) {
         this.openInMode(mode);
       } else {
         this.open();
@@ -206,7 +209,7 @@ export class AuthModalManager extends BaseModalManager {
     // Create provider buttons
     this.config.providers.forEach(provider => {
       const button = this.createProviderButton(provider);
-      this.providersContainer!.appendChild(button);
+      this.providersContainer?.appendChild(button);
     });
   }
 
@@ -290,8 +293,8 @@ export class AuthModalManager extends BaseModalManager {
     
     // Clear errors
     this.clearErrors();
-    
-    console.log(`🔄 AuthModalManager: Switched to ${mode} mode`);
+
+    this.logger.info('Switched mode', { mode });
   }
 
   /**
@@ -326,7 +329,7 @@ export class AuthModalManager extends BaseModalManager {
       this.handleAuthError({
         code: 'SUBMISSION_ERROR',
         message: 'An unexpected error occurred. Please try again.',
-        details: error
+        details: error instanceof Error ? { message: error.message, name: error.name } : { error: String(error) }
       });
     } finally {
       this.setSubmittingState(false);
@@ -338,7 +341,7 @@ export class AuthModalManager extends BaseModalManager {
    */
   private async handleProviderAuth(provider: AuthProvider): Promise<void> {
     try {
-      console.log(`🔐 AuthModalManager: Starting ${provider.name} authentication`);
+      this.logger.info('Starting provider authentication', { provider: provider.name });
       
       // In a real implementation, this would redirect to the OAuth provider
       // For now, simulate the OAuth flow
@@ -349,7 +352,7 @@ export class AuthModalManager extends BaseModalManager {
       this.handleAuthError({
         code: 'PROVIDER_ERROR',
         message: `Failed to authenticate with ${provider.name}. Please try again.`,
-        details: error
+        details: error instanceof Error ? { message: error.message, name: error.name } : { error: String(error) }
       });
     }
   }
@@ -508,7 +511,7 @@ export class AuthModalManager extends BaseModalManager {
    * Handle successful authentication
    */
   private handleAuthSuccess(user: AuthenticatedUser): void {
-    console.log('🎉 AuthModalManager: Authentication successful', user);
+    this.logger.info('Authentication successful', { userId: user.id, email: user.email });
     
     // Store authentication data
     this.storeAuthData(user);
@@ -585,7 +588,7 @@ export class AuthModalManager extends BaseModalManager {
    */
   private showSuccess(message: string): void {
     // This could show a toast notification or temporary success message
-    console.log('✅', message);
+    this.logger.info('Success message', { message });
   }
 
   /**

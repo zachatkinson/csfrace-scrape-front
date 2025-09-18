@@ -20,7 +20,9 @@ export class SecurityTestHelpers {
       const response = await page.goto('/');
       expect(response).toBeTruthy();
       
-      const headers = response!.headers();
+      const headers = response?.headers();
+      expect(headers).toBeDefined();
+      if (!headers) return;
       
       // Content Security Policy
       expect(headers['content-security-policy']).toBeDefined();
@@ -114,7 +116,9 @@ export class SecurityTestHelpers {
   static async testClickjackingProtection(page: Page): Promise<void> {
     await test.step('Test clickjacking protection', async () => {
       const response = await page.goto('/');
-      const headers = response!.headers();
+      const headers = response?.headers();
+      expect(headers).toBeDefined();
+      if (!headers) return;
       
       // Check X-Frame-Options header
       expect(headers['x-frame-options']).toBe('DENY');
@@ -128,7 +132,9 @@ export class SecurityTestHelpers {
   static async testMixedContentProtection(page: Page): Promise<void> {
     await test.step('Test mixed content protection', async () => {
       const response = await page.goto('/');
-      const headers = response!.headers();
+      const headers = response?.headers();
+      expect(headers).toBeDefined();
+      if (!headers) return;
       
       // Check for upgrade-insecure-requests in CSP
       const csp = headers['content-security-policy'];

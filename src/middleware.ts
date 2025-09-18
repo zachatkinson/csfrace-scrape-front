@@ -1,6 +1,16 @@
 import { defineMiddleware } from 'astro:middleware';
 import { SecurityMiddleware, RateLimiter } from './middleware/security.ts';
 
+// Ensure Locals interface is extended for this file
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace App {
+    interface Locals {
+      rateLimitRemaining?: number;
+    }
+  }
+}
+
 export const onRequest = defineMiddleware(async (context, next) => {
   // Apply rate limiting
   const clientIp = context.clientAddress || 'unknown';
@@ -21,7 +31,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   
   // Add rate limit headers
   const remaining = RateLimiter.getRemainingRequests(identifier);
-  (context.locals as any).rateLimitRemaining = remaining;
+  context.locals.rateLimitRemaining = remaining;
   
   // Apply security middleware
   return await SecurityMiddleware.handle(context, next);

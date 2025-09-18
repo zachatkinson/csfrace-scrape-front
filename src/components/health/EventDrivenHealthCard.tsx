@@ -9,6 +9,7 @@ import { $healthData } from '../../stores/healthStore.ts';
 import { getStatusColor, getStatusBorderClass } from '../../utils/health-ui-utilities.ts';
 import type { IServiceResult } from '../../utils/serviceCheckers.ts';
 import { formatTimestamp, onTimezoneChange } from '/src/utils/timezone.ts';
+import { createContextLogger } from '../../utils/logger';
 
 interface EventDrivenHealthCardProps {
   serviceName: 'frontend' | 'backend' | 'database' | 'cache';
@@ -17,6 +18,8 @@ interface EventDrivenHealthCardProps {
   icon: string;
   description: string;
 }
+
+const logger = createContextLogger('EventDrivenHealthCard');
 
 export const EventDrivenHealthCard: React.FC<EventDrivenHealthCardProps> = ({
   serviceName,
@@ -117,7 +120,7 @@ export const EventDrivenHealthCard: React.FC<EventDrivenHealthCardProps> = ({
 
     // Update formatted timestamp when service data changes
     if (serviceData) {
-      console.log(`🔧 EventDrivenHealthCard (${serviceName}): Using Nano Store data:`, serviceData);
+      logger.info('Using Nano Store data', { serviceName, serviceData });
 
       const timestamp = serviceData.timestamp || new Date(healthData.metadata.timestamp);
       setLastRefreshedFormatted(formatTimestamp(timestamp));
@@ -133,12 +136,12 @@ export const EventDrivenHealthCard: React.FC<EventDrivenHealthCardProps> = ({
       }
     });
 
-    console.log(`🔧 EventDrivenHealthCard (${serviceName}): Using Nano Store reactive data`);
+    logger.info('Using Nano Store reactive data', { serviceName });
 
     return () => {
       cleanupTimezoneListener();
     };
-  }, [serviceData, serviceName, domPrefix]);
+  }, [serviceData, serviceName, domPrefix, healthData.metadata.timestamp]);
 
   // Loading state
   if (isLoading || !serviceData) {

@@ -140,23 +140,23 @@ test.describe('Console Debug', () => {
         console.log('📞 Attempting to call getApiBaseUrl from client...');
         
         // Check if function exists
-        if (typeof (window as any).getApiBaseUrl === 'function') {
+        if (typeof (window as Record<string, unknown>).getApiBaseUrl === 'function') {
           console.log('✅ getApiBaseUrl function found on window');
           try {
-            const url = (window as any).getApiBaseUrl();
+            const url = (window as Record<string, unknown>).getApiBaseUrl();
             console.log('🔗 API URL:', url);
           } catch (error) {
             console.error('❌ Error calling getApiBaseUrl:', error);
           }
         } else {
           console.log('❌ getApiBaseUrl function not found on window');
-          console.log('Available functions:', Object.keys(window).filter(key => typeof (window as any)[key] === 'function'));
+          console.log('Available functions:', Object.keys(window).filter(key => typeof (window as Record<string, unknown>)[key] === 'function'));
         }
         
         // Check for environment variables
         console.log('🔧 Environment check:');
-        console.log('import.meta.env.PUBLIC_API_URL:', (import.meta as any).env?.PUBLIC_API_URL);
-        console.log('import.meta.env.VITE_API_URL:', (import.meta as any).env?.VITE_API_URL);
+        console.log('import.meta.env.PUBLIC_API_URL:', (import.meta as Record<string, unknown>).env?.PUBLIC_API_URL);
+        console.log('import.meta.env.VITE_API_URL:', (import.meta as Record<string, unknown>).env?.VITE_API_URL);
       });
       
       await page.waitForTimeout(1000);

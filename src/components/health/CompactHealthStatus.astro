@@ -13,8 +13,7 @@
 
 // CACHE-BUSTING: Add timestamp to prevent excessive caching of health data
 // Health checks should be relatively fresh, not heavily cached
-const cacheBreaker = Date.now();
-console.log('🔄 CompactHealthStatus: Cache breaker:', cacheBreaker);
+// Note: Cache breaker functionality implemented at request level, not component level
 
 
 const serviceConfigs = {
@@ -102,8 +101,11 @@ console.log('🚀 Health results:', healthResults.map(hr => ({
   // =============================================================================
 
   import { formatTimestamp } from '/src/utils/timezone';
+  import { createContextLogger } from '/src/utils/logger';
+  import type { IConsolidatedHealthData } from '/src/stores/healthStore';
 
-  console.log('🚀 CompactHealthStatus: Subscribing to Nano Store for real-time updates');
+  const logger = createContextLogger('CompactHealthStatus');
+  logger.info('Subscribing to Nano Store for real-time updates');
 
   // Function to update timestamp display with user's timezone preference
   function updateTimestamp(healthTimestamp: string | number | null): void {
@@ -112,21 +114,21 @@ console.log('🚀 Health results:', healthResults.map(hr => ({
       // Use health data timestamp if provided, otherwise current time
       const timestampToUse = healthTimestamp ? new Date(healthTimestamp) : new Date();
       const newTimestamp = formatTimestamp(timestampToUse);
-      console.log('🕐 HybridCompactHealthStatus: Updating timestamp to:', newTimestamp, 'from health data:', healthTimestamp);
+      logger.info('Updating timestamp', { newTimestamp, healthTimestamp });
       timestampElement.textContent = newTimestamp;
     } else {
-      console.warn('🚨 HybridCompactHealthStatus: health-timestamp element not found');
+      logger.warn('health-timestamp element not found');
     }
   }
 
   // Update UI based on Nano Store data (Astro MCP best practice)
-  function updateHealthIndicators(healthData: any): void {
-    console.log('🎯 CompactHealthStatus: Updating UI from Nano Store', healthData);
+  function updateHealthIndicators(healthData: IConsolidatedHealthData): void {
+    logger.info('Updating UI from Nano Store', { healthData });
 
     const { services, metadata } = healthData;
 
     // Update each service indicator
-    ['frontend', 'backend', 'database', 'cache'].forEach(serviceName => {
+    (['frontend', 'backend', 'database', 'cache'] as const).forEach(serviceName => {
       const serviceData = services[serviceName];
       const indicator = document.querySelector(`[data-service-name="${serviceName}"]`);
 
@@ -160,8 +162,8 @@ console.log('🚀 Health results:', healthResults.map(hr => ({
           const name = serviceName.charAt(0).toUpperCase() + serviceName.slice(1);
           let tooltipText = `${icon} ${name}: ${serviceData.status.toUpperCase()}`;
 
-          // Handle response time from either direct property or metrics object
-          const responseTime = serviceData.responseTime || serviceData.metrics?.responseTime;
+          // Handle response time from metrics object
+          const responseTime = serviceData.metrics?.responseTime;
           if (responseTime !== undefined && responseTime !== null) {
             tooltipText += ` | ${responseTime}ms`;
           }
@@ -186,10 +188,10 @@ console.log('🚀 Health results:', healthResults.map(hr => ({
 
   // NANO STORE SUBSCRIPTION: Subscribe to updates (using dynamic import for client-side)
   import('/src/stores/healthStore').then(({ $healthData }) => {
-    console.log('📡 CompactHealthStatus: Setting up Nano Store subscription');
+    logger.info('Setting up Nano Store subscription');
 
     const unsubscribe = $healthData.subscribe(healthData => {
-      console.log('📡 CompactHealthStatus: Nano Store update received', healthData);
+      logger.info('Nano Store update received', { healthData });
       updateHealthIndicators(healthData);
     });
 

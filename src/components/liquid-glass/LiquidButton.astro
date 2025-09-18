@@ -162,26 +162,28 @@ const buttonClasses = [
     init() {
       // Add click feedback to all liquid buttons
       document.querySelectorAll('.liquid-glass-interactive').forEach(button => {
-        button.addEventListener('click', this.handleClick.bind(this));
+        button.addEventListener('click', this.handleClick.bind(this) as EventListener);
       });
     }
 
-    handleClick(event: any) {
-      const button = event.currentTarget;
-      
+    handleClick(event: MouseEvent) {
+      const button = event.currentTarget as HTMLButtonElement | null;
+
+      if (!button) return;
+
       // Skip if disabled or loading
       if (button.disabled || button.classList.contains('glass-loading')) {
         event.preventDefault();
         return;
       }
-      
+
       // Add haptic feedback class temporarily
       button.classList.add('scale-95');
-      
+
       setTimeout(() => {
         button.classList.remove('scale-95');
       }, 100);
-      
+
       // Handle data-action if present
       const action = button.dataset.action;
       const target = button.dataset.target;

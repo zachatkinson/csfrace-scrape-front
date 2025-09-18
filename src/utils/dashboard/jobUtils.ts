@@ -5,13 +5,14 @@
 // Following DRY principles and functional programming patterns
 // =============================================================================
 
-import type { 
-  IJobData, 
-  IBackendJob, 
-  JobStatus, 
-  JobFilter, 
+import type {
+  IJobData,
+  IBackendJob,
+  JobStatus,
+  JobFilter,
   JobSort,
-  JobConverter 
+  JobConverter,
+  JobPriority
 } from '../../types/job.ts';
 
 // =============================================================================
@@ -147,7 +148,7 @@ export const convertBackendJob: JobConverter = (backendJob: IBackendJob): IJobDa
     // Retry and priority info
     retryCount: backendJob.retry_count,
     maxRetries: backendJob.max_retries,
-    priority: (backendJob.priority as any) || 'normal',
+    priority: (backendJob.priority as JobPriority) || 'normal',
     
     // Content info
     contentSize: backendJob.content_size_bytes,
@@ -293,16 +294,18 @@ export const formatFullTimestamp = (date: Date): string => {
 /**
  * SOLID: Single responsibility - Validate job data integrity
  */
-export const validateJobData = (job: any): job is IJobData => {
+export const validateJobData = (job: unknown): job is IJobData => {
+  if (typeof job !== 'object' || job === null) return false;
+
+  const typedJob = job as { [key: string]: unknown };
+
   return (
-    typeof job === 'object' &&
-    job !== null &&
-    typeof job.id === 'number' &&
-    typeof job.title === 'string' &&
-    typeof job.source_url === 'string' &&
-    typeof job.status === 'string' &&
-    typeof job.progress === 'number' &&
-    job.createdAt instanceof Date
+    typeof typedJob.id === 'number' &&
+    typeof typedJob.title === 'string' &&
+    typeof typedJob.source_url === 'string' &&
+    typeof typedJob.status === 'string' &&
+    typeof typedJob.progress === 'number' &&
+    typedJob.createdAt instanceof Date
   );
 };
 

@@ -10,6 +10,16 @@ import { createContextLogger } from './logger';
 const logger = createContextLogger('APIUtils');
 
 /**
+ * Type guard to check if error has apiError property
+ */
+function hasApiError(error: Error): error is Error & { apiError: { status: number } } {
+  return 'apiError' in error &&
+         typeof (error as Error & { apiError?: unknown }).apiError === 'object' &&
+         (error as Error & { apiError?: { status?: unknown } }).apiError !== null &&
+         typeof (error as Error & { apiError: { status?: unknown } }).apiError.status === 'number';
+}
+
+/**
  * Generic HTTP response handler with proper error handling
  * Follows SOLID principles by having a single responsibility
  */
@@ -168,7 +178,7 @@ export class EnhancedApiError extends Error {
     }
 
     const messages: string[] = [];
-    for (const [field, errors] of Object.entries(this.validationErrors!)) {
+    for (const [field, errors] of Object.entries(this.validationErrors || {})) {
       messages.push(`${field}: ${errors.join(', ')}`);
     }
     return messages.join('; ');
@@ -184,7 +194,7 @@ export class EnhancedApiError extends Error {
     }
 
     const formErrors: Record<string, string> = {};
-    for (const [field, errors] of Object.entries(this.validationErrors!)) {
+    for (const [field, errors] of Object.entries(this.validationErrors || {})) {
       formErrors[field] = errors.join(', ');
     }
     return formErrors;
@@ -651,7 +661,7 @@ export async function apiFetchWithRetry<T>(
   retryConfig: RetryConfig = DEFAULT_RETRY_CONFIG,
   useStructuredErrors: boolean = false
 ): Promise<T> {
-  let lastError: Error;
+  let lastError: Error | undefined;
 
   for (let attempt = 0; attempt < retryConfig.maxAttempts; attempt++) {
     try {
@@ -665,8 +675,8 @@ export async function apiFetchWithRetry<T>(
         if (status && status >= 400 && status < 500 && status !== 429) {
           throw error; // Don't retry client errors except rate limiting
         }
-      } else if (error instanceof Error && (error as any).apiError?.status) {
-        const status = (error as any).apiError.status;
+      } else if (error instanceof Error && hasApiError(error)) {
+        const status = error.apiError.status;
         if (status >= 400 && status < 500 && status !== 429) {
           throw error; // Don't retry client errors except rate limiting
         }
@@ -683,7 +693,7 @@ export async function apiFetchWithRetry<T>(
     }
   }
 
-  throw lastError!;
+  throw lastError || new Error('All retry attempts failed');
 }
 
 /**

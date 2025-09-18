@@ -50,7 +50,7 @@ export interface IUnifiedFormConfig {
  * Single Responsibility: Manages form state and validation
  */
 export interface IUnifiedFormState {
-  readonly data: Record<string, any>;
+  readonly data: Record<string, unknown>;
   readonly validation: Record<string, IFieldValidationState>;
   readonly isSubmitting: boolean;
   readonly isValid: boolean;
@@ -64,10 +64,10 @@ export interface IUnifiedFormState {
  * Interface Segregation: Separate event handling concerns
  */
 export interface IUnifiedFormHandlers {
-  readonly onSubmit?: (data: Record<string, any>) => Promise<void> | void;
+  readonly onSubmit?: (data: Record<string, unknown>) => Promise<void> | void;
   readonly onCancel?: () => void;
   readonly onReset?: () => void;
-  readonly onChange?: (fieldName: string, value: any, formState: IUnifiedFormState) => void;
+  readonly onChange?: (fieldName: string, value: unknown, formState: IUnifiedFormState) => void;
   readonly onValidationChange?: (fieldName: string, validation: IFieldValidationState) => void;
   readonly onStateChange?: (state: IUnifiedFormState) => void;
 }
@@ -91,7 +91,7 @@ interface MutableFieldConfig {
   autoComplete?: string;
   maxLength?: number;
   minLength?: number;
-  defaultValue?: any;
+  defaultValue?: unknown;
   className?: string;
   options?: readonly IFieldOption[];
   interaction?: {
@@ -102,7 +102,7 @@ interface MutableFieldConfig {
     isDirty?: boolean;
     isReadOnly?: boolean;
   };
-  validationEngine?: any;
+  validationEngine?: FieldValidationEngine;
 }
 
 /**
@@ -149,9 +149,9 @@ export class FormFieldBuilder {
     return this;
   }
 
-  validation(engine: FieldValidationEngine): this {
-    // Store validation engine reference for later use
-    (this.config as any).validationEngine = engine;
+  validation(_engine: FieldValidationEngine): this {
+    // Note: Validation engines are now created per-form rather than per-field
+    // This method is maintained for API compatibility but engines are managed in useUnifiedForm
     return this;
   }
 
@@ -160,7 +160,7 @@ export class FormFieldBuilder {
     return this;
   }
 
-  defaultValue(value: any): this {
+  defaultValue(value: unknown): this {
     this.config.defaultValue = value;
     return this;
   }
@@ -219,8 +219,8 @@ export class FormFieldBuilder {
  * Single Responsibility: Manages form state and validation
  */
 export function useUnifiedForm(config: IUnifiedFormConfig, handlers: IUnifiedFormHandlers = {}) {
-  const [formData, setFormData] = useState<Record<string, any>>(() => {
-    const initialData: Record<string, any> = {};
+  const [formData, setFormData] = useState<Record<string, unknown>>(() => {
+    const initialData: Record<string, unknown> = {};
     config.fields.forEach(field => {
       initialData[field.name] = field.defaultValue ?? field.value ?? '';
     });
@@ -235,8 +235,10 @@ export function useUnifiedForm(config: IUnifiedFormConfig, handlers: IUnifiedFor
 
   // Initialize validation engines for all fields
   useEffect(() => {
+    const coordinator = validationCoordinator.current;
+
     config.fields.forEach(field => {
-      const engine = (field as any).validationEngine || new FieldValidationEngine();
+      const engine = new FieldValidationEngine();
       
       // Add default validation rules based on field properties
       if (field.interaction?.isRequired) {
@@ -263,12 +265,12 @@ export function useUnifiedForm(config: IUnifiedFormConfig, handlers: IUnifiedFor
         engine.addRule(validationRules.minLength(field.minLength));
       }
 
-      validationCoordinator.current.registerField(field.name, engine);
+      coordinator.registerField(field.name, engine);
     });
 
     return () => {
       config.fields.forEach(field => {
-        validationCoordinator.current.unregisterField(field.name);
+        coordinator.unregisterField(field.name);
       });
     };
   }, [config.fields]);
@@ -281,7 +283,7 @@ export function useUnifiedForm(config: IUnifiedFormConfig, handlers: IUnifiedFor
     );
     const errors = Object.values(validation)
       .filter(v => v.error)
-      .map(v => v.error!);
+      .map(v => v.error as string);
 
     return {
       data: formData,
@@ -295,7 +297,7 @@ export function useUnifiedForm(config: IUnifiedFormConfig, handlers: IUnifiedFor
   }, [formData, validation, isSubmitting, touchedFields, config.fields]);
 
   // Field change handler
-  const handleFieldChange = useCallback(async (fieldName: string, value: any) => {
+  const handleFieldChange = useCallback(async (fieldName: string, value: unknown) => {
     setFormData(prev => ({ ...prev, [fieldName]: value }));
     
     handlers.onChange?.(fieldName, value, formState);
@@ -346,7 +348,7 @@ export function useUnifiedForm(config: IUnifiedFormConfig, handlers: IUnifiedFor
 
   // Form reset handler
   const handleReset = useCallback(() => {
-    const resetData: Record<string, any> = {};
+    const resetData: Record<string, unknown> = {};
     config.fields.forEach(field => {
       resetData[field.name] = field.defaultValue ?? field.value ?? '';
     });

@@ -6,9 +6,12 @@
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { EventDrivenHealthCard } from './EventDrivenHealthCard.ts';
+import { createContextLogger } from '../../utils/logger';
+
+const logger = createContextLogger('InitializeEventDrivenCards');
 
 export function initializeEventDrivenCards() {
-  console.log('🔧 Initializing event-driven health cards...');
+  logger.info('Initializing event-driven health cards');
 
   // Card configurations
   const cardConfigs = [
@@ -50,7 +53,7 @@ export function initializeEventDrivenCards() {
   cardConfigs.forEach(config => {
     const container = document.getElementById(config.containerId);
     if (container) {
-      console.log(`🔧 Initializing ${config.serviceName} card...`);
+      logger.info('Initializing card', { serviceName: config.serviceName });
 
       const root = createRoot(container);
       root.render(createElement(EventDrivenHealthCard, {
@@ -61,13 +64,13 @@ export function initializeEventDrivenCards() {
         description: config.description
       }));
 
-      console.log(`✅ ${config.serviceName} card initialized`);
+      logger.info('Card initialized', { serviceName: config.serviceName });
     } else {
       console.warn(`⚠️ Container not found for ${config.serviceName}: ${config.containerId}`);
     }
   });
 
-  console.log('🔧 Event-driven health cards initialization complete');
+  logger.info('Event-driven health cards initialization complete');
 }
 
 // Auto-initialize when DOM is ready

@@ -39,7 +39,7 @@ export interface IValidationResult {
  * Async Validation Interface
  * Single Responsibility: Handles asynchronous validation (e.g., server-side checks)
  */
-export interface IAsyncValidator<T = any> {
+export interface IAsyncValidator<T = unknown> {
   readonly validate: (value: T) => Promise<IValidationResult>;
   readonly debounceMs?: number;
 }
@@ -52,8 +52,8 @@ export class UnifiedValidationRules implements IFieldValidationRules {
   /**
    * Required field validation
    */
-  required(message = 'This field is required'): FieldValidationRule<any> {
-    return (value: any): string | undefined => {
+  required(message = 'This field is required'): FieldValidationRule<unknown> {
+    return (value: unknown): string | undefined => {
       if (value === null || value === undefined) {
         return message;
       }
@@ -269,14 +269,14 @@ export class UnifiedValidationRules implements IFieldValidationRules {
  * Single Responsibility: Orchestrates validation rule execution
  */
 export class FieldValidationEngine {
-  private rules: FieldValidationRule<any>[] = [];
-  private asyncValidators: IAsyncValidator<any>[] = [];
+  private rules: FieldValidationRule<unknown>[] = [];
+  private asyncValidators: IAsyncValidator<unknown>[] = [];
 
   /**
    * Add synchronous validation rule
    */
   addRule<T>(rule: FieldValidationRule<T>): this {
-    this.rules.push(rule);
+    this.rules.push(rule as FieldValidationRule<unknown>);
     return this;
   }
 
@@ -284,7 +284,7 @@ export class FieldValidationEngine {
    * Add asynchronous validator
    */
   addAsyncValidator<T>(validator: IAsyncValidator<T>): this {
-    this.asyncValidators.push(validator);
+    this.asyncValidators.push(validator as IAsyncValidator<unknown>);
     return this;
   }
 
@@ -386,7 +386,7 @@ export class FormValidationCoordinator {
   /**
    * Validate all registered fields
    */
-  async validateAllFields(formData: Record<string, any>): Promise<Record<string, IFieldValidationState>> {
+  async validateAllFields(formData: Record<string, unknown>): Promise<Record<string, IFieldValidationState>> {
     const results: Record<string, IFieldValidationState> = {};
 
     const validationPromises = Array.from(this.fieldEngines.entries()).map(

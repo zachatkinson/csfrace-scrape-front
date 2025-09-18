@@ -103,7 +103,7 @@ export interface IFieldOption {
  * Field Event Handlers
  * Interface Segregation: Separate event handling concerns
  */
-export interface IFieldEventHandlers<T = any> {
+export interface IFieldEventHandlers<T = unknown> {
   readonly onChange?: (value: T) => void;
   readonly onBlur?: () => void;
   readonly onFocus?: () => void;
@@ -116,7 +116,7 @@ export interface IFieldEventHandlers<T = any> {
  * Complete Field Configuration
  * Composition: Combines all field concerns into single interface
  */
-export interface IUnifiedFieldConfig<T = any> extends 
+export interface IUnifiedFieldConfig<T = unknown> extends 
   IFieldVisualConfig, 
   IFieldBehaviorConfig, 
   IFieldEventHandlers<T> {
@@ -213,10 +213,10 @@ export interface IFieldRegistry {
  * Field Validation Rules
  * Single Responsibility: Defines validation logic
  */
-export type FieldValidationRule<T = any> = (value: T) => string | undefined;
+export type FieldValidationRule<T = unknown> = (value: T) => string | undefined;
 
 export interface IFieldValidationRules {
-  readonly required: (message?: string) => FieldValidationRule<any>;
+  readonly required: (message?: string) => FieldValidationRule<unknown>;
   readonly email: (message?: string) => FieldValidationRule<string>;
   readonly minLength: (min: number, message?: string) => FieldValidationRule<string>;
   readonly maxLength: (max: number, message?: string) => FieldValidationRule<string>;
@@ -231,7 +231,7 @@ export interface IFieldValidationRules {
  * Single Responsibility: Defines contract for async validation
  */
 export interface IAsyncValidator {
-  readonly validate: (value: any) => Promise<{ errors: string[]; warnings: string[] }>;
+  readonly validate: (value: unknown) => Promise<{ errors: string[]; warnings: string[] }>;
   readonly name: string;
   readonly priority?: number;
 }
@@ -240,7 +240,7 @@ export interface IAsyncValidator {
  * Field Component Props
  * Interface Segregation: Clean component interface
  */
-export interface IUnifiedFieldProps<T = any> extends IUnifiedFieldConfig<T> {
+export interface IUnifiedFieldProps<T = unknown> extends IUnifiedFieldConfig<T> {
   readonly 'data-testid'?: string;
   readonly 'aria-label'?: string;
   readonly 'aria-describedby'?: string;

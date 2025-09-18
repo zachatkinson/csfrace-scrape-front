@@ -14,10 +14,10 @@ import { getApiBaseUrl } from '../../constants/api.ts';
  * Simple API call wrapper using shared utilities - NOT a service class
  * SOLID: DRY - Uses centralized fetch patterns from api-utils
  */
-const apiCall = async (endpoint: string, options: RequestInit = {}): Promise<any> => {
+const apiCall = async <T = unknown>(endpoint: string, options: RequestInit = {}): Promise<T> => {
   const apiBaseUrl = getApiBaseUrl();
   return apiFetch(`${apiBaseUrl}${endpoint}`, {
-    method: (options.method as any) || 'GET',
+    method: (options.method || 'GET') as 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
     headers: {
       'Content-Type': 'application/json',
       ...(options.headers as Record<string, string> || {}),
@@ -39,7 +39,7 @@ const apiCall = async (endpoint: string, options: RequestInit = {}): Promise<any
  */
 export const getJobs = async (params: IJobQueryParams = {}): Promise<IJobsResponse> => {
   const searchParams = new URLSearchParams();
-  
+
   if (params.page) searchParams.set('page', params.page.toString());
   if (params.page_size) searchParams.set('page_size', params.page_size.toString());
   if (params.status_filter) searchParams.set('status_filter', params.status_filter);
@@ -48,14 +48,14 @@ export const getJobs = async (params: IJobQueryParams = {}): Promise<IJobsRespon
   if (params.sort_order) searchParams.set('sort_order', params.sort_order);
 
   const endpoint = `/jobs${searchParams.toString() ? `?${searchParams}` : ''}`;
-  return apiCall(endpoint);
+  return apiCall<IJobsResponse>(endpoint);
 };
 
 /**
  * Get single job details from backend API
  */
 export const getJob = async (jobId: number): Promise<IBackendJob> => {
-  return apiCall(`/jobs/${jobId}`);
+  return apiCall<IBackendJob>(`/jobs/${jobId}`);
 };
 
 /**
@@ -103,5 +103,5 @@ export const downloadJobContent = async (jobId: number): Promise<string> => {
  * Health check for backend connection
  */
 export const checkBackendHealth = async (): Promise<{ status: string; timestamp: string }> => {
-  return apiCall('/health');
+  return apiCall<{ status: string; timestamp: string }>('/health');
 };

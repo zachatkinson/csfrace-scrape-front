@@ -9,7 +9,7 @@ import { LiquidInput } from '../liquid-glass';
 import { useUserProfile } from '../../contexts/AuthContext.tsx';
 import { BaseForm, FormField, FormSection } from './BaseForm.tsx';
 import { useBaseForm, ValidationRules, createFieldSchema, createFormSchema } from '../../hooks/useBaseForm.ts';
-import type { ProfileFormData, FormSubmissionResult } from '../../interfaces/forms.ts';
+import type { ProfileFormData, FormSubmissionResult, FormValidationSchema } from '../../interfaces/forms.ts';
 
 // =============================================================================
 // USER PROFILE FORM
@@ -273,8 +273,8 @@ export const StandardizedUserProfileForm: React.FC<StandardizedUserProfileFormPr
           timezone: user?.profile?.timezone || '',
           language: user?.profile?.language || '',
         }}
-        validationSchema={profileValidationSchema}
-        onSubmit={handleSubmit}
+        validationSchema={profileValidationSchema as FormValidationSchema<unknown>}
+        onSubmit={handleSubmit as (data: unknown) => Promise<FormSubmissionResult<unknown>>}
         onSuccess={onSuccess}
         onError={onError}
         title={title}
@@ -317,8 +317,8 @@ interface AppSettingsFormData {
 export interface StandardizedAppSettingsFormProps {
   onSuccess?: () => void;
   onError?: (error: string) => void;
-  onStateChange?: (state: any) => void;
-  initialData?: any;
+  onStateChange?: (state: Record<string, unknown>) => void;
+  initialData?: Record<string, unknown>;
   className?: string;
   title?: string;
   subtitle?: string;
@@ -530,7 +530,7 @@ export const StandardizedAppSettingsForm: React.FC<StandardizedAppSettingsFormPr
             ...(existingSettings.preferences || {}),
           },
         }}
-        onSubmit={handleSubmit}
+        onSubmit={handleSubmit as (data: unknown) => Promise<FormSubmissionResult<unknown>>}
         onSuccess={onSuccess}
         onError={onError}
         title={title}
@@ -539,7 +539,7 @@ export const StandardizedAppSettingsForm: React.FC<StandardizedAppSettingsFormPr
         showReset={true}
         resetButtonText="Reset to Defaults"
         className="w-full"
-        renderFields={renderAppSettingsFields}
+        renderFields={renderAppSettingsFields as (formHook: ReturnType<typeof useBaseForm>) => React.ReactNode}
       />
     </div>
   );

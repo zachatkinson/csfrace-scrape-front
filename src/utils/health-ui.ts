@@ -89,17 +89,25 @@ export class HealthUIHelper {
     }
   }
 
-  static updateAllLatencyFromHealthData(healthData: any, apiLatency: number) {
+  static updateAllLatencyFromHealthData(healthData: Record<string, unknown>, apiLatency: number) {
     this.updateLatencyElement('api-latency', `${apiLatency}ms`, apiLatency, 'API');
 
-    if (healthData?.services?.database?.response_time) {
-      const dbLatency = healthData.services.database.response_time;
-      this.updateLatencyElement('database-latency', `${dbLatency}ms`, dbLatency, 'DATABASE');
+    const services = healthData?.services as Record<string, unknown> | undefined;
+
+    if (services?.database && typeof services.database === 'object') {
+      const database = services.database as Record<string, unknown>;
+      const dbLatency = database.response_time;
+      if (typeof dbLatency === 'number') {
+        this.updateLatencyElement('database-latency', `${dbLatency}ms`, dbLatency, 'DATABASE');
+      }
     }
 
-    if (healthData?.services?.cache?.response_time) {
-      const cacheLatency = healthData.services.cache.response_time;
-      this.updateLatencyElement('cache-latency', `${cacheLatency}ms`, cacheLatency, 'CACHE');
+    if (services?.cache && typeof services.cache === 'object') {
+      const cache = services.cache as Record<string, unknown>;
+      const cacheLatency = cache.response_time;
+      if (typeof cacheLatency === 'number') {
+        this.updateLatencyElement('cache-latency', `${cacheLatency}ms`, cacheLatency, 'CACHE');
+      }
     }
   }
 

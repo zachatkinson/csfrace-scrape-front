@@ -70,13 +70,13 @@ const DashboardManager: React.FC<DashboardManagerProps> = ({
   // Job actions (retry, cancel, delete, download) - memoize callbacks to prevent re-renders
   const onJobUpdated = useCallback(() => {
     jobData.refreshJobs();
-  }, [jobData.refreshJobs]);
-  
+  }, [jobData]);
+
   const onJobError = useCallback((message: string) => {
     setNotification({ type: 'error', message });
     connectionStatus.markDisconnected();
   }, [connectionStatus]);
-  
+
   const onJobSuccess = useCallback((message: string) => {
     setNotification({ type: 'success', message });
     connectionStatus.markConnected();
@@ -93,7 +93,7 @@ const DashboardManager: React.FC<DashboardManagerProps> = ({
   // Auto-refresh coordination - memoize callback and options
   const refreshCallback = useCallback(() => {
     jobData.refreshJobs();
-  }, [jobData.refreshJobs]);
+  }, [jobData]);
   
   const autoRefreshOptions = useMemo(() => ({
     enabled: false, // ✅ DISABLED: SSE handles real-time updates now (DRY/SOLID)
@@ -175,7 +175,7 @@ const DashboardManager: React.FC<DashboardManagerProps> = ({
 
     // No cleanup needed
     return undefined;
-  }, [jobData.loadJobs]); // ✅ Fix: Only depend on the specific function
+  }, [jobData, initialJobs.length]); // ✅ Fix: Include all dependencies
 
   // Update filtered jobs when data or filters change
   useEffect(() => {

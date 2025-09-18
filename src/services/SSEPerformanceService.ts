@@ -142,7 +142,7 @@ export class SSEPerformanceService {
    * Create a debounced function to prevent rapid-fire updates
    * Implements debouncing pattern following DRY principles
    */
-  createDebouncedFunction<T extends any[]>(
+  createDebouncedFunction<T extends unknown[]>(
     fn: (...args: T) => void,
     key: string
   ): (...args: T) => void {

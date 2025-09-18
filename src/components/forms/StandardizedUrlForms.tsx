@@ -8,7 +8,7 @@ import React, { useRef } from 'react';
 import { LiquidInput, LiquidButton } from '../liquid-glass';
 import { BaseForm, FormField, FormSection } from './BaseForm.tsx';
 import { useBaseForm, ValidationRules, createFieldSchema, createFormSchema } from '../../hooks/useBaseForm.ts';
-import type { UrlFormData, FormSubmissionResult } from '../../interfaces/forms.ts';
+import type { UrlFormData, FormSubmissionResult, FormValidationSchema } from '../../interfaces/forms.ts';
 
 // =============================================================================
 // SHARED URL FORM TYPES
@@ -222,8 +222,8 @@ export const StandardizedSingleUrlForm: React.FC<StandardizedSingleUrlFormProps>
             addShopifySpecific: true,
           },
         }}
-        validationSchema={singleUrlValidationSchema}
-        onSubmit={handleSubmit}
+        validationSchema={singleUrlValidationSchema as FormValidationSchema<unknown>}
+        onSubmit={handleSubmit as (data: unknown) => Promise<FormSubmissionResult<unknown>>}
         onSuccess={onSuccess}
         onError={onError}
         title={title}
@@ -231,7 +231,7 @@ export const StandardizedSingleUrlForm: React.FC<StandardizedSingleUrlFormProps>
         disabled={disabled || !isAuthenticated}
         submitButtonText="Convert URL"
         className="w-full"
-        renderFields={(formHook) => renderSingleUrlFields(formHook, { 
+        renderFields={(formHook) => renderSingleUrlFields(formHook as ReturnType<typeof useBaseForm<SingleUrlFormData>>, { 
           showOptions, 
           isAuthenticated 
         })}
@@ -495,8 +495,8 @@ export const StandardizedBatchUrlForm: React.FC<StandardizedBatchUrlFormProps> =
             addShopifySpecific: true,
           },
         }}
-        validationSchema={batchUrlValidationSchema}
-        onSubmit={handleSubmit}
+        validationSchema={batchUrlValidationSchema as FormValidationSchema<unknown>}
+        onSubmit={handleSubmit as (data: unknown) => Promise<FormSubmissionResult<unknown>>}
         onSuccess={onSuccess}
         onError={onError}
         title={title}
@@ -506,7 +506,7 @@ export const StandardizedBatchUrlForm: React.FC<StandardizedBatchUrlFormProps> =
         showReset={true}
         resetButtonText="Clear All"
         className="w-full"
-        renderFields={(formHook) => renderBatchUrlFields(formHook, fileInputRef, {
+        renderFields={(formHook) => renderBatchUrlFields(formHook as ReturnType<typeof useBaseForm<BatchUrlFormData>>, fileInputRef, {
           showOptions,
           isAuthenticated,
           maxUrls

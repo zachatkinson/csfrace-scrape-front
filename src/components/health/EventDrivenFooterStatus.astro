@@ -103,11 +103,21 @@ const {
   // Import nano stores for reactive health data (Astro MCP best practice)
   import { $healthData, $serviceMetrics } from '/src/stores/healthStore';
   import { formatTimestamp, onTimezoneChange } from '/src/utils/timezone';
-  import type { IConsolidatedHealthData, IHealthServiceStatuses } from '/src/types/health';
+  import { createContextLogger } from '/src/utils/logger';
+  import type { IConsolidatedHealthData, IHealthServiceStatuses } from '/src/stores/healthStore';
+
+  const logger = createContextLogger('EventDrivenFooterStatus');
+
+  // Extend window interface for type safety
+  declare global {
+    interface Window {
+      astroFooterStatusManager?: AstroFooterStatusManager;
+    }
+  }
 
   class AstroFooterStatusManager {
     isInitialized: boolean;
-    elements: Record<string, any>;
+    elements: Record<string, HTMLElement | null>;
     cleanupCallbacks: Array<() => void>;
 
     constructor() {
@@ -128,7 +138,7 @@ const {
       this.setupTimezoneListener();
       this.isInitialized = true;
 
-      console.log('🏁 AstroFooterStatus: Initialized with nano stores');
+      logger.info('Initialized with nano stores');
     }
 
     setupElements() {
@@ -148,7 +158,7 @@ const {
       }
 
       // Subscribe to health data changes
-      const unsubscribeHealth = $healthData.subscribe((healthData: any) => {
+      const unsubscribeHealth = $healthData.subscribe((healthData) => {
         this.updateHealthDisplay(healthData);
       });
 
@@ -169,7 +179,7 @@ const {
       }
     }
 
-    updateHealthDisplay(healthData: IConsolidatedHealthData): void {
+    updateHealthDisplay(healthData: Readonly<IConsolidatedHealthData>): void {
       if (!this.elements.container || !healthData) return;
 
       const { services, overallStatus } = healthData;
@@ -184,20 +194,20 @@ const {
       this.updateServiceIndicators(services);
       this.updateTimestamp(healthData.metadata?.timestamp);
 
-      console.log('🏁 AstroFooterStatus: Updated with health data', {
+      logger.info('Updated with health data', {
         status: overallStatus.status,
         services: Object.keys(services).length
       });
     }
 
-    updateMetricsDisplay(serviceMetrics: any): void {
+    updateMetricsDisplay(serviceMetrics: { total: number; loaded: number; up: number; hasAnyData: boolean }): void {
       if (!this.elements.overallText || !serviceMetrics) return;
 
       const { up, total, hasAnyData } = serviceMetrics;
 
       if (hasAnyData) {
         this.elements.overallText.textContent = `System: ${up}/${total} Services`;
-        console.log('🏁 AstroFooterStatus: Updated metrics', { up, total });
+        logger.info('Updated metrics', { up, total });
       } else {
         this.elements.overallText.textContent = 'System: Loading...';
       }
@@ -207,14 +217,14 @@ const {
       if (!services || !this.elements.serviceIndicators) return;
 
       const serviceDisplay = [
-        { key: 'frontend', name: 'Frontend', icon: '🌐' },
-        { key: 'backend', name: 'Backend', icon: '🔧' },
-        { key: 'database', name: 'Database', icon: '🐘' },
-        { key: 'cache', name: 'Cache', icon: '⚡' }
-      ];
+        { key: 'frontend' as const, name: 'Frontend', icon: '🌐' },
+        { key: 'backend' as const, name: 'Backend', icon: '🔧' },
+        { key: 'database' as const, name: 'Database', icon: '🐘' },
+        { key: 'cache' as const, name: 'Cache', icon: '⚡' }
+      ] as const;
 
       serviceDisplay.forEach((item) => {
-        const serviceElement = this.elements.serviceIndicators.querySelector(`[data-service="${item.key}"]`);
+        const serviceElement = this.elements.serviceIndicators?.querySelector(`[data-service="${item.key}"]`);
         const service = services[item.key];
 
         if (serviceElement && service) {
@@ -273,7 +283,7 @@ const {
 
   // Global cleanup for page transitions
   if (typeof window !== 'undefined') {
-    (window as any).astroFooterStatusManager = footerStatusManager;
+    window.astroFooterStatusManager = footerStatusManager;
   }
 </script>
 

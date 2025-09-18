@@ -308,8 +308,8 @@ class BatchActionUtils {
   /**
    * Filter valid job IDs from array
    */
-  static filterValidJobIds(jobIds: any[]): string[] {
-    return jobIds.filter(id => this.isValidJobId(id)).map(id => String(id).trim());
+  static filterValidJobIds(jobIds: unknown[]): string[] {
+    return jobIds.filter((id): id is string => this.isValidJobId(String(id))).map(id => String(id).trim());
   }
 
   /**
@@ -358,6 +358,12 @@ const batchActionManager = new BatchActionManager();
 
 // Expose manager globally for debugging and external access
 if (typeof window !== 'undefined') {
-  (window as any).batchActionManager = batchActionManager;
-  (window as any).BatchActionUtils = BatchActionUtils;
+  (window as Window & {
+    batchActionManager?: BatchActionManager;
+    BatchActionUtils?: typeof BatchActionUtils;
+  }).batchActionManager = batchActionManager;
+  (window as Window & {
+    batchActionManager?: BatchActionManager;
+    BatchActionUtils?: typeof BatchActionUtils;
+  }).BatchActionUtils = BatchActionUtils;
 }

@@ -6,6 +6,9 @@
 import type { ISearchManager } from '../types/filter.types';
 import { EventUtils } from '../utils/filter.utils';
 import { domUtils, waitForDOM, debounce } from '../utils/dom.utils';
+import { createContextLogger } from '../../../utils/logger';
+
+const logger = createContextLogger('SearchManager');
 
 // =============================================================================
 // SEARCH MANAGER CLASS (Single Responsibility Principle)
@@ -18,9 +21,10 @@ class SearchManager implements ISearchManager {
 
   constructor() {
     // Debounce search to improve performance (DRY principle)
-    this.debouncedSearch = debounce((query: string) => {
+    this.debouncedSearch = debounce((...args: unknown[]) => {
+      const query = args[0] as string;
       this.performSearch(query);
-    }, 300);
+    }, 300) as (query: string) => void;
 
     this.init();
   }
@@ -36,7 +40,7 @@ class SearchManager implements ISearchManager {
     this.attachEventListeners();
     this.emitInitialState();
     
-    console.log('🔍 SearchManager: Initialized with debounced search');
+    logger.info('SearchManager initialized with debounced search');
   }
 
   private loadInitialState(): void {
@@ -163,7 +167,7 @@ class SearchManager implements ISearchManager {
 
     EventUtils.dispatchEvent(event);
     
-    console.log('🔍 SearchManager: Search updated', {
+    logger.debug('Search updated', {
       query: this.currentQuery,
       length: this.currentQuery.length
     });
@@ -228,18 +232,21 @@ class SearchUtils {
   /**
    * Create search suggestions (for future enhancement)
    */
-  static createSearchSuggestions(query: string, data: any[]): string[] {
+  static createSearchSuggestions(query: string, data: unknown[]): string[] {
     if (!query.trim() || !Array.isArray(data)) return [];
 
     const normalizedQuery = this.normalizeSearchQuery(query);
     const suggestions = new Set<string>();
 
     data.forEach(item => {
-      if (item.title && item.title.toLowerCase().includes(normalizedQuery)) {
-        suggestions.add(item.title);
-      }
-      if (item.url && item.url.toLowerCase().includes(normalizedQuery)) {
-        suggestions.add(item.url);
+      if (item && typeof item === 'object' && item !== null) {
+        const typedItem = item as { title?: string; url?: string };
+        if (typedItem.title && typeof typedItem.title === 'string' && typedItem.title.toLowerCase().includes(normalizedQuery)) {
+          suggestions.add(typedItem.title);
+        }
+        if (typedItem.url && typeof typedItem.url === 'string' && typedItem.url.toLowerCase().includes(normalizedQuery)) {
+          suggestions.add(typedItem.url);
+        }
       }
     });
 
@@ -256,6 +263,12 @@ const searchManager = new SearchManager();
 
 // Expose manager globally for debugging and external access
 if (typeof window !== 'undefined') {
-  (window as any).searchManager = searchManager;
-  (window as any).SearchUtils = SearchUtils;
+  (window as Window & {
+    searchManager?: SearchManager;
+    SearchUtils?: typeof SearchUtils;
+  }).searchManager = searchManager;
+  (window as Window & {
+    searchManager?: SearchManager;
+    SearchUtils?: typeof SearchUtils;
+  }).SearchUtils = SearchUtils;
 }

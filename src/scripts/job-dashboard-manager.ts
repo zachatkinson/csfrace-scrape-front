@@ -8,10 +8,13 @@
 
 import { getApiBaseUrl } from '/src/constants/api.ts';
 import * as jobUtils from '/src/utils/dashboard/jobUtils.ts';
+import { createContextLogger } from '../utils/logger.js';
+import type { IJobData } from '../types/job.ts';
 
 class JobDashboard extends HTMLElement {
+  private readonly logger = createContextLogger('JobDashboard');
   private apiBaseUrl: string = '';
-  private jobs: any[] = [];
+  private jobs: IJobData[] = [];
 
   constructor() {
     super();
@@ -54,7 +57,7 @@ class JobDashboard extends HTMLElement {
   handleJobSSEUpdate = (event: Event) => {
     const customEvent = event as CustomEvent;
     const { jobUpdate } = customEvent.detail;
-    console.log('🎯 JobDashboard: Processing SSE job update:', jobUpdate);
+    this.logger.info('JobDashboard: Processing SSE job update', { jobUpdate });
 
     if (jobUpdate) {
       // Update existing job or add new job
@@ -76,7 +79,7 @@ class JobDashboard extends HTMLElement {
     const customEvent = event as CustomEvent;
     const { source } = customEvent.detail;
     if (source === 'sse') {
-      console.log('🔄 JobDashboard: SSE triggered data refresh');
+      this.logger.info('JobDashboard: SSE triggered data refresh');
       // Could trigger full reload if needed
     }
   };
@@ -103,7 +106,7 @@ class JobDashboard extends HTMLElement {
       this.hideLoading();
 
     } catch (error) {
-      console.error('Failed to load jobs:', error);
+      this.logger.error('Failed to load jobs', error);
       this.showError();
       this.hideLoading();
     }
@@ -128,9 +131,9 @@ class JobDashboard extends HTMLElement {
     emptyState.classList.add('hidden');
   }
 
-  renderJobItem(job: any) {
+  renderJobItem(job: IJobData) {
     const statusColor = this.getStatusColor(job.status);
-    const timeAgo = jobUtils.formatRelativeTime(job.createdAt);
+    const timeAgo = job.createdAt ? jobUtils.formatRelativeTime(job.createdAt) : 'Unknown';
 
     return `
       <div class="job-item p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors">

@@ -6,6 +6,9 @@
  */
 
 import type { ConversionFormManager } from './conversionFormManager';
+import { createContextLogger } from '../utils/logger.js';
+
+const logger = createContextLogger('ConversionFormModule');
 
 // Define interfaces for type safety
 interface ConversionFormElement extends HTMLElement {
@@ -34,14 +37,15 @@ interface JobDashboardElement extends HTMLElement {
  */
 class ConversionForm extends HTMLElement implements ConversionFormElement {
   public formManager: ConversionFormManager | null = null;
+  private readonly logger = createContextLogger('ConversionForm');
 
   constructor() {
     super();
-    console.log('🎯 ConversionForm: Constructor called');
+    this.logger.info('Constructor called');
   }
 
   async connectedCallback(): Promise<void> {
-    console.log('🎯 ConversionForm: connectedCallback called');
+    this.logger.info('connectedCallback called');
 
     try {
       // Dynamic imports to load the compiled TypeScript modules
@@ -57,7 +61,7 @@ class ConversionForm extends HTMLElement implements ConversionFormElement {
       const apiUrl = this.dataset.apiUrl || getApiBaseUrl();
       const defaultMode = this.dataset.defaultMode || 'bulk';
 
-      console.log('🎯 ConversionForm: About to create manager with:', { apiUrl, defaultMode });
+      this.logger.info('About to create manager', { apiUrl, defaultMode });
 
       // Initialize form manager with proper types
       this.formManager = new ConversionFormManager({
@@ -72,9 +76,9 @@ class ConversionForm extends HTMLElement implements ConversionFormElement {
       // Set up job dashboard integration
       this.setupJobDashboardIntegration();
 
-      console.log('🎯 ConversionForm: Initialization completed successfully');
+      this.logger.info('Initialization completed successfully');
     } catch (error) {
-      console.error('🎯 ConversionForm: Failed to initialize:', error);
+      this.logger.error('Failed to initialize', error);
       // Follow SOLID principle: handle errors gracefully
       this.handleInitializationError(error);
     }
@@ -82,7 +86,7 @@ class ConversionForm extends HTMLElement implements ConversionFormElement {
 
   disconnectedCallback(): void {
     // Cleanup when element is removed - prevent memory leaks
-    console.log('🎯 ConversionForm: disconnectedCallback called');
+    this.logger.info('disconnectedCallback called');
     this.cleanup();
   }
 
@@ -100,7 +104,7 @@ class ConversionForm extends HTMLElement implements ConversionFormElement {
    */
   private handleJobSubmission(event: Event): void {
     const customEvent = event as ConversionJobEvent;
-    console.log('Form submitted, refreshing job dashboard:', customEvent.detail);
+    this.logger.info('Form submitted, refreshing job dashboard', customEvent.detail);
 
     // Find JobDashboard component and refresh it
     const jobDashboard = document.querySelector('job-dashboard') as JobDashboardElement;
@@ -132,8 +136,9 @@ class ConversionForm extends HTMLElement implements ConversionFormElement {
   private cleanup(): void {
     if (this.formManager) {
       // If formManager has cleanup methods, call them
-      if (typeof (this.formManager as any).destroy === 'function') {
-        (this.formManager as any).destroy();
+      const managerWithDestroy = this.formManager as ConversionFormManager & { destroy?: () => void };
+      if (typeof managerWithDestroy.destroy === 'function') {
+        managerWithDestroy.destroy();
       }
       this.formManager = null;
     }
@@ -169,9 +174,9 @@ class ConversionForm extends HTMLElement implements ConversionFormElement {
 // Define the custom element
 if (!customElements.get('conversion-form')) {
   customElements.define('conversion-form', ConversionForm);
-  console.log('🎯 ConversionForm: Custom element defined');
+  logger.info('Custom element defined');
 } else {
-  console.log('🎯 ConversionForm: Custom element already defined');
+  logger.info('Custom element already defined');
 }
 
 // Export for testing purposes

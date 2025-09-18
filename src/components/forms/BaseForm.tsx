@@ -25,10 +25,10 @@ import type {
  */
 export const BaseForm = forwardRef<
   HTMLFormElement,
-  FormComponentProps<any> & {
+  FormComponentProps<unknown> & {
     // Common form structure
-    renderFields: (formHook: ReturnType<typeof useBaseForm<any>>) => React.ReactNode;
-    renderActions?: ((formHook: ReturnType<typeof useBaseForm<any>>) => React.ReactNode) | undefined;
+    renderFields: (formHook: ReturnType<typeof useBaseForm>) => React.ReactNode;
+    renderActions?: ((formHook: ReturnType<typeof useBaseForm>) => React.ReactNode) | undefined;
     
     // Form configuration
     showTitle?: boolean | undefined;
@@ -83,10 +83,10 @@ export const BaseForm = forwardRef<
       try {
         const result = onSubmit
           ? await onSubmit(data)
-          : { success: true, data, error: undefined, fieldErrors: undefined } as FormSubmissionResult<any>;
+          : { success: true, data, error: undefined, fieldErrors: undefined } as FormSubmissionResult<unknown>;
 
         if (result.success) {
-          onSuccess?.(result.data);
+          onSuccess?.(result.data as unknown);
         } else {
           onError?.(result.error || 'Submission failed', result.fieldErrors);
         }
@@ -294,16 +294,22 @@ export function createFormComponent<TData extends Record<string, unknown>>(
   }
 ): StandardFormComponent<TData> {
   
-  const FormComponent: StandardFormComponent<TData> = (props) => (
-    <BaseForm
-      {...props}
-      title={props.title || config.defaultTitle}
-      subtitle={props.subtitle || config.defaultSubtitle}
-      validationSchema={props.validationSchema || config.validationSchema}
-      renderFields={config.renderFields}
-      renderActions={config.renderActions}
-    />
-  );
+  const FormComponent: StandardFormComponent<TData> = (props) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- children is required by interface but intentionally unused in HOC pattern
+    const { children, onSubmit, onSuccess, ...baseProps } = props;
+    return (
+      <BaseForm
+        {...baseProps}
+        title={props.title || config.defaultTitle}
+        subtitle={props.subtitle || config.defaultSubtitle}
+        validationSchema={(props.validationSchema || config.validationSchema) as FormValidationSchema<unknown>}
+        onSubmit={onSubmit as ((data: unknown) => FormSubmissionResult<unknown> | Promise<FormSubmissionResult<unknown>>) | undefined}
+        onSuccess={onSuccess as ((data?: unknown) => void) | undefined}
+        renderFields={config.renderFields as (formHook: ReturnType<typeof useBaseForm>) => React.ReactNode}
+        renderActions={config.renderActions as ((formHook: ReturnType<typeof useBaseForm>) => React.ReactNode) | undefined}
+      />
+    );
+  };
   
   FormComponent.displayName = config.displayName;
   

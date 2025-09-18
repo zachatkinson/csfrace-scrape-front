@@ -12,12 +12,26 @@ import { BatchUrlForm } from '../scraping/BatchUrlForm.tsx';
 import { getApiBaseUrl } from '../../constants/api';
 import { getAuthHeaders, isAuthenticated } from '../../utils/authApi';
 
+export interface ScrapingResult {
+  content?: string;
+  metadata?: Record<string, unknown>;
+  images?: string[];
+  [key: string]: unknown;
+}
+
 export interface ScrapingJobUI {
   id?: string;
   url: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
-  result?: any;
+  result?: ScrapingResult;
   error?: string;
+}
+
+export interface ScrapingOptions {
+  format?: 'html' | 'markdown' | 'json';
+  includeImages?: boolean;
+  timeout?: number;
+  [key: string]: unknown;
 }
 
 export interface UrlScraperProps {
@@ -40,7 +54,7 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
   const { state, actions } = useScrapingForm();
   
   // Direct API job submission - NO SERVICE ABSTRACTION!
-  const submitSingleJob = async (url: string, options: any = {}) => {
+  const submitSingleJob = async (url: string, options: ScrapingOptions = {}) => {
     try {
       actions.setSubmitting(true);
 
@@ -76,7 +90,7 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
   };
 
   // Direct API batch submission - NO SERVICE ABSTRACTION!
-  const submitBatchJobs = async (urls: string[], options: any = {}) => {
+  const submitBatchJobs = async (urls: string[], options: ScrapingOptions = {}) => {
     try {
       actions.setBatchSubmitting(true);
 

@@ -158,7 +158,17 @@ export class ModalManager {
   /**
    * Render job details in modal
    */
-  private renderJobDetails(job: any): void {
+  private renderJobDetails(job: {
+    id: string | number;
+    title?: string;
+    status?: string;
+    created_at?: string;
+    url?: string;
+    progress?: number;
+    error?: string;
+    result?: unknown;
+    [key: string]: unknown;
+  }): void {
     if (!this.contentArea) return;
 
     this.contentArea.innerHTML = `
@@ -190,7 +200,7 @@ export class ModalManager {
         <div>
           <label class="text-white/70 text-sm">Logs</label>
           <div class="bg-black/30 rounded p-3 max-h-40 overflow-y-auto">
-            ${job.logs.map((log: string) => `<p class="text-green-400 text-sm font-mono">${log}</p>`).join('')}
+            ${Array.isArray(job.logs) ? (job.logs as string[]).map((log: string) => `<p class="text-green-400 text-sm font-mono">${log}</p>`).join('') : '<p class="text-white/70 text-sm">No logs available</p>'}
           </div>
         </div>
       </div>

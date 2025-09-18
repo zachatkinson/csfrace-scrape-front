@@ -57,14 +57,34 @@ import MainLayout from '../components/layout/MainLayout.astro';
 
     // Test LoginForm (Single Responsibility)
     initializeReactComponent('login-form-container', LoginForm, {
-      onSuccess: () => console.log('Login success!'),
-      onSwitchToRegister: () => console.log('Switch to register'),
+      onSuccess: () => {
+        if (import.meta.env.DEV) {
+          // eslint-disable-next-line no-console
+          console.log('Login success!');
+        }
+      },
+      onSwitchToRegister: () => {
+        if (import.meta.env.DEV) {
+          // eslint-disable-next-line no-console
+          console.log('Switch to register');
+        }
+      },
     });
 
     // Test RegisterForm (Single Responsibility)
     initializeReactComponent('register-form-container', RegisterForm, {
-      onSuccess: () => console.log('Register success!'),
-      onSwitchToLogin: () => console.log('Switch to login'),
+      onSuccess: () => {
+        if (import.meta.env.DEV) {
+          // eslint-disable-next-line no-console
+          console.log('Register success!');
+        }
+      },
+      onSwitchToLogin: () => {
+        if (import.meta.env.DEV) {
+          // eslint-disable-next-line no-console
+          console.log('Switch to login');
+        }
+      },
     });
 
     // Test AuthModal (Following Astro MCP patterns)
@@ -84,7 +104,10 @@ import MainLayout from '../components/layout/MainLayout.astro';
             updateModal();
           },
           onSuccess: () => {
-            console.log('Auth modal success!');
+            if (import.meta.env.DEV) {
+              // eslint-disable-next-line no-console
+              console.log('Auth modal success!');
+            }
             isModalOpen = false;
             updateModal();
           },

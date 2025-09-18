@@ -108,6 +108,30 @@ const cardId = `health-card-${domPrefix}-${Math.random().toString(36).substring(
   import { $healthData } from '/src/stores/healthStore.js';
   import { getStatusColor, getStatusBorderClass } from '/src/utils/health-ui-utilities.js';
   import { formatTimestamp, onTimezoneChange } from '/src/utils/timezone.js';
+  import { createContextLogger } from '/src/utils/logger.js';
+  import type { IConsolidatedHealthData } from '/src/stores/healthStore.js';
+  import type { IServiceResult } from '/src/utils/serviceCheckers.js';
+
+  // Window interface extension for global health card debugging
+  declare global {
+    interface Window {
+      [key: `healthCard_${string}`]: HealthCard;
+    }
+  }
+
+  // Extended metrics interfaces for better type safety
+  interface ServiceMetrics {
+    responseTime?: number;
+    memory?: { used?: string } | string;
+    framework?: { name?: string; version?: string };
+    uptime?: string;
+    cpu?: string;
+    version?: string;
+    connections?: string | number;
+    status?: string;
+    port?: string | number;
+    [key: string]: unknown;
+  }
 
   // Health card class for managing individual card state - Astro MCP best practice
   class HealthCard {
@@ -118,6 +142,7 @@ const cardId = `health-card-${domPrefix}-${Math.random().toString(36).substring(
     private isInitialized: boolean;
     private cleanupTimezoneListener: (() => void) | null;
     private unsubscribe: (() => void) | undefined;
+    private logger: ReturnType<typeof createContextLogger>;
 
     constructor() {
       // Get values from data attributes (Astro MCP best practice)
@@ -128,6 +153,7 @@ const cardId = `health-card-${domPrefix}-${Math.random().toString(36).substring(
       this.card = this.cardId ? document.getElementById(this.cardId) : null;
       this.isInitialized = false;
       this.cleanupTimezoneListener = null;
+      this.logger = createContextLogger(`EventDrivenHealthCard:${this.serviceName || 'unknown'}`);
 
       this.init();
     }
@@ -147,16 +173,17 @@ const cardId = `health-card-${domPrefix}-${Math.random().toString(36).substring(
       });
 
       this.isInitialized = true;
-      console.log(`🏥 HealthCard (${this.serviceName}): Initialized with nano store reactivity`);
+      this.logger.info('Initialized with nano store reactivity');
     }
 
-    updateCard(healthData: any) {
+    updateCard(healthData: IConsolidatedHealthData) {
       if (!healthData || !this.card) return;
 
-      const serviceData = healthData.services[this.serviceName as string];
+      if (!this.serviceName) return;
+      const serviceData = healthData.services[this.serviceName as keyof typeof healthData.services];
       if (!serviceData) return;
 
-      console.log(`🔧 HealthCard (${this.serviceName}): Updating with data:`, serviceData);
+      this.logger.info('Updating with data', { serviceData });
 
       // Update main card border and background
       this.updateCardAppearance(serviceData);
@@ -180,7 +207,7 @@ const cardId = `health-card-${domPrefix}-${Math.random().toString(36).substring(
       this.updateMessage(serviceData);
     }
 
-    updateCardAppearance(serviceData: any) {
+    updateCardAppearance(serviceData: IServiceResult) {
       const borderClass = getStatusBorderClass(serviceData.status);
       if (this.card) {
         this.card.className = this.card.className
@@ -190,7 +217,7 @@ const cardId = `health-card-${domPrefix}-${Math.random().toString(36).substring(
       }
     }
 
-    updateStatusIndicator(serviceData: any) {
+    updateStatusIndicator(serviceData: IServiceResult) {
       const indicator = document.getElementById(`${this.domPrefix}-status-indicator`);
       if (indicator) {
         const statusClass = getStatusColor(serviceData.status);
@@ -198,7 +225,7 @@ const cardId = `health-card-${domPrefix}-${Math.random().toString(36).substring(
       }
     }
 
-    updateStatusText(serviceData: any) {
+    updateStatusText(serviceData: IServiceResult) {
       const statusText = document.getElementById(`${this.domPrefix}-status-text`);
       if (statusText) {
         statusText.textContent = serviceData.status.toUpperCase();
@@ -206,16 +233,16 @@ const cardId = `health-card-${domPrefix}-${Math.random().toString(36).substring(
       }
     }
 
-    updateTimestamp(healthData: any, serviceData: any = null) {
+    updateTimestamp(healthData: IConsolidatedHealthData, serviceData: IServiceResult | null = null) {
       const lastRefreshedElement = document.getElementById(`${this.domPrefix}-last-refreshed`);
       if (lastRefreshedElement) {
-        const data = serviceData || healthData.services[this.serviceName as string];
+        const data = serviceData || (this.serviceName ? healthData.services[this.serviceName as keyof typeof healthData.services] : null);
         const timestamp = data?.timestamp || new Date(healthData.metadata.timestamp);
         lastRefreshedElement.textContent = formatTimestamp(timestamp);
       }
     }
 
-    updateResponseTime(serviceData: any) {
+    updateResponseTime(serviceData: IServiceResult) {
       const responseTimeElement = document.getElementById(`${this.domPrefix}-response-time`);
       if (responseTimeElement) {
         const responseTime = serviceData.metrics?.responseTime;
@@ -225,18 +252,18 @@ const cardId = `health-card-${domPrefix}-${Math.random().toString(36).substring(
       }
     }
 
-    updateServiceMetrics(serviceData: any) {
+    updateServiceMetrics(serviceData: IServiceResult) {
       const metricsContainer = document.getElementById(`${this.domPrefix}-metrics-container`);
       if (!metricsContainer || !serviceData.metrics) return;
 
       let metricsHTML = '';
-      const { metrics } = serviceData;
+      const metrics = serviceData.metrics as ServiceMetrics;
 
       switch (this.serviceName) {
         case 'frontend':
           metricsHTML = `
             <div class="grid grid-cols-2 gap-1">
-              <div><span class="font-medium">Memory:</span> ${metrics.memory?.used || 'N/A'}</div>
+              <div><span class="font-medium">Memory:</span> ${typeof metrics.memory === 'object' && metrics.memory?.used ? metrics.memory.used : metrics.memory || 'N/A'}</div>
               <div><span class="font-medium">Port:</span> ${metrics.port || window.location.port || '3000'}</div>
               <div><span class="font-medium">Framework:</span> ${metrics.framework?.name || 'React/Astro'}</div>
               <div><span class="font-medium">Version:</span> ${metrics.framework?.version || 'N/A'}</div>
@@ -279,7 +306,7 @@ const cardId = `health-card-${domPrefix}-${Math.random().toString(36).substring(
       metricsContainer.innerHTML = metricsHTML;
     }
 
-    updateMessage(serviceData: any): void {
+    updateMessage(serviceData: IServiceResult): void {
       const messageElement = document.getElementById(`${this.domPrefix}-message`);
       if (messageElement) {
         messageElement.textContent = serviceData.message || `${this.serviceName} status updated`;
@@ -294,7 +321,7 @@ const cardId = `health-card-${domPrefix}-${Math.random().toString(36).substring(
         this.cleanupTimezoneListener();
       }
       this.isInitialized = false;
-      console.log(`🏥 HealthCard (${this.serviceName}): Cleaned up`);
+      this.logger.info('Cleaned up');
     }
   }
 
@@ -311,7 +338,7 @@ const cardId = `health-card-${domPrefix}-${Math.random().toString(36).substring(
     const container = document.querySelector('[data-component="health-card"]') as HTMLElement;
     const domPrefix = container?.dataset.domPrefix;
     if (domPrefix) {
-      (window as any)[`healthCard_${domPrefix}`] = healthCard;
+      window[`healthCard_${domPrefix}` as `healthCard_${string}`] = healthCard;
     }
   }
 </script>

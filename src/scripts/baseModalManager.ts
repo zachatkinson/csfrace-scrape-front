@@ -7,6 +7,8 @@
  * Dependency Inversion: Depends on DOM abstractions, not concrete implementations
  */
 
+import { createContextLogger } from '../utils/logger.js';
+
 // =============================================================================
 // TYPES & INTERFACES
 // =============================================================================
@@ -38,6 +40,7 @@ export abstract class BaseModalManager {
   protected backdrop: HTMLElement | null = null;
   protected isOpen: boolean = false;
   protected isInitialized: boolean = false;
+  protected readonly logger = createContextLogger('BaseModalManager');
 
   // Focus management for accessibility
   private previouslyFocusedElement: Element | null = null;
@@ -64,7 +67,7 @@ export abstract class BaseModalManager {
    */
   init(): void {
     if (this.isInitialized) {
-      console.warn(`Modal ${this.config.modalId} is already initialized`);
+      this.logger.warn('Modal already initialized', { modalId: this.config.modalId });
       return;
     }
 
@@ -74,10 +77,10 @@ export abstract class BaseModalManager {
       this.setupModalSpecificHandlers();
       this.setupAccessibility();
       this.isInitialized = true;
-      
-      console.log(`✅ BaseModalManager: ${this.config.modalId} initialized successfully`);
+
+      this.logger.info('Modal initialized successfully', { modalId: this.config.modalId });
     } catch (error) {
-      console.error(`❌ BaseModalManager: Failed to initialize ${this.config.modalId}:`, error);
+      this.logger.error('Failed to initialize modal', { modalId: this.config.modalId, error });
     }
   }
 
@@ -190,7 +193,7 @@ export abstract class BaseModalManager {
 
     // Call before open hook
     if (this.config.onBeforeOpen && !this.config.onBeforeOpen()) {
-      console.log(`Modal ${this.config.modalId} open prevented by onBeforeOpen hook`);
+      this.logger.info('Modal open prevented by onBeforeOpen hook', { modalId: this.config.modalId });
       return;
     }
 
@@ -218,10 +221,10 @@ export abstract class BaseModalManager {
 
       // Emit open event
       this.emitModalEvent('opened');
-      
-      console.log(`🔓 Modal ${this.config.modalId} opened`);
+
+      this.logger.info('Modal opened', { modalId: this.config.modalId });
     } catch (error) {
-      console.error(`Failed to open modal ${this.config.modalId}:`, error);
+      this.logger.error('Failed to open modal', { modalId: this.config.modalId, error });
     }
   }
 
@@ -234,7 +237,7 @@ export abstract class BaseModalManager {
 
     // Call before close hook
     if (this.config.onBeforeClose && !this.config.onBeforeClose()) {
-      console.log(`Modal ${this.config.modalId} close prevented by onBeforeClose hook`);
+      this.logger.info('Modal close prevented by onBeforeClose hook', { modalId: this.config.modalId });
       return;
     }
 
@@ -258,10 +261,10 @@ export abstract class BaseModalManager {
 
       // Emit close event
       this.emitModalEvent('closed');
-      
-      console.log(`🔒 Modal ${this.config.modalId} closed`);
+
+      this.logger.info('Modal closed', { modalId: this.config.modalId });
     } catch (error) {
-      console.error(`Failed to close modal ${this.config.modalId}:`, error);
+      this.logger.error('Failed to close modal', { modalId: this.config.modalId, error });
     }
   }
 
@@ -387,7 +390,7 @@ export abstract class BaseModalManager {
     this.isInitialized = false;
     this.isOpen = false;
 
-    console.log(`🗑️ Modal ${this.config.modalId} destroyed`);
+    this.logger.info('Modal destroyed', { modalId: this.config.modalId });
   }
 
   /**
@@ -415,7 +418,7 @@ export function createModalManager(config: ModalConfig): BaseModalManager {
   return new (class extends BaseModalManager {
     protected setupModalSpecificHandlers(): void {
       // Default implementation - can be overridden
-      console.log(`Setting up default modal handlers for ${this.config.modalId}`);
+      this.logger.info('Setting up default modal handlers', { modalId: this.config.modalId });
     }
   })(config);
 }

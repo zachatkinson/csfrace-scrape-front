@@ -271,16 +271,16 @@ export const ColorHelpers = {
   /**
    * Generate CSS custom properties from color object
    */
-  toCSSCustomProperties: (colorObj: Record<string, any>, prefix = 'color'): Record<string, string> => {
+  toCSSCustomProperties: (colorObj: Record<string, unknown>, prefix = 'color'): Record<string, string> => {
     const cssVars: Record<string, string> = {};
     
-    const flatten = (obj: any, currentPrefix = prefix) => {
+    const flatten = (obj: Record<string, unknown>, currentPrefix = prefix) => {
       Object.entries(obj).forEach(([key, value]) => {
         const cssKey = `--${currentPrefix}-${key.toLowerCase()}`;
         if (typeof value === 'string') {
           cssVars[cssKey] = value;
-        } else if (typeof value === 'object') {
-          flatten(value, `${currentPrefix}-${key.toLowerCase()}`);
+        } else if (typeof value === 'object' && value !== null) {
+          flatten(value as Record<string, unknown>, `${currentPrefix}-${key.toLowerCase()}`);
         }
       });
     };

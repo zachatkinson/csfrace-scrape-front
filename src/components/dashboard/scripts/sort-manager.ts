@@ -6,6 +6,9 @@
 import type { ISortManager, ISortOption } from '../types/filter.types';
 import { SortUtils, EventUtils } from '../utils/filter.utils';
 import { domUtils, waitForDOM } from '../utils/dom.utils';
+import { createContextLogger } from '../../../utils/logger';
+
+const logger = createContextLogger('SortManager');
 
 // =============================================================================
 // SORT MANAGER CLASS (Single Responsibility Principle)
@@ -31,7 +34,7 @@ class SortManager implements ISortManager {
     this.updateSortState();
     this.emitInitialState();
     
-    console.log('🔄 SortManager: Initialized with sort options');
+    logger.info('SortManager initialized with sort options');
   }
 
   private loadInitialState(): void {
@@ -169,7 +172,7 @@ class SortManager implements ISortManager {
 
     EventUtils.dispatchEvent(event);
     
-    console.log('🔄 SortManager: Sort updated', {
+    logger.debug('Sort updated', {
       sort: this.currentSort,
       option: SortUtils.getSortOption(this.currentSort)
     });
@@ -271,6 +274,12 @@ const sortManager = new SortManager();
 
 // Expose manager globally for debugging and external access
 if (typeof window !== 'undefined') {
-  (window as any).sortManager = sortManager;
-  (window as any).SortUtilities = SortUtilities;
+  (window as Window & {
+    sortManager?: SortManager;
+    SortUtilities?: typeof SortUtilities;
+  }).sortManager = sortManager;
+  (window as Window & {
+    sortManager?: SortManager;
+    SortUtilities?: typeof SortUtilities;
+  }).SortUtilities = SortUtilities;
 }

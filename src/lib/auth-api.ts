@@ -310,11 +310,12 @@ export async function generateCodeChallenge(verifier: string): Promise<string> {
 }
 
 export function formatWebAuthnError(error: unknown): string {
-  if (!error || typeof (error as any)?.name !== 'string') {
+  if (!error || typeof error !== 'object' || !('name' in error) || typeof (error as { name: unknown }).name !== 'string') {
     return 'An unknown error occurred during authentication';
   }
 
-  switch ((error as any).name) {
+  const errorWithName = error as { name: string };
+  switch (errorWithName.name) {
     case 'NotAllowedError':
       return 'Authentication was cancelled or timed out';
     case 'SecurityError':
@@ -328,8 +329,10 @@ export function formatWebAuthnError(error: unknown): string {
     case 'UnknownError':
       return 'An unknown error occurred during authentication';
     default: {
-      const err = error as unknown;
-      return `Authentication failed: ${(err as any)?.message || (err as any)?.name || 'Unknown error'}`;
+      const message = (typeof error === 'object' && error && 'message' in error && typeof (error as { message: unknown }).message === 'string')
+        ? (error as { message: string }).message
+        : errorWithName.name;
+      return `Authentication failed: ${message || 'Unknown error'}`;
     }
   }
 }

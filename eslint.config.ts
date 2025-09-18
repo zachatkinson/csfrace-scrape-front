@@ -30,6 +30,10 @@ export default [
         RequestInit: 'readonly',
         HeadersInit: 'readonly',
         EventListener: 'readonly',
+        HTMLElementEventMap: 'readonly',
+        ElementEventMap: 'readonly',
+        GlobalEventHandlersEventMap: 'readonly',
+        WindowEventMap: 'readonly',
       },
     },
     plugins: {

@@ -16,7 +16,18 @@ declare global {
       disconnect: () => void;
     };
     __healthStatusCleanup?: () => void;
-    authenticatedHeader?: any;
+    authenticatedHeader?: {
+      init: () => Promise<void>;
+      updateAuthUI: () => void;
+      loadAuthState: () => Promise<void>;
+    };
+    CSFRACE_API_BASE_URL?: string;
+    apiClient?: {
+      setBaseURL: (url: string) => void;
+    };
+    healthStatusService?: {
+      updateApiUrl: (url: string) => void;
+    };
   }
 }
 

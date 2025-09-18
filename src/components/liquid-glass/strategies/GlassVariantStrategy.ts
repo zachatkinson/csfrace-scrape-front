@@ -11,7 +11,7 @@ import type { CSSProperties } from 'react';
  */
 export interface GlassVariantConfig {
   classes: string[];
-  customProperties?: Record<string, any>;
+  customProperties?: Record<string, string | number | boolean | undefined>;
   interactiveClasses?: string[];
   adaptiveClasses?: string[];
   lensingClasses?: string[];

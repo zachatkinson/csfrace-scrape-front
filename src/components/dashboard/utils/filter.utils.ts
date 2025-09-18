@@ -259,12 +259,12 @@ export class ValidationUtils {
     const defaultState = FilterUtils.getDefaultFilterState();
 
     return {
-      currentFilter: FilterUtils.isValidFilterKey(state.currentFilter || '') 
-        ? state.currentFilter! 
+      currentFilter: FilterUtils.isValidFilterKey(state.currentFilter || '')
+        ? (state.currentFilter as string)
         : defaultState.currentFilter,
-      
-      currentSort: SortUtils.isValidSortOption(state.currentSort || '') 
-        ? state.currentSort! 
+
+      currentSort: SortUtils.isValidSortOption(state.currentSort || '')
+        ? (state.currentSort as string)
         : defaultState.currentSort,
       
       searchQuery: typeof state.searchQuery === 'string' 
@@ -284,20 +284,33 @@ export class ValidationUtils {
   /**
    * Validate jobs data
    */
-  static validateJobsData(jobs: any[]): IJobData[] {
+  static validateJobsData(jobs: unknown[]): IJobData[] {
     if (!Array.isArray(jobs)) return [];
 
-    return jobs.filter(job => 
-      job && 
-      typeof job.id === 'string' && 
-      typeof job.status === 'string'
-    ).map(job => ({
-      id: job.id,
-      status: job.status,
-      title: typeof job.title === 'string' ? job.title : undefined,
-      url: typeof job.source_url === 'string' ? job.source_url : undefined,
-      createdAt: job.createdAt instanceof Date ? job.createdAt : new Date(),
-      updatedAt: job.updatedAt instanceof Date ? job.updatedAt : new Date()
-    }));
+    const validJobs = jobs.filter((job): job is { [key: string]: unknown } =>
+      job !== null &&
+      typeof job === 'object' &&
+      'id' in job &&
+      'status' in job &&
+      typeof (job as { id: unknown }).id === 'string' &&
+      typeof (job as { status: unknown }).status === 'string'
+    );
+
+    return validJobs.map(job => {
+      const metadata = (job as { metadata?: unknown }).metadata;
+      const validMetadata = metadata && typeof metadata === 'object' ? metadata as Record<string, unknown> : undefined;
+
+      const result: IJobData = {
+        id: (job as { id: string }).id,
+        status: (job as { status: string }).status as 'pending' | 'processing' | 'completed' | 'failed' | 'queued',
+        title: typeof (job as { title?: unknown }).title === 'string' ? (job as { title: string }).title : 'Untitled Job',
+        url: typeof (job as { source_url?: unknown }).source_url === 'string' ? (job as { source_url: string }).source_url : 'Unknown URL',
+        createdAt: (job as { createdAt?: unknown }).createdAt instanceof Date ? (job as { createdAt: Date }).createdAt : new Date(),
+        updatedAt: (job as { updatedAt?: unknown }).updatedAt instanceof Date ? (job as { updatedAt: Date }).updatedAt : new Date(),
+        ...(validMetadata && { metadata: validMetadata })
+      };
+
+      return result;
+    });
   }
 }

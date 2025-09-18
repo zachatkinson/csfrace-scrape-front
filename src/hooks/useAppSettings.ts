@@ -9,6 +9,8 @@ import type { AppSettings, ApiConfigSettings } from '../interfaces/forms.ts';
 import { getApiBaseUrl } from '../constants/api.ts';
 import { createContextLogger } from '../utils/logger';
 
+// Window interface extensions
+
 const logger = createContextLogger('useAppSettings');
 
 // =============================================================================
@@ -44,8 +46,8 @@ const getDefaultAppSettings = (): AppSettings => ({
 });
 
 const getDefaultApiSettings = (): ApiConfigSettings => ({
-  apiUrl: typeof window !== 'undefined' && (window as any).CSFRACE_API_BASE_URL 
-    ? (window as any).CSFRACE_API_BASE_URL 
+  apiUrl: typeof window !== 'undefined' && window.CSFRACE_API_BASE_URL
+    ? window.CSFRACE_API_BASE_URL 
     : getApiBaseUrl(),
   apiTimeout: 30,
   refreshInterval: 10,
@@ -224,7 +226,7 @@ export const useAppSettings = (): UseAppSettingsReturn => {
 
     // Update API client if available
     if (settings.apiUrl && typeof window !== 'undefined') {
-      const apiClient = (window as any).apiClient;
+      const apiClient = window.apiClient;
       if (apiClient && typeof apiClient.setBaseURL === 'function') {
         apiClient.setBaseURL(settings.apiUrl);
       }
@@ -232,7 +234,7 @@ export const useAppSettings = (): UseAppSettingsReturn => {
 
     // Update health service API URL
     if (settings.apiUrl && typeof window !== 'undefined') {
-      const healthService = (window as any).healthStatusService;
+      const healthService = window.healthStatusService;
       if (healthService && typeof healthService.updateApiUrl === 'function') {
         healthService.updateApiUrl(settings.apiUrl);
       }

@@ -6,6 +6,10 @@
  * Dependency Inversion: Depends on authentication abstractions, not concrete implementations
  */
 
+import { createContextLogger } from '../utils/logger';
+
+const logger = createContextLogger('SignInButtonManager');
+
 // =============================================================================
 // TYPES & INTERFACES
 // =============================================================================
@@ -37,7 +41,7 @@ export interface AuthUser {
 export interface AuthError {
   code: string;
   message: string;
-  details?: any;
+  details?: Record<string, unknown>;
 }
 
 export interface AuthResponse {
@@ -75,9 +79,9 @@ export class SignInButtonManager {
       this.setupEventListeners();
       this.setupUI();
       
-      console.log('✅ SignInButtonManager: Initialized successfully');
+      logger.info('Initialized successfully');
     } catch (error) {
-      console.error('❌ SignInButtonManager: Failed to initialize:', error);
+      logger.error('Failed to initialize', error);
     }
   }
 
@@ -146,7 +150,7 @@ export class SignInButtonManager {
       await this.initiateSignIn();
       
     } catch (error) {
-      console.error('SignInButtonManager: Error during sign-in:', error);
+      logger.error('Error during sign-in', error);
       this.handleAuthError({
         detail: {
           code: 'SIGNIN_ERROR',
@@ -163,7 +167,7 @@ export class SignInButtonManager {
    * Initiate sign-in flow
    */
   private async initiateSignIn(): Promise<void> {
-    console.log('SignInButtonManager: Opening authentication modal...');
+    logger.info('Opening authentication modal');
 
     // Dispatch event to open the authentication modal
     window.dispatchEvent(new CustomEvent('open-auth-modal', {
@@ -178,7 +182,7 @@ export class SignInButtonManager {
   private handleAuthSuccess(event: CustomEvent): void {
     const user: AuthUser = event.detail;
     
-    console.log('SignInButtonManager: Authentication successful:', user);
+    logger.info('Authentication successful', { user });
     
     // Store authentication data
     this.storeAuth(user);
@@ -200,7 +204,9 @@ export class SignInButtonManager {
     if (this.config.redirectUrl) {
       // Use a small delay to allow UI updates to be seen
       setTimeout(() => {
-        window.location.href = this.config.redirectUrl!;
+        if (this.config.redirectUrl) {
+          window.location.href = this.config.redirectUrl;
+        }
       }, 500);
     }
   }
@@ -211,7 +217,7 @@ export class SignInButtonManager {
   private handleAuthError(event: CustomEvent): void {
     const error: AuthError = event.detail;
     
-    console.error('SignInButtonManager: Authentication error:', error);
+    logger.error('Authentication error', error);
     
     // Update UI to show error state
     this.updateButtonForErrorState(error);
@@ -232,7 +238,7 @@ export class SignInButtonManager {
    */
   private async handleSignOut(): Promise<void> {
     try {
-      console.log('SignInButtonManager: Signing out...');
+      logger.info('Signing out');
       
       // Clear stored authentication
       this.clearStoredAuth();
@@ -247,7 +253,7 @@ export class SignInButtonManager {
       // await this.revokeTokens();
       
     } catch (error) {
-      console.error('SignInButtonManager: Error during sign-out:', error);
+      logger.error('Error during sign-out', error);
     }
   }
 
@@ -356,7 +362,7 @@ export class SignInButtonManager {
         sessionStorage.setItem('auth_tokens', JSON.stringify(user.tokens));
       }
     } catch (error) {
-      console.error('Failed to store authentication data:', error);
+      logger.error('Failed to store authentication data', error);
     }
   }
 
@@ -385,7 +391,7 @@ export class SignInButtonManager {
         return user;
       }
     } catch (error) {
-      console.error('Failed to retrieve authentication data:', error);
+      logger.error('Failed to retrieve authentication data', error);
       this.clearStoredAuth();
     }
     
@@ -400,7 +406,7 @@ export class SignInButtonManager {
       localStorage.removeItem('auth_user');
       sessionStorage.removeItem('auth_tokens');
     } catch (error) {
-      console.error('Failed to clear authentication data:', error);
+      logger.error('Failed to clear authentication data', error);
     }
   }
 
@@ -461,6 +467,6 @@ export class SignInButtonManager {
     // Clear references
     this.button = null;
     
-    console.log('SignInButtonManager: Destroyed');
+    logger.info('Destroyed');
   }
 }

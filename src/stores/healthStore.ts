@@ -17,6 +17,20 @@ import { createContextLogger } from '../utils/logger';
 const logger = createContextLogger('HealthStore');
 
 // =============================================================================
+// WINDOW GLOBAL TYPES (for migration purposes)
+// =============================================================================
+
+declare global {
+  interface Window {
+    __latestConsolidatedHealthData?: IConsolidatedHealthData;
+    __healthStatusState?: {
+      lastHealthTimestamp?: string;
+      isInitialized?: boolean;
+    };
+  }
+}
+
+// =============================================================================
 // TYPE DEFINITIONS
 // =============================================================================
 
@@ -121,7 +135,7 @@ export const $serviceMetrics = computed($healthData, (healthData) => {
  */
 export const $computedOverallStatus = computed(
   [$healthData, $serviceMetrics],
-  (_healthData: any, metrics: any) => {
+  (_healthData: IConsolidatedHealthData, metrics: { total: number; loaded: number; up: number; hasAnyData: boolean }) => {
     if (metrics.loaded === 0) {
       // No data loaded yet - loading state
       return {
@@ -277,15 +291,15 @@ export function getLastHealthTimestamp(): Date | null {
  */
 export function migrateFromWindowGlobals(): void {
   // Check for existing window global data
-  const windowHealthData = (window as any).__latestConsolidatedHealthData;
-  const windowHealthState = (window as any).__healthStatusState;
+  const windowHealthData = window.__latestConsolidatedHealthData;
+  const windowHealthState = window.__healthStatusState;
 
   if (windowHealthData) {
     logger.info('Migrating from window global data');
     updateHealthData(windowHealthData);
 
     // Clean up window globals
-    delete (window as any).__latestConsolidatedHealthData;
+    delete window.__latestConsolidatedHealthData;
   }
 
   if (windowHealthState) {
@@ -298,7 +312,7 @@ export function migrateFromWindowGlobals(): void {
     }
 
     // Clean up window globals
-    delete (window as any).__healthStatusState;
+    delete window.__healthStatusState;
   }
 }
 

@@ -89,8 +89,8 @@ export class HttpClient {
   }
 
   static async getWithRetry(url: string, retries: number = CONFIG.RETRY_ATTEMPTS): Promise<Response> {
-    let lastError: Error;
-    
+    let lastError: Error | null = null;
+
     for (let i = 0; i <= retries; i++) {
       try {
         return await this.fetchWithTimeout(url);
@@ -102,8 +102,8 @@ export class HttpClient {
         }
       }
     }
-    
-    throw lastError!;
+
+    throw lastError || new Error(`Failed to fetch ${url} after ${retries + 1} attempts`);
   }
 
   private static delay(ms: number): Promise<void> {

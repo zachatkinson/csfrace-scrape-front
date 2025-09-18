@@ -50,7 +50,10 @@ export class GlassVariantRegistry {
     if (!strategy) {
       console.warn(`Glass variant '${variantName}' not found. Falling back to 'default'.`);
       const defaultStrategy = this.strategies.get('default');
-      return defaultStrategy!.getConfig(props);
+      if (!defaultStrategy) {
+        throw new Error('Default glass variant strategy not found');
+      }
+      return defaultStrategy.getConfig(props);
     }
     
     return strategy.getConfig(props);

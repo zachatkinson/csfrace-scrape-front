@@ -6,6 +6,9 @@
 import type { IFilterManager } from '../types/filter.types';
 import { FilterUtils, EventUtils } from '../utils/filter.utils';
 import { domUtils, waitForDOM } from '../utils/dom.utils';
+import { createContextLogger } from '../../../utils/logger';
+
+const logger = createContextLogger('FilterManager');
 
 // =============================================================================
 // FILTER MANAGER CLASS (Single Responsibility Principle)
@@ -31,7 +34,7 @@ class FilterManager implements IFilterManager {
     this.updateFilterStates();
     this.emitInitialState();
     
-    console.log('🎛️ FilterManager: Initialized with Astro Islands architecture');
+    logger.info('FilterManager initialized with Astro Islands architecture');
   }
 
   private loadInitialState(): void {
@@ -176,7 +179,7 @@ class FilterManager implements IFilterManager {
 
     EventUtils.dispatchEvent(event);
     
-    console.log('🎛️ FilterManager: Filter updated', {
+    logger.debug('Filter updated', {
       filter: this.currentFilter,
       availableStatuses: this.availableStatuses
     });
@@ -199,5 +202,5 @@ const filterManager = new FilterManager();
 
 // Expose manager globally for debugging and external access
 if (typeof window !== 'undefined') {
-  (window as any).filterManager = filterManager;
+  (window as Window & { filterManager?: FilterManager }).filterManager = filterManager;
 }

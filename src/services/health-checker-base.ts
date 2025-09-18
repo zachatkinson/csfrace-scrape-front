@@ -31,12 +31,12 @@ export abstract class BaseHealthChecker implements IServiceChecker {
     }
   }
 
-  protected createResult(status: ServiceStatus, message: string, metrics: any, error?: string): IServiceResult {
+  protected createResult(status: ServiceStatus, message: string, metrics: Record<string, unknown>, error?: string): IServiceResult {
     return {
       status,
       message,
       metrics: {
-        responseTime: metrics.responseTime || 0,
+        responseTime: (typeof metrics.responseTime === 'number' ? metrics.responseTime : 0),
         ...metrics
       },
       ...(error !== undefined && { error }),

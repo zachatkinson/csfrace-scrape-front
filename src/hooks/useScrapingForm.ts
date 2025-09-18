@@ -237,25 +237,25 @@ export function useScrapingForm(options: UseScrapingFormOptions = {}) {
   }, []);
 
   // Validation
-  const isValidForSubmission = useCallback((): boolean => {
-    if (state.batchMode) {
-      const urls = getBatchUrlList();
-      return urls.length > 0 && urls.length <= maxBatchUrls && !state.isBatchSubmitting;
-    } else {
-      return Boolean(
-        state.validationResult?.isValid && 
-        !state.isValidating && 
-        !state.isSubmitting
-      );
-    }
-  }, [state, maxBatchUrls]);
-
   const getBatchUrlList = useCallback((): string[] => {
     return state.batchUrls
       .split('\n')
       .map(url => url.trim())
       .filter(url => url.length > 0);
   }, [state.batchUrls]);
+
+  const isValidForSubmission = useCallback((): boolean => {
+    if (state.batchMode) {
+      const urls = getBatchUrlList();
+      return urls.length > 0 && urls.length <= maxBatchUrls && !state.isBatchSubmitting;
+    } else {
+      return Boolean(
+        state.validationResult?.isValid &&
+        !state.isValidating &&
+        !state.isSubmitting
+      );
+    }
+  }, [state, maxBatchUrls, getBatchUrlList]);
 
   // Validation helpers
   const getUrlValidationStatus = useCallback(() => {

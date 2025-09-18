@@ -6,6 +6,22 @@
 
 import { createContextLogger } from '../utils/logger';
 
+// Type definitions for window extensions
+
+// API Config interface
+interface IApiConfig {
+  DEFAULT_BASE_URL: string;
+  DEVELOPMENT_URL: string;
+  PRODUCTION_URL?: string;
+  STAGING_URL?: string;
+  DOCKER_URL?: string;
+  DEFAULT_TIMEOUT?: number;
+  DEFAULT_RETRIES?: number;
+  HEALTH_CHECK_INTERVAL?: number;
+  HEALTH_CHECK_TIMEOUT?: number;
+  [key: string]: string | number | undefined;
+}
+
 const logger = createContextLogger('APIConfig');
 
 // =============================================================================
@@ -166,15 +182,15 @@ export function getApiBaseUrl(): string {
  */
 export function updateApiBaseUrl(newUrl: string): void {
   // Update the configuration object
-  (API_CONFIG as any).DEFAULT_BASE_URL = newUrl;
+  (API_CONFIG as IApiConfig).DEFAULT_BASE_URL = newUrl;
   
   // Notify any global services about the URL change
   if (typeof window !== 'undefined') {
     // Update global window variable for backward compatibility
-    (window as any).CSFRACE_API_BASE_URL = newUrl;
+    window.CSFRACE_API_BASE_URL = newUrl;
     
     // Update health service if available
-    const healthService = (window as any).healthStatusService;
+    const healthService = window.healthStatusService;
     if (healthService && typeof healthService.updateApiUrl === 'function') {
       healthService.updateApiUrl(newUrl);
     }

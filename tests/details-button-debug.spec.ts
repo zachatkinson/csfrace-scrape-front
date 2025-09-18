@@ -23,7 +23,7 @@ test.describe('Details Button Debug', () => {
           window.dispatchEvent(event);
           
           // Alternative: try to trigger through React devtools if available
-          if ((window as any).__REACT_DEVTOOLS_GLOBAL_HOOK__) {
+          if ((window as Record<string, unknown>).__REACT_DEVTOOLS_GLOBAL_HOOK__) {
             throw errorEvent;
           }
         }
@@ -234,7 +234,7 @@ Error: Test error for details button debugging
           const events: string[] = [];
           const eventTypes = ['click', 'toggle', 'change', 'focus', 'blur'];
           eventTypes.forEach(type => {
-            if ((element as any)[`on${type}`]) {
+            if ((element as Record<string, unknown>)[`on${type}`]) {
               events.push(type);
             }
           });

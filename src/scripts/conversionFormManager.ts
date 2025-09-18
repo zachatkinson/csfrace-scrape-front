@@ -4,6 +4,8 @@
  * Single Responsibility: Manages conversion form interactions and state
  */
 
+import { createContextLogger } from '../utils/logger.js';
+
 interface ConversionFormConfig {
   apiBaseUrl: string;
   container: HTMLElement;
@@ -11,6 +13,7 @@ interface ConversionFormConfig {
 }
 
 export class ConversionFormManager {
+  private readonly logger = createContextLogger('ConversionFormManager');
   private container: HTMLElement;
   private currentMode: 'bulk' | 'single' = 'bulk';
   
@@ -168,7 +171,9 @@ export class ConversionFormManager {
       const url = target.value.trim();
       const isValid = url.length > 0 && validateURL(url);
       
-      this.convertNowBtn!.disabled = !isValid;
+      if (this.convertNowBtn) {
+        this.convertNowBtn.disabled = !isValid;
+      }
       
       // Update input styling based on validity
       if (url.length > 0) {
@@ -203,17 +208,23 @@ export class ConversionFormManager {
 
     // Prevent default drag behaviors
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-      this.dropZone!.addEventListener(eventName, this.preventDefaults, false);
+      if (this.dropZone) {
+        this.dropZone.addEventListener(eventName, this.preventDefaults, false);
+      }
       document.body.addEventListener(eventName, this.preventDefaults, false);
     });
     
     // Highlight drop zone when dragging over
     ['dragenter', 'dragover'].forEach(eventName => {
-      this.dropZone!.addEventListener(eventName, this.highlight.bind(this), false);
+      if (this.dropZone) {
+        this.dropZone.addEventListener(eventName, this.highlight.bind(this), false);
+      }
     });
     
     ['dragleave', 'drop'].forEach(eventName => {
-      this.dropZone!.addEventListener(eventName, this.unhighlight.bind(this), false);
+      if (this.dropZone) {
+        this.dropZone.addEventListener(eventName, this.unhighlight.bind(this), false);
+      }
     });
     
     // Handle dropped files
@@ -290,7 +301,7 @@ export class ConversionFormManager {
     if (!this.urlInput) return;
     
     const url = this.urlInput.value.trim();
-    console.log('Submitting single post conversion for:', url);
+    this.logger.info('Submitting single post conversion', { url });
     
     // TODO: Implement actual API call to backend
     // This should integrate with the backend conversion API
@@ -306,7 +317,7 @@ export class ConversionFormManager {
     if (!this.fileInput?.files?.[0]) return;
     
     const file = this.fileInput.files[0];
-    console.log('Submitting bulk upload conversion for:', file.name);
+    this.logger.info('Submitting bulk upload conversion', { fileName: file.name });
     
     // TODO: Implement actual API call to backend
     // This should read the file and submit URLs for bulk processing
@@ -328,7 +339,7 @@ export class ConversionFormManager {
   /**
    * Emit job submission event for JobDashboard to refresh
    */
-  private emitJobSubmissionEvent(type: 'single' | 'bulk', data: any) {
+  private emitJobSubmissionEvent(type: 'single' | 'bulk', data: Record<string, unknown>) {
     const event = new CustomEvent('conversionJobSubmitted', {
       detail: { type, data, timestamp: Date.now() }
     });

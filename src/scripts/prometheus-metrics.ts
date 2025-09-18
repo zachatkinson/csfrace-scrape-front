@@ -6,6 +6,9 @@
 // =============================================================================
 
 import { PrometheusServiceChecker } from '../utils/serviceCheckers.ts';
+import { createContextLogger } from '../utils/logger.js';
+
+const moduleLogger = createContextLogger('PrometheusMetricsModule');
 
 interface PrometheusMetrics {
   version: string;
@@ -21,6 +24,7 @@ interface PrometheusMetrics {
 
 class PrometheusMetricsUpdater {
   private static instance: PrometheusMetricsUpdater;
+  private readonly logger = createContextLogger('PrometheusMetricsUpdater');
   
   static getInstance(): PrometheusMetricsUpdater {
     if (!PrometheusMetricsUpdater.instance) {
@@ -30,7 +34,7 @@ class PrometheusMetricsUpdater {
   }
 
   async updatePrometheusMetrics(): Promise<void> {
-    console.log('📊 Updating Prometheus metrics service...');
+    this.logger.info('Updating Prometheus metrics service');
     
     try {
       // Get health data from Prometheus
@@ -61,13 +65,13 @@ class PrometheusMetricsUpdater {
       // Update overall service status
       this.updateServiceStatus(healthResult.status, healthResult.message);
       
-      console.log('✅ Prometheus metrics updated successfully', metrics);
+      this.logger.info('Prometheus metrics updated successfully', { metrics });
       
       // NEW: Emit completion event for header aggregation (DRY + Single Source of Truth)
       this.emitServiceCardCompleteEvent(healthResult);
       
     } catch (error) {
-      console.error('❌ Failed to update Prometheus metrics:', error);
+      this.logger.error('Failed to update Prometheus metrics', error);
       this.updateServiceStatus('error', 'Failed to fetch metrics service data');
     }
   }
@@ -169,7 +173,7 @@ class PrometheusMetricsUpdater {
   // Note: Method reserved for future hardcoded element updates
 
   // NEW: Emit completion event for header aggregation (DRY + Single Source of Truth)
-  private emitServiceCardCompleteEvent(healthResult: any): void {
+  private emitServiceCardCompleteEvent(healthResult: { status: string; message: string; metrics?: Record<string, unknown> }): void {
     const event = new CustomEvent('serviceCardComplete', {
       detail: {
         serviceName: 'prometheus',
@@ -182,7 +186,7 @@ class PrometheusMetricsUpdater {
       }
     });
     
-    console.log('📡 Prometheus card emitting completion event:', event.detail);
+    this.logger.info('Prometheus card emitting completion event', event.detail);
     window.dispatchEvent(event);
   }
 }
@@ -191,23 +195,23 @@ class PrometheusMetricsUpdater {
 if (typeof window !== 'undefined') {
   const updater = PrometheusMetricsUpdater.getInstance();
   
-  console.log('📊 Prometheus metrics script loaded');
+  moduleLogger.info('Prometheus metrics script loaded');
   
   // Initial update after page load
   if (document.readyState === 'complete') {
-    console.log('📊 Document ready - updating Prometheus metrics immediately');
+    moduleLogger.info('Document ready - updating Prometheus metrics immediately');
     updater.updatePrometheusMetrics();
   } else {
-    console.log('⏳ Waiting for page load');
+    moduleLogger.info('Waiting for page load');
     window.addEventListener('load', () => {
-      console.log('📊 Page loaded - updating Prometheus metrics now');
+      moduleLogger.info('Page loaded - updating Prometheus metrics now');
       updater.updatePrometheusMetrics();
     });
   }
   
   // Set up periodic updates (every 1 minute for dynamic data)
   setInterval(() => {
-    console.log('🔄 Periodic Prometheus metrics update (1-minute poll)');
+    moduleLogger.info('Periodic Prometheus metrics update (1-minute poll)');
     updater.updatePrometheusMetrics();
   }, 60000);
 }

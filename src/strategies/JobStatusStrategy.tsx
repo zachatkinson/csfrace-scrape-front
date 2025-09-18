@@ -404,7 +404,11 @@ export class JobStatusManager {
     if (!this.strategyCache.has(status)) {
       this.strategyCache.set(status, JobStatusStrategyFactory.create(status));
     }
-    return this.strategyCache.get(status)!;
+    const strategy = this.strategyCache.get(status);
+    if (!strategy) {
+      throw new Error(`Failed to create strategy for status: ${status}`);
+    }
+    return strategy;
   }
   
   static getDisplay(status: JobStatus): JobStatusDisplay {

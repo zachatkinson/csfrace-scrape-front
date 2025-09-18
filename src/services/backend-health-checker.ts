@@ -48,10 +48,10 @@ export class BackendHealthChecker extends BaseHealthChecker {
         );
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       const responseTime = Math.round(performance.now() - startTime);
 
-      if (error.name === 'AbortError') {
+      if (error && typeof error === 'object' && 'name' in error && error.name === 'AbortError') {
         return this.createResult(
           'error',
           'Backend API request timed out',
@@ -60,11 +60,15 @@ export class BackendHealthChecker extends BaseHealthChecker {
         );
       }
 
+      const errorMessage = error && typeof error === 'object' && 'message' in error && typeof error.message === 'string'
+        ? error.message
+        : 'Unknown error occurred';
+
       return this.createResult(
         'error',
         'Backend API is unreachable',
         { responseTime },
-        error.message
+        errorMessage
       );
     }
   }

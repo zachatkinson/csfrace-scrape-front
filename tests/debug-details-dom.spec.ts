@@ -66,7 +66,7 @@ test('debug details DOM structure', async ({ page }) => {
       });
       
       // Store observer globally so we can disconnect it later
-      (window as any).domObserver = observer;
+      (window as Record<string, unknown>).domObserver = observer;
     });
     
     // Click the button
@@ -76,8 +76,8 @@ test('debug details DOM structure', async ({ page }) => {
     // Check what changed
     const afterClickInfo = await page.evaluate(() => {
       // Disconnect observer
-      if ((window as any).domObserver) {
-        (window as any).domObserver.disconnect();
+      if ((window as Record<string, unknown>).domObserver) {
+        ((window as Record<string, unknown>).domObserver as MutationObserver).disconnect();
       }
       
       const errorDetails = document.querySelector('.error-details') as HTMLElement;

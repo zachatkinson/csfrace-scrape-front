@@ -223,11 +223,11 @@ export const UnifiedFormField: React.FC<IUnifiedFieldProps> = React.memo(({
   'aria-describedby': ariaDescribedBy,
   id
 }) => {
-  const [internalValue, setInternalValue] = useState(value ?? defaultValue ?? '');
+  const [internalValue, setInternalValue] = useState<unknown>(value ?? defaultValue ?? '');
   const debounceRef = useRef<number | null>(null);
-  
+
   // Debounced change handler
-  const handleChange = useCallback((newValue: any) => {
+  const handleChange = useCallback((newValue: unknown) => {
     setInternalValue(newValue);
     
     if (debounceMs > 0) {
@@ -263,7 +263,7 @@ export const UnifiedFormField: React.FC<IUnifiedFieldProps> = React.memo(({
   // Update internal value when prop value changes
   useEffect(() => {
     if (value !== undefined) {
-      setInternalValue(value);
+      setInternalValue(value || {});
     }
   }, [value]);
 

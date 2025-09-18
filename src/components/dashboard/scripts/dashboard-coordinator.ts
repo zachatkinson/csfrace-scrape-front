@@ -13,6 +13,31 @@ import { createContextLogger } from '../../../utils/logger';
 
 const logger = createContextLogger('DashboardCoordinator');
 
+// Type definitions for event data
+interface DataUpdateEvent {
+  jobs: unknown[];
+  stats: IDashboardStats;
+  timestamp: number;
+}
+
+interface FilterUpdateEvent {
+  filter?: string;
+  search?: string;
+  [key: string]: unknown;
+}
+
+interface JobActionEvent {
+  action: 'view' | 'delete' | 'retry' | 'cancel';
+  jobId: string | number;
+  [key: string]: unknown;
+}
+
+interface ConnectionStatusEvent {
+  status: 'connected' | 'disconnected' | 'reconnecting';
+  timestamp: number;
+  [key: string]: unknown;
+}
+
 // =============================================================================
 // DASHBOARD COORDINATOR CLASS (Single Responsibility Principle)
 // =============================================================================
@@ -115,7 +140,7 @@ export class DashboardCoordinator {
   /**
    * Handle data updates from Server Islands
    */
-  private handleDataUpdate(data: { jobs: any[], stats: IDashboardStats, timestamp: number }): void {
+  private handleDataUpdate(data: DataUpdateEvent): void {
     logger.debug('Received data update', { data });
 
     this.updateStats(data.stats);
@@ -128,7 +153,7 @@ export class DashboardCoordinator {
   /**
    * Handle filter updates
    */
-  private handleFilterUpdate(filterData: any): void {
+  private handleFilterUpdate(filterData: FilterUpdateEvent): void {
     logger.debug('Filter update received', { filterData });
 
     // Update loading state
@@ -149,18 +174,20 @@ export class DashboardCoordinator {
   /**
    * Handle job actions (view, delete, etc.)
    */
-  private handleJobAction(actionData: any): void {
+  private handleJobAction(actionData: JobActionEvent): void {
     logger.debug('Job action received', { actionData });
+
+    const jobIdString = String(actionData.jobId);
 
     switch (actionData.action) {
       case 'view':
-        this.showJobDetails(actionData.jobId);
+        this.showJobDetails(jobIdString);
         break;
       case 'delete':
-        this.deleteJob(actionData.jobId);
+        this.deleteJob(jobIdString);
         break;
       case 'retry':
-        this.retryJob(actionData.jobId);
+        this.retryJob(jobIdString);
         break;
       default:
         logger.warn('Unknown job action', { action: actionData.action });
@@ -170,7 +197,7 @@ export class DashboardCoordinator {
   /**
    * Handle connection status changes
    */
-  private handleConnectionStatusChange(statusData: any): void {
+  private handleConnectionStatusChange(statusData: ConnectionStatusEvent): void {
     this.state.connectionStatus = statusData.status;
     this.state.lastUpdated = new Date(statusData.timestamp);
 
