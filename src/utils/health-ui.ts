@@ -43,12 +43,21 @@ export class HealthUIHelper {
   static updateStatusIndicator(elementId: string, status: ServiceStatus) {
     const indicator = document.getElementById(elementId);
     if (indicator) {
-      const circle = indicator.querySelector('.status-circle');
-      const text = indicator.querySelector('.status-text');
+      // Check if this is the BaseHealthCard structure (single element with status-circle class)
+      if (indicator.classList.contains('status-circle')) {
+        // Remove all existing status classes
+        indicator.classList.remove('status-up', 'status-degraded', 'status-down', 'status-error', 'status-unknown');
+        // Add the new status class
+        indicator.classList.add(`status-${status}`);
+      } else {
+        // Legacy structure with nested elements
+        const circle = indicator.querySelector('.status-circle');
+        const text = indicator.querySelector('.status-text');
 
-      if (circle && text) {
-        circle.className = `status-circle ${this.getStatusColor(status)}`;
-        text.textContent = status.toUpperCase();
+        if (circle && text) {
+          circle.className = `status-circle ${this.getStatusColor(status)}`;
+          text.textContent = status.toUpperCase();
+        }
       }
     }
   }

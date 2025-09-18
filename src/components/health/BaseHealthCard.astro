@@ -13,93 +13,79 @@ import { formatTimestamp } from '/src/utils/timezone';
 
 export interface Props {
   serviceName: string;
-  serviceResult: IServiceResult;
+  serviceResult?: IServiceResult;
   icon?: string;
   details?: Array<{
     label: string;
     value: string | number;
     key: string;
   }>;
+  showRefreshButton?: boolean;
+  customIdPrefix?: string;
+  defaultMessage?: string;
 }
 
-const { serviceName, serviceResult, icon = "🔧", details = [] } = Astro.props;
+const {
+  serviceName,
+  serviceResult,
+  details = [],
+  showRefreshButton = false,
+  customIdPrefix,
+  defaultMessage = "Loading..."
+} = Astro.props;
 
-// SOLID: Single source of truth for status color mapping
-function getStatusColor(status: string): string {
-  switch (status) {
-    case 'up': return 'green';
-    case 'degraded': return 'yellow'; 
-    case 'down': return 'red';
-    case 'error': return 'orange';
-    default: return 'gray';
-  }
-}
+// Generate ID prefix - use custom or fallback to service name
+const idPrefix = customIdPrefix || serviceName.toLowerCase().replace(/\s+/g, '-');
 
-function getStatusText(status: string): string {
-  switch (status) {
-    case 'up': return 'OPERATIONAL';
-    case 'degraded': return 'DEGRADED'; 
-    case 'down': return 'OFFLINE';
-    case 'error': return 'ERROR';
-    default: return 'UNKNOWN';
-  }
-}
-
-const statusColor = getStatusColor(serviceResult.status);
-const statusText = getStatusText(serviceResult.status);
-const responseTime = serviceResult.metrics.responseTime;
+// Handle optional serviceResult for initial loading state
+const responseTime = serviceResult?.metrics?.responseTime;
 ---
 
 <!-- Health Card Component -->
-<div 
-  class="glass-card p-6 border-l-4" 
-  class:list={[
-    `border-${statusColor}-500`,
-    serviceResult.status === 'up' ? 'bg-green-500/5' : 
-    serviceResult.status === 'degraded' ? 'bg-yellow-500/5' :
-    serviceResult.status === 'down' ? 'bg-red-500/5' : 'bg-orange-500/5'
-  ]}
-  data-service={serviceName.toLowerCase().includes('frontend') ? 'frontend' : serviceName.toLowerCase().replace(/\s+/g, '-')}
+<div
+  class="glass-card p-6"
+  data-service={idPrefix}
   data-service-name={serviceName}
-  data-service-result={JSON.stringify(serviceResult)}
+  data-service-result={JSON.stringify(serviceResult || {})}
 >
   <!-- Header -->
   <div class="flex items-center justify-between mb-4">
-    <div class="flex items-center space-x-3">
-      <span class="text-2xl">{icon}</span>
-      <div>
-        <h3 class="text-xl font-semibold text-white">{serviceName}</h3>
-        <p class="text-sm" class:list={[
-          serviceResult.status === 'up' ? 'text-green-400' : 
-          serviceResult.status === 'degraded' ? 'text-yellow-400' :
-          serviceResult.status === 'down' ? 'text-red-400' : 'text-orange-400'
-        ]}>
-          {statusText}
-        </p>
-      </div>
+    <h3 class="text-xl font-semibold text-white">{serviceName}</h3>
+    <div class="flex items-center">
+      <span id={`${idPrefix}-status`} class={`status-circle status-${serviceResult?.status || 'unknown'}`}></span>
+      <span class="text-sm text-white/70">Status</span>
     </div>
-    
-    <!-- Status Indicator -->
-    <div 
-      class="w-4 h-4 rounded-full animate-pulse" 
-      class:list={[`bg-${statusColor}-500`]}
-    ></div>
   </div>
 
-  <!-- Metrics -->
-  <div class="grid grid-cols-2 gap-4 text-sm">
-    {responseTime && (
+  <!-- Content -->
+  <div class="space-y-3">
+    <!-- Message -->
+    <div>
+      <span class="text-white/60 text-sm">Message:</span>
+      <div id={`${idPrefix}-message`} class="text-white">
+        {serviceResult?.message || defaultMessage}
+      </div>
+    </div>
+
+    <!-- Response Time -->
+    {responseTime !== undefined ? (
       <div>
-        <span class="text-white/60">Response Time:</span>
-        <span class="ml-2 text-white font-mono">{responseTime}ms</span>
+        <span class="text-white/60 text-sm">Response Time:</span>
+        <div id={`${idPrefix}-latency`} class="text-white font-mono">{responseTime}ms</div>
+      </div>
+    ) : (
+      <div>
+        <span class="text-white/60 text-sm">Response Time:</span>
+        <div id={`${idPrefix}-latency`} class="text-white font-mono">-</div>
       </div>
     )}
-    
+
+    <!-- Last Check -->
     <div>
-      <span class="text-white/60">Last Check:</span>
-      <span class="ml-2 text-white font-mono" id={`last-check-${serviceName.toLowerCase().replace(/\s+/g, '-')}`}>
-        {formatTimestamp(new Date(serviceResult.timestamp))}
-      </span>
+      <span class="text-white/60 text-sm">Last Check:</span>
+      <div id={`${idPrefix}-last-updated`} class="text-white/80 text-sm">
+        {serviceResult ? formatTimestamp(new Date(serviceResult.timestamp)) : 'Never'}
+      </div>
     </div>
 
     <!-- Service-specific details -->
@@ -112,13 +98,46 @@ const responseTime = serviceResult.metrics.responseTime;
   </div>
 
   <!-- Error Information -->
-  {serviceResult.error && (
+  {serviceResult?.error && (
     <div class="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded text-sm">
       <span class="text-red-400 font-medium">Error: </span>
       <span class="text-white/80">{serviceResult.error}</span>
     </div>
   )}
+
+  <!-- Optional Refresh Button -->
+  {showRefreshButton && (
+    <button
+      id={`refresh-${idPrefix}-btn`}
+      class="w-full mt-4 glass-button px-3 py-2 text-white/80 hover:text-white border border-white/20 hover:border-white/40 rounded transition-all duration-200"
+    >
+      Refresh {serviceName}
+    </button>
+  )}
 </div>
+
+<style>
+  .glass-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+  }
+
+  .status-circle {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 8px;
+  }
+
+  .status-up { background-color: #10b981; }
+  .status-degraded { background-color: #f59e0b; }
+  .status-down { background-color: #ef4444; }
+  .status-error { background-color: #ef4444; }
+  .status-unknown { background-color: #6b7280; }
+</style>
 
 <script>
   // =============================================================================

@@ -114,8 +114,9 @@ export class HealthDashboardManager {
   private useSSE = false;
   private boundHealthUpdateHandler?: (event: Event) => void;
   private boundServiceUpdateHandler?: (event: Event) => void;
+  private storeCleanupCallbacks: Array<() => void> = [];
 
-  constructor(private config: { apiBaseUrl: string; refreshIntervalMs?: number; useSSE?: boolean }) {
+  constructor(public config: { apiBaseUrl: string; refreshIntervalMs?: number; useSSE?: boolean }) {
     this.useSSE = config.useSSE || false;
     this.initializeServiceCheckers();
 
@@ -150,7 +151,7 @@ export class HealthDashboardManager {
             return { name, result, success: true };
           } catch (error) {
             logger.error('Failed to check service', { name, error });
-            return { name, result: null, success: false, error };
+            return { name, result: null, success: false, error: error as Error };
           }
         }
       );
@@ -256,77 +257,98 @@ export class HealthDashboardManager {
     });
   }
 
-  // SSE Integration - Listen to MainLayout health events
+  // Nano Store Integration - Listen to store changes (replaces SSE)
   private setupSSEListeners(): void {
-    logger.info('Setting up SSE listeners for health dashboard');
+    logger.info('Setting up Nano Store listeners for health dashboard (SSE replacement)');
 
-    // Create bound handlers for proper cleanup
-    this.boundHealthUpdateHandler = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      const { healthData } = customEvent.detail;
-      logger.info('Health dashboard received SSE update', { healthData });
-      this.handleSSEHealthUpdate(healthData);
-    };
+    // Import nano stores dynamically (may not be available at initialization time)
+    import('/src/stores/healthStore').then(({ $healthData, $serviceMetrics }) => {
+      if ($healthData && $serviceMetrics) {
+        logger.info('Nano stores available, subscribing to changes');
 
-    this.boundServiceUpdateHandler = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      const { serviceName, serviceData } = customEvent.detail;
-      logger.info('Service update received via SSE', { serviceName, serviceData });
-      this.handleSSEServiceUpdate(serviceName, serviceData);
-    };
+        // Subscribe to health data changes
+        const unsubscribeHealth = $healthData.subscribe((healthData) => {
+          logger.info('Health dashboard received store update', { healthData });
+          this.handleStoreHealthUpdate(healthData);
+        });
 
-    // Listen for health data updates from MainLayout SSE service
-    window.addEventListener('healthDataUpdate', this.boundHealthUpdateHandler);
+        // Subscribe to service metrics changes
+        const unsubscribeMetrics = $serviceMetrics.subscribe((serviceMetrics) => {
+          logger.info('Service metrics received via store', { serviceMetrics });
+          this.handleStoreMetricsUpdate(serviceMetrics);
+        });
 
-    // Listen for individual service updates
-    window.addEventListener('serviceHealthUpdate', this.boundServiceUpdateHandler);
+        // Store cleanup functions for later use
+        this.storeCleanupCallbacks = [unsubscribeHealth, unsubscribeMetrics];
+      } else {
+        logger.warn('Nano stores not available, falling back to polling only');
+      }
+    }).catch((error) => {
+      logger.error('Failed to import nano stores', { error });
+      logger.info('Falling back to polling only');
+    });
   }
 
-  // Handle health data updates from SSE
-  private handleSSEHealthUpdate(healthData: Record<string, unknown>): void {
+  // Handle health data updates from Nano Store
+  private handleStoreHealthUpdate(healthData: Record<string, unknown>): void {
     if (!healthData?.services) return;
 
-    const services = healthData.services as Record<string, unknown>;
+    const services = healthData.services;
 
-    // Update overall status using existing logic
-    const mockResults = Object.keys(services).map(serviceName => {
-      const serviceData = services[serviceName] as Record<string, unknown>;
+    // Map nano store service keys to our expected names
+    const serviceMapping = {
+      'frontend': 'frontend',
+      'backend': 'backend',
+      'database': 'postgresql',
+      'cache': 'redis'
+    };
+
+    // Update individual services using the mapping
+    Object.keys(serviceMapping).forEach(storeKey => {
+      const ourServiceName = serviceMapping[storeKey as keyof typeof serviceMapping];
+      const serviceData = services[storeKey];
+
+      if (serviceData) {
+        this.updateServiceDisplay(ourServiceName, serviceData);
+      }
+    });
+
+    // Update overall status
+    const mockResults = Object.keys(serviceMapping).map(storeKey => {
+      const ourServiceName = serviceMapping[storeKey as keyof typeof serviceMapping];
+      const serviceData = services[storeKey];
+
       return {
-        name: serviceName,
+        name: ourServiceName,
         result: {
-          status: serviceData.status,
-          message: serviceData.message,
-          metrics: serviceData.metrics || {}
+          status: serviceData?.status || 'unknown',
+          message: serviceData?.message || 'No data',
+          metrics: serviceData?.metrics || {}
         } as IServiceResult,
-        success: true
+        success: !!serviceData
       };
     });
 
     this.updateOverallStatus(mockResults);
-
-    // Update individual services
-    Object.keys(services).forEach(serviceName => {
-      const serviceData = services[serviceName] as Record<string, unknown>;
-      this.updateServiceDisplay(serviceName, serviceData);
-    });
   }
 
-  // Handle individual service updates from SSE
-  private handleSSEServiceUpdate(serviceName: string, serviceData: Record<string, unknown>): void {
-    this.updateServiceDisplay(serviceName, serviceData);
+  // Handle service metrics updates from Nano Store
+  private handleStoreMetricsUpdate(serviceMetrics: Record<string, unknown>): void {
+    logger.info('Service metrics updated via store', { serviceMetrics });
+    // Metrics are handled by the health data updates
   }
 
   // Update service display using existing UI helper
   private updateServiceDisplay(serviceName: string, serviceData: Record<string, unknown>): void {
     const mockResult: IServiceResult = {
-      status: serviceData.status as any,
+      status: serviceData.status as 'up' | 'degraded' | 'down' | 'error' | 'unknown',
       message: serviceData.message as string,
       metrics: (serviceData.metrics as Record<string, unknown>) || {},
       timestamp: Date.now()
     };
 
     // Use existing UI update logic
-    HealthUIHelper.updateStatusIndicator(`${serviceName}-status`, mockResult.status as any);
+    HealthUIHelper.updateStatusIndicator(`${serviceName}-status`, mockResult.status);
     HealthUIHelper.updateTextElement(`${serviceName}-message`, mockResult.message);
 
     if (mockResult.metrics.responseTime) {
@@ -347,7 +369,15 @@ export class HealthDashboardManager {
     this.stopAutoRefresh();
     this.serviceCheckers.clear();
 
-    // Remove SSE listeners using stored bound handlers
+    // Clean up nano store subscriptions
+    this.storeCleanupCallbacks.forEach(cleanup => {
+      if (typeof cleanup === 'function') {
+        cleanup();
+      }
+    });
+    this.storeCleanupCallbacks = [];
+
+    // Remove old SSE listeners (fallback - should not be needed with nano stores)
     if (this.useSSE) {
       if (this.boundHealthUpdateHandler) {
         window.removeEventListener('healthDataUpdate', this.boundHealthUpdateHandler);
