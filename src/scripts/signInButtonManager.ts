@@ -163,61 +163,14 @@ export class SignInButtonManager {
    * Initiate sign-in flow
    */
   private async initiateSignIn(): Promise<void> {
-    // This would typically redirect to OAuth provider or show login modal
-    // For now, simulate the authentication flow
-    
-    console.log('SignInButtonManager: Initiating sign-in flow...');
-    
-    // In a real implementation, this would:
-    // 1. Redirect to OAuth provider (Google, GitHub, etc.)
-    // 2. Open authentication modal
-    // 3. Make API call to authentication endpoint
-    
-    // Simulate API call
-    try {
-      const response = await this.makeAuthRequest();
-      
-      if (response.success && response.user) {
-        this.handleAuthSuccess({
-          detail: response.user
-        } as CustomEvent);
-      } else if (response.error) {
-        this.handleAuthError({
-          detail: response.error
-        } as CustomEvent);
-      }
-    } catch (error) {
-      throw new Error(`Authentication request failed: ${error}`);
-    }
+    console.log('SignInButtonManager: Opening authentication modal...');
+
+    // Dispatch event to open the authentication modal
+    window.dispatchEvent(new CustomEvent('open-auth-modal', {
+      detail: { mode: 'signin' }
+    }));
   }
 
-  /**
-   * Make authentication request to backend
-   */
-  private async makeAuthRequest(): Promise<AuthResponse> {
-    // This is a placeholder - in a real implementation, this would
-    // make an actual API call to the authentication endpoint
-    
-    // Simulate async operation
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Simulate successful authentication for demo
-    return {
-      success: true,
-      user: {
-        id: 'demo-user-123',
-        email: 'user@example.com',
-        name: 'Demo User',
-        avatar: '/images/default-avatar.png',
-        provider: 'demo',
-        tokens: {
-          access: 'demo-access-token',
-          refresh: 'demo-refresh-token',
-          expires: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
-        }
-      }
-    };
-  }
 
   /**
    * Handle successful authentication

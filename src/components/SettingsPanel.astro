@@ -1,308 +1,915 @@
 ---
 /**
- * Settings Panel Component - Following Astro Best Practices & DRY/SOLID Principles
+ * Settings Panel Component - Astro MCP Best Practices
  * Uses BaseModal for consistent modal behavior and animations
- * Single Responsibility: Handles application settings UI and interactions
+ * Follows Astro Islands architecture with proper client-side hydration
  */
 
 // Import DRY/SOLID BaseModal component
 import BaseModal from './common/BaseModal.astro';
+
+// Import DRY/SOLID Icon Components
+import IconSettings from './icons/IconSettings.astro';
+import IconClipboard from './icons/IconClipboard.astro';
+import IconDisplay from './icons/IconDisplay.astro';
+import IconBell from './icons/IconBell.astro';
+
+// Generate unique IDs for this panel instance (Astro MCP best practice)
+const panelId = `settings-panel-${Math.random().toString(36).substring(2, 11)}`;
+const settingsContentId = `settings-content-${Math.random().toString(36).substring(2, 11)}`;
 ---
 
-<!-- Custom element wrapper with data attributes (Astro best practice) -->
-<settings-panel>
+<!-- Astro Islands approach with data attributes (Astro MCP best practice) -->
+<div
+  data-component="settings-panel"
+  data-panel-id={panelId}
+  data-content-id={settingsContentId}
+>
   <!-- DRY/SOLID BaseModal with Settings-specific content -->
-  <BaseModal 
-    id="settings-panel" 
+  <BaseModal
+    id={panelId}
     closeButtonId="settings-close"
-    maxWidth="max-w-4xl"
+    maxWidth="max-w-6xl"
   >
-    <div class="glass-card p-6 mb-6">
+    <div class="liquid-glass rounded-glass p-6 border border-white/20">
+      <!-- Header -->
       <div class="mb-6">
-        <h2 class="text-2xl font-bold text-white">⚙️ Application Settings</h2>
+        <h2 class="text-2xl font-bold text-white">Settings</h2>
+        <p class="text-white/60 text-sm mt-1">
+          Customize your application preferences
+        </p>
       </div>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+      <!-- Tab Navigation -->
+      <div class="flex space-x-1 mb-6" data-component="tab-navigation">
+        <button
+          class="flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors bg-blue-500/20 text-blue-300 border border-blue-500/30"
+          data-tab="api"
+          data-action="switch-tab"
+        >
+          <IconSettings />
+          <span class="font-medium">API Config</span>
+        </button>
+        <button
+          class="flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors text-white/60 hover:text-white hover:bg-white/5"
+          data-tab="jobs"
+          data-action="switch-tab"
+        >
+          <IconClipboard />
+          <span class="font-medium">Job Defaults</span>
+        </button>
+        <button
+          class="flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors text-white/60 hover:text-white hover:bg-white/5"
+          data-tab="app"
+          data-action="switch-tab"
+        >
+          <IconDisplay />
+          <span class="font-medium">Display</span>
+        </button>
+        <button
+          class="flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors text-white/60 hover:text-white hover:bg-white/5"
+          data-tab="notifications"
+          data-action="switch-tab"
+        >
+          <IconBell />
+          <span class="font-medium">Notifications</span>
+        </button>
+      </div>
+
+      <!-- Tab Content Container -->
+      <div id={settingsContentId} class="min-h-[400px]" data-component="tab-content">
+        <!-- API Config Tab (default active) -->
+        <div id="tab-api" class="tab-content" data-tab="api">
+          <div class="space-y-6">
             <!-- API Configuration -->
             <div class="space-y-4">
               <h3 class="text-lg font-semibold text-white flex items-center gap-2">
-                <svg class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
+                <IconSettings class="text-blue-400" />
                 API Configuration
               </h3>
-              
-              <div class="space-y-3">
-                <div>
-                  <label for="api-url" class="block text-sm font-medium text-white/80 mb-1">Backend URL</label>
-                  <input 
-                    type="url" 
-                    id="api-url" 
-                    class="glass-input w-full" 
-                    placeholder="http://localhost:8000"
-                  />
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-3">
+                  <div>
+                    <label for="api-url" class="block text-sm font-medium text-white/80 mb-1">Backend URL</label>
+                    <input
+                      type="url"
+                      id="api-url"
+                      class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:border-blue-500/50 focus:outline-none"
+                      placeholder="http://localhost:8000"
+                    />
+                  </div>
+
+                  <div>
+                    <label for="api-timeout" class="block text-sm font-medium text-white/80 mb-1">Request Timeout (seconds)</label>
+                    <input
+                      type="number"
+                      id="api-timeout"
+                      class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:border-blue-500/50 focus:outline-none"
+                      min="5"
+                      max="300"
+                    />
+                  </div>
+
+                  <div>
+                    <label for="refresh-interval" class="block text-sm font-medium text-white/80 mb-1">Auto-refresh Interval (seconds)</label>
+                    <input
+                      type="number"
+                      id="refresh-interval"
+                      class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:border-blue-500/50 focus:outline-none"
+                      min="5"
+                      max="300"
+                    />
+                  </div>
                 </div>
-                
-                <div>
-                  <label for="api-timeout" class="block text-sm font-medium text-white/80 mb-1">Request Timeout (seconds)</label>
-                  <input 
-                    type="number" 
-                    id="api-timeout" 
-                    class="glass-input w-full" 
-                    min="5" 
-                    max="300"
-                  />
-                </div>
-                
-                <div>
-                  <label for="refresh-interval" class="block text-sm font-medium text-white/80 mb-1">Auto-refresh Interval (seconds)</label>
-                  <input 
-                    type="number" 
-                    id="refresh-interval" 
-                    class="glass-input w-full" 
-                    min="5" 
-                    max="300"
-                  />
+
+                <div class="space-y-4">
+                  <div class="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                    <h4 class="text-sm font-medium text-blue-300 mb-2">Connection Status</h4>
+                    <div class="text-sm text-white/60">
+                      <div class="flex items-center gap-2 mb-1">
+                        <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                        <span>Backend: Connected</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                        <span>Database: Connected</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                    <h4 class="text-sm font-medium text-yellow-300 mb-2">API Info</h4>
+                    <div class="text-xs text-white/60 space-y-1">
+                      <div>Following CLAUDE.md standards</div>
+                      <div>Docker backend only</div>
+                      <div>No local services</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <!-- Job Defaults -->
-            <div class="space-y-4">
-              <h3 class="text-lg font-semibold text-white flex items-center gap-2">
-                <svg class="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                </svg>
-                Job Defaults
-              </h3>
-              
-              <div class="space-y-3">
-                <div>
-                  <label for="default-priority" class="block text-sm font-medium text-white/80 mb-1">Default Priority</label>
-                  <select id="default-priority" class="glass-input w-full">
-                    <option value="Low">Low</option>
-                    <option value="Normal">Normal</option>
-                    <option value="High">High</option>
-                    <option value="Urgent">Urgent</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label for="max-retries" class="block text-sm font-medium text-white/80 mb-1">Max Retries</label>
-                  <input 
-                    type="number" 
-                    id="max-retries" 
-                    class="glass-input w-full" 
-                    min="0" 
-                    max="10"
-                  />
-                </div>
-                
-                <div>
-                  <label for="job-timeout" class="block text-sm font-medium text-white/80 mb-1">Job Timeout (seconds)</label>
-                  <input 
-                    type="number" 
-                    id="job-timeout" 
-                    class="glass-input w-full" 
-                    min="10" 
-                    max="300"
-                  />
-                </div>
-              </div>
-            </div>
+            <!-- Action Buttons -->
+            <div class="flex items-center justify-between pt-6 border-t border-white/10">
+              <button
+                type="button"
+                class="glass-button px-4 py-2 text-orange-400 hover:text-orange-300 border border-orange-500/30 hover:border-orange-500/50 transition-all duration-200"
+                data-action="reset-settings"
+              >
+                Reset to Defaults
+              </button>
 
-            <!-- Display Options -->
-            <div class="space-y-4">
-              <h3 class="text-lg font-semibold text-white flex items-center gap-2">
-                <svg class="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z" />
-                </svg>
-                Display Options
-              </h3>
-              
-              <div class="space-y-3">
-                <div class="flex items-center space-x-3">
-                  <input 
-                    type="checkbox" 
-                    id="dark-mode" 
-                    class="glass-checkbox"
-                  />
-                  <label for="dark-mode" class="text-sm text-white/80">Dark Mode</label>
-                </div>
-                
-                <div class="flex items-center space-x-3">
-                  <input 
-                    type="checkbox" 
-                    id="show-job-ids" 
-                    class="glass-checkbox"
-                  />
-                  <label for="show-job-ids" class="text-sm text-white/80">Show Job IDs</label>
-                </div>
-                
-                <div class="flex items-center space-x-3">
-                  <input 
-                    type="checkbox" 
-                    id="compact-mode" 
-                    class="glass-checkbox"
-                  />
-                  <label for="compact-mode" class="text-sm text-white/80">Compact Mode</label>
-                </div>
-                
-                <div>
-                  <label for="jobs-per-page" class="block text-sm font-medium text-white/80 mb-1">Jobs Per Page</label>
-                  <select id="jobs-per-page" class="glass-input w-full">
-                    <option value="5">5</option>
-                    <option value="10">10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label for="timezone" class="block text-sm font-medium text-white/80 mb-1">Timezone</label>
-                  <select id="timezone" class="glass-input w-full">
-                    <option value="auto">Auto-detect</option>
-                    <option value="America/New_York">Eastern Time</option>
-                    <option value="America/Chicago">Central Time</option>
-                    <option value="America/Denver">Mountain Time</option>
-                    <option value="America/Los_Angeles">Pacific Time</option>
-                    <option value="America/Anchorage">Alaska Time</option>
-                    <option value="Pacific/Honolulu">Hawaii Time</option>
-                    <option value="Europe/London">London (GMT)</option>
-                    <option value="Europe/Berlin">Central European Time</option>
-                    <option value="Europe/Berlin">Berlin</option>
-                    <option value="Europe/Rome">Rome</option>
-                    <option value="Europe/Madrid">Madrid</option>
-                    <option value="Europe/Amsterdam">Amsterdam</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <!-- Notifications -->
-            <div class="space-y-4">
-              <h3 class="text-lg font-semibold text-white flex items-center gap-2">
-                <svg class="w-5 h-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 19h1.64a3 3 0 002.82-1.95L12 7h8a2 2 0 012 2v4.38a2 2 0 01-.41 1.22L19 17a4 4 0 01-3.18 1.62H12M4 19V7a1 1 0 011-1h1m-2 13V9.5" />
-                </svg>
-                Notifications
-              </h3>
-              
-              <div class="space-y-3">
-                <div class="flex items-center space-x-3">
-                  <input 
-                    type="checkbox" 
-                    id="completion-alerts" 
-                    class="glass-checkbox"
-                  />
-                  <label for="completion-alerts" class="text-sm text-white/80">Job Completion Alerts</label>
-                </div>
-                
-                <div class="flex items-center space-x-3">
-                  <input 
-                    type="checkbox" 
-                    id="error-notifications" 
-                    class="glass-checkbox"
-                  />
-                  <label for="error-notifications" class="text-sm text-white/80">Error Notifications</label>
-                </div>
-                
-                <div class="flex items-center space-x-3">
-                  <input 
-                    type="checkbox" 
-                    id="browser-notifications" 
-                    class="glass-checkbox"
-                  />
-                  <label for="browser-notifications" class="text-sm text-white/80">Browser Push Notifications</label>
-                </div>
+              <div class="flex items-center space-x-3">
+                <button
+                  type="button"
+                  class="glass-button px-4 py-2 text-white/70 hover:text-white transition-colors"
+                  data-action="cancel-changes"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  class="glass-button px-6 py-2 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-500/50 hover:border-blue-500/70 transition-all duration-200"
+                  data-action="save-settings"
+                >
+                  Save Settings
+                </button>
               </div>
             </div>
           </div>
-          
-          <!-- Action Buttons -->
-          <div class="flex items-center justify-between mt-8 pt-6 border-t border-white/10">
-            <button 
-              id="reset-settings"
-              class="glass-button px-4 py-2 text-orange-400 hover:text-orange-300 border border-orange-500/30 hover:border-orange-500/50 transition-all duration-200"
-            >
-              Reset to Defaults
-            </button>
-            
-            <div class="flex items-center space-x-3">
-              <button 
-                id="cancel-settings"
-                class="glass-button px-4 py-2 text-white/70 hover:text-white transition-colors"
+        </div>
+
+        <!-- Job Defaults Tab -->
+        <div id="tab-jobs" class="tab-content" data-tab="jobs" style="display: none;">
+          <div class="space-y-6">
+            <!-- Job Defaults -->
+            <div class="space-y-4">
+              <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                <IconClipboard class="text-green-400" />
+                Job Processing Defaults
+              </h3>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                  <h4 class="text-md font-medium text-white/90">Priority & Execution</h4>
+                  <div class="space-y-3">
+                    <div>
+                      <label for="default-priority" class="block text-sm font-medium text-white/80 mb-1">Default Priority</label>
+                      <select id="default-priority" class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:border-blue-500/50 focus:outline-none">
+                        <option value="Low">Low</option>
+                        <option value="Normal">Normal</option>
+                        <option value="High">High</option>
+                        <option value="Urgent">Urgent</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label for="max-retries" class="block text-sm font-medium text-white/80 mb-1">Max Retries</label>
+                      <input
+                        type="number"
+                        id="max-retries"
+                        class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:border-blue-500/50 focus:outline-none"
+                        min="0"
+                        max="10"
+                      />
+                    </div>
+
+                    <div>
+                      <label for="job-timeout" class="block text-sm font-medium text-white/80 mb-1">Job Timeout (seconds)</label>
+                      <input
+                        type="number"
+                        id="job-timeout"
+                        class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:border-blue-500/50 focus:outline-none"
+                        min="10"
+                        max="300"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="space-y-4">
+                  <h4 class="text-md font-medium text-white/90">Job Queue Settings</h4>
+                  <div class="space-y-3">
+                    <div>
+                      <label for="max-concurrent-jobs" class="block text-sm font-medium text-white/80 mb-1">Max Concurrent Jobs</label>
+                      <input
+                        type="number"
+                        id="max-concurrent-jobs"
+                        class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:border-blue-500/50 focus:outline-none"
+                        min="1"
+                        max="20"
+                        value="5"
+                      />
+                    </div>
+
+                    <div>
+                      <label for="queue-batch-size" class="block text-sm font-medium text-white/80 mb-1">Queue Batch Size</label>
+                      <input
+                        type="number"
+                        id="queue-batch-size"
+                        class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:border-blue-500/50 focus:outline-none"
+                        min="1"
+                        max="100"
+                        value="10"
+                      />
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        id="auto-retry-failed"
+                        class="text-blue-400"
+                      />
+                      <label for="auto-retry-failed" class="text-sm text-white/80">Auto-retry failed jobs</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <h4 class="text-sm font-medium text-green-300 mb-2">Job Processing Info</h4>
+                <div class="text-xs text-white/60 space-y-1">
+                  <div>• Jobs are processed by Docker backend</div>
+                  <div>• Higher priority jobs execute first</div>
+                  <div>• Failed jobs can be retried automatically</div>
+                  <div>• Concurrent job limits prevent overload</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center justify-between pt-6 border-t border-white/10">
+              <button
+                type="button"
+                class="glass-button px-4 py-2 text-orange-400 hover:text-orange-300 border border-orange-500/30 hover:border-orange-500/50 transition-all duration-200"
+                data-action="reset-settings"
               >
-                Cancel
+                Reset to Defaults
               </button>
-              <button 
-                id="save-settings"
-                class="glass-button px-6 py-2 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-500/50 hover:border-blue-500/70 transition-all duration-200"
+
+              <div class="flex items-center space-x-3">
+                <button
+                  type="button"
+                  class="glass-button px-4 py-2 text-white/70 hover:text-white transition-colors"
+                  data-action="cancel-changes"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  class="glass-button px-6 py-2 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-500/50 hover:border-blue-500/70 transition-all duration-200"
+                  data-action="save-settings"
+                >
+                  Save Settings
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- App Settings Tab (renamed to Display) -->
+        <div id="tab-app" class="tab-content" data-tab="app" style="display: none;">
+          <div class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+              <!-- Display Options -->
+              <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                  <IconDisplay class="text-purple-400" />
+                  Display Options
+                </h3>
+
+                <div class="space-y-3">
+                  <div class="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id="dark-mode"
+                      class="text-blue-400"
+                    />
+                    <label for="dark-mode" class="text-sm text-white/80">Dark Mode</label>
+                  </div>
+
+                  <div class="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id="show-job-ids"
+                      class="text-blue-400"
+                    />
+                    <label for="show-job-ids" class="text-sm text-white/80">Show Job IDs</label>
+                  </div>
+
+                  <div class="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id="compact-mode"
+                      class="text-blue-400"
+                    />
+                    <label for="compact-mode" class="text-sm text-white/80">Compact Mode</label>
+                  </div>
+
+                  <div>
+                    <label for="jobs-per-page" class="block text-sm font-medium text-white/80 mb-1">Jobs Per Page</label>
+                    <select id="jobs-per-page" class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:border-blue-500/50 focus:outline-none">
+                      <option value="5">5</option>
+                      <option value="10">10</option>
+                      <option value="25">25</option>
+                      <option value="50">50</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label for="timezone" class="block text-sm font-medium text-white/80 mb-1">Timezone</label>
+                    <select id="timezone" class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:border-blue-500/50 focus:outline-none">
+                      <option value="auto">Auto-detect</option>
+                      <option value="America/New_York">Eastern Time</option>
+                      <option value="America/Chicago">Central Time</option>
+                      <option value="America/Denver">Mountain Time</option>
+                      <option value="America/Los_Angeles">Pacific Time</option>
+                      <option value="America/Anchorage">Alaska Time</option>
+                      <option value="Pacific/Honolulu">Hawaii Time</option>
+                      <option value="Europe/London">London (GMT)</option>
+                      <option value="Europe/Berlin">Central European Time</option>
+                      <option value="Europe/Berlin">Berlin</option>
+                      <option value="Europe/Rome">Rome</option>
+                      <option value="Europe/Madrid">Madrid</option>
+                      <option value="Europe/Amsterdam">Amsterdam</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center justify-between pt-6 border-t border-white/10">
+              <button
+                type="button"
+                class="glass-button px-4 py-2 text-orange-400 hover:text-orange-300 border border-orange-500/30 hover:border-orange-500/50 transition-all duration-200"
+                data-action="reset-settings"
               >
-                Save Settings
+                Reset to Defaults
               </button>
+
+              <div class="flex items-center space-x-3">
+                <button
+                  type="button"
+                  class="glass-button px-4 py-2 text-white/70 hover:text-white transition-colors"
+                  data-action="cancel-changes"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  class="glass-button px-6 py-2 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-500/50 hover:border-blue-500/70 transition-all duration-200"
+                  data-action="save-settings"
+                >
+                  Save Settings
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- Notifications Tab -->
+        <div id="tab-notifications" class="tab-content" data-tab="notifications" style="display: none;">
+          <div class="space-y-6">
+            <!-- Notifications -->
+            <div class="space-y-4">
+              <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                <IconBell class="text-yellow-400" />
+                Notification Preferences
+              </h3>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                  <h4 class="text-md font-medium text-white/90">Job Notifications</h4>
+                  <div class="space-y-3">
+                    <div class="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        id="completion-alerts"
+                        class="text-blue-400"
+                      />
+                      <label for="completion-alerts" class="text-sm text-white/80">Job Completion Alerts</label>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        id="error-notifications"
+                        class="text-blue-400"
+                      />
+                      <label for="error-notifications" class="text-sm text-white/80">Error Notifications</label>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        id="browser-notifications"
+                        class="text-blue-400"
+                      />
+                      <label for="browser-notifications" class="text-sm text-white/80">Browser Push Notifications</label>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="space-y-4">
+                  <h4 class="text-md font-medium text-white/90">Notification Settings</h4>
+                  <div class="space-y-3">
+                    <div>
+                      <label for="notification-sound" class="block text-sm font-medium text-white/80 mb-1">Notification Sound</label>
+                      <select id="notification-sound" class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:border-blue-500/50 focus:outline-none">
+                        <option value="default">Default</option>
+                        <option value="chime">Chime</option>
+                        <option value="ping">Ping</option>
+                        <option value="none">Silent</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label for="notification-duration" class="block text-sm font-medium text-white/80 mb-1">Display Duration (seconds)</label>
+                      <input
+                        type="number"
+                        id="notification-duration"
+                        class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:border-blue-500/50 focus:outline-none"
+                        min="3"
+                        max="15"
+                        value="5"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                <h4 class="text-sm font-medium text-yellow-300 mb-2">Browser Permissions</h4>
+                <p class="text-xs text-white/60 mb-3">
+                  To enable browser push notifications, you'll need to grant permission when prompted.
+                </p>
+                <button
+                  type="button"
+                  class="glass-button px-3 py-1 text-xs bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 border border-yellow-500/50"
+                  onclick="Notification.requestPermission()"
+                >
+                  Request Permission
+                </button>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center justify-between pt-6 border-t border-white/10">
+              <button
+                type="button"
+                class="glass-button px-4 py-2 text-orange-400 hover:text-orange-300 border border-orange-500/30 hover:border-orange-500/50 transition-all duration-200"
+                data-action="reset-settings"
+              >
+                Reset to Defaults
+              </button>
+
+              <div class="flex items-center space-x-3">
+                <button
+                  type="button"
+                  class="glass-button px-4 py-2 text-white/70 hover:text-white transition-colors"
+                  data-action="cancel-changes"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  class="glass-button px-6 py-2 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-500/50 hover:border-blue-500/70 transition-all duration-200"
+                  data-action="save-settings"
+                >
+                  Save Settings
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
   </BaseModal>
-</settings-panel>
+</div>
 
-<!-- CSS animations now handled by BaseModal - DRY implementation -->
-
+<!-- Astro Islands script for client-side functionality (Astro MCP best practice) -->
 <script>
-  // Custom element following Astro best practices
-  // This script is bundled, optimized, and deduplicated by Astro
-
-  class SettingsPanel extends HTMLElement {
-    private settingsManager: any = null;
+  // Settings panel management class - Astro MCP best practice
+  class SettingsPanelManager {
+    private panelId: string | undefined;
+    private modal: HTMLElement | null;
+    private isInitialized: boolean;
 
     constructor() {
-      super();
-      this.settingsManager = null;
+      // Get IDs from data attributes (Astro MCP best practice)
+      const container = document.querySelector('[data-component="settings-panel"]') as HTMLElement;
+      this.panelId = container?.dataset.panelId;
+      this.modal = document.getElementById(this.panelId || '');
+      this.isInitialized = false;
+
+      this.init();
     }
 
-    async connectedCallback() {
-      // Dynamically import the manager to avoid TypeScript issues
-      const { SettingsManager } = await import('/src/scripts/settingsManager');
+    init() {
+      if (!this.modal || this.isInitialized) return;
 
-      // Initialize settings manager
-      this.settingsManager = new SettingsManager({
-        container: this,
-        onSettingsChange: (settings: any) => {
-          // Handle settings changes
-          console.log('Settings updated:', settings);
+      // Set up event listeners
+      this.setupEventListeners();
+
+      this.isInitialized = true;
+      console.log('⚙️ SettingsPanel: Initialized following Astro MCP best practices');
+    }
+
+    setupEventListeners() {
+      // Tab switching - Use event delegation (Astro MCP best practice)
+      document.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        const tabButton = target.closest('[data-action="switch-tab"]') as HTMLElement;
+
+        if (tabButton && this.modal?.contains(tabButton)) {
+          e.preventDefault();
+          const tabId = tabButton.dataset.tab;
+          if (tabId) {
+            this.switchTab(tabId);
+          }
         }
       });
-      
-      // Initialize the settings functionality
-      this.settingsManager.init();
+
+      // Close button
+      const closeBtn = document.getElementById('settings-close');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => this.close());
+      }
+
+      // Other action buttons
+      document.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        const actionButton = target.closest('[data-action]') as HTMLElement;
+
+        if (actionButton && this.modal?.contains(actionButton)) {
+          const action = actionButton.dataset.action;
+
+          switch (action) {
+            case 'reset-settings':
+              if (confirm('Reset all settings to defaults?')) {
+                this.resetSettings();
+              }
+              break;
+            case 'cancel-changes':
+              this.close();
+              break;
+            case 'save-settings':
+              this.saveSettings();
+              break;
+          }
+        }
+      });
+
+      // Escape key to close
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && this.isOpen()) {
+          this.close();
+        }
+      });
+
+      // Listen for global toggle events
+      window.addEventListener('toggle-settings', () => {
+        this.toggle();
+      });
     }
-    
-    disconnectedCallback() {
-      // Cleanup when element is removed
-      this.settingsManager = null;
+
+    switchTab(tabId: string) {
+      // Update tab buttons active state - scope to modal container
+      const tabButtons = this.modal?.querySelectorAll('[data-action="switch-tab"]') || [];
+      tabButtons.forEach(btn => {
+        const htmlBtn = btn as HTMLElement;
+        const isActive = htmlBtn.dataset.tab === tabId;
+        htmlBtn.className = `flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+          isActive
+            ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+            : 'text-white/60 hover:text-white hover:bg-white/5'
+        }`;
+      });
+
+      // Update tab content visibility - scope to modal container
+      const tabContents = this.modal?.querySelectorAll('.tab-content') || [];
+      console.log('Found tabs:', tabContents.length);
+
+      tabContents.forEach(content => {
+        const htmlContent = content as HTMLElement;
+        const isActive = htmlContent.dataset.tab === tabId;
+        htmlContent.style.display = isActive ? 'block' : 'none';
+        console.log(`Tab ${htmlContent.dataset.tab}: ${isActive ? 'visible' : 'hidden'}`);
+      });
+
+      console.log(`⚙️ SettingsPanel: Switched to ${tabId} tab`);
     }
-    
-    // Public method for external control
-    openSettings() {
-      this.settingsManager?.open();
+
+    isOpen() {
+      return this.modal && !this.modal.classList.contains('pointer-events-none');
     }
-    
-    // Public method to close settings
-    closeSettings() {
-      this.settingsManager?.close();
+
+    open() {
+      if (!this.modal) return;
+
+      this.modal.style.display = 'flex';
+      this.modal.classList.remove('pointer-events-none', 'opacity-0');
+      this.modal.classList.add('pointer-events-auto', 'opacity-100');
+
+      // Load current settings when opening the modal
+      this.loadSettings();
     }
-    
-    // Public method to get current settings
-    getSettings() {
-      return this.settingsManager?.getSettings() || null;
+
+    close() {
+      if (!this.modal) return;
+
+      this.modal.classList.remove('pointer-events-auto', 'opacity-100');
+      this.modal.classList.add('pointer-events-none', 'opacity-0');
+
+      setTimeout(() => {
+        if (this.modal && this.modal.classList.contains('pointer-events-none')) {
+          this.modal.style.display = 'none';
+        }
+      }, 300);
+    }
+
+    toggle() {
+      if (this.isOpen()) {
+        this.close();
+      } else {
+        this.open();
+      }
+    }
+
+    resetSettings() {
+      // Reset API Configuration
+      const apiUrl = document.getElementById('api-url') as HTMLInputElement;
+      const apiTimeout = document.getElementById('api-timeout') as HTMLInputElement;
+      const refreshInterval = document.getElementById('refresh-interval') as HTMLInputElement;
+
+      if (apiUrl) apiUrl.value = 'http://localhost:8000';
+      if (apiTimeout) apiTimeout.value = '30';
+      if (refreshInterval) refreshInterval.value = '30';
+
+      // Reset Job Defaults
+      const defaultPriority = document.getElementById('default-priority') as HTMLSelectElement;
+      const maxRetries = document.getElementById('max-retries') as HTMLInputElement;
+      const jobTimeout = document.getElementById('job-timeout') as HTMLInputElement;
+      const maxConcurrentJobs = document.getElementById('max-concurrent-jobs') as HTMLInputElement;
+      const queueBatchSize = document.getElementById('queue-batch-size') as HTMLInputElement;
+      const autoRetryFailed = document.getElementById('auto-retry-failed') as HTMLInputElement;
+
+      if (defaultPriority) defaultPriority.value = 'Normal';
+      if (maxRetries) maxRetries.value = '3';
+      if (jobTimeout) jobTimeout.value = '300';
+      if (maxConcurrentJobs) maxConcurrentJobs.value = '5';
+      if (queueBatchSize) queueBatchSize.value = '10';
+      if (autoRetryFailed) autoRetryFailed.checked = false;
+
+      // Reset Display Options
+      const darkMode = document.getElementById('dark-mode') as HTMLInputElement;
+      const showJobIds = document.getElementById('show-job-ids') as HTMLInputElement;
+      const compactMode = document.getElementById('compact-mode') as HTMLInputElement;
+      const jobsPerPage = document.getElementById('jobs-per-page') as HTMLSelectElement;
+      const timezone = document.getElementById('timezone') as HTMLSelectElement;
+
+      if (darkMode) darkMode.checked = false;
+      if (showJobIds) showJobIds.checked = false;
+      if (compactMode) compactMode.checked = false;
+      if (jobsPerPage) jobsPerPage.value = '10';
+      if (timezone) timezone.value = 'auto';
+
+      // Reset Notifications
+      const completionAlerts = document.getElementById('completion-alerts') as HTMLInputElement;
+      const errorNotifications = document.getElementById('error-notifications') as HTMLInputElement;
+      const browserNotifications = document.getElementById('browser-notifications') as HTMLInputElement;
+      const notificationSound = document.getElementById('notification-sound') as HTMLSelectElement;
+      const notificationDuration = document.getElementById('notification-duration') as HTMLInputElement;
+
+      if (completionAlerts) completionAlerts.checked = true; // Default enabled
+      if (errorNotifications) errorNotifications.checked = true; // Default enabled
+      if (browserNotifications) browserNotifications.checked = false; // Default disabled
+      if (notificationSound) notificationSound.value = 'default';
+      if (notificationDuration) notificationDuration.value = '5';
+
+      console.log('⚙️ SettingsPanel: All settings reset to defaults');
+    }
+
+    async saveSettings() {
+      // Get all form values from the complete settings form
+      const settings = {
+        // API Configuration
+        api: {
+          url: (document.getElementById('api-url') as HTMLInputElement)?.value || 'http://localhost:8000',
+          timeout: parseInt((document.getElementById('api-timeout') as HTMLInputElement)?.value || '30'),
+          refreshInterval: parseInt((document.getElementById('refresh-interval') as HTMLInputElement)?.value || '30')
+        },
+
+        // Job Defaults
+        jobs: {
+          defaultPriority: (document.getElementById('default-priority') as HTMLSelectElement)?.value || 'Normal',
+          maxRetries: parseInt((document.getElementById('max-retries') as HTMLInputElement)?.value || '3'),
+          timeout: parseInt((document.getElementById('job-timeout') as HTMLInputElement)?.value || '300'),
+          maxConcurrentJobs: parseInt((document.getElementById('max-concurrent-jobs') as HTMLInputElement)?.value || '5'),
+          queueBatchSize: parseInt((document.getElementById('queue-batch-size') as HTMLInputElement)?.value || '10'),
+          autoRetryFailed: (document.getElementById('auto-retry-failed') as HTMLInputElement)?.checked || false
+        },
+
+        // Display Options
+        display: {
+          darkMode: (document.getElementById('dark-mode') as HTMLInputElement)?.checked || false,
+          showJobIds: (document.getElementById('show-job-ids') as HTMLInputElement)?.checked || false,
+          compactMode: (document.getElementById('compact-mode') as HTMLInputElement)?.checked || false,
+          jobsPerPage: parseInt((document.getElementById('jobs-per-page') as HTMLSelectElement)?.value || '10'),
+          timezone: (document.getElementById('timezone') as HTMLSelectElement)?.value || 'auto'
+        },
+
+        // Notifications
+        notifications: {
+          completionAlerts: (document.getElementById('completion-alerts') as HTMLInputElement)?.checked || false,
+          errorNotifications: (document.getElementById('error-notifications') as HTMLInputElement)?.checked || false,
+          browserNotifications: (document.getElementById('browser-notifications') as HTMLInputElement)?.checked || false,
+          sound: (document.getElementById('notification-sound') as HTMLSelectElement)?.value || 'default',
+          duration: parseInt((document.getElementById('notification-duration') as HTMLInputElement)?.value || '5')
+        }
+      };
+
+      try {
+        // Save to Docker backend via API call to http://localhost:8000/api/user/settings
+        // Following CLAUDE.md - NO LOCAL SERVICES rule
+        const response = await fetch('http://localhost:8000/api/user/settings', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(settings)
+        });
+
+        if (response.ok) {
+          console.log('⚙️ SettingsPanel: Settings saved successfully to Docker backend:', settings);
+
+          // Also save to localStorage as backup/cache
+          localStorage.setItem('app_settings', JSON.stringify(settings));
+
+          // Show success feedback
+          const button = document.querySelector('[data-action="save-settings"]') as HTMLElement;
+          if (button) {
+            const originalText = button.textContent;
+            button.textContent = 'Saved!';
+            button.classList.add('bg-green-500/20', 'text-green-300');
+
+            setTimeout(() => {
+              button.textContent = originalText;
+              button.classList.remove('bg-green-500/20', 'text-green-300');
+            }, 2000);
+          }
+        } else {
+          throw new Error(`Server responded with ${response.status}`);
+        }
+      } catch (error) {
+        console.error('⚙️ SettingsPanel: Failed to save to backend, saving locally only:', error);
+
+        // Fallback to localStorage only
+        localStorage.setItem('app_settings', JSON.stringify(settings));
+
+        // Show warning feedback
+        const button = document.querySelector('[data-action="save-settings"]') as HTMLElement;
+        if (button) {
+          const originalText = button.textContent;
+          button.textContent = 'Saved Locally';
+          button.classList.add('bg-yellow-500/20', 'text-yellow-300');
+
+          setTimeout(() => {
+            button.textContent = originalText;
+            button.classList.remove('bg-yellow-500/20', 'text-yellow-300');
+          }, 2000);
+        }
+      }
+    }
+
+    loadSettings() {
+      try {
+        // Try to load from localStorage first (cache/backup)
+        const stored = localStorage.getItem('app_settings');
+        if (stored) {
+          const settings = JSON.parse(stored);
+          this.populateForm(settings);
+          console.log('⚙️ SettingsPanel: Settings loaded from localStorage:', settings);
+        }
+
+        // TODO: Also try to load from Docker backend for latest settings
+        // fetch('http://localhost:8000/api/user/settings').then(...)
+      } catch (error) {
+        console.error('⚙️ SettingsPanel: Error loading settings:', error);
+      }
+    }
+
+    populateForm(settings: any) {
+      // API Configuration
+      if (settings.api) {
+        const apiUrl = document.getElementById('api-url') as HTMLInputElement;
+        const apiTimeout = document.getElementById('api-timeout') as HTMLInputElement;
+        const refreshInterval = document.getElementById('refresh-interval') as HTMLInputElement;
+
+        if (apiUrl) apiUrl.value = settings.api.url || 'http://localhost:8000';
+        if (apiTimeout) apiTimeout.value = settings.api.timeout || '30';
+        if (refreshInterval) refreshInterval.value = settings.api.refreshInterval || '30';
+      }
+
+      // Job Defaults
+      if (settings.jobs) {
+        const defaultPriority = document.getElementById('default-priority') as HTMLSelectElement;
+        const maxRetries = document.getElementById('max-retries') as HTMLInputElement;
+        const jobTimeout = document.getElementById('job-timeout') as HTMLInputElement;
+        const maxConcurrentJobs = document.getElementById('max-concurrent-jobs') as HTMLInputElement;
+        const queueBatchSize = document.getElementById('queue-batch-size') as HTMLInputElement;
+        const autoRetryFailed = document.getElementById('auto-retry-failed') as HTMLInputElement;
+
+        if (defaultPriority) defaultPriority.value = settings.jobs.defaultPriority || 'Normal';
+        if (maxRetries) maxRetries.value = settings.jobs.maxRetries || '3';
+        if (jobTimeout) jobTimeout.value = settings.jobs.timeout || '300';
+        if (maxConcurrentJobs) maxConcurrentJobs.value = settings.jobs.maxConcurrentJobs || '5';
+        if (queueBatchSize) queueBatchSize.value = settings.jobs.queueBatchSize || '10';
+        if (autoRetryFailed) autoRetryFailed.checked = settings.jobs.autoRetryFailed || false;
+      }
+
+      // Display Options
+      if (settings.display) {
+        const darkMode = document.getElementById('dark-mode') as HTMLInputElement;
+        const showJobIds = document.getElementById('show-job-ids') as HTMLInputElement;
+        const compactMode = document.getElementById('compact-mode') as HTMLInputElement;
+        const jobsPerPage = document.getElementById('jobs-per-page') as HTMLSelectElement;
+        const timezone = document.getElementById('timezone') as HTMLSelectElement;
+
+        if (darkMode) darkMode.checked = settings.display.darkMode || false;
+        if (showJobIds) showJobIds.checked = settings.display.showJobIds || false;
+        if (compactMode) compactMode.checked = settings.display.compactMode || false;
+        if (jobsPerPage) jobsPerPage.value = settings.display.jobsPerPage || '10';
+        if (timezone) timezone.value = settings.display.timezone || 'auto';
+      }
+
+      // Notifications
+      if (settings.notifications) {
+        const completionAlerts = document.getElementById('completion-alerts') as HTMLInputElement;
+        const errorNotifications = document.getElementById('error-notifications') as HTMLInputElement;
+        const browserNotifications = document.getElementById('browser-notifications') as HTMLInputElement;
+        const notificationSound = document.getElementById('notification-sound') as HTMLSelectElement;
+        const notificationDuration = document.getElementById('notification-duration') as HTMLInputElement;
+
+        if (completionAlerts) completionAlerts.checked = settings.notifications.completionAlerts || false;
+        if (errorNotifications) errorNotifications.checked = settings.notifications.errorNotifications || false;
+        if (browserNotifications) browserNotifications.checked = settings.notifications.browserNotifications || false;
+        if (notificationSound) notificationSound.value = settings.notifications.sound || 'default';
+        if (notificationDuration) notificationDuration.value = settings.notifications.duration || '5';
+      }
     }
   }
-  
-  // Define the custom element
-  customElements.define('settings-panel', SettingsPanel);
+
+  // Initialize the settings panel following Astro MCP best practices
+  const settingsPanel = new SettingsPanelManager();
+
+  // Expose for debugging (Astro MCP best practice)
+  if (typeof window !== 'undefined') {
+    (window as any).settingsPanel = settingsPanel;
+  }
 </script>
