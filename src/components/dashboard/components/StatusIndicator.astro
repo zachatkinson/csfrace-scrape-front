@@ -8,7 +8,6 @@
 // =============================================================================
 // IMPORTS & TYPES
 // =============================================================================
-import { DASHBOARD_CSS_CLASSES } from '../types/dashboard.types';
 import { formatTimestamp } from '/src/utils/timezone';
 
 // =============================================================================
@@ -32,15 +31,15 @@ const {
 
 // Status-specific CSS classes
 const getStatusClasses = (status: string): string => {
-  const baseClasses = DASHBOARD_CSS_CLASSES.STATUS_INDICATOR;
-  
+  const baseClasses = "w-3 h-3 rounded-full transition-all duration-200";
+
   switch (status) {
     case 'connected':
-      return `${baseClasses} ${DASHBOARD_CSS_CLASSES.STATUS_CONNECTED}`;
+      return `${baseClasses} bg-green-400 shadow-green-400/50 shadow-lg`;
     case 'disconnected':
-      return `${baseClasses} ${DASHBOARD_CSS_CLASSES.STATUS_DISCONNECTED}`;
+      return `${baseClasses} bg-red-400 shadow-red-400/50 shadow-lg`;
     case 'reconnecting':
-      return `${baseClasses} ${DASHBOARD_CSS_CLASSES.STATUS_RECONNECTING}`;
+      return `${baseClasses} bg-yellow-400 shadow-yellow-400/50 shadow-lg animate-pulse`;
     default:
       return `${baseClasses} bg-gray-400`;
   }

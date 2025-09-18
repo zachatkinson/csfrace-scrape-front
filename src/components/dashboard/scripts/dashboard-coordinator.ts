@@ -35,11 +35,6 @@ interface JobActionEvent {
   [key: string]: unknown;
 }
 
-interface ConnectionStatusEvent {
-  status: "connected" | "disconnected" | "reconnecting";
-  timestamp: number;
-  [key: string]: unknown;
-}
 
 // =============================================================================
 // DASHBOARD COORDINATOR CLASS (Single Responsibility Principle)
@@ -60,7 +55,6 @@ export class DashboardCoordinator {
         queued: 0,
         processing: 0,
       },
-      connectionStatus: "connected",
       isLoading: false,
       lastUpdated: new Date(),
     };
@@ -125,10 +119,6 @@ export class DashboardCoordinator {
       this.handleJobAction((event as CustomEvent).detail);
     });
 
-    // Listen for connection status changes
-    window.addEventListener("connection:statusChanged", (event) => {
-      this.handleConnectionStatusChange((event as CustomEvent).detail);
-    });
 
     // Listen for page visibility changes
     document.addEventListener("visibilitychange", () => {
@@ -201,21 +191,6 @@ export class DashboardCoordinator {
     }
   }
 
-  /**
-   * Handle connection status changes
-   */
-  private handleConnectionStatusChange(
-    statusData: ConnectionStatusEvent,
-  ): void {
-    this.state.connectionStatus = statusData.status;
-    this.state.lastUpdated = new Date(statusData.timestamp);
-
-    logger.info("Connection status changed", { status: statusData.status });
-
-    // Update UI elements
-    this.updateConnectionIndicator();
-    this.emitStateUpdate();
-  }
 
   /**
    * Update stats in state
@@ -241,42 +216,6 @@ export class DashboardCoordinator {
     }
   }
 
-  /**
-   * Update connection indicator
-   */
-  private updateConnectionIndicator(): void {
-    const indicator = domUtils.querySelector("#connection-indicator");
-    const text = domUtils.querySelector("#connection-text");
-
-    if (indicator) {
-      // Remove all status classes
-      domUtils.removeClass(indicator, "bg-green-400");
-      domUtils.removeClass(indicator, "bg-red-400");
-      domUtils.removeClass(indicator, "bg-yellow-400");
-
-      // Add appropriate status class
-      switch (this.state.connectionStatus) {
-        case "connected":
-          domUtils.addClass(indicator, "bg-green-400");
-          break;
-        case "disconnected":
-          domUtils.addClass(indicator, "bg-red-400");
-          break;
-        case "reconnecting":
-          domUtils.addClass(indicator, "bg-yellow-400");
-          break;
-      }
-    }
-
-    if (text) {
-      const statusTexts = {
-        connected: "Connected",
-        disconnected: "Disconnected",
-        reconnecting: "Reconnecting...",
-      };
-      text.textContent = statusTexts[this.state.connectionStatus] || "Unknown";
-    }
-  }
 
   /**
    * Show job details in modal
@@ -381,10 +320,6 @@ export class DashboardCoordinator {
       );
     } catch (error) {
       logger.error("Failed to refresh data", { error });
-      this.handleConnectionStatusChange({
-        status: "disconnected",
-        timestamp: Date.now(),
-      });
     }
   }
 

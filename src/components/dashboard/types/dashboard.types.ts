@@ -25,7 +25,6 @@ export interface IDashboardStats {
 
 export interface IDashboardState {
   stats: IDashboardStats;
-  connectionStatus: "connected" | "disconnected" | "reconnecting";
   isLoading: boolean;
   lastUpdated: Date;
 }
@@ -41,8 +40,6 @@ export interface IDashboardPageProps {
 
 export interface IDashboardHeaderProps {
   stats: IDashboardStats;
-  connectionStatus: "connected" | "disconnected" | "reconnecting";
-  lastUpdated?: Date | undefined;
 }
 
 export interface IJobModalProps {
@@ -58,11 +55,6 @@ export interface IJobModalProps {
 export interface IDashboardDataUpdateEvent {
   jobs: readonly IJobData[];
   stats: IDashboardStats;
-  timestamp: number;
-}
-
-export interface IConnectionStatusEvent {
-  status: "connected" | "disconnected" | "reconnecting";
   timestamp: number;
 }
 
@@ -100,10 +92,6 @@ export const DASHBOARD_CSS_CLASSES = {
   HEADER_CONTAINER: "glass-card p-6",
   NAV_BUTTON:
     "glass-button px-3 py-2 text-white/90 hover:text-white flex items-center space-x-2 transition-all duration-200",
-  STATUS_INDICATOR: "w-3 h-3 rounded-full animate-pulse",
-  STATUS_CONNECTED: "bg-green-400",
-  STATUS_DISCONNECTED: "bg-red-400",
-  STATUS_RECONNECTING: "bg-yellow-400",
   MODAL_OVERLAY: "fixed inset-0 backdrop-blur-sm z-50",
   MODAL_CONTAINER: "flex items-center justify-center min-h-screen p-4",
   MODAL_CONTENT: "glass-card p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto",

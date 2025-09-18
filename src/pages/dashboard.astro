@@ -52,7 +52,6 @@ const defaultStats: IDashboardStats = {
 };
 
 const currentStats = initialStats || defaultStats;
-const currentTime = new Date();
 
 // FilterPanel props (centralized configuration)
 const filterPanelProps = {
@@ -66,9 +65,7 @@ const filterPanelProps = {
 
 // DashboardHeader props
 const headerProps = {
-  stats: currentStats,
-  connectionStatus: 'connected' as const,
-  lastUpdated: currentTime
+  stats: currentStats
 };
 
 // JobModal props

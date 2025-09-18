@@ -496,9 +496,7 @@ export class AuthModalManager extends BaseModalManager {
   /**
    * Submit authentication request
    */
-  private async submitAuth(
-    formData: AuthFormData,
-  ): Promise<{
+  private async submitAuth(formData: AuthFormData): Promise<{
     success: boolean;
     user?: AuthenticatedUser;
     error?: AuthError;

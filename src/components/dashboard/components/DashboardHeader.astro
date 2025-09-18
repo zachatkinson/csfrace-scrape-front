@@ -11,7 +11,6 @@
 import type { IDashboardHeaderProps } from '../types/dashboard.types';
 import { DASHBOARD_CSS_CLASSES } from '../types/dashboard.types';
 import IconArrowLeft from '../../icons/IconArrowLeft.astro';
-import StatusIndicator from './StatusIndicator.astro';
 
 // =============================================================================
 // COMPONENT PROPS (Interface Segregation Principle)
@@ -19,9 +18,7 @@ import StatusIndicator from './StatusIndicator.astro';
 export interface Props extends IDashboardHeaderProps {}
 
 const {
-  stats,
-  connectionStatus = 'connected',
-  lastUpdated
+  stats
 } = Astro.props;
 
 // =============================================================================
@@ -33,18 +30,6 @@ const statsDisplay = [
   { label: 'Jobs', value: stats.total, id: 'total-jobs' },
   { label: 'Active', value: stats.active, id: 'active-jobs' }
 ];
-
-// Generate connection status text
-const getStatusText = (status: string): string => {
-  switch (status) {
-    case 'connected': return 'Connected';
-    case 'disconnected': return 'Disconnected';
-    case 'reconnecting': return 'Reconnecting...';
-    default: return 'Unknown';
-  }
-};
-
-const statusText = getStatusText(connectionStatus);
 ---
 
 <!-- =============================================================================
@@ -78,16 +63,9 @@ const statusText = getStatusText(connectionStatus);
     </div>
     
     <!-- =================================================================
-         STATUS & STATS SECTION (Single Responsibility)
+         JOB STATISTICS SECTION (Single Responsibility)
          ================================================================= -->
-    <div class="flex items-center space-x-6">
-      <!-- Connection Status -->
-      <StatusIndicator 
-        status={connectionStatus}
-        text={statusText}
-        lastUpdated={lastUpdated}
-      />
-      
+    <div class="flex items-center">
       <!-- Job Statistics -->
       <div class="text-right" data-job-stats>
         {statsDisplay.map(({ label, value, id }) => (
