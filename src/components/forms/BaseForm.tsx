@@ -55,7 +55,7 @@ export const BaseForm = forwardRef<
   subtitle,
   disabled = false,
   isLoading = false,
-  autoFocus = true,
+  autoFocus: _autoFocus = true,
   resetOnSuccess = false,
   
   // Component-specific props

@@ -97,9 +97,9 @@ export class FilterUtils {
     // Apply search filter
     if (filterState.searchQuery.trim()) {
       const query = filterState.searchQuery.toLowerCase();
-      filteredJobs = filteredJobs.filter(job => 
-        job.title?.toLowerCase().includes(query) ||
-        job.source_url?.toLowerCase().includes(query) ||
+      filteredJobs = filteredJobs.filter(job =>
+        job.title.toLowerCase().includes(query) ||
+        job.url.toLowerCase().includes(query) ||
         job.id.toLowerCase().includes(query)
       );
     }
@@ -130,7 +130,7 @@ export class FilterUtils {
       case 'status':
         return sortedJobs.sort((a, b) => a.status.localeCompare(b.status));
       
-      case 'progress':
+      case 'progress': {
         // Custom sorting by status priority
         const statusPriority: Record<string, number> = {
           'failed': 0,
@@ -138,9 +138,10 @@ export class FilterUtils {
           'queued': 2,
           'completed': 3
         };
-        return sortedJobs.sort((a, b) => 
+        return sortedJobs.sort((a, b) =>
           (statusPriority[a.status] || 999) - (statusPriority[b.status] || 999)
         );
+      }
       
       default:
         return sortedJobs;

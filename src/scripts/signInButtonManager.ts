@@ -437,6 +437,15 @@ export class SignInButtonManager {
   }
 
   /**
+   * Trigger sign-in programmatically (for external control)
+   */
+  triggerSignIn(): void {
+    if (this.button) {
+      this.button.click();
+    }
+  }
+
+  /**
    * Destroy the manager
    */
   destroy(): void {

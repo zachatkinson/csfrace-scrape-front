@@ -105,8 +105,26 @@ export class AuthModalManager extends BaseModalManager {
     this.setupModeToggle();
     this.setupProviders();
     this.setupValidation();
-    
+    this.setupCustomEventListeners();
+
     console.log('🔐 AuthModalManager: Authentication handlers set up');
+  }
+
+  /**
+   * Set up custom event listeners for external triggers
+   */
+  private setupCustomEventListeners(): void {
+    // Listen for open-auth-modal events from SignInButton
+    window.addEventListener('open-auth-modal', (event: any) => {
+      const { mode } = event.detail || {};
+      console.log('🔐 AuthModalManager: Received open-auth-modal event', { mode });
+
+      if (mode) {
+        this.openInMode(mode);
+      } else {
+        this.open();
+      }
+    });
   }
 
   /**

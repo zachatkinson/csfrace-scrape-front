@@ -252,7 +252,7 @@ export class FileProcessingService {
    * Extract URLs from file content
    */
   static extractUrlsFromFile(content: string): string[] {
-    const urlRegex = /(https?:\/\/[^\s<>"{}|\\^`\[\]]+)/g;
+    const urlRegex = /(https?:\/\/[^\s<>"{}|\\^`[\]]+)/g;
     const matches = content.match(urlRegex);
     return matches ? [...new Set(matches)] : [];
   }

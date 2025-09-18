@@ -104,6 +104,9 @@ const {
       <!-- Auth Modal - React Island -->
       <AuthModal />
 
+      <!-- Settings Panel - Astro Island -->
+      <SettingsPanel />
+
       <!-- Main Content -->
       <main class="flex-1 min-h-screen">
         <div class="max-w-7xl mx-auto px-8 py-8">
@@ -179,8 +182,6 @@ const {
       </footer>
     </div>
 
-    <!-- DRY/SOLID Settings Panel Component -->
-    <SettingsPanel />
 
     <!-- ASTRO MCP BEST PRACTICE: Health system initialization now handled directly in CompactHealthStatus.astro -->
     <!-- Following SOLID Single Responsibility Principle: health initialization within health component -->
@@ -254,6 +255,16 @@ const {
 
       // Settings panel functionality now handled by SettingsPanel.astro custom element
       // All modal behavior moved to BaseModalManager for DRY/SOLID architecture
+
+      // Settings button handler
+      document.addEventListener('DOMContentLoaded', () => {
+        const settingsBtn = document.getElementById('settings-toggle');
+        if (settingsBtn) {
+          settingsBtn.addEventListener('click', () => {
+            window.dispatchEvent(new CustomEvent('toggle-settings'));
+          });
+        }
+      });
     </script>
 
     <!-- ASTRO MCP BEST PRACTICE: Global SSE Service in MainLayout -->

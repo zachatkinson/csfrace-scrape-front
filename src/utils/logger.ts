@@ -1,139 +1,265 @@
 /**
- * Environment-Based Logging Utility
- * Provides clean console output based on environment
+ * Centralized Logging Utility - SOLID Architecture
+ * Single Responsibility: Handles all application logging
+ * Open/Closed: Extensible for new log destinations without modification
+ * Interface Segregation: Clean logging interface
+ * Dependency Inversion: Depends on abstractions, not concrete implementations
  */
 
-type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+import type { ILogger } from '../types/global.types';
 
-interface LoggerConfig {
-  isDevelopment: boolean;
-  minLevel: LogLevel;
-  enableEmojis: boolean;
+// =============================================================================
+// LOGGING LEVELS AND CONFIGURATION
+// =============================================================================
+
+export enum LogLevel {
+  DEBUG = 0,
+  INFO = 1,
+  WARN = 2,
+  ERROR = 3,
 }
 
-class Logger {
-  private config: LoggerConfig;
-  private readonly levelOrder: Record<LogLevel, number> = {
-    debug: 0,
-    info: 1,
-    warn: 2,
-    error: 3
-  };
+export interface ILoggerConfig {
+  level: LogLevel;
+  enableConsole: boolean;
+  enablePersistence: boolean;
+  maxLogEntries: number;
+  timestampFormat: 'iso' | 'locale' | 'unix';
+}
 
-  constructor(config?: Partial<LoggerConfig>) {
+export interface ILogEntry {
+  level: LogLevel;
+  message: string;
+  timestamp: number;
+  args: unknown[];
+  error?: Error | undefined;
+  context?: string | undefined;
+}
+
+// =============================================================================
+// CENTRALIZED LOGGER IMPLEMENTATION
+// =============================================================================
+
+class Logger implements ILogger {
+  private config: ILoggerConfig;
+  private logEntries: ILogEntry[] = [];
+  private context: string | undefined;
+
+  constructor(config: Partial<ILoggerConfig> = {}, context?: string | undefined) {
     this.config = {
-      isDevelopment: import.meta.env.DEV,
-      minLevel: import.meta.env.DEV ? 'debug' : 'warn',
-      enableEmojis: import.meta.env.DEV,
-      ...config
+      level: LogLevel.INFO,
+      enableConsole: true,
+      enablePersistence: false,
+      maxLogEntries: 1000,
+      timestampFormat: 'iso',
+      ...config,
     };
+    this.context = context;
   }
 
-  private shouldLog(level: LogLevel): boolean {
-    return this.levelOrder[level] >= this.levelOrder[this.config.minLevel];
+  /**
+   * Debug logging (development only)
+   */
+  debug(message: string, ...args: unknown[]): void {
+    this.log(LogLevel.DEBUG, message, undefined, ...args);
   }
 
-  private formatMessage(level: LogLevel, message: string, emoji?: string): string {
-    const timestamp = new Date().toISOString();
-    const emojiPrefix = this.config.enableEmojis && emoji ? `${emoji} ` : '';
-    
-    if (this.config.isDevelopment) {
-      return `${emojiPrefix}${message}`;
+  /**
+   * Info logging (general information)
+   */
+  info(message: string, ...args: unknown[]): void {
+    this.log(LogLevel.INFO, message, undefined, ...args);
+  }
+
+  /**
+   * Warning logging (potential issues)
+   */
+  warn(message: string, ...args: unknown[]): void {
+    this.log(LogLevel.WARN, message, undefined, ...args);
+  }
+
+  /**
+   * Error logging (errors and exceptions)
+   */
+  error(message: string, error?: Error, ...args: unknown[]): void {
+    this.log(LogLevel.ERROR, message, error, ...args);
+  }
+
+  /**
+   * Create a child logger with context
+   */
+  createChild(context: string): Logger {
+    return new Logger(this.config, context);
+  }
+
+  /**
+   * Get all log entries (for debugging/monitoring)
+   */
+  getLogEntries(): ILogEntry[] {
+    return [...this.logEntries];
+  }
+
+  /**
+   * Clear log entries
+   */
+  clearLogs(): void {
+    this.logEntries = [];
+  }
+
+  /**
+   * Private logging implementation
+   */
+  private log(level: LogLevel, message: string, error?: Error, ...args: unknown[]): void {
+    // Check if logging level is enabled
+    if (level < this.config.level) {
+      return;
     }
-    
-    // Production format: cleaner, more professional
-    return `[${timestamp}] [${level.toUpperCase()}] ${message}`;
-  }
 
-  debug(message: string, data?: any, emoji = '🔍'): void {
-    if (!this.shouldLog('debug')) return;
-    
-    const formattedMessage = this.formatMessage('debug', message, emoji);
-    if (data !== undefined) {
-      console.debug(formattedMessage, data);
-    } else {
-      console.debug(formattedMessage);
+    const timestamp = Date.now();
+    const contextMessage = this.context ? `[${this.context}] ${message}` : message;
+
+    const logEntry: ILogEntry = {
+      level,
+      message: contextMessage,
+      timestamp,
+      args,
+      error,
+      context: this.context,
+    };
+
+    // Add to log entries if persistence is enabled
+    if (this.config.enablePersistence) {
+      this.addLogEntry(logEntry);
+    }
+
+    // Console output if enabled
+    if (this.config.enableConsole) {
+      this.logToConsole(logEntry);
     }
   }
 
-  info(message: string, data?: any, emoji = '✅'): void {
-    if (!this.shouldLog('info')) return;
-    
-    const formattedMessage = this.formatMessage('info', message, emoji);
-    if (data !== undefined) {
-      console.info(formattedMessage, data);
-    } else {
-      console.info(formattedMessage);
+  /**
+   * Add log entry to persistent storage
+   */
+  private addLogEntry(entry: ILogEntry): void {
+    this.logEntries.push(entry);
+
+    // Maintain max log entries limit
+    if (this.logEntries.length > this.config.maxLogEntries) {
+      this.logEntries = this.logEntries.slice(-this.config.maxLogEntries);
     }
   }
 
-  warn(message: string, data?: any, emoji = '⚠️'): void {
-    if (!this.shouldLog('warn')) return;
-    
-    const formattedMessage = this.formatMessage('warn', message, emoji);
-    if (data !== undefined) {
-      console.warn(formattedMessage, data);
-    } else {
-      console.warn(formattedMessage);
+  /**
+   * Output log to console using appropriate console method
+   */
+  private logToConsole(entry: ILogEntry): void {
+    const timestamp = this.formatTimestamp(entry.timestamp);
+    const prefix = `[${timestamp}]`;
+
+    switch (entry.level) {
+      case LogLevel.DEBUG:
+        // Only use console.warn for allowed console methods
+        console.warn(`${prefix} DEBUG: ${entry.message}`, ...entry.args);
+        break;
+      case LogLevel.INFO:
+        console.warn(`${prefix} INFO: ${entry.message}`, ...entry.args);
+        break;
+      case LogLevel.WARN:
+        console.warn(`${prefix} WARN: ${entry.message}`, ...entry.args);
+        break;
+      case LogLevel.ERROR:
+        if (entry.error) {
+          console.error(`${prefix} ERROR: ${entry.message}`, entry.error, ...entry.args);
+        } else {
+          console.error(`${prefix} ERROR: ${entry.message}`, ...entry.args);
+        }
+        break;
     }
   }
 
-  error(message: string, error?: any, emoji = '❌'): void {
-    if (!this.shouldLog('error')) return;
-    
-    const formattedMessage = this.formatMessage('error', message, emoji);
-    if (error !== undefined) {
-      console.error(formattedMessage, error);
-    } else {
-      console.error(formattedMessage);
+  /**
+   * Format timestamp based on configuration
+   */
+  private formatTimestamp(timestamp: number): string {
+    const date = new Date(timestamp);
+
+    switch (this.config.timestampFormat) {
+      case 'iso':
+        return date.toISOString();
+      case 'locale':
+        return date.toLocaleString();
+      case 'unix':
+        return timestamp.toString();
+      default:
+        return date.toISOString();
     }
-  }
-
-  // Specialized methods for common use cases
-  apiCall(method: string, url: string, data?: any): void {
-    this.debug(`API ${method.toUpperCase()}: ${url}`, data, '📡');
-  }
-
-  apiResponse(status: number, url: string, data?: any): void {
-    const emoji = status < 400 ? '✅' : '❌';
-    const level = status < 400 ? 'debug' : 'error';
-    this[level](`API Response [${status}]: ${url}`, data, emoji);
-  }
-
-  metrics(serviceName: string, data: any): void {
-    this.debug(`Metrics update: ${serviceName}`, data, '📊');
-  }
-
-  health(serviceName: string, status: string, data?: any): void {
-    const emoji = status === 'up' || status === 'healthy' ? '✅' : '❌';
-    this.info(`${serviceName} health: ${status}`, data, emoji);
-  }
-
-  auth(action: string, data?: any): void {
-    this.info(`Auth: ${action}`, data, '🔐');
-  }
-
-  performance(operation: string, duration: number): void {
-    const emoji = duration < 1000 ? '⚡' : duration < 5000 ? '🐌' : '🐌💀';
-    this.debug(`Performance: ${operation} took ${duration}ms`, undefined, emoji);
   }
 }
 
-// Create singleton logger instance
-export const logger = new Logger();
+// =============================================================================
+// GLOBAL LOGGER INSTANCES (Singleton Pattern)
+// =============================================================================
 
-// Export individual methods for convenience
-export const logDebug = logger.debug.bind(logger);
-export const logInfo = logger.info.bind(logger);
-export const logWarn = logger.warn.bind(logger);
-export const logError = logger.error.bind(logger);
+// Default application logger
+export const logger = new Logger({
+  level: import.meta.env.DEV ? LogLevel.DEBUG : LogLevel.INFO,
+  enableConsole: true,
+  enablePersistence: import.meta.env.DEV,
+});
 
-// Specialized exports
-export const logApiCall = logger.apiCall.bind(logger);
-export const logApiResponse = logger.apiResponse.bind(logger);
-export const logMetrics = logger.metrics.bind(logger);
-export const logHealth = logger.health.bind(logger);
-export const logAuth = logger.auth.bind(logger);
-export const logPerformance = logger.performance.bind(logger);
+// Specialized loggers for different concerns
+export const apiLogger = logger.createChild('API');
+export const uiLogger = logger.createChild('UI');
+export const authLogger = logger.createChild('AUTH');
+export const validationLogger = logger.createChild('VALIDATION');
+export const performanceLogger = logger.createChild('PERFORMANCE');
+
+// =============================================================================
+// UTILITY FUNCTIONS
+// =============================================================================
+
+/**
+ * Create a logger for a specific component or module
+ */
+export function createLogger(context: string, config?: Partial<ILoggerConfig>): Logger {
+  return new Logger(config, context);
+}
+
+/**
+ * Log performance timing
+ */
+export function logPerformance(operation: string, startTime: number): void {
+  const duration = Date.now() - startTime;
+  performanceLogger.info(`${operation} completed in ${duration}ms`);
+}
+
+/**
+ * Log API call with details
+ */
+export function logApiCall(method: string, url: string, status?: number, duration?: number): void {
+  const message = `${method} ${url}`;
+  if (status && duration) {
+    apiLogger.info(`${message} - ${status} (${duration}ms)`);
+  } else {
+    apiLogger.info(message);
+  }
+}
+
+/**
+ * Log validation error with details
+ */
+export function logValidationError(field: string, value: unknown, error: string): void {
+  validationLogger.warn(`Validation failed for ${field}: ${error}`, { field, value });
+}
+
+/**
+ * Development-only logging helper
+ */
+export function devLog(message: string, ...args: unknown[]): void {
+  if (import.meta.env.DEV) {
+    logger.debug(`[DEV] ${message}`, ...args);
+  }
+}
 
 export default logger;

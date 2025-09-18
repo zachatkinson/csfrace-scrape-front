@@ -1,6 +1,7 @@
 /// <reference types="astro/client" />
 
 // Extend Astro namespace for middleware locals
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 declare namespace App {
   interface Locals {
     rateLimitRemaining?: number;

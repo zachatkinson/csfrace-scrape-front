@@ -4,7 +4,7 @@
  * Provides consistent interface that all forms can use
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import type {
   BaseFormState,
   FormValidationResult,

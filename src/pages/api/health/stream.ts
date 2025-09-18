@@ -55,7 +55,7 @@ export const GET: APIRoute = async ({ request }) => {
         return; // Controller already closed
       }
 
-      let intervalId: NodeJS.Timeout;
+      let intervalId: number;
       let lastHealthData: HealthResponse | null = null;
       let currentPollingConfig: AdaptivePollingResult = {
         interval: 30000, // Default 30s interval
@@ -137,7 +137,7 @@ export const GET: APIRoute = async ({ request }) => {
       };
 
       const startAdaptivePolling = () => {
-        intervalId = setInterval(() => {
+        intervalId = window.setInterval(() => {
           if (sseService.isControllerOpen(controller, request)) {
             fetchAndCompareHealth().catch((error) => {
               console.error('SSE health fetch error:', error);

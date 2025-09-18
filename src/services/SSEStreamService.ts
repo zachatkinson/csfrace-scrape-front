@@ -63,7 +63,7 @@ export class ConnectionMessageHandler extends SSEMessageHandler {
       }
       controller.enqueue(data);
       return true;
-    } catch (error) {
+    } catch {
       return false; // Controller closed or error
     }
   }
@@ -85,7 +85,7 @@ export class ServiceUpdateMessageHandler extends SSEMessageHandler {
       }
       controller.enqueue(data);
       return true;
-    } catch (error) {
+    } catch {
       return false; // Controller closed or error
     }
   }
@@ -107,7 +107,7 @@ export class ErrorMessageHandler extends SSEMessageHandler {
       }
       controller.enqueue(data);
       return true;
-    } catch (error) {
+    } catch {
       return false; // Controller closed or error
     }
   }
@@ -205,7 +205,7 @@ export class SSEStreamService {
   ): boolean {
     try {
       return controller.desiredSize !== null && !request?.signal?.aborted;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

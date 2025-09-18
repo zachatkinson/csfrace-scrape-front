@@ -304,14 +304,14 @@ export interface StandardizedBatchUrlFormProps extends BaseUrlFormProps {
 
 function renderBatchUrlFields(
   formHook: ReturnType<typeof useBaseForm<BatchUrlFormData>>,
-  options: { 
-    showOptions?: boolean; 
+  fileInputRef: React.RefObject<HTMLInputElement | null>,
+  options: {
+    showOptions?: boolean;
     isAuthenticated: boolean;
     maxUrls?: number;
   } = { showOptions: false, isAuthenticated: false, maxUrls: 100 }
 ) {
   const { data, state, handlers } = formHook;
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const urlCount = (data.batchUrls || '').split('\n').filter(line => line.trim()).length;
 
@@ -459,7 +459,8 @@ export const StandardizedBatchUrlForm: React.FC<StandardizedBatchUrlFormProps> =
   showOptions = false,
   maxUrls = 100,
 }) => {
-  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleSubmit = async (data: BatchUrlFormData): Promise<FormSubmissionResult> => {
     if (!onSubmit) {
       return { success: true, data };
@@ -505,10 +506,10 @@ export const StandardizedBatchUrlForm: React.FC<StandardizedBatchUrlFormProps> =
         showReset={true}
         resetButtonText="Clear All"
         className="w-full"
-        renderFields={(formHook) => renderBatchUrlFields(formHook, { 
-          showOptions, 
+        renderFields={(formHook) => renderBatchUrlFields(formHook, fileInputRef, {
+          showOptions,
           isAuthenticated,
-          maxUrls 
+          maxUrls
         })}
       />
     </div>

@@ -3,7 +3,7 @@
 // Uses Nano Stores for reactive health data following Astro best practices
 // =============================================================================
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '@nanostores/react';
 import { $healthData } from '../../stores/healthStore.ts';
 import { getStatusColor, getStatusBorderClass } from '../../utils/health-ui-utilities.ts';

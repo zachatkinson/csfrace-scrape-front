@@ -3,7 +3,6 @@
  * Following SOLID principles and Astro Islands Architecture
  */
 
-import { EventUtils } from '../utils/filter.utils.js';
 import { domUtils, waitForDOM } from '../utils/dom.utils.js';
 
 // =============================================================================
@@ -274,7 +273,6 @@ class BatchActionsManager {
     this.deleteSelectedBtn.setAttribute('data-selected-count', this.selectedJobs.size.toString());
 
     // Update button text with count
-    const baseText = 'Delete Selected';
     const countBadge = this.deleteSelectedBtn.querySelector('.count-badge');
 
     if (hasSelection) {
@@ -345,7 +343,6 @@ class BatchActionsManager {
     const panel = document.querySelector('[data-component="filter-panel"]');
     if (panel) {
       this.totalJobs = parseInt(panel.getAttribute('data-total-jobs') || '0');
-      const selectedJobs = parseInt(panel.getAttribute('data-selected-jobs') || '0');
 
       // Sync with actual checkbox states
       this.syncWithCheckboxes();
@@ -367,7 +364,13 @@ class BatchActionsManager {
 
   updateJobCounts(totalJobs, selectedJobs) {
     this.totalJobs = totalJobs || 0;
-    // Note: selectedJobs parameter might be provided, but we trust our internal state
+    // Validate selectedJobs parameter for consistency but trust our internal state
+    if (typeof selectedJobs === 'number' && selectedJobs !== this.selectedJobs.size) {
+      // Log mismatch for debugging
+      import('../../utils/logger.js').then(({ uiLogger }) => {
+        uiLogger.warn('Selected jobs count mismatch', { expected: selectedJobs, actual: this.selectedJobs.size });
+      });
+    }
     this.updateUI();
   }
 

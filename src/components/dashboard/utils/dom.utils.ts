@@ -3,6 +3,8 @@
  * Reusable DOM manipulation functions following SOLID principles
  */
 
+/// <reference lib="dom" />
+
 import type { IDOMUtils } from '../types/filter.types.ts';
 
 // =============================================================================
@@ -26,12 +28,12 @@ export class DOMUtils implements IDOMUtils {
   /**
    * Safe querySelectorAll with error handling
    */
-  querySelectorAll<T extends Element = Element>(selector: string): NodeListOf<T> {
+  querySelectorAll<T extends Element = Element>(selector: string): T[] {
     try {
-      return document.querySelectorAll<T>(selector);
+      return Array.from(document.querySelectorAll<T>(selector));
     } catch (error) {
       console.warn(`DOM selector failed: ${selector}`, error);
-      return document.querySelectorAll('');
+      return [];
     }
   }
 
@@ -68,12 +70,12 @@ export class DOMUtils implements IDOMUtils {
   }
 
   /**
-   * Add event listener with error handling (generic event support)
+   * Add event listener with error handling and proper typing
    */
   addEventListener<K extends keyof HTMLElementEventMap>(
     element: Element,
     type: K,
-    listener: (this: Element, ev: HTMLElementEventMap[K]) => any
+    listener: (event: HTMLElementEventMap[K]) => void
   ): void;
   addEventListener(
     element: Element,
@@ -83,7 +85,7 @@ export class DOMUtils implements IDOMUtils {
   addEventListener(
     element: Element,
     type: string,
-    listener: EventListener | ((this: Element, ev: Event) => any)
+    listener: EventListener | ((event: Event) => void)
   ): void {
     if (!element || !type || !listener) return;
 

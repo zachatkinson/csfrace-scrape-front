@@ -338,28 +338,30 @@ export function isValidTimezone(timezone: string): boolean {
  * @param options - Raw options to sanitize
  * @returns Sanitized options
  */
-export function sanitizeTimezoneOptions(options: any): TimezoneOptions {
+export function sanitizeTimezoneOptions(options: unknown): TimezoneOptions {
   const sanitized: TimezoneOptions = { ...DEFAULT_TIMEZONE_OPTIONS };
 
   if (options && typeof options === 'object') {
-    if (typeof options.locale === 'string') {
-      sanitized.locale = options.locale;
+    const opts = options as Record<string, unknown>;
+
+    if (typeof opts.locale === 'string') {
+      sanitized.locale = opts.locale;
     }
-    
-    if (typeof options.timeZone === 'string' && isValidTimezone(options.timeZone)) {
-      sanitized.timeZone = options.timeZone;
+
+    if (typeof opts.timeZone === 'string' && isValidTimezone(opts.timeZone)) {
+      sanitized.timeZone = opts.timeZone;
     }
-    
-    if (['short', 'medium', 'long', 'full'].includes(options.format)) {
-      sanitized.format = options.format;
+
+    if (typeof opts.format === 'string' && ['short', 'medium', 'long', 'full'].includes(opts.format)) {
+      sanitized.format = opts.format as 'short' | 'medium' | 'long' | 'full';
     }
-    
-    if (typeof options.includeSeconds === 'boolean') {
-      sanitized.includeSeconds = options.includeSeconds;
+
+    if (typeof opts.includeSeconds === 'boolean') {
+      sanitized.includeSeconds = opts.includeSeconds;
     }
-    
-    if (typeof options.use24Hour === 'boolean') {
-      sanitized.use24Hour = options.use24Hour;
+
+    if (typeof opts.use24Hour === 'boolean') {
+      sanitized.use24Hour = opts.use24Hour;
     }
   }
 

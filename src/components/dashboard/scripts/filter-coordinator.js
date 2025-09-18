@@ -4,8 +4,8 @@
  * Implements Observer pattern for component communication
  */
 
-import { ValidationUtils, EventUtils } from '../utils/filter.utils.js';
-import { domUtils, waitForDOM } from '../utils/dom.utils.js';
+import { ValidationUtils } from '../utils/filter.utils.js';
+import { waitForDOM } from '../utils/dom.utils.js';
 
 // =============================================================================
 // FILTER COORDINATOR CLASS (Single Responsibility Principle)

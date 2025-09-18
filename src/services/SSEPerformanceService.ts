@@ -42,7 +42,7 @@ export interface AdaptivePollingResult {
  */
 export class SSEPerformanceService {
   private readonly metrics: PerformanceMetrics;
-  private debounceTimers: Map<string, NodeJS.Timeout> = new Map();
+  private debounceTimers: Map<string, number> = new Map();
   private static activeConnections: number = 0;
 
   constructor() {
@@ -154,7 +154,7 @@ export class SSEPerformanceService {
       }
 
       // Set new timer
-      const timer = setTimeout(() => {
+      const timer = window.setTimeout(() => {
         fn(...args);
         this.debounceTimers.delete(key);
       }, this.metrics.debounceDelay);

@@ -3,6 +3,8 @@
  * Following SOLID principles with strict typing
  */
 
+/// <reference lib="dom" />
+
 // ============================================================================= 
 // CORE FILTER TYPES
 // =============================================================================
@@ -68,11 +70,12 @@ export interface IJobsDataUpdateEvent {
 
 export interface IJobData {
   readonly id: string;
-  readonly status: string;
-  readonly title?: string;
-  readonly source_url?: string;
+  readonly status: 'pending' | 'processing' | 'completed' | 'failed' | 'queued';
+  readonly title: string;
+  readonly url: string;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+  readonly metadata?: Record<string, unknown>;
 }
 
 // =============================================================================
@@ -114,7 +117,7 @@ export interface IBatchActionManager {
 
 export interface IDOMUtils {
   querySelector<T extends Element = Element>(selector: string): T | null;
-  querySelectorAll<T extends Element = Element>(selector: string): NodeListOf<T>;
+  querySelectorAll<T extends Element = Element>(selector: string): T[];
   addClass(element: Element, className: string): void;
   removeClass(element: Element, className: string): void;
   toggleClass(element: Element, className: string): void;

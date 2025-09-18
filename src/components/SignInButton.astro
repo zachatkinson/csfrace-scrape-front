@@ -27,7 +27,7 @@
   // This script is bundled, optimized, and deduplicated by Astro
 
   class SignInButton extends HTMLElement {
-    private signInButtonManager: any = null;
+    private signInButtonManager: import('../scripts/signInButtonManager.ts').SignInButtonManager | null = null;
 
     constructor() {
       super();
@@ -40,10 +40,13 @@
 
       // Initialize sign-in button manager
       this.signInButtonManager = new SignInButtonManager({
+        buttonId: 'auth-toggle',
         container: this,
         onButtonClick: () => {
           // Handle button click events
-          console.log('Sign-in button clicked');
+          import('../utils/logger.js').then(({ uiLogger }) => {
+            uiLogger.info('Sign-in button clicked');
+          });
         }
       });
 

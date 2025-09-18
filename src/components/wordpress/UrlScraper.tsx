@@ -141,7 +141,7 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
   const handleFileUpload = async (file: File) => {
     try {
       await actions.processFile(file);
-    } catch (error) {
+    } catch {
       // Error handling already done in processFile
     }
   };

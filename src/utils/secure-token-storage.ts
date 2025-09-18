@@ -172,7 +172,7 @@ export class SecureTokenStorageManager {
           MemoryTokenStorage.setToken(key, value, config.expirationMinutes || 15);
           break;
 
-        case TokenStorageStrategy.ENCRYPTED_STORAGE:
+        case TokenStorageStrategy.ENCRYPTED_STORAGE: {
           const storageOptions: { encrypt: boolean; expirationMinutes?: number } = {
             encrypt: config.encrypted
           };
@@ -181,6 +181,7 @@ export class SecureTokenStorageManager {
           }
           SecureStorage.setItem(key, value, storageOptions);
           break;
+        }
 
         case TokenStorageStrategy.HTTP_ONLY_COOKIE:
           if (!this.cookieManager) {

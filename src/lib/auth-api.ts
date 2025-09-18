@@ -327,9 +327,10 @@ export function formatWebAuthnError(error: unknown): string {
       return 'Authentication failed due to device constraints';
     case 'UnknownError':
       return 'An unknown error occurred during authentication';
-    default:
-      const err = error as any;
-      return `Authentication failed: ${err.message || err.name || 'Unknown error'}`;
+    default: {
+      const err = error as unknown;
+      return `Authentication failed: ${(err as any)?.message || (err as any)?.name || 'Unknown error'}`;
+    }
   }
 }
 

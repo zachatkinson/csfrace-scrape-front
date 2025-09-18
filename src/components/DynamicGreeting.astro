@@ -21,135 +21,47 @@ const { class: className = "text-2xl font-semibold text-white mb-6", id = "greet
 </h2>
 
 <script>
-  // Time-based greeting messages for 6 periods
-  const greetingMessages = {
-    lateNight: [
-      "🌙 Burning the midnight oil? Let's make magic ✨ happen!",
-      "Night owl 🦉 mode activated! Time for some epic conversions!",
-      "The best ideas come at night ⭐ - let's convert something amazing!",
-      "Late night productivity! Ready to transform some content? 🔥",
-      "Working while the world sleeps - let's create something special! 💫"
-    ],
-    earlyMorning: [
-      "🌅 Rise and shine! Early bird gets the best conversions!",
-      "Good morning, champion! Ready to conquer ☀️ WordPress today?",
-      "Fresh start, fresh conversions! What's first on the list? 🎯",
-      "Morning motivation 💪 activated! Let's transform some sites!",
-      "New day, new possibilities! Time to convert with purpose! 🌱"
-    ],
-    lateMorning: [
-      "Mid-morning energy ☕ boost! Let's tackle some conversions!",
-      "🚀 Morning momentum building! Ready for conversion magic?",
-      "Caffeine + conversions = perfect combination! ⚡",
-      "Creative juices flowing! Time to transform WordPress art! 🎨",
-      "Peak productivity 🔧 hours - let's make things happen!"
-    ],
-    earlyAfternoon: [
-      "Post-lunch power! Let's digest some WordPress content! 🍕",
-      "⚡ Afternoon energy surge! Ready to convert and conquer?",
-      "Midday momentum! Time for some conversion excellence! 🎯",
-      "Prime time 🚀 for productivity! What shall we transform?",
-      "Bright ideas ahead! Let's illuminate 💡 some WordPress sites!"
-    ],
-    lateAfternoon: [
-      "Golden hour productivity! Let's make these conversions shine! 🌇",
-      "🔥 Afternoon finale! Time to finish strong with great conversions!",
-      "Pre-evening energy! Ready for one more sprint? ⚡",
-      "Creative afternoon 🎨 vibes! Let's craft something beautiful!",
-      "Day's final push! Let's make these WordPress sites sparkle! 💪✨"
-    ],
-    earlyEvening: [
-      "Evening inspiration strikes! Time for conversion magic! 🌆",
-      "✨ Twilight productivity! Let's transform while the sun sets!",
-      "Evening creativity! Ready to perform 🎭 conversion miracles?",
-      "Perfect evening for some thoughtful WordPress transformations! 🌃",
-      "Evening wisdom activated! Time for thoughtful transformations! 🔮"
-    ]
-  };
+  // Import centralized services following DRY principles
+  import GreetingService from '../services/GreetingService';
+  import { uiLogger } from '../utils/logger';
 
-  function getTimePeriod(hour: number): keyof typeof greetingMessages {
-    if (hour >= 22 || hour < 5) return 'lateNight';      // 10pm-5am
-    if (hour >= 5 && hour < 9) return 'earlyMorning';    // 5am-9am
-    if (hour >= 9 && hour < 12) return 'lateMorning';    // 9am-12pm
-    if (hour >= 12 && hour < 15) return 'earlyAfternoon'; // 12pm-3pm
-    if (hour >= 15 && hour < 18) return 'lateAfternoon';  // 3pm-6pm
-    return 'earlyEvening';                                // 6pm-10pm
-  }
+  // Single instance of GreetingService (Singleton pattern)
+  const greetingService = new GreetingService();
 
-  function getRandomMessage(period: keyof typeof greetingMessages): string {
-    const messages = greetingMessages[period];
-    if (!messages || messages.length === 0) {
-      return "Ready to convert something amazing today?";
-    }
-    const randomIndex = Math.floor(Math.random() * messages.length);
-    return messages[randomIndex] || "Ready to convert something amazing today?";
-  }
-
-  function getTimezoneFromSettings(): string {
-    try {
-      const settings = JSON.parse(localStorage.getItem('csfrace-settings') || '{}');
-      return settings.timezone || 'auto';
-    } catch {
-      return 'auto';
-    }
-  }
-
-  function getUserTimezone(): string {
-    const settingsTimezone = getTimezoneFromSettings();
-    if (settingsTimezone === 'auto') {
-      return Intl.DateTimeFormat().resolvedOptions().timeZone;
-    }
-    return settingsTimezone;
-  }
-
-  function getTimeInTimezone(timezone: string): Date {
-    const now = new Date();
-    if (timezone === 'auto') {
-      return now;
-    }
-
-    try {
-      const formatter = new Intl.DateTimeFormat('en-US', {
-        timeZone: timezone,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-      });
-
-      const parts = formatter.formatToParts(now);
-      const dateStr = `${parts.find(p => p.type === 'year')?.value}-${parts.find(p => p.type === 'month')?.value}-${parts.find(p => p.type === 'day')?.value}T${parts.find(p => p.type === 'hour')?.value}:${parts.find(p => p.type === 'minute')?.value}:${parts.find(p => p.type === 'second')?.value}`;
-
-      return new Date(dateStr);
-    } catch (error) {
-      console.warn('Failed to get time in timezone:', timezone, error);
-      return now;
-    }
-  }
-
+  /**
+   * Update greeting using centralized service (Single Responsibility)
+   */
   function updateGreeting(): void {
-    const userTimezone = getUserTimezone();
-    const now = getTimeInTimezone(userTimezone);
-    const hour = now.getHours();
+    try {
+      // Get greeting from centralized service
+      const greeting = greetingService.getCurrentGreeting();
 
-    const period = getTimePeriod(hour);
-    const greeting = getRandomMessage(period);
+      // Update DOM element
+      const greetingElement = document.getElementById('greeting');
+      if (greetingElement) {
+        greetingElement.textContent = greeting;
 
-    const greetingElement = document.getElementById('greeting');
-    if (greetingElement) {
-      greetingElement.textContent = greeting;
+        // Add a subtle animation for the update
+        greetingElement.style.opacity = '0.7';
+        setTimeout(() => {
+          greetingElement.style.opacity = '1';
+        }, 150);
 
-      // Add a subtle animation for the update
-      greetingElement.style.opacity = '0.7';
-      setTimeout(() => {
-        greetingElement.style.opacity = '1';
-      }, 150);
+        // Log using centralized logger (replaces console.log)
+        uiLogger.info('Dynamic greeting updated', {
+          greeting: greeting.substring(0, 50) + '...',
+          timestamp: new Date().toISOString()
+        });
+      }
+    } catch (error) {
+      uiLogger.error('Failed to update greeting', error as Error);
+
+      // Fallback greeting on error
+      const greetingElement = document.getElementById('greeting');
+      if (greetingElement) {
+        greetingElement.textContent = 'Ready to convert something amazing today?';
+      }
     }
-
-    console.log(`🕒 Dynamic greeting updated: ${period} (${hour}:00) - ${greeting}`);
   }
 
   // Initialize greeting when the script loads

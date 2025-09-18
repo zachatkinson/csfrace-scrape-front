@@ -2,7 +2,7 @@
 // EXAMPLE: HOW TO REPLACE CONSOLE.LOG WITH ENVIRONMENT-BASED LOGGING
 // =============================================================================
 
-import { logHealth, logDebug, logError, logApiResponse } from './logger.ts';
+import { logger, logApiCall } from './logger.ts';
 
 // Mock imports for demonstration (replace with actual imports in production)
 const CONFIG = { API_URL: 'http://localhost:8000' };
@@ -51,7 +51,7 @@ async function exampleHealthCheck() {
   const startTime = Date.now();
   
   try {
-    logDebug('Starting backend health check', { url: ENDPOINTS.HEALTH });
+    logger.debug('Starting backend health check', { url: ENDPOINTS.HEALTH });
     
     const response = await HttpClient.getWithRetry(`${CONFIG.API_URL}${ENDPOINTS.HEALTH}`);
     const responseTime = Date.now() - startTime;
@@ -60,8 +60,8 @@ async function exampleHealthCheck() {
       const data = await response.json();
       
       // 🎯 Clean, structured logging
-      logApiResponse(response.status, '/health', data);
-      logHealth('backend', data.status, { responseTime, version: data.version });
+      logApiCall('GET', '/health', response.status, responseTime);
+      logger.info('Backend health check successful', { status: data.status, responseTime, version: data.version });
       
       return {
         status: 'up',
@@ -69,10 +69,10 @@ async function exampleHealthCheck() {
         responseTime
       };
     } else {
-      logError('Backend health check failed', { 
-        status: response.status, 
+      logger.error('Backend health check failed', undefined, {
+        status: response.status,
         statusText: response.statusText,
-        responseTime 
+        responseTime
       });
       
       return { status: 'down', error: response.statusText };
@@ -82,8 +82,8 @@ async function exampleHealthCheck() {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     const errorStack = error instanceof Error ? error.stack : undefined;
 
-    logError('Backend health check error', {
-      error: errorMessage,
+    logger.error('Backend health check error', error as Error, {
+      errorMessage,
       responseTime,
       stack: errorStack
     });

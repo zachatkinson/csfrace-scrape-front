@@ -7,7 +7,7 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios';
 import { getApiBaseUrl, API_CONFIG } from '../constants/api.ts';
 import { TIMING_CONSTANTS } from '../constants/timing.ts';
-import { logger, logError } from '../utils/logger.ts';
+import { logger } from '../utils/logger.ts';
 import type { 
   ApiResponse, 
   ConversionJob, 
@@ -134,7 +134,7 @@ class ApiClient {
       const response: AxiosResponse<ApiResponse<T>> = await this.client(config);
       return response.data;
     } catch (error: unknown) {
-      logError('API request failed', error);
+      logger.error('API request failed', error as Error);
       
       // Format error response
       if (error && typeof error === 'object' && 'response' in error) {

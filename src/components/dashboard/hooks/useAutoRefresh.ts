@@ -25,7 +25,7 @@ export function useAutoRefresh(
     isLoading = false
   } = options;
 
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const refreshFunctionRef = useRef(refreshFunction);
 
   // Keep refresh function reference up to date

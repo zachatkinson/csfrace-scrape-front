@@ -37,9 +37,9 @@ export class WebSocketFallbackService {
   private websocket: WebSocket | null = null;
   private config: WebSocketConfig;
   private reconnectAttempts: number = 0;
-  private reconnectTimer: NodeJS.Timeout | null = null;
-  private heartbeatTimer: NodeJS.Timeout | null = null;
-  private eventListeners: Map<string, Set<Function>> = new Map();
+  private reconnectTimer: number | null = null;
+  private heartbeatTimer: number | null = null;
+  private eventListeners: Map<string, Set<(...args: unknown[]) => void>> = new Map();
   private isEnabled: boolean = false;
 
   constructor(config?: Partial<WebSocketConfig>) {
@@ -77,7 +77,7 @@ export class WebSocketFallbackService {
   /**
    * Add event listener for critical alerts
    */
-  addEventListener(event: 'critical-alert' | 'connection-status', callback: Function): void {
+  addEventListener(event: 'critical-alert' | 'connection-status', callback: (...args: unknown[]) => void): void {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, new Set());
     }
@@ -87,7 +87,7 @@ export class WebSocketFallbackService {
   /**
    * Remove event listener
    */
-  removeEventListener(event: string, callback: Function): void {
+  removeEventListener(event: string, callback: (...args: unknown[]) => void): void {
     this.eventListeners.get(event)?.delete(callback);
   }
 
@@ -241,7 +241,7 @@ export class WebSocketFallbackService {
 
     console.log(`Scheduling WebSocket reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`);
 
-    this.reconnectTimer = setTimeout(() => {
+    this.reconnectTimer = window.setTimeout(() => {
       if (this.isEnabled) {
         this.connect();
       }
@@ -252,7 +252,7 @@ export class WebSocketFallbackService {
    * Start heartbeat to keep connection alive
    */
   private startHeartbeat(): void {
-    this.heartbeatTimer = setInterval(() => {
+    this.heartbeatTimer = window.setInterval(() => {
       if (this.websocket?.readyState === WebSocket.OPEN) {
         this.websocket.send(JSON.stringify({ type: 'ping', timestamp: new Date().toISOString() }));
       }

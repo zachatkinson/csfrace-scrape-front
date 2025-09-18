@@ -29,10 +29,10 @@ export interface ValidationRule {
 // Common validation patterns
 export const VALIDATION_PATTERNS = {
   EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-  URL: /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/,
-  WORDPRESS_URL: /^https?:\/\/[^\/\s]+.*$/,
+  URL: /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)$/,
+  WORDPRESS_URL: /^https?:\/\/[^/\s]+.*$/,
   PASSWORD_STRONG: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-  PHONE: /^[\+]?[1-9][\d]{0,15}$/,
+  PHONE: /^[+]?[1-9][\d]{0,15}$/,
   USERNAME: /^[a-zA-Z0-9_]{3,20}$/,
 } as const;
 
@@ -179,7 +179,7 @@ export class FieldValidator {
             break; // Stop on first error
           }
         }
-      } catch (validationError) {
+      } catch {
         error = 'Validation failed';
         break;
       }
@@ -264,7 +264,7 @@ export class FormValidator {
             errors.push(rule.message);
           }
         }
-      } catch (validationError) {
+      } catch {
         errors.push('Form validation failed');
       }
     }

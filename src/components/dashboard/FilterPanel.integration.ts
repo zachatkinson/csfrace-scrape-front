@@ -5,6 +5,12 @@
  */
 
 import type { IJobData } from './types/filter.types';
+import type {
+  IApiJobData,
+  IApiJobsResponse,
+  IExtendedWindow
+} from '../../types/global.types';
+import { apiLogger, uiLogger } from '../../utils/logger';
 
 // =============================================================================
 // EXAMPLE: HOW EXTERNAL COMPONENTS INTEGRATE WITH FILTERPANEL
@@ -54,8 +60,8 @@ class JobsListIntegration {
     this.jobs = jobs;
     
     // Notify FilterPanel about new data
-    if ((window as any).filterPanelCoordinator) {
-      (window as any).filterPanelCoordinator.updateJobsData(jobs);
+    if (window.filterPanelCoordinator) {
+      window.filterPanelCoordinator.updateJobsData(jobs);
     }
   }
 
@@ -73,9 +79,9 @@ class JobsListIntegration {
     // Apply search filter
     if (search.trim()) {
       const query = search.toLowerCase();
-      filtered = filtered.filter(job => 
-        job.title?.toLowerCase().includes(query) ||
-        job.source_url?.toLowerCase().includes(query) ||
+      filtered = filtered.filter(job =>
+        job.title.toLowerCase().includes(query) ||
+        job.url.toLowerCase().includes(query) ||
         job.id.toLowerCase().includes(query)
       );
     }
@@ -111,8 +117,8 @@ class JobsListIntegration {
    * Update FilterPanel selection state
    */
   private updateFilterPanelSelection(jobIds: string[]): void {
-    if ((window as any).filterPanelCoordinator) {
-      (window as any).filterPanelCoordinator.updateJobSelection(jobIds);
+    if (window.filterPanelCoordinator) {
+      window.filterPanelCoordinator.updateJobSelection(jobIds);
     }
   }
 
@@ -122,7 +128,7 @@ class JobsListIntegration {
   private async deleteJobs(jobIds: readonly string[]): Promise<void> {
     try {
       // Simulate API call to delete jobs
-      console.log('Deleting jobs:', jobIds);
+      uiLogger.info('Deleting jobs', { jobIds });
       
       // Remove from local state
       this.jobs = this.jobs.filter(job => !jobIds.includes(job.id));
@@ -133,10 +139,10 @@ class JobsListIntegration {
       // Clear selection
       this.updateFilterPanelSelection([]);
       
-      console.log(`Successfully deleted ${jobIds.length} jobs`);
+      uiLogger.info(`Successfully deleted ${jobIds.length} jobs`);
       
     } catch (error) {
-      console.error('Failed to delete jobs:', error);
+      uiLogger.error('Failed to delete jobs', error as Error);
       // Could emit error event for FilterPanel to display
     }
   }
@@ -145,7 +151,7 @@ class JobsListIntegration {
    * Render jobs (placeholder for actual rendering logic)
    */
   private renderJobs(): void {
-    console.log(`Rendering ${this.filteredJobs.length} filtered jobs`);
+    uiLogger.info(`Rendering ${this.filteredJobs.length} filtered jobs`);
     // Actual DOM rendering would happen here
   }
 }
@@ -166,12 +172,12 @@ class JobsApiService {
   async fetchAndUpdateJobs(): Promise<void> {
     try {
       const response = await fetch(this.apiUrl);
-      const data = await response.json();
-      
+      const data: IApiJobsResponse = await response.json();
+
       // Validate and normalize job data
-      const jobs: IJobData[] = data.jobs?.map((job: any) => ({
+      const jobs: IJobData[] = data.data?.jobs?.map((job: IApiJobData) => ({
         id: job.id,
-        status: job.status,
+        status: job.status as 'pending' | 'processing' | 'completed' | 'failed' | 'queued',
         title: job.title,
         url: job.source_url,
         createdAt: new Date(job.created_at),
@@ -179,18 +185,18 @@ class JobsApiService {
       })) || [];
 
       // Update FilterPanel via coordinator
-      if ((window as any).filterPanelCoordinator) {
-        (window as any).filterPanelCoordinator.updateJobsData(jobs);
+      if (window.filterPanelCoordinator) {
+        window.filterPanelCoordinator.updateJobsData(jobs);
       }
 
-      console.log(`Fetched ${jobs.length} jobs from API`);
+      apiLogger.info(`Fetched ${jobs.length} jobs from API`);
 
     } catch (error) {
-      console.error('Failed to fetch jobs:', error);
+      apiLogger.error('Failed to fetch jobs', error as Error);
       
       // Update FilterPanel with empty data
-      if ((window as any).filterPanelCoordinator) {
-        (window as any).filterPanelCoordinator.updateJobsData([]);
+      if (window.filterPanelCoordinator) {
+        window.filterPanelCoordinator.updateJobsData([]);
       }
     }
   }
@@ -205,7 +211,7 @@ class JobsApiService {
       this.fetchAndUpdateJobs();
     }, intervalMs);
 
-    console.log(`Started polling for job updates every ${intervalMs}ms`);
+    apiLogger.info(`Started polling for job updates every ${intervalMs}ms`);
   }
 }
 
@@ -236,7 +242,7 @@ class DashboardPageIntegration {
     this.setupKeyboardShortcuts();
     this.setupAutoRefresh();
     
-    console.log('Dashboard initialized with FilterPanel integration');
+    uiLogger.info('Dashboard initialized with FilterPanel integration');
   }
 
   /**
@@ -245,13 +251,13 @@ class DashboardPageIntegration {
   private waitForFilterPanel(): Promise<void> {
     return new Promise((resolve) => {
       const checkForCoordinator = () => {
-        if ((window as any).filterPanelCoordinator) {
+        if ((window as IExtendedWindow).filterPanelCoordinator) {
           resolve();
         } else {
           setTimeout(checkForCoordinator, 100);
         }
       };
-      
+
       checkForCoordinator();
     });
   }
@@ -278,8 +284,8 @@ class DashboardPageIntegration {
           case 'Escape':
             // Escape: Reset filters
             event.preventDefault();
-            if ((window as any).filterPanelCoordinator) {
-              (window as any).filterPanelCoordinator.reset();
+            if ((window as IExtendedWindow).filterPanelCoordinator) {
+              (window as IExtendedWindow).filterPanelCoordinator?.reset();
             }
             break;
         }
@@ -306,8 +312,8 @@ class DashboardPageIntegration {
    * Get current filter criteria for external use
    */
   getCurrentFilterCriteria(): object {
-    if ((window as any).filterPanelCoordinator) {
-      return (window as any).filterPanelCoordinator.getFilterCriteria();
+    if ((window as IExtendedWindow).filterPanelCoordinator) {
+      return (window as IExtendedWindow).filterPanelCoordinator?.getFilterCriteria() || { filter: 'all', sort: 'newest', search: '' };
     }
     return { filter: 'all', sort: 'newest', search: '' };
   }
@@ -335,8 +341,10 @@ if (typeof window !== 'undefined' && document.location.pathname.includes('/dashb
     const dashboard = new DashboardPageIntegration();
     
     // Expose for debugging
-    (window as any).dashboardIntegration = dashboard;
+    if (import.meta.env.DEV) {
+      (window as { dashboardIntegration?: DashboardPageIntegration }).dashboardIntegration = dashboard;
+    }
     
-    console.log('🎯 Dashboard integration initialized successfully');
+    uiLogger.info('🎯 Dashboard integration initialized successfully');
   });
 }

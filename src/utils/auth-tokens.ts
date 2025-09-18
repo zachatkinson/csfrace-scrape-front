@@ -189,14 +189,9 @@ export function getStoredAccessToken(): string | null {
  * This function returns null by design - server manages refresh token security
  */
 export function getStoredRefreshToken(): string | null {
-  try {
-    // HttpOnly cookies cannot be accessed from JavaScript (security feature)
-    // The server will handle refresh token validation and rotation
-    return null;
-  } catch (error) {
-    console.error('Failed to retrieve refresh token:', error);
-    return null;
-  }
+  // HttpOnly cookies cannot be accessed from JavaScript (security feature)
+  // The server will handle refresh token validation and rotation
+  return null;
 }
 
 /**

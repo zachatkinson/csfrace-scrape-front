@@ -115,12 +115,10 @@ const pageNumbers = generatePageNumbers(currentPage, totalPages);
        ================================================================= -->
   <div class="space-y-4" id="jobs-container" data-jobs-container>
     {initialJobs.length > 0 ? (
-      <!-- Render initial jobs using JobCard component -->
-      {initialJobs.map(job => (
+      initialJobs.map(job => (
         <JobCard job={job} />
-      ))}
+      ))
     ) : (
-      <!-- No jobs state -->
       <div class="text-center py-12" data-empty-state>
         <div class="w-16 h-16 mx-auto mb-4 bg-gray-800 rounded-full flex items-center justify-center">
           <svg class="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">

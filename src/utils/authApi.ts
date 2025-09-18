@@ -2,9 +2,11 @@
  * Simple Auth API Utilities - Following Astro Best Practices
  * DRY: Centralized auth API calls without service abstractions
  * SOLID: Single responsibility - just make API calls to Docker backend
- * 
+ *
  * NO SERVICES, NO MANAGERS, NO PROVIDERS - Just simple fetch() calls!
  */
+
+/// <reference lib="dom" />
 
 import { getApiBaseUrl } from '../constants/api';
 import { handleApiResponse } from './api-utils.ts';
@@ -149,7 +151,7 @@ export async function registerPasskey() {
     },
   });
   
-  const options = await handleApiResponse(beginResponse) as CredentialCreationOptions;
+  const options = await handleApiResponse(beginResponse) as Record<string, unknown>;
 
   // Step 2: Create credential using WebAuthn API
   const credential = await navigator.credentials.create(options);
@@ -177,7 +179,7 @@ export async function authenticateWithPasskey() {
     headers: { 'Content-Type': 'application/json' },
   });
   
-  const options = await handleApiResponse(beginResponse) as CredentialRequestOptions;
+  const options = await handleApiResponse(beginResponse) as Record<string, unknown>;
 
   // Step 2: Get credential using WebAuthn API
   const credential = await navigator.credentials.get(options);

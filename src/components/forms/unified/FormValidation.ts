@@ -106,7 +106,7 @@ export class UnifiedValidationRules implements IFieldValidationRules {
    * Phone number validation
    */
   phone(message = 'Please enter a valid phone number'): FieldValidationRule<string> {
-    const phoneRegex = /^\+?[\d\s\-\(\)]+$/;
+    const phoneRegex = /^\+?[\d\s\-()]+$/;
     
     return (value: string): string | undefined => {
       if (!value) return undefined;

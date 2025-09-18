@@ -3,7 +3,7 @@
  * Following SOLID principles and Astro Islands Architecture
  */
 
-import { SortUtils, EventUtils } from '../utils/filter.utils.js';
+import { SortUtils } from '../utils/filter.utils.js';
 import { domUtils, waitForDOM } from '../utils/dom.utils.js';
 
 // =============================================================================

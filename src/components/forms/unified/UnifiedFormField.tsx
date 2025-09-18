@@ -224,7 +224,7 @@ export const UnifiedFormField: React.FC<IUnifiedFieldProps> = React.memo(({
   id
 }) => {
   const [internalValue, setInternalValue] = useState(value ?? defaultValue ?? '');
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceRef = useRef<number | null>(null);
   
   // Debounced change handler
   const handleChange = useCallback((newValue: any) => {
@@ -234,7 +234,7 @@ export const UnifiedFormField: React.FC<IUnifiedFieldProps> = React.memo(({
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
       }
-      debounceRef.current = setTimeout(() => {
+      debounceRef.current = window.setTimeout(() => {
         onChange?.(newValue);
       }, debounceMs);
     } else {

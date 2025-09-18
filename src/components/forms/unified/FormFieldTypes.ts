@@ -6,6 +6,7 @@
  */
 
 import type { ReactNode } from 'react';
+import type React from 'react';
 
 /**
  * Base Field Type Enumeration

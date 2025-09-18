@@ -4,6 +4,8 @@
  * Interface Segregation: Simple utility functions for modal interactions
  */
 
+import type React from 'react';
+
 /**
  * Detect if a click event should close a modal based on backdrop patterns
  * Works with both React and Astro modal implementations
