@@ -16,9 +16,17 @@ export class HealthDashboardManager {
   private serviceCheckers: Map<string, IServiceChecker> = new Map();
   private refreshInterval: number | null = null;
   private isRefreshing = false;
+  private useSSE = false;
+  private boundHealthUpdateHandler?: (event: Event) => void;
+  private boundServiceUpdateHandler?: (event: Event) => void;
 
-  constructor(private config: { apiBaseUrl: string; refreshIntervalMs?: number }) {
+  constructor(private config: { apiBaseUrl: string; refreshIntervalMs?: number; useSSE?: boolean }) {
+    this.useSSE = config.useSSE || false;
     this.initializeServiceCheckers();
+
+    if (this.useSSE) {
+      this.setupSSEListeners();
+    }
   }
 
   // Dependency Injection - easily extensible for new services
@@ -62,12 +70,22 @@ export class HealthDashboardManager {
     }
   }
 
-  // Strategy Pattern - different refresh strategies
+  // Strategy Pattern - different refresh strategies (Enhanced with SSE integration)
   startAutoRefresh(): void {
     if (this.refreshInterval) return;
 
-    const intervalMs = this.config.refreshIntervalMs || 30000; // Default 30 seconds
+    const intervalMs = this.useSSE
+      ? (this.config.refreshIntervalMs || 30000) * 2  // Less frequent with SSE
+      : (this.config.refreshIntervalMs || 30000);     // Normal frequency without SSE
+
+    if (this.useSSE) {
+      logger.info('SSE is active - auto-refresh serves as fallback');
+    }
+
     this.refreshInterval = window.setInterval(() => {
+      if (this.useSSE) {
+        logger.info('Fallback refresh while SSE is active');
+      }
       this.refreshAllServices();
     }, intervalMs);
 
@@ -144,9 +162,105 @@ export class HealthDashboardManager {
     });
   }
 
+  // SSE Integration - Listen to MainLayout health events
+  private setupSSEListeners(): void {
+    logger.info('Setting up SSE listeners for health dashboard');
+
+    // Create bound handlers for proper cleanup
+    this.boundHealthUpdateHandler = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { healthData } = customEvent.detail;
+      logger.info('Health dashboard received SSE update', { healthData });
+      this.handleSSEHealthUpdate(healthData);
+    };
+
+    this.boundServiceUpdateHandler = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { serviceName, serviceData } = customEvent.detail;
+      logger.info('Service update received via SSE', { serviceName, serviceData });
+      this.handleSSEServiceUpdate(serviceName, serviceData);
+    };
+
+    // Listen for health data updates from MainLayout SSE service
+    window.addEventListener('healthDataUpdate', this.boundHealthUpdateHandler);
+
+    // Listen for individual service updates
+    window.addEventListener('serviceHealthUpdate', this.boundServiceUpdateHandler);
+  }
+
+  // Handle health data updates from SSE
+  private handleSSEHealthUpdate(healthData: Record<string, unknown>): void {
+    if (!healthData?.services) return;
+
+    const services = healthData.services as Record<string, unknown>;
+
+    // Update overall status using existing logic
+    const mockResults = Object.keys(services).map(serviceName => {
+      const serviceData = services[serviceName] as Record<string, unknown>;
+      return {
+        name: serviceName,
+        result: {
+          status: serviceData.status,
+          message: serviceData.message,
+          metrics: serviceData.metrics || {}
+        } as IServiceResult,
+        success: true
+      };
+    });
+
+    this.updateOverallStatus(mockResults);
+
+    // Update individual services
+    Object.keys(services).forEach(serviceName => {
+      const serviceData = services[serviceName] as Record<string, unknown>;
+      this.updateServiceDisplay(serviceName, serviceData);
+    });
+  }
+
+  // Handle individual service updates from SSE
+  private handleSSEServiceUpdate(serviceName: string, serviceData: Record<string, unknown>): void {
+    this.updateServiceDisplay(serviceName, serviceData);
+  }
+
+  // Update service display using existing UI helper
+  private updateServiceDisplay(serviceName: string, serviceData: Record<string, unknown>): void {
+    const mockResult: IServiceResult = {
+      status: serviceData.status as any,
+      message: serviceData.message as string,
+      metrics: (serviceData.metrics as Record<string, unknown>) || {},
+      timestamp: Date.now()
+    };
+
+    // Use existing UI update logic
+    HealthUIHelper.updateStatusIndicator(`${serviceName}-status`, mockResult.status as any);
+    HealthUIHelper.updateTextElement(`${serviceName}-message`, mockResult.message);
+
+    if (mockResult.metrics.responseTime) {
+      HealthUIHelper.updateLatencyElement(
+        `${serviceName}-latency`,
+        `${mockResult.metrics.responseTime}ms`,
+        mockResult.metrics.responseTime as number,
+        'API'
+      );
+    }
+
+    HealthUIHelper.updateLastRefresh(`${serviceName}-last-updated`);
+  }
+
+
   // Cleanup method (Resource Management)
   destroy(): void {
     this.stopAutoRefresh();
     this.serviceCheckers.clear();
+
+    // Remove SSE listeners using stored bound handlers
+    if (this.useSSE) {
+      if (this.boundHealthUpdateHandler) {
+        window.removeEventListener('healthDataUpdate', this.boundHealthUpdateHandler);
+      }
+      if (this.boundServiceUpdateHandler) {
+        window.removeEventListener('serviceHealthUpdate', this.boundServiceUpdateHandler);
+      }
+    }
   }
 }

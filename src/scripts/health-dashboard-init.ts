@@ -2,6 +2,7 @@
  * Health Dashboard Initialization - External TypeScript File
  * Following Astro MCP best practices for client-side scripts
  * Single Responsibility: Initialize and coordinate health dashboard
+ * DRY Principle: Uses HealthDashboardManager with SSE integration
  */
 
 import { HealthDashboardManager } from '/src/services/health-dashboard-manager';
@@ -14,7 +15,8 @@ class HealthDashboard {
   constructor() {
     this.manager = new HealthDashboardManager({
       apiBaseUrl: getApiBaseUrl(),
-      refreshIntervalMs: 30000 // 30 seconds
+      refreshIntervalMs: 30000, // Keep as fallback
+      useSSE: true // Enable SSE integration
     });
 
     this.init();
@@ -65,6 +67,7 @@ class HealthDashboard {
       this.manager.destroy();
     });
   }
+
 
   private runDiagnostic(type: 'connectivity' | 'latency' | 'cors'): void {
     const resultsEl = document.getElementById('diagnostic-results');
