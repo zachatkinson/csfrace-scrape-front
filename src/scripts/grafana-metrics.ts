@@ -37,13 +37,15 @@ class GrafanaMetricsUpdater {
       
       // Prepare metrics using real Grafana data
       const metrics: GrafanaMetrics = {
-        version: healthResult.metrics.version || 'Grafana v11.3.0',
-        dashboards: healthResult.metrics.dashboards || 0,
-        datasources: healthResult.metrics.datasources || 0,
-        users: healthResult.metrics.users || 1,
-        alerts: healthResult.metrics.alerts || 0,
-        plugins: healthResult.metrics.plugins || ['monitoring-panel', 'worldmap-panel', 'piechart-panel'],
-        uptime: healthResult.metrics.uptime || 'Active',
+        version: String(healthResult.metrics.version || 'Grafana v11.3.0'),
+        dashboards: Number(healthResult.metrics.dashboards) || 0,
+        datasources: Number(healthResult.metrics.datasources) || 0,
+        users: Number(healthResult.metrics.users) || 1,
+        alerts: Number(healthResult.metrics.alerts) || 0,
+        plugins: Array.isArray(healthResult.metrics.plugins)
+          ? healthResult.metrics.plugins
+          : ['monitoring-panel', 'worldmap-panel', 'piechart-panel'],
+        uptime: String(healthResult.metrics.uptime || 'Active'),
         monitoringPanelStatus: healthResult.status === 'up' ? '✅ Monitoring Panel' : '❌ Monitoring Panel'
       };
 

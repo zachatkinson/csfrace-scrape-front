@@ -7,6 +7,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { AppSettings, ApiConfigSettings } from '../interfaces/forms.ts';
 import { getApiBaseUrl } from '../constants/api.ts';
+import { createContextLogger } from '../utils/logger';
+
+const logger = createContextLogger('useAppSettings');
 
 // =============================================================================
 // SETTINGS STORAGE KEYS
@@ -65,7 +68,7 @@ function parseStoredSettings<T>(key: string, defaults: T): T {
     const parsed = JSON.parse(stored);
     return { ...defaults, ...parsed };
   } catch (error) {
-    console.warn(`Failed to parse settings from ${key}:`, error);
+    logger.warn('Failed to parse settings from storage', { key, error });
     return defaults;
   }
 }
@@ -77,7 +80,7 @@ function storeSettings<T>(key: string, settings: T): void {
   try {
     localStorage.setItem(key, JSON.stringify(settings));
   } catch (error) {
-    console.error(`Failed to store settings to ${key}:`, error);
+    logger.error('Failed to store settings to storage', { key, error });
   }
 }
 
@@ -200,7 +203,7 @@ export const useAppSettings = (): UseAppSettingsReturn => {
       
       return true;
     } catch (error) {
-      console.error('Failed to import settings:', error);
+      logger.error('Failed to import settings', { error });
       return false;
     }
   }, [updateAppSettings, updateApiSettings]);

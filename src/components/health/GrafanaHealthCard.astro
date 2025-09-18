@@ -14,10 +14,10 @@ const serviceResult = await GrafanaServiceChecker.checkHealth();
 
 // Grafana-specific metrics for display
 const details = [
-  { label: 'Dashboards', value: serviceResult.metrics.dashboards || 0, key: 'dashboards' },
-  { label: 'Datasources', value: serviceResult.metrics.datasources || 0, key: 'datasources' },
-  { label: 'Alerts', value: serviceResult.metrics.alerts || 0, key: 'alerts' },
-  { label: 'Users', value: serviceResult.metrics.users || 1, key: 'users' }
+  { label: 'Dashboards', value: Number(serviceResult.metrics.dashboards) || 0, key: 'dashboards' },
+  { label: 'Datasources', value: Number(serviceResult.metrics.datasources) || 0, key: 'datasources' },
+  { label: 'Alerts', value: Number(serviceResult.metrics.alerts) || 0, key: 'alerts' },
+  { label: 'Users', value: Number(serviceResult.metrics.users) || 1, key: 'users' }
 ];
 ---
 

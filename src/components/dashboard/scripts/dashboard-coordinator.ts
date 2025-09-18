@@ -9,6 +9,9 @@
 
 import { domUtils, waitForDOM } from '../utils/dom.utils';
 import type { IDashboardState, IDashboardStats } from '../types/dashboard.types';
+import { createContextLogger } from '../../../utils/logger';
+
+const logger = createContextLogger('DashboardCoordinator');
 
 // =============================================================================
 // DASHBOARD COORDINATOR CLASS (Single Responsibility Principle)
@@ -47,7 +50,7 @@ export class DashboardCoordinator {
     this.startPeriodicUpdates();
     this.isInitialized = true;
 
-    console.log('🎯 DashboardCoordinator: Initialized as central communication hub');
+    logger.info('Initialized as central communication hub');
   }
 
   /**
@@ -67,9 +70,9 @@ export class DashboardCoordinator {
         this.updateStats(initialStats);
       }
 
-      console.log('🎯 DashboardCoordinator: Initial data loaded from DOM attributes');
+      logger.debug('Initial data loaded from DOM attributes');
     } catch (error) {
-      console.warn('🎯 DashboardCoordinator: Failed to load initial data:', error);
+      logger.warn('Failed to load initial data', { error });
     }
   }
 
@@ -106,14 +109,14 @@ export class DashboardCoordinator {
       }
     });
 
-    console.log('🎯 DashboardCoordinator: Event listeners setup complete');
+    logger.debug('Event listeners setup complete');
   }
 
   /**
    * Handle data updates from Server Islands
    */
   private handleDataUpdate(data: { jobs: any[], stats: IDashboardStats, timestamp: number }): void {
-    console.log('🎯 DashboardCoordinator: Received data update:', data);
+    logger.debug('Received data update', { data });
 
     this.updateStats(data.stats);
     this.state.lastUpdated = new Date(data.timestamp);
@@ -126,7 +129,7 @@ export class DashboardCoordinator {
    * Handle filter updates
    */
   private handleFilterUpdate(filterData: any): void {
-    console.log('🎯 DashboardCoordinator: Filter update received:', filterData);
+    logger.debug('Filter update received', { filterData });
 
     // Update loading state
     this.state.isLoading = true;
@@ -147,7 +150,7 @@ export class DashboardCoordinator {
    * Handle job actions (view, delete, etc.)
    */
   private handleJobAction(actionData: any): void {
-    console.log('🎯 DashboardCoordinator: Job action received:', actionData);
+    logger.debug('Job action received', { actionData });
 
     switch (actionData.action) {
       case 'view':
@@ -160,7 +163,7 @@ export class DashboardCoordinator {
         this.retryJob(actionData.jobId);
         break;
       default:
-        console.warn('Unknown job action:', actionData.action);
+        logger.warn('Unknown job action', { action: actionData.action });
     }
   }
 
@@ -171,7 +174,7 @@ export class DashboardCoordinator {
     this.state.connectionStatus = statusData.status;
     this.state.lastUpdated = new Date(statusData.timestamp);
 
-    console.log('🎯 DashboardCoordinator: Connection status changed to:', statusData.status);
+    logger.info('Connection status changed', { status: statusData.status });
 
     // Update UI elements
     this.updateConnectionIndicator();
@@ -254,7 +257,7 @@ export class DashboardCoordinator {
   private async deleteJob(jobId: string): Promise<void> {
     try {
       // This would call your API to delete the job
-      console.log('🎯 DashboardCoordinator: Deleting job:', jobId);
+      logger.info('Deleting job', { jobId });
 
       // Emit job deleted event
       window.dispatchEvent(new CustomEvent('job:deleted', {
@@ -264,7 +267,7 @@ export class DashboardCoordinator {
       // Refresh job list
       this.refreshData();
     } catch (error) {
-      console.error('Failed to delete job:', error);
+      logger.error('Failed to delete job', { error });
     }
   }
 
@@ -274,7 +277,7 @@ export class DashboardCoordinator {
   private async retryJob(jobId: string): Promise<void> {
     try {
       // This would call your API to retry the job
-      console.log('🎯 DashboardCoordinator: Retrying job:', jobId);
+      logger.info('Retrying job', { jobId });
 
       // Emit job retry event
       window.dispatchEvent(new CustomEvent('job:retried', {
@@ -284,7 +287,7 @@ export class DashboardCoordinator {
       // Refresh job list
       this.refreshData();
     } catch (error) {
-      console.error('Failed to retry job:', error);
+      logger.error('Failed to retry job', { error });
     }
   }
 
@@ -298,7 +301,7 @@ export class DashboardCoordinator {
       }
     }, 5000); // Refresh every 5 seconds
 
-    console.log('🎯 DashboardCoordinator: Periodic updates started');
+    logger.debug('Periodic updates started');
   }
 
   /**
@@ -326,7 +329,7 @@ export class DashboardCoordinator {
   private async refreshData(): Promise<void> {
     try {
       // This would fetch fresh data from your API
-      console.log('🎯 DashboardCoordinator: Refreshing data');
+      logger.debug('Refreshing data');
 
       // Emit refresh event for components to handle
       window.dispatchEvent(new CustomEvent('dashboard:refresh', {
@@ -334,7 +337,7 @@ export class DashboardCoordinator {
       }));
 
     } catch (error) {
-      console.error('Failed to refresh data:', error);
+      logger.error('Failed to refresh data', { error });
       this.handleConnectionStatusChange({ 
         status: 'disconnected', 
         timestamp: Date.now() 

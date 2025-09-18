@@ -11,6 +11,9 @@
  */
 
 import { SecureStorage, EncryptionKeyError } from './security';
+import { createContextLogger } from './logger';
+
+const logger = createContextLogger('SecureTokenStorage');
 
 /**
  * Token Storage Strategy Enum
@@ -372,7 +375,7 @@ export class TokenMigrationService {
       this.clearLegacyTokens();
       
     } catch (error) {
-      console.warn('Token migration failed:', error);
+      logger.warn('Token migration failed', { error });
       // Continue execution - don't break the app
     }
   }
@@ -386,7 +389,7 @@ export class TokenMigrationService {
       try {
         localStorage.removeItem(key);
       } catch (error) {
-        console.warn(`Failed to remove legacy token ${key}:`, error);
+        logger.warn('Failed to remove legacy token', { key, error });
       }
     });
   }

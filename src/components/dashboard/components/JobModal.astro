@@ -82,6 +82,9 @@ const {
      ============================================================================= -->
 <script>
   import { BaseModalManager } from '/src/scripts/baseModalManager';
+  import { createContextLogger } from '../../../utils/logger';
+
+  const logger = createContextLogger('JobModal');
 
   // Job Modal Manager extending base functionality
   class JobModalManager extends BaseModalManager {
@@ -99,7 +102,7 @@ const {
     // Job-specific initialization - required by BaseModalManager
     protected setupModalSpecificHandlers(): void {
       // Job-specific setup can be done here
-      console.log('🔧 JobModalManager: Setting up job-specific handlers');
+      logger.debug('Setting up job-specific handlers');
     }
 
     // Load job details from nano store
@@ -114,9 +117,9 @@ const {
       try {
         // Job details will be loaded from nano store
         // This will be implemented when we add SSE + nano stores
-        console.log('Loading job details for job:', jobId);
+        logger.info('Loading job details', { jobId });
       } catch (error) {
-        console.error('Failed to load job details:', error);
+        logger.error('Failed to load job details', { error, jobId });
       }
     }
   }

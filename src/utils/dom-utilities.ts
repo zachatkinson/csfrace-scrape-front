@@ -5,6 +5,10 @@
 // Follows SOLID principles with clear abstractions and interfaces
 // =============================================================================
 
+import { createContextLogger } from './logger';
+
+const logger = createContextLogger('DomUtilities');
+
 // =============================================================================
 // INTERFACES (Interface Segregation Principle)
 // =============================================================================
@@ -34,7 +38,7 @@ export class SafeDomAccessor implements IDomValidator {
     try {
       return document.getElementById(elementId);
     } catch (error) {
-      console.warn(`🚫 DOM Access Error for element '${elementId}':`, error);
+      logger.warn('DOM access error for element', { elementId, error });
       return null;
     }
   }
@@ -65,7 +69,7 @@ export class DomTextUpdater implements IDomUpdater {
   updateElement(elementId: string, value: string | number): boolean {
     const element = SafeDomAccessor.getElement(elementId);
     if (!element) {
-      console.warn(`🚫 Element '${elementId}' not found for text update`);
+      logger.warn('Element not found for text update', { elementId });
       return false;
     }
 
@@ -87,7 +91,7 @@ export class DomTextUpdater implements IDomUpdater {
     });
 
     if (missingElements.length > 0) {
-      console.warn(`🚫 Missing elements for batch update:`, missingElements);
+      logger.warn('Missing elements for batch update', { missingElements });
     }
   }
 
@@ -109,7 +113,7 @@ export class DomClassUpdater implements IDomClassUpdater {
   updateClass(elementId: string, className: string): boolean {
     const element = SafeDomAccessor.getElement(elementId);
     if (!element) {
-      console.warn(`🚫 Element '${elementId}' not found for class update`);
+      logger.warn('Element not found for class update', { elementId });
       return false;
     }
 
@@ -123,7 +127,7 @@ export class DomClassUpdater implements IDomClassUpdater {
   toggleClass(elementId: string, className: string, condition: boolean): boolean {
     const element = SafeDomAccessor.getElement(elementId);
     if (!element) {
-      console.warn(`🚫 Element '${elementId}' not found for class toggle`);
+      logger.warn('Element not found for class toggle', { elementId });
       return false;
     }
 
@@ -234,7 +238,7 @@ export const domManager = new DomManager();
  * @deprecated Use domManager.updateText() instead
  */
 export function updateElementText(elementId: string, value: string | number): boolean {
-  console.warn(`⚠️ updateElementText is deprecated. Use domManager.updateText() instead.`);
+  logger.warn('updateElementText is deprecated - use domManager.updateText() instead');
   return domManager.updateText(elementId, value);
 }
 
@@ -242,6 +246,6 @@ export function updateElementText(elementId: string, value: string | number): bo
  * @deprecated Use domManager.updateTexts() instead  
  */
 export function updateElementTexts(updates: Record<string, string | number>): void {
-  console.warn(`⚠️ updateElementTexts is deprecated. Use domManager.updateTexts() instead.`);
+  logger.warn('updateElementTexts is deprecated - use domManager.updateTexts() instead');
   domManager.updateTexts(updates);
 }

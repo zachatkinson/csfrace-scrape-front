@@ -14,12 +14,12 @@ const serviceResult = await BackendServiceChecker.checkHealth();
 
 // Backend-specific metrics for display
 const details = [
-  { label: 'Uptime', value: serviceResult.metrics.uptime || 'Unknown', key: 'uptime' },
-  { label: 'Memory', value: serviceResult.metrics.memory || 'Unknown', key: 'memory' },
-  { label: 'CPU', value: serviceResult.metrics.cpu || 'Unknown', key: 'cpu' },
-  { label: 'Version', value: serviceResult.metrics.version || '3.3.0', key: 'version' },
-  { label: 'Database', value: serviceResult.metrics.database || 'Unknown', key: 'database' },
-  { label: 'Cache', value: serviceResult.metrics.cache || 'Unknown', key: 'cache' }
+  { label: 'Uptime', value: String(serviceResult.metrics.uptime || 'Unknown'), key: 'uptime' },
+  { label: 'Memory', value: String(serviceResult.metrics.memory || 'Unknown'), key: 'memory' },
+  { label: 'CPU', value: String(serviceResult.metrics.cpu || 'Unknown'), key: 'cpu' },
+  { label: 'Version', value: String(serviceResult.metrics.version || '3.3.0'), key: 'version' },
+  { label: 'Database', value: String(serviceResult.metrics.database || 'Unknown'), key: 'database' },
+  { label: 'Cache', value: String(serviceResult.metrics.cache || 'Unknown'), key: 'cache' }
 ];
 ---
 

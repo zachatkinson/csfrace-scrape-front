@@ -9,6 +9,9 @@ import type { IJobData, IJobStats } from '../../../types/job.ts';
 import * as apiClient from '../../../utils/dashboard/apiClient.ts';
 import * as jobUtils from '../../../utils/dashboard/jobUtils.ts';
 import { logError } from '../../../utils/api-utils.ts';
+import { createContextLogger } from '../../../utils/logger';
+
+const logger = createContextLogger('useJobData');
 
 export interface JobDataState {
   jobs: IJobData[];
@@ -60,7 +63,7 @@ export function useJobData(options: UseJobDataOptions = {}) {
       return convertedJobs;
 
     } catch (error) {
-      console.error('Failed to load jobs:', error);
+      logger.error('Failed to load jobs', { error });
       logError(error, 'Job Data Loading');
       setState(prev => ({ ...prev, isLoading: false }));
       throw error;
@@ -75,7 +78,7 @@ export function useJobData(options: UseJobDataOptions = {}) {
   useEffect(() => {
     const handleJobSSEUpdate = (event: CustomEvent) => {
       const { jobUpdate } = event.detail;
-      console.log('🎯 useJobData: Processing SSE job update:', jobUpdate);
+      logger.debug('Processing SSE job update', { jobUpdate });
 
       if (jobUpdate) {
         setState(prev => {
@@ -105,7 +108,7 @@ export function useJobData(options: UseJobDataOptions = {}) {
     const handleJobsDataRefresh = (event: CustomEvent) => {
       const { source } = event.detail;
       if (source === 'sse') {
-        console.log('🔄 useJobData: SSE triggered data refresh');
+        logger.info('SSE triggered data refresh');
         // Optionally trigger a full refresh for major changes
         // refreshJobs();
       }

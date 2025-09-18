@@ -6,6 +6,9 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import type { WebSocketEvent, ConversionJob } from '../types';
+import { createContextLogger } from '../utils/logger';
+
+const logger = createContextLogger('useWebSocket');
 
 type WebSocketSendData = 
   | string 
@@ -83,7 +86,7 @@ export const useWebSocket = ({
       wsRef.current = new WebSocket(url);
       
       wsRef.current.onopen = () => {
-        console.warn('WebSocket connected');
+        logger.info('WebSocket connected');
         setConnectionState('connected');
         setReconnectCount(0);
         
@@ -125,19 +128,19 @@ export const useWebSocket = ({
               break;
               
             case 'connection_status':
-              console.warn('Connection status:', message.payload.data);
+              logger.info('Connection status', { data: message.payload.data });
               break;
               
             default:
-              console.warn('Unknown message type:', message.type);
+              logger.warn('Unknown message type', { type: message.type });
           }
         } catch (error) {
-          console.error('Failed to parse WebSocket message:', error);
+          logger.error('Failed to parse WebSocket message', { error });
         }
       };
       
       wsRef.current.onclose = (event) => {
-        console.warn('WebSocket disconnected:', event.code, event.reason);
+        logger.warn('WebSocket disconnected', { code: event.code, reason: event.reason });
         
         if (pingIntervalRef.current) {
           clearInterval(pingIntervalRef.current);
@@ -152,7 +155,7 @@ export const useWebSocket = ({
           setConnectionState('connecting');
           const delay = reconnectInterval * Math.pow(1.5, reconnectCount);
           
-          console.warn(`Attempting to reconnect in ${delay}ms (attempt ${reconnectCount + 1}/${reconnectAttempts})`);
+          logger.info('Attempting to reconnect', { delay, attempt: reconnectCount + 1, maxAttempts: reconnectAttempts });
           
           reconnectTimeoutRef.current = setTimeout(() => {
             setReconnectCount(prev => prev + 1);
@@ -164,12 +167,12 @@ export const useWebSocket = ({
       };
       
       wsRef.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        logger.error('WebSocket error', { error });
         setConnectionState('error');
       };
       
     } catch (error) {
-      console.error('Failed to create WebSocket connection:', error);
+      logger.error('Failed to create WebSocket connection', { error });
       setConnectionState('error');
     }
   }, [url, reconnectCount, reconnectAttempts, reconnectInterval, onJobUpdate, onJobComplete, onJobError, onConnectionChange, cleanup]);
@@ -179,7 +182,7 @@ export const useWebSocket = ({
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(data));
     } else {
-      console.warn('WebSocket is not connected. Cannot send message:', data);
+      logger.warn('WebSocket is not connected - cannot send message', { data });
     }
   }, []);
   
@@ -219,7 +222,7 @@ export const useWebSocket = ({
       if (document.visibilityState === 'visible') {
         // Page became visible, reconnect if needed
         if (connectionState === 'disconnected' && !isManualClose.current) {
-          console.warn('Page became visible, attempting to reconnect...');
+          logger.info('Page became visible, attempting to reconnect');
           reconnect();
         }
       }
@@ -235,14 +238,14 @@ export const useWebSocket = ({
   // Handle online/offline events
   useEffect(() => {
     const handleOnline = () => {
-      console.warn('Browser came online, attempting to reconnect...');
+      logger.info('Browser came online, attempting to reconnect');
       if (!isManualClose.current) {
         reconnect();
       }
     };
     
     const handleOffline = () => {
-      console.warn('Browser went offline');
+      logger.warn('Browser went offline');
       setConnectionState('error');
     };
     

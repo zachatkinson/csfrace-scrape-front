@@ -8,6 +8,9 @@
 import type { IServiceChecker, IServiceResult } from '../types/health';
 import { BackendHealthChecker } from './backend-health-checker';
 import { HealthUIHelper } from '../utils/health-ui';
+import { createContextLogger } from '../utils/logger';
+
+const logger = createContextLogger('HealthDashboardManager');
 
 export class HealthDashboardManager {
   private serviceCheckers: Map<string, IServiceChecker> = new Map();
@@ -44,7 +47,7 @@ export class HealthDashboardManager {
             checker.updateUI(result);
             return { name, result, success: true };
           } catch (error) {
-            console.error(`Failed to check ${name}:`, error);
+            logger.error('Failed to check service', { name, error });
             return { name, result: null, success: false, error };
           }
         }
@@ -83,7 +86,7 @@ export class HealthDashboardManager {
   async refreshSingleService(serviceName: string): Promise<void> {
     const checker = this.serviceCheckers.get(serviceName);
     if (!checker) {
-      console.warn(`Service checker not found: ${serviceName}`);
+      logger.warn('Service checker not found', { serviceName });
       return;
     }
 
@@ -91,7 +94,7 @@ export class HealthDashboardManager {
       const result = await checker.checkHealth();
       checker.updateUI(result);
     } catch (error) {
-      console.error(`Failed to refresh ${serviceName}:`, error);
+      logger.error('Failed to refresh service', { serviceName, error });
     }
   }
 

@@ -38,15 +38,15 @@ class PrometheusMetricsUpdater {
       
       // Prepare metrics using real Prometheus data from backend health check
       const metrics: PrometheusMetrics = {
-        version: healthResult.metrics.version || 'v2.40.0',
-        targets: healthResult.metrics.totalTargets || 2,
-        activeTargets: healthResult.metrics.activeTargets || 2,
-        failedTargets: healthResult.metrics.failedTargets || 0,
-        tsdbSize: healthResult.metrics.tsdbSize || 'Unknown',
-        samples: healthResult.metrics.samples || 'Unknown',
-        uptime: healthResult.metrics.uptime || 'Active',
+        version: String(healthResult.metrics.version || 'v2.40.0'),
+        targets: Number(healthResult.metrics.totalTargets) || 2,
+        activeTargets: Number(healthResult.metrics.activeTargets) || 2,
+        failedTargets: Number(healthResult.metrics.failedTargets) || 0,
+        tsdbSize: String(healthResult.metrics.tsdbSize || 'Unknown'),
+        samples: String(healthResult.metrics.samples || 'Unknown'),
+        uptime: String(healthResult.metrics.uptime || 'Active'),
         queryEngine: 'PromQL',
-        scrapeInterval: healthResult.metrics.scrapeInterval || '15s'
+        scrapeInterval: String(healthResult.metrics.scrapeInterval || '15s')
       };
 
       // Update service info using DRY utilities

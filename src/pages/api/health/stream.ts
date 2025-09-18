@@ -8,7 +8,8 @@ import type { APIRoute } from 'astro';
 import {
   HealthService,
   HealthServiceError,
-  type HealthResponse
+  type HealthResponse,
+  type ServiceUpdate
 } from '../../../services/HealthService';
 import {
   SSEStreamService
@@ -199,7 +200,7 @@ async function sendAllServices(
   const services = ['frontend', 'backend', 'database', 'cache'];
 
   for (const serviceName of services) {
-    let serviceData;
+    let serviceData: ServiceUpdate | undefined;
 
     switch (serviceName) {
       case 'frontend':
@@ -229,14 +230,14 @@ async function sendAllServices(
  * Create frontend service data - DRY helper function
  * @param timestamp Backend timestamp for consistency
  */
-function createFrontendServiceData(timestamp: string) {
+function createFrontendServiceData(timestamp: string): ServiceUpdate {
   return {
     service: 'frontend',
     status: 'healthy', // Frontend is healthy if we can run this code
     timestamp,
     data: {
-      version: import.meta.env.PUBLIC_ASTRO_VERSION,
-      port: import.meta.env.PUBLIC_SERVER_PORT,
+      version: import.meta.env.PUBLIC_ASTRO_VERSION || 'unknown',
+      port: import.meta.env.PUBLIC_SERVER_PORT || 3000,
       framework: 'Astro + React + TypeScript',
       response_time_ms: 0, // Immediate for frontend
     }

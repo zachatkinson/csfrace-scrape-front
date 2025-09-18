@@ -4,6 +4,9 @@
  */
 
 import { domUtils, waitForDOM } from '../utils/dom.utils';
+import { createContextLogger } from '../../../utils/logger';
+
+const logger = createContextLogger('ModalManager');
 
 // =============================================================================
 // MODAL MANAGER CLASS (Single Responsibility Principle)
@@ -26,7 +29,7 @@ export class ModalManager {
     this.attachEventListeners();
     this.isInitialized = true;
 
-    console.log('🔧 ModalManager: Initialized with proper Islands architecture');
+    logger.info('Initialized with proper Islands architecture');
   }
 
   /**
@@ -147,7 +150,7 @@ export class ModalManager {
       domUtils.setAttribute(this.contentArea, 'aria-busy', 'false');
 
     } catch (error) {
-      console.error('Failed to load job details:', error);
+      logger.error('Failed to load job details', { error });
       this.renderError('Failed to load job details');
     }
   }
@@ -218,4 +221,4 @@ export class ModalManager {
 // =============================================================================
 
 const modalManager = new ModalManager();
-modalManager.initialize().catch(console.error);
+modalManager.initialize().catch(error => logger.error('Failed to initialize modal manager', { error }));

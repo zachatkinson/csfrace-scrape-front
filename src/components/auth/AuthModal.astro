@@ -172,8 +172,13 @@ import BaseModal from '../common/BaseModal.astro';
   Following the authentication patterns from Astro docs
 -->
 <script>
+  import { createContextLogger } from '../../utils/logger';
+
+  // Create logger instance for this component
+  const logger = createContextLogger('AuthModal');
+
   // Clean Astro Islands script - Initialize AuthModal functionality
-  console.log('🔐 AuthModal: Islands script loaded');
+  logger.info('Islands script loaded');
 
   // Initialize AuthModal manager to handle openAuthModal events
   (async () => {
@@ -182,14 +187,14 @@ import BaseModal from '../common/BaseModal.astro';
       const authModalManager = new AuthModalManager({
         modalId: 'auth-modal',
         onAuthSuccess: () => {
-          console.log('🎉 AuthModal: Authentication successful');
+          logger.info('Authentication successful');
           // Handle successful authentication
         }
       });
       authModalManager.init();
-      console.log('✅ AuthModal: Manager initialized successfully');
+      logger.info('Manager initialized successfully');
     } catch (error) {
-      console.error('❌ AuthModal: Failed to load manager:', error);
+      logger.error('Failed to load manager', { error });
     }
   })();
 </script>

@@ -68,39 +68,39 @@ export const EventDrivenHealthCard: React.FC<EventDrivenHealthCardProps> = ({
         case 'frontend':
           updateElements({
             [`${domPrefix}-response-time`]: `${metrics.responseTime || 'N/A'}${typeof metrics.responseTime === 'number' ? 'ms' : ''}`,
-            [`${domPrefix}-memory-usage`]: metrics.memory?.used || 'N/A',
+            [`${domPrefix}-memory-usage`]: String((metrics.memory as Record<string, unknown>)?.used || 'N/A'),
             [`${domPrefix}-page-load`]: `${metrics.responseTime || 'N/A'}${typeof metrics.responseTime === 'number' ? 'ms' : ''}`,
-            [`${domPrefix}-framework`]: metrics.framework?.name || 'React/Astro',
-            [`${domPrefix}-version`]: metrics.framework?.version || 'N/A',
-            [`${domPrefix}-port`]: metrics.port || window.location.port || '3000'
+            [`${domPrefix}-framework`]: String((metrics.framework as Record<string, unknown>)?.name || 'React/Astro'),
+            [`${domPrefix}-version`]: String((metrics.framework as Record<string, unknown>)?.version || 'N/A'),
+            [`${domPrefix}-port`]: String(metrics.port || window.location.port || '3000')
           });
           break;
 
         case 'backend':
           updateElements({
             [`${domPrefix}-response-time`]: `${metrics.responseTime || 'N/A'}${typeof metrics.responseTime === 'number' ? 'ms' : ''}`,
-            [`${domPrefix}-uptime`]: metrics.uptime || 'N/A',
-            [`${domPrefix}-memory`]: metrics.memory || 'N/A',
-            [`${domPrefix}-cpu`]: metrics.cpu || 'N/A',
-            [`${domPrefix}-version`]: metrics.version || 'N/A'
+            [`${domPrefix}-uptime`]: String(metrics.uptime || 'N/A'),
+            [`${domPrefix}-memory`]: String(metrics.memory || 'N/A'),
+            [`${domPrefix}-cpu`]: String(metrics.cpu || 'N/A'),
+            [`${domPrefix}-version`]: String(metrics.version || 'N/A')
           });
           break;
 
         case 'database':
           updateElements({
             [`${domPrefix}-response-time`]: `${metrics.responseTime || 'N/A'}${typeof metrics.responseTime === 'number' ? 'ms' : ''}`,
-            [`${domPrefix}-connections`]: metrics.connections || 'N/A',
-            [`${domPrefix}-version`]: metrics.version || 'PostgreSQL',
-            [`${domPrefix}-status`]: metrics.status || 'Connected'
+            [`${domPrefix}-connections`]: String(metrics.connections || 'N/A'),
+            [`${domPrefix}-version`]: String(metrics.version || 'PostgreSQL'),
+            [`${domPrefix}-status`]: String(metrics.status || 'Connected')
           });
           break;
 
         case 'cache':
           updateElements({
             [`${domPrefix}-response-time`]: `${metrics.responseTime || 'N/A'}${typeof metrics.responseTime === 'number' ? 'ms' : ''}`,
-            [`${domPrefix}-memory`]: metrics.memory || 'N/A',
-            [`${domPrefix}-version`]: metrics.version || 'Redis',
-            [`${domPrefix}-connections`]: metrics.connections || 'N/A'
+            [`${domPrefix}-memory`]: String(metrics.memory || 'N/A'),
+            [`${domPrefix}-version`]: String(metrics.version || 'Redis'),
+            [`${domPrefix}-connections`]: String(metrics.connections || 'N/A')
           });
           break;
       }

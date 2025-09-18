@@ -55,7 +55,7 @@ export interface ServiceUpdate {
   service: string;
   status: string;
   timestamp: string;
-  data: any;
+  data: Record<string, unknown>;
 }
 
 /**

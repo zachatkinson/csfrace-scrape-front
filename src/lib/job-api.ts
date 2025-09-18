@@ -8,6 +8,9 @@ import type {
   SimpleJob as Job,
   SimpleJobListResponse as JobListResponse
 } from '../types/job';
+import { createContextLogger } from '../utils/logger';
+
+const logger = createContextLogger('JobAPI');
 
 class JobAPI {
   private baseUrl: string;
@@ -42,7 +45,7 @@ class JobAPI {
 
       return await response.json();
     } catch (error) {
-      console.error(`Failed to fetch ${endpoint}:`, error);
+      logger.error('API request failed', { endpoint, error });
       throw error;
     }
   }
@@ -57,7 +60,7 @@ class JobAPI {
       );
       return response.jobs;
     } catch (error) {
-      console.error('Failed to fetch recent jobs:', error);
+      logger.error('Failed to fetch recent jobs', { error });
       // Return empty array on error to prevent UI breaking
       return [];
     }
@@ -70,7 +73,7 @@ class JobAPI {
     try {
       return await this.request<Job>(`/jobs/${jobId}`);
     } catch (error) {
-      console.error(`Failed to fetch job ${jobId}:`, error);
+      logger.error('Failed to fetch job', { jobId, error });
       return null;
     }
   }
@@ -84,7 +87,7 @@ class JobAPI {
         method: 'POST',
       });
     } catch (error) {
-      console.error(`Failed to retry job ${jobId}:`, error);
+      logger.error('Failed to retry job', { jobId, error });
       return null;
     }
   }
@@ -98,7 +101,7 @@ class JobAPI {
         method: 'POST',
       });
     } catch (error) {
-      console.error(`Failed to cancel job ${jobId}:`, error);
+      logger.error('Failed to cancel job', { jobId, error });
       return null;
     }
   }
@@ -116,7 +119,7 @@ class JobAPI {
         }),
       });
     } catch (error) {
-      console.error('Failed to create job:', error);
+      logger.error('Failed to create job', { error });
       return null;
     }
   }
@@ -134,7 +137,7 @@ class JobAPI {
         }),
       });
     } catch (error) {
-      console.error('Failed to create batch:', error);
+      logger.error('Failed to create batch', { error });
       return null;
     }
   }
@@ -146,7 +149,7 @@ class JobAPI {
     try {
       return await this.request<{ status: string; version: string }>('/health');
     } catch (error) {
-      console.error('Health check failed:', error);
+      logger.error('Health check failed', { error });
       return null;
     }
   }

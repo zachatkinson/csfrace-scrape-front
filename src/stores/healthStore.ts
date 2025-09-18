@@ -12,6 +12,9 @@
 
 import { atom, map, computed } from 'nanostores';
 import type { IServiceResult } from '../utils/serviceCheckers.ts';
+import { createContextLogger } from '../utils/logger';
+
+const logger = createContextLogger('HealthStore');
 
 // =============================================================================
 // TYPE DEFINITIONS
@@ -160,7 +163,7 @@ export function updateHealthData(data: {
   overallStatus: IOverallStatus;
   metadata: IHealthMetadata;
 }): void {
-  console.log('🏪 HealthStore: Updating health data', data);
+  logger.debug('Updating health data', { data });
 
   // Update the main health data store
   $healthData.set(data);
@@ -173,9 +176,9 @@ export function updateHealthData(data: {
 
   if (hasRealServiceData && data.metadata.timestamp > 0) {
     $lastHealthTimestamp.set(new Date(data.metadata.timestamp));
-    console.log('🏪 HealthStore: Updated timestamp with real service data:', new Date(data.metadata.timestamp));
+    logger.debug('Updated timestamp with real service data', { timestamp: new Date(data.metadata.timestamp) });
   } else {
-    console.log('🏪 HealthStore: No real service data yet, keeping timestamp as null');
+    logger.debug('No real service data yet, keeping timestamp as null');
   }
 }
 
@@ -189,7 +192,7 @@ export function updateFormattedTimestamp(formatted: string): void {
     ...currentData.metadata,
     lastUpdateFormatted: formatted
   });
-  console.log('🏪 HealthStore: Updated formatted timestamp only:', formatted);
+  logger.debug('Updated formatted timestamp only', { formatted });
 }
 
 /**
@@ -198,7 +201,7 @@ export function updateFormattedTimestamp(formatted: string): void {
  */
 export function markHealthInitialized(): void {
   $healthInitialized.set(true);
-  console.log('🏪 HealthStore: Marked health monitoring as initialized');
+  logger.debug('Marked health monitoring as initialized');
 }
 
 /**
@@ -227,7 +230,7 @@ export function resetHealthState(): void {
       lastUpdateFormatted: 'Never'
     }
   });
-  console.log('🏪 HealthStore: Reset health state to initial values');
+  logger.debug('Reset health state to initial values');
 }
 
 // =============================================================================
@@ -278,7 +281,7 @@ export function migrateFromWindowGlobals(): void {
   const windowHealthState = (window as any).__healthStatusState;
 
   if (windowHealthData) {
-    console.log('🔄 HealthStore: Migrating from window global data');
+    logger.info('Migrating from window global data');
     updateHealthData(windowHealthData);
 
     // Clean up window globals
@@ -286,7 +289,7 @@ export function migrateFromWindowGlobals(): void {
   }
 
   if (windowHealthState) {
-    console.log('🔄 HealthStore: Migrating timestamp state from window globals');
+    logger.info('Migrating timestamp state from window globals');
     if (windowHealthState.lastHealthTimestamp) {
       $lastHealthTimestamp.set(new Date(windowHealthState.lastHealthTimestamp));
     }

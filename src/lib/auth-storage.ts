@@ -6,6 +6,9 @@
 import { AUTH_STORAGE_KEYS } from '../types/auth.ts';
 import type { User, AuthTokens } from '../types/auth.ts';
 import { SecureStorage } from '../utils/security.ts';
+import { createContextLogger } from '../utils/logger';
+
+const logger = createContextLogger('AuthStorage');
 
 class AuthStorage {
   private readonly isClient = typeof window !== 'undefined';
@@ -78,7 +81,7 @@ class AuthStorage {
       const userData = sessionStorage.getItem(AUTH_STORAGE_KEYS.USER);
       return userData ? JSON.parse(userData) : null;
     } catch (error) {
-      console.error('Failed to parse user data from storage:', error);
+      logger.error('Failed to parse user data from storage', { error });
       this.clearUser();
       return null;
     }
@@ -112,7 +115,7 @@ class AuthStorage {
       const oauthData = sessionStorage.getItem(AUTH_STORAGE_KEYS.OAUTH_STATE);
       return oauthData ? JSON.parse(oauthData) : null;
     } catch (error) {
-      console.error('Failed to parse OAuth state from storage:', error);
+      logger.error('Failed to parse OAuth state from storage', { error });
       this.clearOAuthState();
       return null;
     }

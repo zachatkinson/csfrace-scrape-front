@@ -4,6 +4,10 @@
  * ZERO TOLERANCE for hardcoded URLs - All API endpoints must use these constants
  */
 
+import { createContextLogger } from '../utils/logger';
+
+const logger = createContextLogger('APIConfig');
+
 // =============================================================================
 // SOLID/DRY API CONFIGURATION
 // =============================================================================
@@ -42,35 +46,35 @@ function getEnvironmentAwareApiUrl(): string {
   if (typeof window === 'undefined') {
     const serverApiUrl = import.meta.env.SERVER_API_BASE_URL;
     if (serverApiUrl) {
-      console.log('🐳 Server-side: Using SERVER_API_BASE_URL:', serverApiUrl);
+      logger.info('Server-side API URL selected', { source: 'SERVER_API_BASE_URL', url: serverApiUrl });
       return serverApiUrl;
     }
   }
-  
+
   // Client-side (browser) - use public API URL
   const publicApiUrl = import.meta.env.PUBLIC_API_BASE_URL;
   if (publicApiUrl) {
-    console.log('🔧 Browser-side: Using PUBLIC_API_BASE_URL:', publicApiUrl);
+    logger.info('Browser-side API URL selected', { source: 'PUBLIC_API_BASE_URL', url: publicApiUrl });
     return publicApiUrl;
   }
-  
+
   // Legacy support for Docker compose environment variables
   const viteApiUrl = import.meta.env.VITE_API_URL as string | undefined;
   const viteServerApiUrl = import.meta.env.VITE_SERVER_API_URL as string | undefined;
-  
+
   if (typeof window === 'undefined' && viteServerApiUrl) {
-    console.log('🐳 Legacy: Using VITE_SERVER_API_URL:', viteServerApiUrl);
+    logger.info('Legacy server API URL selected', { source: 'VITE_SERVER_API_URL', url: viteServerApiUrl });
     return viteServerApiUrl;
   }
-  
+
   if (viteApiUrl) {
-    console.log('🔧 Legacy: Using VITE_API_URL:', viteApiUrl);
+    logger.info('Legacy client API URL selected', { source: 'VITE_API_URL', url: viteApiUrl });
     return viteApiUrl;
   }
-  
+
   // Default fallback (DRY: from environment or sensible default)
   const defaultUrl = import.meta.env.PUBLIC_API_BASE_URL || 'http://localhost:8000';
-  console.log(`🔧 Using default API URL: ${defaultUrl}`);
+  logger.info('Default API URL selected', { url: defaultUrl });
   return defaultUrl;
 }
 

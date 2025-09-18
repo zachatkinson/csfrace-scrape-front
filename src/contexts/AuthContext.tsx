@@ -13,6 +13,7 @@ import React, {
   useCallback
 } from 'react';
 import { getApiBaseUrl } from '../constants/api.ts';
+import { createContextLogger } from '../utils/logger';
 import type {
   User,
   UserProfile,
@@ -20,6 +21,8 @@ import type {
   LoginCredentials,
   RegisterData
 } from '../types/auth.ts';
+
+const logger = createContextLogger('AuthContext');
 
 // DRY/SOLID: Use centralized API base URL
 const getApiBase = () => getApiBaseUrl();
@@ -176,7 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const providers = await apiRequest('/auth/oauth/providers');
           setState(prev => ({ ...prev, oauthProviders: providers }));
         } catch (error) {
-          console.error('Failed to load OAuth providers:', error);
+          logger.error('Failed to load OAuth providers', { error });
         }
 
       } catch (error) {
@@ -277,7 +280,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
       }
     } catch (error) {
-      console.error('Logout API call failed:', error);
+      logger.error('Logout API call failed', { error });
     } finally {
       clearStorage();
       setState(prev => ({
@@ -421,7 +424,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       saveTokens(newTokens);
       setState(prev => ({ ...prev, tokens: newTokens }));
     } catch (error) {
-      console.error('Token refresh failed:', error);
+      logger.error('Token refresh failed', { error });
       logout();
     }
   }, [state.tokens, logout]);
@@ -497,7 +500,7 @@ export function useUserProfile() {
   
   const updateProfile = async (_profileData: Partial<UserProfile>) => {
     // TODO: Implement profile update call to Docker backend
-    console.warn('Profile update not implemented yet');
+    logger.warn('Profile update not implemented yet');
     throw new Error('Profile update functionality not implemented');
   };
   

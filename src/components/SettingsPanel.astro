@@ -534,6 +534,57 @@ const settingsContentId = `settings-content-${Math.random().toString(36).substri
 
 <!-- Astro Islands script for client-side functionality (Astro MCP best practice) -->
 <script>
+  import { createContextLogger } from '../utils/logger';
+
+  // Create logger instance for this component
+  const logger = createContextLogger('SettingsPanel');
+
+  // Settings interfaces following SOLID Interface Segregation Principle
+  interface ApiSettings {
+    url: string;
+    timeout: string;
+    refreshInterval: string;
+  }
+
+  interface JobSettings {
+    defaultPriority: string;
+    maxRetries: string;
+    timeout: string;
+    maxConcurrentJobs: string;
+    queueBatchSize: string;
+    autoRetryFailed: boolean;
+  }
+
+  interface DisplaySettings {
+    darkMode: boolean;
+    showJobIds: boolean;
+    compactMode: boolean;
+    jobsPerPage: string;
+    timezone: string;
+  }
+
+  interface NotificationSettings {
+    completionAlerts: boolean;
+    errorNotifications: boolean;
+    browserNotifications: boolean;
+    sound: string;
+    duration: string;
+  }
+
+  interface AppSettings {
+    api?: ApiSettings;
+    jobs?: JobSettings;
+    display?: DisplaySettings;
+    notifications?: NotificationSettings;
+  }
+
+  // Extend Window interface for debugging access
+  declare global {
+    interface Window {
+      settingsPanel?: SettingsPanelManager;
+    }
+  }
+
   // Settings panel management class - Astro MCP best practice
   class SettingsPanelManager {
     private panelId: string | undefined;
@@ -557,7 +608,7 @@ const settingsContentId = `settings-content-${Math.random().toString(36).substri
       this.setupEventListeners();
 
       this.isInitialized = true;
-      console.log('⚙️ SettingsPanel: Initialized following Astro MCP best practices');
+      logger.info('Initialized following Astro MCP best practices');
     }
 
     setupEventListeners() {
@@ -633,16 +684,19 @@ const settingsContentId = `settings-content-${Math.random().toString(36).substri
 
       // Update tab content visibility - scope to modal container
       const tabContents = this.modal?.querySelectorAll('.tab-content') || [];
-      console.log('Found tabs:', tabContents.length);
+      logger.debug('Tab switching initiated', { tabCount: tabContents.length });
 
       tabContents.forEach(content => {
         const htmlContent = content as HTMLElement;
         const isActive = htmlContent.dataset.tab === tabId;
         htmlContent.style.display = isActive ? 'block' : 'none';
-        console.log(`Tab ${htmlContent.dataset.tab}: ${isActive ? 'visible' : 'hidden'}`);
+        logger.debug('Tab visibility updated', {
+          tab: htmlContent.dataset.tab,
+          visible: isActive
+        });
       });
 
-      console.log(`⚙️ SettingsPanel: Switched to ${tabId} tab`);
+      logger.info('Tab switched successfully', { tabId });
     }
 
     isOpen() {
@@ -732,7 +786,7 @@ const settingsContentId = `settings-content-${Math.random().toString(36).substri
       if (notificationSound) notificationSound.value = 'default';
       if (notificationDuration) notificationDuration.value = '5';
 
-      console.log('⚙️ SettingsPanel: All settings reset to defaults');
+      logger.info('All settings reset to defaults');
     }
 
     async saveSettings() {
@@ -786,7 +840,7 @@ const settingsContentId = `settings-content-${Math.random().toString(36).substri
         });
 
         if (response.ok) {
-          console.log('⚙️ SettingsPanel: Settings saved successfully to Docker backend:', settings);
+          logger.info('Settings saved successfully to Docker backend', { settings });
 
           // Also save to localStorage as backup/cache
           localStorage.setItem('app_settings', JSON.stringify(settings));
@@ -807,7 +861,7 @@ const settingsContentId = `settings-content-${Math.random().toString(36).substri
           throw new Error(`Server responded with ${response.status}`);
         }
       } catch (error) {
-        console.error('⚙️ SettingsPanel: Failed to save to backend, saving locally only:', error);
+        logger.error('Failed to save to backend, saving locally only', { error });
 
         // Fallback to localStorage only
         localStorage.setItem('app_settings', JSON.stringify(settings));
@@ -834,17 +888,17 @@ const settingsContentId = `settings-content-${Math.random().toString(36).substri
         if (stored) {
           const settings = JSON.parse(stored);
           this.populateForm(settings);
-          console.log('⚙️ SettingsPanel: Settings loaded from localStorage:', settings);
+          logger.info('Settings loaded from localStorage', { settings });
         }
 
         // TODO: Also try to load from Docker backend for latest settings
         // fetch('http://localhost:8000/api/user/settings').then(...)
       } catch (error) {
-        console.error('⚙️ SettingsPanel: Error loading settings:', error);
+        logger.error('Error loading settings', { error });
       }
     }
 
-    populateForm(settings: any) {
+    populateForm(settings: AppSettings): void {
       // API Configuration
       if (settings.api) {
         const apiUrl = document.getElementById('api-url') as HTMLInputElement;
@@ -910,6 +964,6 @@ const settingsContentId = `settings-content-${Math.random().toString(36).substri
 
   // Expose for debugging (Astro MCP best practice)
   if (typeof window !== 'undefined') {
-    (window as any).settingsPanel = settingsPanel;
+    window.settingsPanel = settingsPanel;
   }
 </script>

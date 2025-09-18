@@ -4,6 +4,9 @@
 // =============================================================================
 
 import { getApiBaseUrl } from '../constants/api.ts';
+import { createContextLogger } from './logger';
+
+const logger = createContextLogger('ServiceCheckers');
 
 // =============================================================================
 // MODERN 2025 POLLING CONFIGURATION - ADAPTIVE & EFFICIENT
@@ -58,7 +61,7 @@ export type ServiceStatus = 'up' | 'degraded' | 'down' | 'error';
 export interface IServiceResult {
   status: ServiceStatus;
   message: string;
-  metrics: { responseTime?: number; [key: string]: any };
+  metrics: { responseTime?: number; [key: string]: unknown };
   error?: string;
   timestamp: number;
 }
@@ -216,21 +219,20 @@ export class EnvironmentDetector {
 export class PerformanceMetrics {
   static getPageLoadTime(): number {
     if (EnvironmentDetector.isServerSide()) return 0;
-    
-    // Use modern Navigation Timing API instead of deprecated performance.timing
+
+    // Use modern Navigation Timing API Level 2
     if ('performance' in window && 'getEntriesByType' in performance) {
       const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-      if (navigation) {
+      if (navigation && navigation.loadEventEnd > 0) {
         return navigation.loadEventEnd - navigation.fetchStart;
       }
     }
-    
-    // Fallback for older browsers
-    if ('performance' in window && (performance as any).timing) {
-      const timing = (performance as any).timing;
-      return timing.loadEventEnd - timing.navigationStart;
+
+    // Alternative modern approach using performance.now() from page start
+    if ('performance' in window && 'now' in performance) {
+      return performance.now();
     }
-    
+
     return 0;
   }
 
@@ -238,11 +240,17 @@ export class PerformanceMetrics {
     if (EnvironmentDetector.isServerSide()) return 'Server-side';
 
     // Use performance.memory API if available (Chrome, Edge)
-    if ('memory' in performance && (performance as any).memory) {
-      const memory = (performance as any).memory;
+    interface PerformanceMemory {
+      usedJSHeapSize: number;
+      totalJSHeapSize: number;
+      jsHeapSizeLimit: number;
+    }
+
+    if ('memory' in performance) {
+      const memory = (performance as unknown as { memory: PerformanceMemory }).memory;
       const usedJSHeapSize = memory.usedJSHeapSize;
       const totalJSHeapSize = memory.totalJSHeapSize;
-      const jsHeapSizeLimit = memory.tsHeapSizeLimit;
+      const jsHeapSizeLimit = memory.jsHeapSizeLimit;
       
       // Convert bytes to MB for readability
       const usedMB = Math.round(usedJSHeapSize / 1024 / 1024 * 100) / 100;
@@ -253,8 +261,12 @@ export class PerformanceMetrics {
     }
     
     // Fallback: Use navigator.deviceMemory if available
-    if ('deviceMemory' in navigator && (navigator as any).deviceMemory) {
-      const deviceMemory = (navigator as any).deviceMemory;
+    interface NavigatorWithDeviceMemory extends Navigator {
+      deviceMemory?: number;
+    }
+
+    if ('deviceMemory' in navigator) {
+      const deviceMemory = (navigator as NavigatorWithDeviceMemory).deviceMemory;
       return `Device: ${deviceMemory}GB RAM`;
     }
     
@@ -389,7 +401,13 @@ export class FrameworkDetector {
     );
 
     // Check for React in global scope
-    const hasReactGlobal = !!(window as any).React || !!(window as any).__REACT_DEVTOOLS_GLOBAL_HOOK__;
+    interface WindowWithReact extends Window {
+      React?: unknown;
+      __REACT_DEVTOOLS_GLOBAL_HOOK__?: unknown;
+    }
+
+    const windowWithReact = window as WindowWithReact;
+    const hasReactGlobal = !!windowWithReact.React || !!windowWithReact.__REACT_DEVTOOLS_GLOBAL_HOOK__;
 
     return hasReact || hasReactGlobal;
   }
@@ -404,12 +422,20 @@ export class FrameworkDetector {
     if (EnvironmentDetector.isServerSide()) return false;
 
     // Check for Vite HMR (Astro uses Vite)
-    if (!!(window as any).hot || !!(window as any).__vite__) {
+    interface WindowWithHMR extends Window {
+      hot?: unknown;
+      __vite__?: unknown;
+      __ASTRO_HMR_CLIENT__?: unknown;
+    }
+
+    const windowWithHMR = window as WindowWithHMR;
+
+    if (!!windowWithHMR.hot || !!windowWithHMR.__vite__) {
       return true;
     }
 
     // Check for Astro HMR
-    if ((window as any).__ASTRO_HMR_CLIENT__) {
+    if (windowWithHMR.__ASTRO_HMR_CLIENT__) {
       return true;
     }
 
@@ -426,7 +452,11 @@ export class FrameworkDetector {
     try {
       return !!Array.from(document.styleSheets).some(sheet => {
         try {
-          const rules = sheet.cssRules || (sheet as any).rules; // Legacy support
+          interface StyleSheetWithLegacyRules {
+            rules?: CSSRuleList;
+          }
+
+          const rules = sheet.cssRules || (sheet as unknown as StyleSheetWithLegacyRules).rules; // Legacy support
           if (!rules) return false;
           
           return Array.from(rules).some(rule => {
@@ -469,7 +499,7 @@ export class StatusMapper {
     }
   }
 
-  static mapCacheStatus(cacheStatus: string | undefined, cacheData: any): ServiceStatus {
+  static mapCacheStatus(cacheStatus: string | undefined, cacheData: unknown): ServiceStatus {
     if (!cacheData || cacheStatus === 'not_configured') {
       return 'down';
     } else if (cacheStatus === 'healthy') {
@@ -516,8 +546,16 @@ export class AdaptivePollingManager {
     });
 
     // Battery API for power-aware polling
+    interface NavigatorWithBattery extends Navigator {
+      getBattery?: () => Promise<{
+        level: number;
+        addEventListener: (event: string, handler: () => void) => void;
+      }>;
+    }
+
     if ('getBattery' in navigator) {
-      (navigator as any).getBattery().then((battery: any) => {
+      const navWithBattery = navigator as NavigatorWithBattery;
+      navWithBattery.getBattery?.().then((battery) => {
         this.batteryLevel = battery.level;
         battery.addEventListener('levelchange', () => {
           this.batteryLevel = battery.level;
@@ -526,12 +564,22 @@ export class AdaptivePollingManager {
     }
 
     // Network Information API for adaptive timeouts
+    interface NavigatorWithConnection extends Navigator {
+      connection?: {
+        effectiveType: string;
+        addEventListener: (event: string, handler: () => void) => void;
+      };
+    }
+
     if ('connection' in navigator) {
-      const connection = (navigator as any).connection;
-      this.updateNetworkQuality(connection.effectiveType);
-      connection.addEventListener('change', () => {
+      const navWithConnection = navigator as NavigatorWithConnection;
+      const connection = navWithConnection.connection;
+      if (connection) {
         this.updateNetworkQuality(connection.effectiveType);
-      });
+        connection.addEventListener('change', () => {
+          this.updateNetworkQuality(connection.effectiveType);
+        });
+      }
     }
   }
 
@@ -672,7 +720,7 @@ export class BackendServiceChecker {
       
       if (response.ok) {
         const data = await response.json();
-        console.log('🔍 Raw backend health response:', data); // DEBUG
+        logger.debug('Raw backend health response', { data });
         const status = StatusMapper.mapBackendStatus(data.status);
         
         return {
@@ -690,8 +738,8 @@ export class BackendServiceChecker {
   }
 
   // SOLID: Single Responsibility - Metric processing
-  private static buildMetrics(data: any, responseTime: number): Record<string, any> {
-    console.log('🔍 Building metrics from data:', {
+  private static buildMetrics(data: Record<string, unknown>, responseTime: number): Record<string, unknown> {
+    logger.debug('Building metrics from data', {
       uptime: data.uptime,
       memory: data.memory,
       cpu: data.cpu,
@@ -699,11 +747,13 @@ export class BackendServiceChecker {
       // Check for alternative field names
       system_info: data.system_info,
       metrics: data.metrics
-    }); // DEBUG
-    
-    // Handle different possible response structures
-    const systemInfo = data.system_info || data.metrics || {};
-    
+    });
+
+    // Handle different possible response structures with proper type guards
+    const systemInfo = (data.system_info as Record<string, unknown>) || (data.metrics as Record<string, unknown>) || {};
+    const database = (data.database as Record<string, unknown>) || {};
+    const cache = (data.cache as Record<string, unknown>) || {};
+
     const result = {
       responseTime,
       // Try multiple possible field names for system metrics
@@ -711,13 +761,13 @@ export class BackendServiceChecker {
       memory: this.formatMemory(data.memory || systemInfo.memory || systemInfo.memory_usage || systemInfo.memory_used),
       cpu: this.formatCpu(data.cpu || systemInfo.cpu || systemInfo.cpu_percent || systemInfo.cpu_usage),
       version: data.version || systemInfo.version || this.getDefaultVersion(),
-      database: data.database?.status || 'Unknown',
-      cache: data.cache?.status || 'Unknown',
+      database: database.status || 'Unknown',
+      cache: cache.status || 'Unknown',
       // Enhanced metrics for monitoring
       monitoring: this.extractMonitoringInfo(data)
     };
-    
-    console.log('🔍 Formatted metrics result:', result); // DEBUG
+
+    logger.debug('Formatted metrics result', { result });
     return result;
   }
 
@@ -734,7 +784,7 @@ export class BackendServiceChecker {
   }
 
   // DRY: Reusable formatting methods
-  private static formatUptime(uptime: any): string {
+  private static formatUptime(uptime: unknown): string {
     if (!uptime) return this.getDefaultUptime(); // Use build-time fallback
     if (typeof uptime === 'number') {
       // Convert seconds to human readable
@@ -745,7 +795,7 @@ export class BackendServiceChecker {
     return String(uptime);
   }
 
-  private static formatMemory(memory: any): string {
+  private static formatMemory(memory: unknown): string {
     if (!memory) return 'Offline'; // Better indicator when backend is down
     if (typeof memory === 'number') {
       // Convert bytes to MB
@@ -754,7 +804,7 @@ export class BackendServiceChecker {
     return String(memory);
   }
 
-  private static formatCpu(cpu: any): string {
+  private static formatCpu(cpu: unknown): string {
     if (!cpu) return 'Offline'; // Better indicator when backend is down
     if (typeof cpu === 'number') {
       return `${Math.round(cpu)}%`;
@@ -763,11 +813,11 @@ export class BackendServiceChecker {
   }
 
   // SOLID: Open/Closed - Extensible for new monitoring types
-  private static extractMonitoringInfo(data: any): Record<string, any> {
-    const monitoring = data.monitoring || {};
+  private static extractMonitoringInfo(data: Record<string, unknown>): Record<string, unknown> {
+    const monitoring = (data.monitoring as Record<string, unknown>) || {};
     return {
       metricsCollector: monitoring.metricsCollector || 'unknown',
-      healthChecker: monitoring.healthChecker || 'unknown', 
+      healthChecker: monitoring.healthChecker || 'unknown',
       alertManager: monitoring.alertManager || 'unknown',
       performanceMonitor: monitoring.performanceMonitor || 'unknown',
       observabilityManager: monitoring.observabilityManager || 'unknown'
@@ -997,7 +1047,7 @@ export class FrontendServiceChecker {
     };
   }
 
-  private static getRuntimeMetrics(): Record<string, any> {
+  private static getRuntimeMetrics(): Record<string, unknown> {
     // Use shared utilities following DRY principle
     if (EnvironmentDetector.isServerSide()) {
       return {

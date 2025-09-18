@@ -4,6 +4,9 @@
  */
 
 import { domUtils, waitForDOM } from '../utils/dom.utils.js';
+import { createContextLogger } from '../../../utils/logger.js';
+
+const logger = createContextLogger('BatchActionsManager');
 
 // =============================================================================
 // BATCH ACTIONS MANAGER CLASS (Single Responsibility Principle)
@@ -32,9 +35,9 @@ class BatchActionsManager {
       this.setupEventListeners();
       this.loadInitialState();
       this.isInitialized = true;
-      console.log('🎯 BatchActionsManager: Initialized successfully');
+      logger.info('Initialized successfully');
     } catch (error) {
-      console.error('❌ BatchActionsManager: Initialization failed:', error);
+      logger.error('Initialization failed', { error });
     }
   }
 
@@ -46,7 +49,7 @@ class BatchActionsManager {
       throw new Error('Batch action buttons not found');
     }
 
-    console.log('🔍 BatchActionsManager: Batch action buttons found');
+    logger.debug('Batch action buttons found');
   }
 
   // =========================================================================
@@ -147,12 +150,12 @@ class BatchActionsManager {
 
   selectJob(jobId) {
     this.selectedJobs.add(jobId);
-    console.log(`✅ BatchActionsManager: Selected job ${jobId}`);
+    logger.debug('Selected job', { jobId });
   }
 
   deselectJob(jobId) {
     this.selectedJobs.delete(jobId);
-    console.log(`❌ BatchActionsManager: Deselected job ${jobId}`);
+    logger.debug('Deselected job', { jobId });
   }
 
   selectAllJobs() {
@@ -167,7 +170,7 @@ class BatchActionsManager {
 
     this.updateUI();
     this.broadcastSelectionChange();
-    console.log(`✅ BatchActionsManager: Selected all ${this.selectedJobs.size} jobs`);
+    logger.info('Selected all jobs', { count: this.selectedJobs.size });
   }
 
   deselectAllJobs() {
@@ -183,7 +186,7 @@ class BatchActionsManager {
     this.selectedJobs.clear();
     this.updateUI();
     this.broadcastSelectionChange();
-    console.log('❌ BatchActionsManager: Deselected all jobs');
+    logger.info('Deselected all jobs');
   }
 
   syncSelectionWithJobIds(jobIds) {
@@ -238,9 +241,9 @@ class BatchActionsManager {
       this.updateUI();
       this.broadcastSelectionChange();
 
-      console.log(`🗑️ BatchActionsManager: Deleted ${jobIds.length} jobs`);
+      logger.info('Deleted jobs', { count: jobIds.length });
     } catch (error) {
-      console.error('❌ BatchActionsManager: Delete failed:', error);
+      logger.error('Delete failed', { error, jobIds });
     } finally {
       this.setLoadingState(false);
     }
@@ -367,9 +370,7 @@ class BatchActionsManager {
     // Validate selectedJobs parameter for consistency but trust our internal state
     if (typeof selectedJobs === 'number' && selectedJobs !== this.selectedJobs.size) {
       // Log mismatch for debugging
-      import('../../utils/logger.js').then(({ uiLogger }) => {
-        uiLogger.warn('Selected jobs count mismatch', { expected: selectedJobs, actual: this.selectedJobs.size });
-      });
+      logger.warn('Selected jobs count mismatch', { expected: selectedJobs, actual: this.selectedJobs.size });
     }
     this.updateUI();
   }
@@ -406,7 +407,7 @@ class BatchActionsManager {
 // Create global singleton instance
 if (!window.__batchActionsManager) {
   window.__batchActionsManager = new BatchActionsManager();
-  console.log('🚀 BatchActionsManager: Singleton created');
+  logger.debug('Singleton created');
 }
 
 export default window.__batchActionsManager;

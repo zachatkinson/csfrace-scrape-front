@@ -8,6 +8,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import type { IJobData, JobFilter, JobSort } from '../../types/job.ts';
 import * as jobUtils from '../../utils/dashboard/jobUtils.ts';
+import { createContextLogger } from '../../utils/logger';
 
 // Focused hooks following SRP
 import { useJobData } from './hooks/useJobData.ts';
@@ -15,6 +16,8 @@ import { useJobActions } from './hooks/useJobActions.ts';
 import { useConnectionStatus } from './hooks/useConnectionStatus.ts';
 import { useJobSelection } from './hooks/useJobSelection.ts';
 import { useAutoRefresh } from './hooks/useAutoRefresh.ts';
+
+const logger = createContextLogger('DashboardManager');
 
 interface DashboardManagerProps {
   initialJobs?: IJobData[];
@@ -52,7 +55,7 @@ const DashboardManager: React.FC<DashboardManagerProps> = ({
 
   // Connection status monitoring - memoize callback to prevent re-renders
   const onStatusChange = useCallback((status: string) => {
-    console.log('Connection status changed:', status);
+    logger.info('Connection status changed', { status });
   }, []);
   
   const connectionStatusOptions = useMemo(() => ({
@@ -153,7 +156,7 @@ const DashboardManager: React.FC<DashboardManagerProps> = ({
         await jobActions.downloadJob(jobId, jobData.jobs);
         break;
       default:
-        console.warn('Unknown job action:', action);
+        logger.warn('Unknown job action', { action });
     }
   }, [jobActions, jobData.jobs]);
 

@@ -14,8 +14,8 @@ const serviceResult = await CacheServiceChecker.checkHealth();
 
 // Cache-specific metrics for display
 const details = [
-  { label: 'Memory Used', value: serviceResult.metrics.memoryUsed || 'Unknown', key: 'memoryUsed' },
-  { label: 'Hit Rate', value: serviceResult.metrics.hitRate || 'Unknown', key: 'hitRate' }
+  { label: 'Memory Used', value: String(serviceResult.metrics.memoryUsed || 'Unknown'), key: 'memoryUsed' },
+  { label: 'Hit Rate', value: String(serviceResult.metrics.hitRate || 'Unknown'), key: 'hitRate' }
 ];
 ---
 

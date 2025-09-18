@@ -9,11 +9,14 @@
  * - Session data: Encrypted localStorage
  */
 
-import { 
-  secureTokenStorage, 
-  TokenType, 
-  TokenMigrationService 
+import {
+  secureTokenStorage,
+  TokenType,
+  TokenMigrationService
 } from './secure-token-storage';
+import { createContextLogger } from './logger';
+
+const logger = createContextLogger('AuthTokens');
 
 // =============================================================================
 // TOKEN INTERFACES
@@ -72,7 +75,7 @@ export function parseJWT(token: string): TokenPayload | null {
     
     return JSON.parse(decoded) as TokenPayload;
   } catch (error) {
-    console.warn('Failed to parse JWT token:', error);
+    logger.warn('Failed to parse JWT token', { error });
     return null;
   }
 }
@@ -165,7 +168,7 @@ export function storeTokens(accessToken: string, refreshToken?: string): void {
       secureTokenStorage.storeToken(TokenType.SESSION_DATA, JSON.stringify(sessionData));
     }
   } catch (error) {
-    console.error('Failed to store tokens securely:', error);
+    logger.error('Failed to store tokens securely', { error });
     throw new Error('Token storage failed - check encryption configuration');
   }
 }
@@ -178,7 +181,7 @@ export function getStoredAccessToken(): string | null {
   try {
     return secureTokenStorage.getToken(TokenType.ACCESS_TOKEN);
   } catch (error) {
-    console.error('Failed to retrieve access token:', error);
+    logger.error('Failed to retrieve access token', { error });
     return null;
   }
 }
@@ -205,7 +208,7 @@ export function getSessionData(): { expiresAt: string; issuedAt: string; tokenTy
     
     return JSON.parse(sessionDataStr);
   } catch (error) {
-    console.error('Failed to retrieve session data:', error);
+    logger.error('Failed to retrieve session data', { error });
     return null;
   }
 }
@@ -222,7 +225,7 @@ export function clearStoredTokens(): void {
     // Clear any remaining legacy tokens
     TokenMigrationService.clearLegacyTokens();
   } catch (error) {
-    console.error('Failed to clear tokens:', error);
+    logger.error('Failed to clear tokens', { error });
   }
 }
 
@@ -374,7 +377,7 @@ export class TokenMonitor {
         try {
           callback(this.token, secondsUntilExpiry);
         } catch (error) {
-          console.error('Error in token expiry callback:', error);
+          logger.error('Error in token expiry callback', { error });
         }
       });
       

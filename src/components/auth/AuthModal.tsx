@@ -6,12 +6,16 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { createContextLogger } from '../../utils/logger';
 
 export interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
 }
+
+// Create logger instance for this component
+const logger = createContextLogger('AuthModal');
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
@@ -39,7 +43,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     try {
       // TODO: Implement OAuth login with backend
-      console.log(`OAuth login with ${provider}`);
+      logger.info('OAuth login initiated', { provider });
       onSuccess?.();
       onClose();
     } catch (err) {
@@ -55,7 +59,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     try {
       // TODO: Implement passkey authentication
-      console.log('Passkey authentication');
+      logger.info('Passkey authentication initiated');
       onSuccess?.();
       onClose();
     } catch (err) {

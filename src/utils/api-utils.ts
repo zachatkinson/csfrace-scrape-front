@@ -5,6 +5,10 @@
  * DRY: Single source of truth for API response handling
  */
 
+import { createContextLogger } from './logger';
+
+const logger = createContextLogger('APIUtils');
+
 /**
  * Generic HTTP response handler with proper error handling
  * Follows SOLID principles by having a single responsibility
@@ -454,7 +458,7 @@ export function formatErrorMessage(error: unknown, context?: string): string {
  */
 export function logError(error: unknown, context?: string): void {
   const appError = createAppError(error);
-  console.error(`[${context || 'Error'}]`, {
+  logger.error(context || 'Error occurred', {
     message: appError.message,
     code: appError.code,
     cause: appError.cause

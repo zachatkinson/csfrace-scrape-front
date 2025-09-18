@@ -69,7 +69,7 @@ async function exampleHealthCheck() {
         responseTime
       };
     } else {
-      logger.error('Backend health check failed', undefined, {
+      logger.error('Backend health check failed', {
         status: response.status,
         statusText: response.statusText,
         responseTime
@@ -82,7 +82,7 @@ async function exampleHealthCheck() {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     const errorStack = error instanceof Error ? error.stack : undefined;
 
-    logger.error('Backend health check error', error as Error, {
+    logger.error('Backend health check error', {
       errorMessage,
       responseTime,
       stack: errorStack

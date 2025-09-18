@@ -5,6 +5,9 @@
 
 // No imports from filter.utils.js needed
 import { domUtils, waitForDOM, debounce } from '../utils/dom.utils.js';
+import { createContextLogger } from '../../../utils/logger.js';
+
+const logger = createContextLogger('SearchManager');
 
 // =============================================================================
 // SEARCH MANAGER CLASS (Single Responsibility Principle)
@@ -33,9 +36,9 @@ class SearchManager {
       this.setupEventListeners();
       this.loadInitialState();
       this.isInitialized = true;
-      console.log('🎯 SearchManager: Initialized successfully');
+      logger.info('Initialized successfully');
     } catch (error) {
-      console.error('❌ SearchManager: Initialization failed:', error);
+      logger.error('Initialization failed', { error });
     }
   }
 
@@ -50,7 +53,7 @@ class SearchManager {
       this.performSearch(query);
     }, this.debounceDelay);
 
-    console.log('🔍 SearchManager: Search input found and configured');
+    logger.debug('Search input found and configured');
   }
 
   // =========================================================================
@@ -147,7 +150,7 @@ class SearchManager {
   performSearch(query) {
     this.setSearchQuery(query);
     this.saveStateToUrl();
-    console.log(`🔍 SearchManager: Performing search for "${query}"`);
+    logger.debug('Performing search', { query });
   }
 
   performImmediateSearch(query) {
@@ -256,7 +259,7 @@ class SearchManager {
 // Create global singleton instance
 if (!window.__searchManager) {
   window.__searchManager = new SearchManager();
-  console.log('🚀 SearchManager: Singleton created');
+  logger.info('Singleton created');
 }
 
 export default window.__searchManager;

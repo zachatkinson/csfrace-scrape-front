@@ -7,6 +7,9 @@
 // Removed problematic astro:env/server import - use runtime environment
 const SERVER_API_BASE_URL = 'http://localhost:8000';
 import type { HealthResponse } from './HealthService';
+import { createContextLogger } from '../utils/logger';
+
+const logger = createContextLogger('WebSocketFallbackService');
 
 export type CriticalAlertType = 'system_down' | 'database_failed' | 'cache_failed' | 'severe_degradation';
 
@@ -60,12 +63,12 @@ export class WebSocketFallbackService {
     const shouldEnable = this.shouldEnableWebSocket(healthData);
 
     if (shouldEnable && !this.isEnabled) {
-      console.log('WebSocket fallback enabled for critical scenarios');
+      logger.info('WebSocket fallback enabled for critical scenarios');
       this.connect();
       this.isEnabled = true;
       return true;
     } else if (!shouldEnable && this.isEnabled) {
-      console.log('WebSocket fallback disabled - system stable');
+      logger.info('WebSocket fallback disabled - system stable');
       this.disconnect();
       this.isEnabled = false;
       return false;
@@ -169,11 +172,11 @@ export class WebSocketFallbackService {
    */
   private connect(): void {
     try {
-      console.log(`Connecting to WebSocket: ${this.config.url}`);
+      logger.info('Connecting to WebSocket', { url: this.config.url });
       this.websocket = new WebSocket(this.config.url);
 
       this.websocket.onopen = () => {
-        console.log('WebSocket connected for critical alerts');
+        logger.info('WebSocket connected for critical alerts');
         this.reconnectAttempts = 0;
         this.startHeartbeat();
         this.emitEvent('connection-status', { connected: true });
@@ -182,15 +185,15 @@ export class WebSocketFallbackService {
       this.websocket.onmessage = (event) => {
         try {
           const alert: CriticalAlert = JSON.parse(event.data);
-          console.warn('Critical alert received:', alert);
+          logger.warn('Critical alert received', { alert });
           this.emitEvent('critical-alert', alert);
         } catch (error) {
-          console.error('Failed to parse WebSocket message:', error);
+          logger.error('Failed to parse WebSocket message', { error });
         }
       };
 
       this.websocket.onclose = (event) => {
-        console.log('WebSocket closed:', event.code, event.reason);
+        logger.info('WebSocket closed', { code: event.code, reason: event.reason });
         this.stopHeartbeat();
         this.emitEvent('connection-status', { connected: false });
 
@@ -200,11 +203,11 @@ export class WebSocketFallbackService {
       };
 
       this.websocket.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        logger.error('WebSocket error', { error });
       };
 
     } catch (error) {
-      console.error('Failed to create WebSocket connection:', error);
+      logger.error('Failed to create WebSocket connection', { error });
       this.scheduleReconnect();
     }
   }
@@ -231,7 +234,7 @@ export class WebSocketFallbackService {
    */
   private scheduleReconnect(): void {
     if (this.reconnectAttempts >= this.config.maxReconnectAttempts) {
-      console.error('Max WebSocket reconnection attempts reached');
+      logger.error('Max WebSocket reconnection attempts reached');
       this.isEnabled = false;
       return;
     }
@@ -239,7 +242,7 @@ export class WebSocketFallbackService {
     this.reconnectAttempts++;
     const delay = this.config.reconnectDelay * Math.pow(2, Math.min(this.reconnectAttempts, 5)); // Exponential backoff
 
-    console.log(`Scheduling WebSocket reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`);
+    logger.info('Scheduling WebSocket reconnect', { delay, attempt: this.reconnectAttempts });
 
     this.reconnectTimer = window.setTimeout(() => {
       if (this.isEnabled) {
@@ -272,14 +275,14 @@ export class WebSocketFallbackService {
   /**
    * Emit event to registered listeners
    */
-  private emitEvent(event: string, data: any): void {
+  private emitEvent(event: string, data: unknown): void {
     const listeners = this.eventListeners.get(event);
     if (listeners) {
       listeners.forEach(callback => {
         try {
           callback(data);
         } catch (error) {
-          console.error(`Error in WebSocket event listener for ${event}:`, error);
+          logger.error('Error in WebSocket event listener', { event, error });
         }
       });
     }

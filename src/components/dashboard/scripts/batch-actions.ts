@@ -6,6 +6,9 @@
 import type { IBatchActionManager } from '../types/filter.types';
 import { EventUtils } from '../utils/filter.utils';
 import { domUtils, waitForDOM } from '../utils/dom.utils';
+import { createContextLogger } from '../../../utils/logger';
+
+const logger = createContextLogger('BatchActionManager');
 
 // =============================================================================
 // BATCH ACTION MANAGER CLASS (Single Responsibility Principle)
@@ -32,7 +35,7 @@ class BatchActionManager implements IBatchActionManager {
     this.attachEventListeners();
     this.updateButtonStates();
     
-    console.log('⚡ BatchActionManager: Initialized with batch operations');
+    logger.info('Initialized with batch operations');
   }
 
   private loadInitialState(): void {
@@ -64,7 +67,7 @@ class BatchActionManager implements IBatchActionManager {
     // For now, we emit an event for the parent component to handle
     this.emitBatchActionEvent('select-all');
     
-    console.log('⚡ BatchActionManager: Select all requested');
+    logger.debug('Select all requested');
   }
 
   selectNone(): void {
@@ -73,12 +76,12 @@ class BatchActionManager implements IBatchActionManager {
     this.updateComponentState();
     this.emitBatchActionEvent('select-none');
     
-    console.log('⚡ BatchActionManager: Deselected all jobs');
+    logger.debug('Deselected all jobs');
   }
 
   deleteSelected(): void {
     if (this.selectedJobs.size === 0) {
-      console.warn('BatchActionManager: No jobs selected for deletion');
+      logger.warn('No jobs selected for deletion');
       return;
     }
 
@@ -90,7 +93,7 @@ class BatchActionManager implements IBatchActionManager {
 
     if (confirmed) {
       this.emitBatchActionEvent('delete-selected');
-      console.log(`⚡ BatchActionManager: Deletion confirmed for ${selectedCount} jobs`);
+      logger.info('Deletion confirmed', { selectedCount });
     }
   }
 
@@ -281,7 +284,7 @@ class BatchActionManager implements IBatchActionManager {
     const event = EventUtils.createBatchActionEvent(action, Array.from(this.selectedJobs));
     EventUtils.dispatchEvent(event);
     
-    console.log('⚡ BatchActionManager: Batch action emitted', {
+    logger.debug('Batch action emitted', {
       action,
       selectedCount: this.selectedJobs.size,
       totalJobs: this.totalJobs

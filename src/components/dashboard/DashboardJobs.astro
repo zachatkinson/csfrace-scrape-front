@@ -13,7 +13,10 @@ import type { IJobData } from '../../types/job.ts';
 import { DASHBOARD_CONFIG } from './types/dashboard.types';
 import { getJobs } from '../../utils/dashboard/apiClient.ts';
 import { convertBackendJob, calculateJobStats } from '../../utils/dashboard/jobUtils.ts';
+import { createContextLogger } from '../../utils/logger';
 import JobCard from './JobCard.astro';
+
+const logger = createContextLogger('DashboardJobs');
 
 // =============================================================================
 // SERVER-SIDE DATA FETCHING (Server Island Pattern)
@@ -31,7 +34,7 @@ let stats: IDashboardStats = {
 
 try {
   // Server-side data fetching - will be deferred with server:defer
-  console.log('🏝️ DashboardJobs Server Island: Fetching initial data');
+  logger.info('Server Island fetching initial data');
 
   // Real API call integration with timeout
   const response = await getJobs({
@@ -45,10 +48,10 @@ try {
   // Calculate stats from actual job data
   stats = calculateJobStats(initialJobs);
 
-  console.log(`🏝️ DashboardJobs Server Island: Successfully loaded ${initialJobs.length} jobs`);
+  logger.info('Successfully loaded jobs', { jobCount: initialJobs.length });
 
 } catch (error) {
-  console.error('🏝️ DashboardJobs Server Island: Failed to load initial jobs:', error);
+  logger.error('Failed to load initial jobs', { error });
 
   // Graceful degradation: Initialize with empty state
   initialJobs = [];
@@ -62,7 +65,7 @@ try {
   };
 
   // Note: Component will still render with empty state and fallback content
-  console.log('🏝️ DashboardJobs Server Island: Using empty state fallback');
+  logger.info('Using empty state fallback');
 }
 
 // =============================================================================
@@ -198,26 +201,30 @@ const pageNumbers = generatePageNumbers(currentPage, totalPages);
      Emitting initial data for client-side enhancement without define:vars
      ============================================================================= -->
 <script>
+  import { createContextLogger } from '../../utils/logger';
+
+  const logger = createContextLogger('DashboardJobs-Client');
+
   // Emit initial data using proper event system (not define:vars)
   document.addEventListener('DOMContentLoaded', () => {
-    console.log('🏝️ DashboardJobs Server Island: Emitting initial data');
-    
+    logger.info('Emitting initial data');
+
     // Get data from DOM attributes (avoiding define:vars)
     const jobsList = document.querySelector('[data-component="jobs-list"]');
     if (jobsList) {
       const initialJobs = JSON.parse(jobsList.getAttribute('data-initial-jobs') || '[]');
       const initialStats = JSON.parse(jobsList.getAttribute('data-initial-stats') || '{}');
-      
+
       // Emit data loaded event
       window.dispatchEvent(new CustomEvent('dashboardDataLoaded', {
-        detail: { 
-          jobs: initialJobs, 
+        detail: {
+          jobs: initialJobs,
           stats: initialStats,
           timestamp: Date.now()
         }
       }));
-      
-      console.log('🏝️ DashboardJobs Server Island: Data emitted successfully');
+
+      logger.info('Data emitted successfully');
     }
   });
 </script>

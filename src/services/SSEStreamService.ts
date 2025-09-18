@@ -4,9 +4,14 @@
  * Open for extension (new event types), closed for modification
  */
 
+import { createContextLogger } from '../utils/logger';
+import type { ServiceUpdate } from './HealthService';
+
+const logger = createContextLogger('SSEStreamService');
+
 export interface SSEMessage {
   type: string;
-  data: any;
+  data: unknown;
   timestamp: string;
 }
 
@@ -19,12 +24,7 @@ export interface SSEConnectionMessage extends SSEMessage {
 
 export interface SSEServiceUpdateMessage extends SSEMessage {
   type: 'service-update';
-  data: {
-    service: string;
-    status: string;
-    timestamp: string;
-    data: any;
-  };
+  data: ServiceUpdate;
 }
 
 export interface SSEErrorMessage extends SSEMessage {
@@ -144,7 +144,7 @@ export class SSEStreamService {
   ): boolean {
     const handler = this.messageHandlers.get(message.type);
     if (!handler) {
-      console.warn(`No handler found for message type: ${message.type}`);
+      logger.warn('No handler found for message type', { messageType: message.type });
       return false;
     }
 
@@ -152,7 +152,7 @@ export class SSEStreamService {
       handler.handle(controller, message);
       return true;
     } catch (error) {
-      console.error(`Error handling SSE message:`, error);
+      logger.error('Error handling SSE message', { error });
       return false;
     }
   }
@@ -173,7 +173,7 @@ export class SSEStreamService {
   /**
    * Create service update message
    */
-  createServiceUpdateMessage(serviceData: any): SSEServiceUpdateMessage {
+  createServiceUpdateMessage(serviceData: ServiceUpdate): SSEServiceUpdateMessage {
     return {
       type: 'service-update',
       data: serviceData,

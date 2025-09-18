@@ -8,7 +8,7 @@ export type ServiceStatus = 'up' | 'degraded' | 'down' | 'error';
 export interface IServiceResult {
   status: ServiceStatus;
   message: string;
-  metrics: { responseTime?: number; [key: string]: any };
+  metrics: { responseTime?: number; [key: string]: unknown };
   error?: string;
   timestamp: number;
 }
@@ -34,7 +34,7 @@ export interface ILatencyTest {
 }
 
 export interface IHealthDataConsumer {
-  getLatestHealthData(): {services: any, overallStatus: any, timestamp: number} | null;
+  getLatestHealthData(): {services: IHealthServiceStatuses, overallStatus: ServiceStatus, timestamp: number} | null;
   requestRefresh(): void;
 }
 

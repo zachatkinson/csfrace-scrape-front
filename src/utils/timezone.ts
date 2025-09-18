@@ -6,6 +6,10 @@
  * Dependency Inversion: Depends on browser APIs, not concrete implementations
  */
 
+import { createContextLogger } from './logger';
+
+const logger = createContextLogger('TimezoneUtils');
+
 // =============================================================================
 // TYPES & INTERFACES
 // =============================================================================
@@ -51,7 +55,7 @@ export function formatTimestamp(
   try {
     const dateObj = new Date(date);
     if (isNaN(dateObj.getTime())) {
-      console.warn('Invalid date provided to formatTimestamp:', date);
+      logger.warn('Invalid date provided to formatTimestamp', { date });
       return 'Invalid Date';
     }
 
@@ -59,7 +63,7 @@ export function formatTimestamp(
     
     return formatDateWithOptions(dateObj, mergedOptions);
   } catch (error) {
-    console.error('Error formatting timestamp:', error);
+    logger.error('Error formatting timestamp', { error });
     return 'Format Error';
   }
 }
@@ -103,7 +107,7 @@ export function formatDateTime(
 
     return { date: date_part, time: time_part, full };
   } catch (error) {
-    console.error('Error formatting date/time:', error);
+    logger.error('Error formatting date/time', { error });
     const errorMsg = 'Format Error';
     return { date: errorMsg, time: errorMsg, full: errorMsg };
   }
@@ -150,7 +154,7 @@ export function getRelativeTime(
       return rtf.format(diffMs > 0 ? seconds : -seconds, 'second');
     }
   } catch (error) {
-    console.error('Error getting relative time:', error);
+    logger.error('Error getting relative time', { error });
     return 'Time Error';
   }
 }
@@ -174,7 +178,7 @@ export function getTimezonePreferences(): TimezoneOptions {
       return { ...DEFAULT_TIMEZONE_OPTIONS, ...parsed };
     }
   } catch (error) {
-    console.warn('Error loading timezone preferences:', error);
+    logger.warn('Error loading timezone preferences', { error });
   }
   
   return { ...DEFAULT_TIMEZONE_OPTIONS };
@@ -196,7 +200,7 @@ export function setTimezonePreferences(options: Partial<TimezoneOptions>): void 
       detail: updated
     }));
   } catch (error) {
-    console.error('Error saving timezone preferences:', error);
+    logger.error('Error saving timezone preferences', { error });
   }
 }
 
@@ -288,7 +292,7 @@ export function getDetectedTimezone(): string {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone;
   } catch (error) {
-    console.warn('Error detecting timezone:', error);
+    logger.warn('Error detecting timezone', { error });
     return 'UTC';
   }
 }
