@@ -168,6 +168,25 @@ import BaseModal from '../common/BaseModal.astro';
 <script>
   import { createContextLogger } from '../../utils/logger';
 
+  // WebAuthn TypeScript interfaces for proper type safety
+  interface AuthenticatorAttestationResponse extends AuthenticatorResponse {
+    attestationObject: ArrayBuffer;
+  }
+
+  interface AuthenticatorAssertionResponse extends AuthenticatorResponse {
+    authenticatorData: ArrayBuffer;
+    signature: ArrayBuffer;
+    userHandle: ArrayBuffer | null;
+  }
+
+  interface PublicKeyCredentialWithAttestation extends PublicKeyCredential {
+    response: AuthenticatorAttestationResponse;
+  }
+
+  interface PublicKeyCredentialWithAssertion extends PublicKeyCredential {
+    response: AuthenticatorAssertionResponse;
+  }
+
   // Create logger instance for this component
   const logger = createContextLogger('AuthModal');
 
@@ -276,10 +295,10 @@ import BaseModal from '../common/BaseModal.astro';
 
       const beginData = await beginResponse.json();
 
-      // Use WebAuthn API
+      // Use WebAuthn API with proper typing
       const credential = await navigator.credentials.get({
         publicKey: beginData
-      });
+      }) as PublicKeyCredentialWithAssertion | null;
 
       if (!credential) throw new Error('No credential returned');
 
@@ -336,10 +355,10 @@ import BaseModal from '../common/BaseModal.astro';
 
       const beginData = await beginResponse.json();
 
-      // Use WebAuthn API
+      // Use WebAuthn API with proper typing
       const credential = await navigator.credentials.create({
         publicKey: beginData
-      });
+      }) as PublicKeyCredentialWithAttestation | null;
 
       if (!credential) throw new Error('No credential created');
 
