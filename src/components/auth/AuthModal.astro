@@ -197,13 +197,16 @@ import BaseModal from '../common/BaseModal.astro';
               Connecting...
             `;
 
-            // Call backend OAuth login endpoint
+            // Call backend OAuth login endpoint with correct redirect_uri
             const response = await fetch(`http://localhost:8000/auth/oauth/login`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
               },
-              body: JSON.stringify({ provider })
+              body: JSON.stringify({
+                provider,
+                redirect_uri: `${window.location.origin}/auth/callback`
+              })
             });
 
             if (response.ok) {
