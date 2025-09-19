@@ -149,18 +149,18 @@ export class SignInButtonManager {
     if (this.isLoading) return;
 
     try {
-      this.setLoadingState(true);
-
       // Check if user is already authenticated
       const existingAuth = this.getStoredAuth();
       if (existingAuth) {
         // User is already signed in, handle sign out
+        this.setLoadingState(true);
         await this.handleSignOut();
+        this.setLoadingState(false);
         return;
       }
 
-      // Initiate sign-in flow
-      await this.initiateSignIn();
+      // Open authentication modal (don't show loading state for modal opening)
+      this.initiateSignIn();
     } catch (error) {
       logger.error("Error during sign-in", error);
       this.handleAuthError({
@@ -170,8 +170,6 @@ export class SignInButtonManager {
           details: error,
         },
       } as CustomEvent);
-    } finally {
-      this.setLoadingState(false);
     }
   }
 

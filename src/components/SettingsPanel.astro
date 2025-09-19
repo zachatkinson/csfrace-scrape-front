@@ -14,9 +14,9 @@ import IconClipboard from './icons/IconClipboard.astro';
 import IconDisplay from './icons/IconDisplay.astro';
 import IconBell from './icons/IconBell.astro';
 
-// Generate unique IDs for this panel instance (Astro MCP best practice)
-const panelId = `settings-panel-${Math.random().toString(36).substring(2, 11)}`;
-const settingsContentId = `settings-content-${Math.random().toString(36).substring(2, 11)}`;
+// Use fixed IDs for DRY/SOLID modal management
+const panelId = "settings-panel";
+const settingsContentId = "settings-content";
 ---
 
 <!-- Astro Islands approach with data attributes (Astro MCP best practice) -->
@@ -27,7 +27,7 @@ const settingsContentId = `settings-content-${Math.random().toString(36).substri
 >
   <!-- DRY/SOLID BaseModal with Settings-specific content -->
   <BaseModal
-    id={panelId}
+    id="settings-panel"
     closeButtonId="settings-close"
     maxWidth="max-w-6xl"
   >
@@ -532,438 +532,31 @@ const settingsContentId = `settings-content-${Math.random().toString(36).substri
   </BaseModal>
 </div>
 
-<!-- Astro Islands script for client-side functionality (Astro MCP best practice) -->
+<!-- DRY/SOLID Settings Modal using SettingsModalManager -->
 <script>
+  import { SettingsModalManager } from '../scripts/settingsModalManager';
   import { createContextLogger } from '../utils/logger';
 
-  // Create logger instance for this component
+  // Create logger for this component
   const logger = createContextLogger('SettingsPanel');
 
-  // Settings interfaces following SOLID Interface Segregation Principle
-  interface ApiSettings {
-    url: string;
-    timeout: string;
-    refreshInterval: string;
-  }
-
-  interface JobSettings {
-    defaultPriority: string;
-    maxRetries: string;
-    timeout: string;
-    maxConcurrentJobs: string;
-    queueBatchSize: string;
-    autoRetryFailed: boolean;
-  }
-
-  interface DisplaySettings {
-    darkMode: boolean;
-    showJobIds: boolean;
-    compactMode: boolean;
-    jobsPerPage: string;
-    timezone: string;
-  }
-
-  interface NotificationSettings {
-    completionAlerts: boolean;
-    errorNotifications: boolean;
-    browserNotifications: boolean;
-    sound: string;
-    duration: string;
-  }
-
-  interface AppSettings {
-    api?: ApiSettings;
-    jobs?: JobSettings;
-    display?: DisplaySettings;
-    notifications?: NotificationSettings;
-  }
-
-  // Extend Window interface for debugging access
-  declare global {
-    interface Window {
-      settingsPanel?: SettingsPanelManager;
+  // Initialize SOLID Settings Modal Manager
+  const settingsModalManager = new SettingsModalManager({
+    modalId: 'settings-panel',
+    closeOnEscape: true,
+    closeOnBackdrop: true,
+    onSettingsChanged: (settings) => {
+      logger.info('Settings changed via SOLID manager', settings);
+      // Emit global event for other components
+      window.dispatchEvent(new CustomEvent('settings-updated', { detail: settings }));
     }
-  }
+  });
 
-  // Settings panel management class - Astro MCP best practice
-  class SettingsPanelManager {
-    private panelId: string | undefined;
-    private modal: HTMLElement | null;
-    private isInitialized: boolean;
+  // Initialize the modal
+  settingsModalManager.init();
 
-    constructor() {
-      // Get IDs from data attributes (Astro MCP best practice)
-      const container = document.querySelector('[data-component="settings-panel"]') as HTMLElement;
-      this.panelId = container?.dataset.panelId;
-      this.modal = document.getElementById(this.panelId || '');
-      this.isInitialized = false;
-
-      this.init();
-    }
-
-    init() {
-      if (!this.modal || this.isInitialized) return;
-
-      // Set up event listeners
-      this.setupEventListeners();
-
-      this.isInitialized = true;
-      logger.info('Initialized following Astro MCP best practices');
-    }
-
-    setupEventListeners() {
-      // Tab switching - Use event delegation (Astro MCP best practice)
-      document.addEventListener('click', (e) => {
-        const target = e.target as HTMLElement;
-        const tabButton = target.closest('[data-action="switch-tab"]') as HTMLElement;
-
-        if (tabButton && this.modal?.contains(tabButton)) {
-          e.preventDefault();
-          const tabId = tabButton.dataset.tab;
-          if (tabId) {
-            this.switchTab(tabId);
-          }
-        }
-      });
-
-      // Close button
-      const closeBtn = document.getElementById('settings-close');
-      if (closeBtn) {
-        closeBtn.addEventListener('click', () => this.close());
-      }
-
-      // Other action buttons
-      document.addEventListener('click', (e) => {
-        const target = e.target as HTMLElement;
-        const actionButton = target.closest('[data-action]') as HTMLElement;
-
-        if (actionButton && this.modal?.contains(actionButton)) {
-          const action = actionButton.dataset.action;
-
-          switch (action) {
-            case 'reset-settings':
-              if (confirm('Reset all settings to defaults?')) {
-                this.resetSettings();
-              }
-              break;
-            case 'cancel-changes':
-              this.close();
-              break;
-            case 'save-settings':
-              this.saveSettings();
-              break;
-          }
-        }
-      });
-
-      // Escape key to close
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && this.isOpen()) {
-          this.close();
-        }
-      });
-
-      // Listen for global toggle events
-      window.addEventListener('toggle-settings', () => {
-        this.toggle();
-      });
-    }
-
-    switchTab(tabId: string) {
-      // Update tab buttons active state - scope to modal container
-      const tabButtons = this.modal?.querySelectorAll('[data-action="switch-tab"]') || [];
-      tabButtons.forEach(btn => {
-        const htmlBtn = btn as HTMLElement;
-        const isActive = htmlBtn.dataset.tab === tabId;
-        htmlBtn.className = `flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-          isActive
-            ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-            : 'text-white/60 hover:text-white hover:bg-white/5'
-        }`;
-      });
-
-      // Update tab content visibility - scope to modal container
-      const tabContents = this.modal?.querySelectorAll('.tab-content') || [];
-      logger.debug('Tab switching initiated', { tabCount: tabContents.length });
-
-      tabContents.forEach(content => {
-        const htmlContent = content as HTMLElement;
-        const isActive = htmlContent.dataset.tab === tabId;
-        htmlContent.style.display = isActive ? 'block' : 'none';
-        logger.debug('Tab visibility updated', {
-          tab: htmlContent.dataset.tab,
-          visible: isActive
-        });
-      });
-
-      logger.info('Tab switched successfully', { tabId });
-    }
-
-    isOpen() {
-      return this.modal && !this.modal.classList.contains('pointer-events-none');
-    }
-
-    open() {
-      if (!this.modal) return;
-
-      this.modal.style.display = 'flex';
-      this.modal.classList.remove('pointer-events-none', 'opacity-0');
-      this.modal.classList.add('pointer-events-auto', 'opacity-100');
-
-      // Load current settings when opening the modal
-      this.loadSettings();
-    }
-
-    close() {
-      if (!this.modal) return;
-
-      this.modal.classList.remove('pointer-events-auto', 'opacity-100');
-      this.modal.classList.add('pointer-events-none', 'opacity-0');
-
-      setTimeout(() => {
-        if (this.modal && this.modal.classList.contains('pointer-events-none')) {
-          this.modal.style.display = 'none';
-        }
-      }, 300);
-    }
-
-    toggle() {
-      if (this.isOpen()) {
-        this.close();
-      } else {
-        this.open();
-      }
-    }
-
-    resetSettings() {
-      // Reset API Configuration
-      const apiUrl = document.getElementById('api-url') as HTMLInputElement;
-      const apiTimeout = document.getElementById('api-timeout') as HTMLInputElement;
-      const refreshInterval = document.getElementById('refresh-interval') as HTMLInputElement;
-
-      if (apiUrl) apiUrl.value = 'http://localhost:8000';
-      if (apiTimeout) apiTimeout.value = '30';
-      if (refreshInterval) refreshInterval.value = '30';
-
-      // Reset Job Defaults
-      const defaultPriority = document.getElementById('default-priority') as HTMLSelectElement;
-      const maxRetries = document.getElementById('max-retries') as HTMLInputElement;
-      const jobTimeout = document.getElementById('job-timeout') as HTMLInputElement;
-      const maxConcurrentJobs = document.getElementById('max-concurrent-jobs') as HTMLInputElement;
-      const queueBatchSize = document.getElementById('queue-batch-size') as HTMLInputElement;
-      const autoRetryFailed = document.getElementById('auto-retry-failed') as HTMLInputElement;
-
-      if (defaultPriority) defaultPriority.value = 'Normal';
-      if (maxRetries) maxRetries.value = '3';
-      if (jobTimeout) jobTimeout.value = '300';
-      if (maxConcurrentJobs) maxConcurrentJobs.value = '5';
-      if (queueBatchSize) queueBatchSize.value = '10';
-      if (autoRetryFailed) autoRetryFailed.checked = false;
-
-      // Reset Display Options
-      const darkMode = document.getElementById('dark-mode') as HTMLInputElement;
-      const showJobIds = document.getElementById('show-job-ids') as HTMLInputElement;
-      const compactMode = document.getElementById('compact-mode') as HTMLInputElement;
-      const jobsPerPage = document.getElementById('jobs-per-page') as HTMLSelectElement;
-      const timezone = document.getElementById('timezone') as HTMLSelectElement;
-
-      if (darkMode) darkMode.checked = false;
-      if (showJobIds) showJobIds.checked = false;
-      if (compactMode) compactMode.checked = false;
-      if (jobsPerPage) jobsPerPage.value = '10';
-      if (timezone) timezone.value = 'auto';
-
-      // Reset Notifications
-      const completionAlerts = document.getElementById('completion-alerts') as HTMLInputElement;
-      const errorNotifications = document.getElementById('error-notifications') as HTMLInputElement;
-      const browserNotifications = document.getElementById('browser-notifications') as HTMLInputElement;
-      const notificationSound = document.getElementById('notification-sound') as HTMLSelectElement;
-      const notificationDuration = document.getElementById('notification-duration') as HTMLInputElement;
-
-      if (completionAlerts) completionAlerts.checked = true; // Default enabled
-      if (errorNotifications) errorNotifications.checked = true; // Default enabled
-      if (browserNotifications) browserNotifications.checked = false; // Default disabled
-      if (notificationSound) notificationSound.value = 'default';
-      if (notificationDuration) notificationDuration.value = '5';
-
-      logger.info('All settings reset to defaults');
-    }
-
-    async saveSettings() {
-      // Get all form values from the complete settings form
-      const settings = {
-        // API Configuration
-        api: {
-          url: (document.getElementById('api-url') as HTMLInputElement)?.value || 'http://localhost:8000',
-          timeout: parseInt((document.getElementById('api-timeout') as HTMLInputElement)?.value || '30'),
-          refreshInterval: parseInt((document.getElementById('refresh-interval') as HTMLInputElement)?.value || '30')
-        },
-
-        // Job Defaults
-        jobs: {
-          defaultPriority: (document.getElementById('default-priority') as HTMLSelectElement)?.value || 'Normal',
-          maxRetries: parseInt((document.getElementById('max-retries') as HTMLInputElement)?.value || '3'),
-          timeout: parseInt((document.getElementById('job-timeout') as HTMLInputElement)?.value || '300'),
-          maxConcurrentJobs: parseInt((document.getElementById('max-concurrent-jobs') as HTMLInputElement)?.value || '5'),
-          queueBatchSize: parseInt((document.getElementById('queue-batch-size') as HTMLInputElement)?.value || '10'),
-          autoRetryFailed: (document.getElementById('auto-retry-failed') as HTMLInputElement)?.checked || false
-        },
-
-        // Display Options
-        display: {
-          darkMode: (document.getElementById('dark-mode') as HTMLInputElement)?.checked || false,
-          showJobIds: (document.getElementById('show-job-ids') as HTMLInputElement)?.checked || false,
-          compactMode: (document.getElementById('compact-mode') as HTMLInputElement)?.checked || false,
-          jobsPerPage: parseInt((document.getElementById('jobs-per-page') as HTMLSelectElement)?.value || '10'),
-          timezone: (document.getElementById('timezone') as HTMLSelectElement)?.value || 'auto'
-        },
-
-        // Notifications
-        notifications: {
-          completionAlerts: (document.getElementById('completion-alerts') as HTMLInputElement)?.checked || false,
-          errorNotifications: (document.getElementById('error-notifications') as HTMLInputElement)?.checked || false,
-          browserNotifications: (document.getElementById('browser-notifications') as HTMLInputElement)?.checked || false,
-          sound: (document.getElementById('notification-sound') as HTMLSelectElement)?.value || 'default',
-          duration: parseInt((document.getElementById('notification-duration') as HTMLInputElement)?.value || '5')
-        }
-      };
-
-      try {
-        // Save to Docker backend via API call to http://localhost:8000/api/user/settings
-        // Following CLAUDE.md - NO LOCAL SERVICES rule
-        const response = await fetch('http://localhost:8000/api/user/settings', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(settings)
-        });
-
-        if (response.ok) {
-          logger.info('Settings saved successfully to Docker backend', { settings });
-
-          // Also save to localStorage as backup/cache
-          localStorage.setItem('app_settings', JSON.stringify(settings));
-
-          // Show success feedback
-          const button = document.querySelector('[data-action="save-settings"]') as HTMLElement;
-          if (button) {
-            const originalText = button.textContent;
-            button.textContent = 'Saved!';
-            button.classList.add('bg-green-500/20', 'text-green-300');
-
-            setTimeout(() => {
-              button.textContent = originalText;
-              button.classList.remove('bg-green-500/20', 'text-green-300');
-            }, 2000);
-          }
-        } else {
-          throw new Error(`Server responded with ${response.status}`);
-        }
-      } catch (error) {
-        logger.error('Failed to save to backend, saving locally only', { error });
-
-        // Fallback to localStorage only
-        localStorage.setItem('app_settings', JSON.stringify(settings));
-
-        // Show warning feedback
-        const button = document.querySelector('[data-action="save-settings"]') as HTMLElement;
-        if (button) {
-          const originalText = button.textContent;
-          button.textContent = 'Saved Locally';
-          button.classList.add('bg-yellow-500/20', 'text-yellow-300');
-
-          setTimeout(() => {
-            button.textContent = originalText;
-            button.classList.remove('bg-yellow-500/20', 'text-yellow-300');
-          }, 2000);
-        }
-      }
-    }
-
-    loadSettings() {
-      try {
-        // Try to load from localStorage first (cache/backup)
-        const stored = localStorage.getItem('app_settings');
-        if (stored) {
-          const settings = JSON.parse(stored);
-          this.populateForm(settings);
-          logger.info('Settings loaded from localStorage', { settings });
-        }
-
-        // TODO: Also try to load from Docker backend for latest settings
-        // fetch('http://localhost:8000/api/user/settings').then(...)
-      } catch (error) {
-        logger.error('Error loading settings', { error });
-      }
-    }
-
-    populateForm(settings: AppSettings): void {
-      // API Configuration
-      if (settings.api) {
-        const apiUrl = document.getElementById('api-url') as HTMLInputElement;
-        const apiTimeout = document.getElementById('api-timeout') as HTMLInputElement;
-        const refreshInterval = document.getElementById('refresh-interval') as HTMLInputElement;
-
-        if (apiUrl) apiUrl.value = settings.api.url || 'http://localhost:8000';
-        if (apiTimeout) apiTimeout.value = settings.api.timeout || '30';
-        if (refreshInterval) refreshInterval.value = settings.api.refreshInterval || '30';
-      }
-
-      // Job Defaults
-      if (settings.jobs) {
-        const defaultPriority = document.getElementById('default-priority') as HTMLSelectElement;
-        const maxRetries = document.getElementById('max-retries') as HTMLInputElement;
-        const jobTimeout = document.getElementById('job-timeout') as HTMLInputElement;
-        const maxConcurrentJobs = document.getElementById('max-concurrent-jobs') as HTMLInputElement;
-        const queueBatchSize = document.getElementById('queue-batch-size') as HTMLInputElement;
-        const autoRetryFailed = document.getElementById('auto-retry-failed') as HTMLInputElement;
-
-        if (defaultPriority) defaultPriority.value = settings.jobs.defaultPriority || 'Normal';
-        if (maxRetries) maxRetries.value = settings.jobs.maxRetries || '3';
-        if (jobTimeout) jobTimeout.value = settings.jobs.timeout || '300';
-        if (maxConcurrentJobs) maxConcurrentJobs.value = settings.jobs.maxConcurrentJobs || '5';
-        if (queueBatchSize) queueBatchSize.value = settings.jobs.queueBatchSize || '10';
-        if (autoRetryFailed) autoRetryFailed.checked = settings.jobs.autoRetryFailed || false;
-      }
-
-      // Display Options
-      if (settings.display) {
-        const darkMode = document.getElementById('dark-mode') as HTMLInputElement;
-        const showJobIds = document.getElementById('show-job-ids') as HTMLInputElement;
-        const compactMode = document.getElementById('compact-mode') as HTMLInputElement;
-        const jobsPerPage = document.getElementById('jobs-per-page') as HTMLSelectElement;
-        const timezone = document.getElementById('timezone') as HTMLSelectElement;
-
-        if (darkMode) darkMode.checked = settings.display.darkMode || false;
-        if (showJobIds) showJobIds.checked = settings.display.showJobIds || false;
-        if (compactMode) compactMode.checked = settings.display.compactMode || false;
-        if (jobsPerPage) jobsPerPage.value = settings.display.jobsPerPage || '10';
-        if (timezone) timezone.value = settings.display.timezone || 'auto';
-      }
-
-      // Notifications
-      if (settings.notifications) {
-        const completionAlerts = document.getElementById('completion-alerts') as HTMLInputElement;
-        const errorNotifications = document.getElementById('error-notifications') as HTMLInputElement;
-        const browserNotifications = document.getElementById('browser-notifications') as HTMLInputElement;
-        const notificationSound = document.getElementById('notification-sound') as HTMLSelectElement;
-        const notificationDuration = document.getElementById('notification-duration') as HTMLInputElement;
-
-        if (completionAlerts) completionAlerts.checked = settings.notifications.completionAlerts || false;
-        if (errorNotifications) errorNotifications.checked = settings.notifications.errorNotifications || false;
-        if (browserNotifications) browserNotifications.checked = settings.notifications.browserNotifications || false;
-        if (notificationSound) notificationSound.value = settings.notifications.sound || 'default';
-        if (notificationDuration) notificationDuration.value = settings.notifications.duration || '5';
-      }
-    }
-  }
-
-  // Initialize the settings panel following Astro MCP best practices
-  const settingsPanel = new SettingsPanelManager();
-
-  // Expose for debugging (Astro MCP best practice)
+  // Expose for debugging
   if (typeof window !== 'undefined') {
-    window.settingsPanel = settingsPanel;
+    (window as any).settingsModalManager = settingsModalManager;
   }
 </script>

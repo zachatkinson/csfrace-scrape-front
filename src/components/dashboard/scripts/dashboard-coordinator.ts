@@ -35,7 +35,6 @@ interface JobActionEvent {
   [key: string]: unknown;
 }
 
-
 // =============================================================================
 // DASHBOARD COORDINATOR CLASS (Single Responsibility Principle)
 // =============================================================================
@@ -119,7 +118,6 @@ export class DashboardCoordinator {
       this.handleJobAction((event as CustomEvent).detail);
     });
 
-
     // Listen for page visibility changes
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
@@ -191,7 +189,6 @@ export class DashboardCoordinator {
     }
   }
 
-
   /**
    * Update stats in state
    */
@@ -215,7 +212,6 @@ export class DashboardCoordinator {
       activeElement.textContent = `${this.state.stats.active} Active`;
     }
   }
-
 
   /**
    * Show job details in modal

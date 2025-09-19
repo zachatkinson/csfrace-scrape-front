@@ -321,6 +321,14 @@ const {
             window.dispatchEvent(new CustomEvent('toggle-settings'));
           });
         }
+
+        // Auth button handler (same pattern as settings)
+        const authBtn = document.getElementById('auth-toggle');
+        if (authBtn) {
+          authBtn.addEventListener('click', () => {
+            window.dispatchEvent(new CustomEvent('open-auth-modal'));
+          });
+        }
       });
     </script>
 

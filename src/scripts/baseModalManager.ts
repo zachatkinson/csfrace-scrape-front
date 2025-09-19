@@ -107,12 +107,17 @@ export abstract class BaseModalManager {
     this.closeButton =
       this.modal.querySelector("[data-modal-close]") ||
       this.modal.querySelector(".modal-close") ||
-      this.modal.querySelector(`#${this.config.modalId}-close`);
+      this.modal.querySelector(`#${this.config.modalId}-close`) ||
+      document.getElementById(
+        `${this.config.modalId.replace("-modal", "")}-close`,
+      ) ||
+      this.modal.querySelector('button[aria-label="Close modal"]');
 
     // Find backdrop (common patterns)
     this.backdrop =
       this.modal.querySelector("[data-modal-backdrop]") ||
       this.modal.querySelector(".modal-backdrop") ||
+      this.modal.querySelector(".base-modal-backdrop") ||
       this.modal; // Modal itself can be the backdrop
   }
 
@@ -299,6 +304,10 @@ export abstract class BaseModalManager {
     this.modal.classList.remove("hidden");
     this.modal.style.display = "flex";
 
+    // Remove opacity and pointer-events classes to make modal visible and clickable
+    this.modal.classList.remove("opacity-0", "pointer-events-none");
+    this.modal.classList.add("opacity-100", "pointer-events-auto");
+
     // Add opening animation class if it exists
     if (this.modal.classList.contains("modal-animate")) {
       this.modal.classList.add("modal-opening");
@@ -314,6 +323,10 @@ export abstract class BaseModalManager {
    */
   protected hideModal(): void {
     if (!this.modal) return;
+
+    // Add opacity and pointer-events classes to make modal invisible and non-clickable
+    this.modal.classList.add("opacity-0", "pointer-events-none");
+    this.modal.classList.remove("opacity-100", "pointer-events-auto");
 
     // Add closing animation class if it exists
     if (this.modal.classList.contains("modal-animate")) {
