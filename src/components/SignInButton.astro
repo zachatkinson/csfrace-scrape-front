@@ -1,13 +1,15 @@
 ---
 /**
  * Sign In Button Component - Simple modal opener like settings button
+ * Used only for unauthenticated state (following Astro MCP best practices)
  */
 ---
 
 <!-- Auth Button (Sign In) -->
 <button
   id="auth-toggle"
-  class="glass-button px-4 py-2 text-blue-400 hover:text-blue-300 border border-blue-500/30 hover:border-blue-500/50 transition-all duration-200 flex items-center space-x-2"
+  class="glass-button px-4 py-2 text-blue-400 hover:text-blue-300 border-blue-500/30 hover:border-blue-500/50 transition-all duration-200 flex items-center space-x-2"
+  style="border-color: rgb(59 130 246 / 0.3) !important;"
   aria-label="Sign In"
 >
   <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

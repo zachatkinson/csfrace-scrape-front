@@ -557,6 +557,6 @@ const settingsContentId = "settings-content";
 
   // Expose for debugging
   if (typeof window !== 'undefined') {
-    (window as any).settingsModalManager = settingsModalManager;
+    (window as unknown as Record<string, unknown>).settingsModalManager = settingsModalManager;
   }
 </script>

@@ -1,0 +1,77 @@
+---
+/**
+ * Auth Button Component - ASTRO MCP Best Practice
+ * Conditionally renders SignInButton or LogOutButton based on auth state
+ * Follows Astro's conditional rendering pattern like Clerk's SignedIn/SignedOut
+ */
+
+import SignInButton from './SignInButton.astro';
+import LogOutButton from './LogOutButton.astro';
+---
+
+<!-- ASTRO MCP PATTERN: Conditional Authentication UI -->
+<!-- This will be hydrated client-side to show the correct button -->
+<div id="auth-button-container" class="auth-button-wrapper">
+  <!-- Default: Show sign-in button (will be conditionally hidden) -->
+  <div id="signed-out-content">
+    <SignInButton />
+  </div>
+  
+  <!-- Show logout button when authenticated (hidden by default) -->
+  <div id="signed-in-content" class="hidden">
+    <LogOutButton />
+  </div>
+</div>
+
+<script>
+  // ASTRO MCP BEST PRACTICE: Client-side conditional rendering
+  // Following the same pattern as Clerk's SignedIn/SignedOut components
+  
+  function updateAuthUI() {
+    const signedOutContent = document.getElementById('signed-out-content');
+    const signedInContent = document.getElementById('signed-in-content');
+    
+    if (!signedOutContent || !signedInContent) return;
+    
+    // Check authentication state from localStorage
+    const authTokens = localStorage.getItem('auth_tokens');
+    const authToken = localStorage.getItem('auth_token'); // Legacy support
+    const isAuthenticated = !!(authTokens || authToken);
+    
+    if (isAuthenticated) {
+      // User is authenticated - show logout button
+      signedOutContent.classList.add('hidden');
+      signedInContent.classList.remove('hidden');
+    } else {
+      // User is not authenticated - show sign-in button
+      signedOutContent.classList.remove('hidden');
+      signedInContent.classList.add('hidden');
+    }
+  }
+  
+  // Initialize auth UI on page load
+  document.addEventListener('DOMContentLoaded', () => {
+    updateAuthUI();
+  });
+  
+  // Listen for authentication state changes
+  window.addEventListener('user-logged-in', updateAuthUI);
+  window.addEventListener('user-logged-out', updateAuthUI);
+  window.addEventListener('auth-tokens-updated', updateAuthUI);
+  
+  // Listen for storage changes (for cross-tab synchronization)
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'auth_tokens' || event.key === 'auth_token' || event.key === 'auth_user') {
+      updateAuthUI();
+    }
+  });
+</script>
+
+<style>
+  .auth-button-wrapper {
+    /* Ensure consistent sizing regardless of which button is shown */
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+  }
+</style>

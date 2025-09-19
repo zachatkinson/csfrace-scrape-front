@@ -1,0 +1,53 @@
+---
+/**
+ * Log Out Button Component - ASTRO MCP Best Practice
+ * Used only for authenticated state, following conditional rendering pattern
+ */
+---
+
+<!-- Log Out Button (for authenticated users) -->
+<button
+  id="logout-button"
+  class="glass-button px-4 py-2 text-red-400 hover:text-red-300 border-red-500/30 hover:border-red-500/50 transition-all duration-200 flex items-center space-x-2"
+  style="border-color: rgb(239 68 68 / 0.3) !important;"
+  aria-label="Log Out"
+>
+  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+  </svg>
+  <span>Log Out</span>
+</button>
+
+<script>
+  // ASTRO MCP BEST PRACTICE: Dedicated logout functionality
+  // Following SOLID Single Responsibility Principle
+  
+  function handleLogout() {
+    try {
+      // Clear all authentication data from localStorage
+      localStorage.removeItem('auth_tokens');
+      localStorage.removeItem('auth_token'); // Legacy support
+      localStorage.removeItem('auth_user');
+      
+      // Dispatch logout event for other components to react
+      window.dispatchEvent(new CustomEvent('user-logged-out'));
+      
+      // Show logout confirmation (following UX best practices)
+      // User logged out successfully
+      
+      // Reload page to reset authentication state across components
+      window.location.reload();
+      
+    } catch (error) {
+      console.error('❌ Error during logout:', error);
+    }
+  }
+  
+  // Initialize logout button handler
+  document.addEventListener('DOMContentLoaded', () => {
+    const logoutButton = document.getElementById('logout-button');
+    if (logoutButton) {
+      logoutButton.addEventListener('click', handleLogout);
+    }
+  });
+</script>

@@ -398,7 +398,7 @@ import BaseModal from '../common/BaseModal.astro';
     }
   }
 
-  function handleAuthSuccess(result: any) {
+  function handleAuthSuccess(result: { user?: unknown; tokens?: unknown; success?: boolean; access_token?: string }) {
     logger.info('Authentication successful', result);
 
     // Store authentication data

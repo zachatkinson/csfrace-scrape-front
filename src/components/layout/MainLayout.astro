@@ -17,7 +17,7 @@ import AuthModal from '../auth/AuthModal.astro';
 // Import DRY/SOLID Settings Panel Component
 import SettingsPanel from '../SettingsPanel.astro';
 // Import DRY/SOLID Sign In Button Component
-import SignInButton from '../SignInButton.astro';
+import AuthButton from '../AuthButton.astro';
 
 export interface Props {
   title: string;
@@ -95,7 +95,7 @@ const {
               </button>
 
               <!-- Auth Button (Sign In) - DRY/SOLID Component -->
-              <SignInButton />
+              <AuthButton />
             </div>
           </div>
         </div>
