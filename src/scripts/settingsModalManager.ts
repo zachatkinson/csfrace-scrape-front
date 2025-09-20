@@ -9,6 +9,7 @@
 
 import { BaseModalManager, type ModalConfig } from "./baseModalManager";
 import { createContextLogger } from "../utils/logger.js";
+import { settingsBridge } from "../utils/settingsBridge.js";
 
 // =============================================================================
 // TYPES & INTERFACES
@@ -111,13 +112,27 @@ export class SettingsModalManager extends BaseModalManager {
       '[data-action="switch-tab"]',
     );
     tabButtons.forEach((btn) => {
-      btn.classList.toggle("active", btn.getAttribute("data-tab") === tabId);
+      const isActiveBtn = btn.getAttribute("data-tab") === tabId;
+      btn.classList.toggle("active", isActiveBtn);
+
+      // Update button styles
+      if (isActiveBtn) {
+        btn.className = "flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors bg-blue-500/20 text-blue-300 border border-blue-500/30";
+      } else {
+        btn.className = "flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors text-white/60 hover:text-white hover:bg-white/5";
+      }
     });
 
-    // Update tab content
+    // Update tab content - fix the display issue
     const tabContents = this.modal.querySelectorAll(".tab-content");
     tabContents.forEach((content) => {
       const isActive = content.getAttribute("data-tab") === tabId;
+
+      // Remove inline display style and use proper display control
+      const element = content as HTMLElement;
+      element.style.display = isActive ? 'block' : 'none';
+
+      // Also update classes for consistency
       content.classList.toggle("hidden", !isActive);
       content.classList.toggle("active", isActive);
     });
@@ -132,6 +147,9 @@ export class SettingsModalManager extends BaseModalManager {
     this.logger.info("Action triggered", { action });
 
     switch (action) {
+      case "save-settings":
+        this.saveSettings();
+        break;
       case "export-settings":
         this.exportSettings();
         break;
@@ -146,6 +164,47 @@ export class SettingsModalManager extends BaseModalManager {
         break;
       default:
         this.logger.warn("Unknown action", { action });
+    }
+  }
+
+  /**
+   * Save current form values to settings
+   */
+  private saveSettings(): void {
+    if (!this.modal) return;
+
+    try {
+      // Collect form values
+      const formValues: Record<string, unknown> = {};
+      const fieldIds = ['api-timeout', 'refresh-interval', 'max-retries', 'job-timeout'];
+
+      fieldIds.forEach(fieldId => {
+        const input = this.modal?.querySelector(`#${fieldId}`) as HTMLInputElement;
+        if (input) {
+          const value = Number(input.value);
+          if (!isNaN(value)) {
+            formValues[fieldId] = value;
+            this.logger.debug(`Saving setting: ${fieldId} = ${value}`);
+          }
+        }
+      });
+
+      // Save to settings bridge
+      settingsBridge.setFormValues(formValues);
+
+      // Notify success
+      this.logger.info("Settings saved successfully", formValues);
+
+      // Call the callback if provided
+      if (this.config.onSettingsChanged) {
+        this.config.onSettingsChanged(formValues);
+      }
+
+      // Optional: Close modal after saving
+      // this.close();
+
+    } catch (error) {
+      this.logger.error("Failed to save settings", error);
     }
   }
 
@@ -271,8 +330,24 @@ export class SettingsModalManager extends BaseModalManager {
    * Load current settings into the UI
    */
   private loadCurrentSettings(): void {
-    // This would update form fields with current settings
-    // Implementation depends on your settings form structure
-    this.logger.info("Current settings loaded");
+    if (!this.modal) return;
+
+    try {
+      // Get current settings from the bridge
+      const formValues = settingsBridge.getFormValues();
+
+      // Update form fields with current values
+      Object.entries(formValues).forEach(([fieldId, value]) => {
+        const input = this.modal?.querySelector(`#${fieldId}`) as HTMLInputElement;
+        if (input) {
+          input.value = String(value);
+          this.logger.debug(`Loaded setting: ${fieldId} = ${value}`);
+        }
+      });
+
+      this.logger.info("Current settings loaded from bridge", formValues);
+    } catch (error) {
+      this.logger.error("Failed to load current settings", error);
+    }
   }
 }

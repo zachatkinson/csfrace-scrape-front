@@ -14,6 +14,9 @@ import IconClipboard from './icons/IconClipboard.astro';
 import IconDisplay from './icons/IconDisplay.astro';
 import IconBell from './icons/IconBell.astro';
 
+// Import Settings Bridge for React/JS integration
+import SettingsBridgeInitializer from './settings/SettingsBridgeInitializer.tsx';
+
 // Use fixed IDs for DRY/SOLID modal management
 const panelId = "settings-panel";
 const settingsContentId = "settings-content";
@@ -108,6 +111,8 @@ const settingsContentId = "settings-content";
                       class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:border-blue-500/50 focus:outline-none"
                       min="5"
                       max="300"
+                      value="30"
+                      placeholder="30"
                     />
                   </div>
 
@@ -119,6 +124,8 @@ const settingsContentId = "settings-content";
                       class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:border-blue-500/50 focus:outline-none"
                       min="5"
                       max="300"
+                      value="10"
+                      placeholder="10"
                     />
                   </div>
                 </div>
@@ -181,7 +188,7 @@ const settingsContentId = "settings-content";
         </div>
 
         <!-- Job Defaults Tab -->
-        <div id="tab-jobs" class="tab-content" data-tab="jobs" style="display: none;">
+        <div id="tab-jobs" class="tab-content hidden" data-tab="jobs">
           <div class="space-y-6">
             <!-- Job Defaults -->
             <div class="space-y-4">
@@ -212,6 +219,8 @@ const settingsContentId = "settings-content";
                         class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:border-blue-500/50 focus:outline-none"
                         min="0"
                         max="10"
+                        value="3"
+                        placeholder="3"
                       />
                     </div>
 
@@ -223,6 +232,8 @@ const settingsContentId = "settings-content";
                         class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:border-blue-500/50 focus:outline-none"
                         min="10"
                         max="300"
+                        value="30"
+                        placeholder="30"
                       />
                     </div>
                   </div>
@@ -309,7 +320,7 @@ const settingsContentId = "settings-content";
         </div>
 
         <!-- App Settings Tab (renamed to Display) -->
-        <div id="tab-app" class="tab-content" data-tab="app" style="display: none;">
+        <div id="tab-app" class="tab-content hidden" data-tab="app">
           <div class="space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
@@ -413,7 +424,7 @@ const settingsContentId = "settings-content";
 
 
         <!-- Notifications Tab -->
-        <div id="tab-notifications" class="tab-content" data-tab="notifications" style="display: none;">
+        <div id="tab-notifications" class="tab-content hidden" data-tab="notifications">
           <div class="space-y-6">
             <!-- Notifications -->
             <div class="space-y-4">
@@ -531,6 +542,9 @@ const settingsContentId = "settings-content";
     </div>
   </BaseModal>
 </div>
+
+<!-- Settings Bridge - Connect React hooks to vanilla JS -->
+<SettingsBridgeInitializer client:load />
 
 <!-- DRY/SOLID Settings Modal using SettingsModalManager -->
 <script>
