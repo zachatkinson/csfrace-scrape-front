@@ -1,8 +1,8 @@
 /**
- * Authentication Context - Docker Backend Only
- * Simple context that calls Docker backend directly
- * Following CLAUDE.md: NO LOCAL SERVICES RULE
- * DRY/SOLID: Uses centralized API configuration
+ * Enterprise Authentication Context - Astro Best Practices
+ * Server-side session checking with HTTP-only cookies
+ * Following CLAUDE.md: NO LOCAL SERVICES RULE + Enterprise Security
+ * DRY/SOLID: Uses centralized API configuration and direct backend integration
  */
 
 import React, {
@@ -14,10 +14,28 @@ import React, {
 } from "react";
 import { getApiBaseUrl } from "../constants/api.ts";
 import { createContextLogger } from "../utils/logger";
+// Simple cookie helper for reading auth_user cookie
+const getCookie = (name: string): string | null => {
+  if (typeof document === "undefined") return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
+  return null;
+};
+
+const getAuthStatusFromCookie = () => {
+  const authUserCookie = getCookie("auth_user");
+  if (!authUserCookie) return { isAuthenticated: false, isNewUser: false };
+
+  try {
+    return JSON.parse(decodeURIComponent(authUserCookie));
+  } catch {
+    return { isAuthenticated: false, isNewUser: false };
+  }
+};
 import type {
   User,
   UserProfile,
-  AuthTokens,
   LoginCredentials,
   RegisterData,
 } from "../types/auth.ts";
@@ -27,16 +45,17 @@ const logger = createContextLogger("AuthContext");
 // DRY/SOLID: Use centralized API base URL
 const getApiBase = () => getApiBaseUrl();
 
-// Simple auth state
+// Enterprise auth state with server-side session checking
 interface AuthState {
   user: User | null;
-  tokens: AuthTokens | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
   isInitialized: boolean;
+  connectionStatus: "connecting" | "open" | "closed";
   oauthProviders: string[];
   webauthnSupported: boolean;
+  authReason?: string; // Reason for auth status (e.g., 'valid_session', 'no_auth_cookies')
 }
 
 // Context interface
@@ -45,7 +64,6 @@ interface AuthContextValue extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
-  refreshToken: () => Promise<void>;
 
   // OAuth
   loginWithOAuth: (provider: string) => Promise<void>;
@@ -57,16 +75,17 @@ interface AuthContextValue extends AuthState {
   // Utils
   clearError: () => void;
   checkAuthStatus: () => Promise<boolean>;
+  reconnectSSE: () => Promise<void>; // Now refreshes auth status instead of SSE
 }
 
 // Initial state
 const initialState: AuthState = {
   user: null,
-  tokens: null,
   isAuthenticated: false,
   isLoading: true,
   error: null,
   isInitialized: false,
+  connectionStatus: "closed",
   oauthProviders: [],
   webauthnSupported:
     typeof window !== "undefined" && "credentials" in navigator,
@@ -75,10 +94,15 @@ const initialState: AuthState = {
 // Create context
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-// Simple API helpers - direct fetch calls to Docker backend
-// DRY/SOLID: Use centralized API base URL
-const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
+// HTTP-only cookies helper - no localStorage needed for tokens
+
+// HTTP-only cookies helper - no localStorage needed for tokens
+const apiRequestWithCookies = async (
+  endpoint: string,
+  options: RequestInit = {},
+) => {
   const response = await fetch(`${getApiBase()}${endpoint}`, {
+    credentials: "include", // Include HTTP-only cookies
     headers: {
       "Content-Type": "application/json",
       ...options.headers,
@@ -94,95 +118,74 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   return response.json();
 };
 
-// Token storage helpers
-const TOKEN_KEY = "auth_tokens";
-const USER_KEY = "auth_user";
-
-const saveTokens = (tokens: AuthTokens) => {
-  localStorage.setItem(TOKEN_KEY, JSON.stringify(tokens));
-};
-
-const getStoredTokens = (): AuthTokens | null => {
-  try {
-    const stored = localStorage.getItem(TOKEN_KEY);
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
-  }
-};
-
-const saveUser = (user: UserProfile) => {
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
-};
-
-const getStoredUser = (): UserProfile | null => {
-  try {
-    const stored = localStorage.getItem(USER_KEY);
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
-  }
-};
-
-const clearStorage = () => {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(USER_KEY);
-};
-
 // Auth provider component
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>(initialState);
+  // Using Astro best practices with server-side session checking instead of SSE
 
-  // Initialize auth on mount
+  // Initialize auth using Astro best practices - server-side session checking
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Load from localStorage
-        const storedTokens = getStoredTokens();
-        const storedUser = getStoredUser();
+        logger.info(
+          "Initializing authentication service using Astro best practices...",
+        );
 
-        if (storedTokens && storedUser) {
-          // Verify token is still valid by calling /auth/me
-          try {
-            const currentUser = await apiRequest("/auth/me", {
-              headers: {
-                Authorization: `Bearer ${storedTokens.access_token}`,
-              },
+        // Check initial auth status from cookie
+        const cookieAuthStatus = getAuthStatusFromCookie();
+        logger.info("Cookie auth status", { cookieAuthStatus });
+
+        // Verify auth status with backend using HTTP-only cookies
+        let backendAuthStatus = { authenticated: false, user: null };
+        try {
+          // Make a request to check current session (backend will read HTTP-only cookies)
+          const response = await fetch(`${getApiBase()}/auth/me`, {
+            credentials: "include", // Include HTTP-only cookies
+            headers: { Accept: "application/json" },
+          });
+
+          if (response.ok) {
+            const user = await response.json();
+            backendAuthStatus = { authenticated: true, user };
+            logger.info("Backend auth verification successful", { user });
+          } else {
+            logger.info("Backend auth verification failed", {
+              status: response.status,
             });
-
-            setState((prev) => ({
-              ...prev,
-              user: currentUser,
-              tokens: storedTokens,
-              isAuthenticated: true,
-              isLoading: false,
-              isInitialized: true,
-            }));
-          } catch {
-            // Token invalid, clear storage
-            clearStorage();
-            setState((prev) => ({
-              ...prev,
-              isLoading: false,
-              isInitialized: true,
-            }));
           }
-        } else {
-          setState((prev) => ({
-            ...prev,
-            isLoading: false,
-            isInitialized: true,
-          }));
+        } catch (error) {
+          logger.warn("Backend auth verification error", { error });
+          // Fall back to cookie status if backend is unreachable
         }
 
-        // Load OAuth providers from Docker backend
+        // Use backend status if available, otherwise fall back to cookie
+        const finalAuthStatus = backendAuthStatus.authenticated
+          ? backendAuthStatus
+          : { authenticated: cookieAuthStatus.isAuthenticated, user: null };
+
+        setState((prev) => ({
+          ...prev,
+          isAuthenticated: finalAuthStatus.authenticated,
+          user: finalAuthStatus.user,
+          authReason: finalAuthStatus.authenticated
+            ? "valid_session"
+            : "no_auth_cookies",
+          isLoading: false,
+          isInitialized: true,
+          connectionStatus: "open", // Using HTTP requests instead of SSE
+        }));
+
+        // Load OAuth providers from backend
         try {
-          const providers = await apiRequest("/auth/oauth/providers");
+          const providers = await apiRequestWithCookies(
+            "/auth/oauth/providers",
+          );
           setState((prev) => ({ ...prev, oauthProviders: providers }));
         } catch (error) {
           logger.error("Failed to load OAuth providers", { error });
         }
       } catch (error) {
+        logger.error("Auth initialization failed", { error });
         setState((prev) => ({
           ...prev,
           error:
@@ -191,11 +194,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               : "Auth initialization failed",
           isLoading: false,
           isInitialized: true,
+          connectionStatus: "closed",
         }));
       }
     };
 
     initializeAuth();
+
+    // Set up periodic auth status checking (Astro best practice)
+    const authCheckInterval = setInterval(() => {
+      const cookieAuthStatus = getAuthStatusFromCookie();
+      setState((prev) => {
+        // Only update if cookie status differs from current state
+        if (prev.isAuthenticated !== cookieAuthStatus.isAuthenticated) {
+          logger.info("Auth status changed via cookie", {
+            previous: prev.isAuthenticated,
+            current: cookieAuthStatus.isAuthenticated,
+          });
+          return {
+            ...prev,
+            isAuthenticated: cookieAuthStatus.isAuthenticated,
+            user: cookieAuthStatus.isAuthenticated ? prev.user : null,
+          };
+        }
+        return prev;
+      });
+    }, 2000); // Check every 2 seconds
+
+    // Cleanup on unmount
+    return () => {
+      clearInterval(authCheckInterval);
+      logger.info("Cleaned up authentication service");
+    };
   }, []);
 
   // Login with email/password
@@ -208,35 +238,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       formData.append("username", credentials.email); // Backend expects 'username' field, we use email
       formData.append("password", credentials.password);
 
-      const tokens = await fetch(`${getApiBase()}/auth/token`, {
+      const response = await fetch(`${getApiBase()}/auth/token`, {
         method: "POST",
+        credentials: "include", // Include HTTP-only cookies
         body: formData,
-      }).then(async (res) => {
-        if (!res.ok) {
-          const error = await res.text();
-          throw new Error(error || "Login failed");
-        }
-        return res.json();
       });
 
-      // Get user profile
-      const user = await apiRequest("/auth/me", {
-        headers: {
-          Authorization: `Bearer ${tokens.access_token}`,
-        },
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || "Login failed");
+      }
+
+      // Backend sets HTTP-only cookies automatically
+      // Check auth status immediately after login
+      const userResponse = await fetch(`${getApiBase()}/auth/me`, {
+        credentials: "include",
+        headers: { Accept: "application/json" },
       });
 
-      saveTokens(tokens);
-      saveUser(user);
-
-      setState((prev) => ({
-        ...prev,
-        user,
-        tokens,
-        isAuthenticated: true,
-        isLoading: false,
-        error: null,
-      }));
+      if (userResponse.ok) {
+        const user = await userResponse.json();
+        setState((prev) => ({
+          ...prev,
+          isAuthenticated: true,
+          user,
+          isLoading: false,
+          error: null,
+          authReason: "login_successful",
+        }));
+        logger.info("Login successful", { user });
+      } else {
+        throw new Error("Login succeeded but user data fetch failed");
+      }
     } catch (error) {
       setState((prev) => ({
         ...prev,
@@ -253,7 +286,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
       try {
-        await apiRequest("/auth/register", {
+        await apiRequestWithCookies("/auth/register", {
           method: "POST",
           body: JSON.stringify(data),
         });
@@ -277,28 +310,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, isLoading: true }));
 
     try {
-      if (state.tokens) {
-        await apiRequest("/auth/logout", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${state.tokens.access_token}`,
-          },
-        });
-      }
-    } catch (error) {
-      logger.error("Logout API call failed", { error });
-    } finally {
-      clearStorage();
+      // Call backend logout endpoint to clear HTTP-only cookies
+      await fetch(`${getApiBase()}/auth/logout`, {
+        method: "POST",
+        credentials: "include", // Include HTTP-only cookies
+        headers: { Accept: "application/json" },
+      });
+
+      // Update state immediately after successful logout
       setState((prev) => ({
         ...prev,
-        user: null,
-        tokens: null,
         isAuthenticated: false,
+        user: null,
         isLoading: false,
         error: null,
+        authReason: "logged_out",
+      }));
+
+      logger.info("Logout successful");
+    } catch (error) {
+      logger.error("Logout failed", { error });
+      setState((prev) => ({
+        ...prev,
+        error: error instanceof Error ? error.message : "Logout failed",
+        isLoading: false,
       }));
     }
-  }, [state.tokens]);
+  }, []);
 
   // OAuth login
   const loginWithOAuth = useCallback(async (provider: string) => {
@@ -311,11 +349,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // POST request with provider and redirect_uri in body
-      const response = await apiRequest("/auth/oauth/login", {
+      const response = await apiRequestWithCookies("/auth/oauth/login", {
         method: "POST",
         body: JSON.stringify({
           provider: provider,
-          redirect_uri: `${window.location.origin}/auth/callback`,
+          redirect_uri: `${window.location.origin}/auth/oauth/${provider}/callback`,
         }),
       });
 
@@ -337,27 +375,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Passkey registration
   const registerPasskey = useCallback(async () => {
-    if (!state.tokens) throw new Error("Must be logged in to register passkey");
+    if (!state.isAuthenticated)
+      throw new Error("Must be logged in to register passkey");
 
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const options = await apiRequest("/auth/passkeys/register/begin", {
-        headers: {
-          Authorization: `Bearer ${state.tokens.access_token}`,
-        },
-      });
+      const options = await apiRequestWithCookies(
+        "/auth/passkeys/register/begin",
+      );
 
       // Use WebAuthn API
       const credential = await navigator.credentials.create({
         publicKey: options,
       });
 
-      await apiRequest("/auth/passkeys/register/complete", {
+      await apiRequestWithCookies("/auth/passkeys/register/complete", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${state.tokens.access_token}`,
-        },
         body: JSON.stringify({ credential }),
       });
 
@@ -373,43 +407,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }));
       throw error;
     }
-  }, [state.tokens]);
+  }, [state.isAuthenticated]);
 
   // Passkey authentication
   const authenticateWithPasskey = useCallback(async () => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const options = await apiRequest("/auth/passkeys/authenticate/begin");
+      const options = await apiRequestWithCookies(
+        "/auth/passkeys/authenticate/begin",
+      );
 
       // Use WebAuthn API
       const credential = await navigator.credentials.get({
         publicKey: options,
       });
 
-      const tokens = await apiRequest("/auth/passkeys/authenticate/complete", {
+      await apiRequestWithCookies("/auth/passkeys/authenticate/complete", {
         method: "POST",
         body: JSON.stringify({ credential }),
       });
 
-      // Get user profile
-      const user = await apiRequest("/auth/me", {
-        headers: {
-          Authorization: `Bearer ${tokens.access_token}`,
-        },
+      // Backend sets HTTP-only cookies automatically
+      // Check auth status immediately after passkey auth
+      const userResponse = await fetch(`${getApiBase()}/auth/me`, {
+        credentials: "include",
+        headers: { Accept: "application/json" },
       });
 
-      saveTokens(tokens);
-      saveUser(user);
-
-      setState((prev) => ({
-        ...prev,
-        user,
-        tokens,
-        isAuthenticated: true,
-        isLoading: false,
-        error: null,
-      }));
+      if (userResponse.ok) {
+        const user = await userResponse.json();
+        setState((prev) => ({
+          ...prev,
+          isAuthenticated: true,
+          user,
+          isLoading: false,
+          error: null,
+          authReason: "passkey_auth_successful",
+        }));
+        logger.info("Passkey authentication successful", { user });
+      } else {
+        throw new Error("Passkey auth succeeded but user data fetch failed");
+      }
     } catch (error) {
       setState((prev) => ({
         ...prev,
@@ -423,23 +462,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Refresh token
-  const refreshToken = useCallback(async () => {
-    if (!state.tokens?.refresh_token) return;
+  // Refresh auth status (replaces SSE reconnect)
+  const reconnectSSE = useCallback(async () => {
+    setState((prev) => ({ ...prev, isLoading: true }));
 
     try {
-      const newTokens = await apiRequest("/auth/refresh", {
-        method: "POST",
-        body: JSON.stringify({ refresh_token: state.tokens.refresh_token }),
+      // Check current auth status with backend
+      const response = await fetch(`${getApiBase()}/auth/me`, {
+        credentials: "include",
+        headers: { Accept: "application/json" },
       });
 
-      saveTokens(newTokens);
-      setState((prev) => ({ ...prev, tokens: newTokens }));
+      if (response.ok) {
+        const user = await response.json();
+        setState((prev) => ({
+          ...prev,
+          isAuthenticated: true,
+          user,
+          isLoading: false,
+          connectionStatus: "open",
+          authReason: "auth_refreshed",
+          error: null,
+        }));
+        logger.info("Auth status refreshed successfully", { user });
+      } else {
+        setState((prev) => ({
+          ...prev,
+          isAuthenticated: false,
+          user: null,
+          isLoading: false,
+          connectionStatus: "open",
+          authReason: "auth_refresh_failed",
+          error: null,
+        }));
+        logger.info("Auth status refresh - not authenticated");
+      }
     } catch (error) {
-      logger.error("Token refresh failed", { error });
-      logout();
+      logger.error("Auth status refresh failed", { error });
+      setState((prev) => ({
+        ...prev,
+        connectionStatus: "closed",
+        isLoading: false,
+        error: "Connection failed - please check your internet connection",
+      }));
     }
-  }, [state.tokens, logout]);
+  }, []);
 
   // Clear error
   const clearError = useCallback(() => {
@@ -448,31 +515,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Check auth status
   const checkAuthStatus = useCallback(async (): Promise<boolean> => {
-    if (!state.tokens) return false;
-
     try {
-      await apiRequest("/auth/me", {
-        headers: {
-          Authorization: `Bearer ${state.tokens.access_token}`,
-        },
+      const response = await fetch(`${getApiBase()}/auth/me`, {
+        credentials: "include",
+        headers: { Accept: "application/json" },
       });
-      return true;
-    } catch {
+
+      const isAuthenticated = response.ok;
+      logger.info("Auth status check", {
+        isAuthenticated,
+        status: response.status,
+      });
+      return isAuthenticated;
+    } catch (error) {
+      logger.error("Auth status check failed", { error });
       return false;
     }
-  }, [state.tokens]);
+  }, []);
 
   const contextValue: AuthContextValue = {
     ...state,
     login,
     register,
     logout,
-    refreshToken,
     loginWithOAuth,
     registerPasskey,
     authenticateWithPasskey,
     clearError,
     checkAuthStatus,
+    reconnectSSE,
   };
 
   return (
@@ -493,7 +564,6 @@ export function useAuth(): AuthContextValue {
 export function useBasicAuth() {
   const {
     user,
-    tokens,
     isAuthenticated,
     isLoading,
     isInitialized,
@@ -501,13 +571,14 @@ export function useBasicAuth() {
     login,
     register,
     logout,
-    refreshToken,
     clearError,
     checkAuthStatus,
+    connectionStatus,
+    authReason,
+    reconnectSSE,
   } = useAuth();
   return {
     user,
-    tokens,
     isAuthenticated,
     isLoading,
     isInitialized,
@@ -515,9 +586,11 @@ export function useBasicAuth() {
     login,
     register,
     logout,
-    refreshToken,
     clearError,
     checkAuthStatus,
+    connectionStatus,
+    authReason,
+    reconnectSSE,
   };
 }
 

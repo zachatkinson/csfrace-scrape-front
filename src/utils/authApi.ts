@@ -1,22 +1,21 @@
 /**
- * Simple Auth API Utilities - Following Astro Best Practices
- * DRY: Centralized auth API calls without service abstractions
- * SOLID: Single responsibility - just make API calls to Docker backend
+ * Modern Auth API Utilities - Cookie-Based Authentication
  *
- * NO SERVICES, NO MANAGERS, NO PROVIDERS - Just simple fetch() calls!
+ * IMPORTANT: This file now uses HTTP-only cookies instead of localStorage.
+ * No client-side token management needed - everything handled by browser cookies.
+ *
+ * Authentication state is managed by Astro middleware, not client-side.
  */
 
 /// <reference lib="dom" />
 
-import { getApiBaseUrl } from "../constants/api";
-import { handleApiResponse } from "./api-utils.ts";
-
-const API_BASE = getApiBaseUrl();
+const API_BASE = import.meta.env.PUBLIC_API_URL || "http://localhost";
 
 /**
- * Login with email/password - Direct call to Docker backend
+ * Login with email/password - Uses HTTP-only cookies
+ * Backend automatically sets secure cookies on successful login
  */
-export async function login(email: string, password: string) {
+export async function login(email: string, password: string): Promise<boolean> {
   const formData = new FormData();
   formData.append("username", email); // OAuth2 spec uses 'username'
   formData.append("password", password);
@@ -24,32 +23,30 @@ export async function login(email: string, password: string) {
   const response = await fetch(`${API_BASE}/auth/token`, {
     method: "POST",
     body: formData,
+    credentials: "include", // Include HTTP-only cookies
   });
 
-  const data = await handleApiResponse<{
-    access_token: string;
-    refresh_token: string;
-    token_type: string;
-  }>(response);
+  if (response.ok) {
+    // Backend sets HTTP-only cookies automatically
+    // No client-side token storage needed
+    return true;
+  }
 
-  // Store tokens in localStorage (simple, no service needed)
-  localStorage.setItem("access_token", data.access_token);
-  localStorage.setItem("refresh_token", data.refresh_token);
-
-  return data;
+  throw new Error("Login failed");
 }
 
 /**
- * Register new user - Direct call to Docker backend
+ * Register new user - Uses HTTP-only cookies
  */
 export async function register(
   email: string,
   password: string,
   fullName?: string,
-) {
+): Promise<boolean> {
   const response = await fetch(`${API_BASE}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include", // Include HTTP-only cookies
     body: JSON.stringify({
       email,
       password,
@@ -57,111 +54,87 @@ export async function register(
     }),
   });
 
-  return handleApiResponse(response);
+  if (response.ok) {
+    return true;
+  }
+
+  const error = await response.text();
+  throw new Error(error || "Registration failed");
 }
 
 /**
- * Get current user - Direct call to Docker backend
+ * Get current user - Uses HTTP-only cookies
+ * NOTE: This is now handled by Astro middleware.
+ * Use Astro.locals.user instead of calling this directly.
  */
 export async function getCurrentUser() {
-  const token = localStorage.getItem("access_token");
-  if (!token) return null;
-
   const response = await fetch(`${API_BASE}/auth/me`, {
+    credentials: "include", // Include HTTP-only cookies
     headers: {
-      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
     },
   });
 
-  if (!response.ok) {
-    // Token might be expired, try refresh
-    const refreshed = await refreshToken();
-    if (!refreshed) return null;
+  if (response.ok) {
+    return await response.json();
+  }
 
-    // Retry with new token
-    const retryResponse = await fetch(`${API_BASE}/auth/me`, {
+  return null;
+}
+
+/**
+ * Logout - Clear HTTP-only cookies
+ */
+export async function logout(): Promise<void> {
+  try {
+    const response = await fetch(`${API_BASE}/auth/logout`, {
+      method: "POST",
+      credentials: "include", // Include HTTP-only cookies
       headers: {
-        Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+        Accept: "application/json",
       },
     });
 
-    return handleApiResponse(retryResponse);
+    if (!response.ok) {
+      console.warn("Logout request failed, but continuing...");
+    }
+  } catch (error) {
+    console.error("Logout failed:", error);
+    // Don't throw - logout should always succeed from UI perspective
   }
 
-  return handleApiResponse(response);
-}
-
-/**
- * Refresh access token - Direct call to Docker backend
- */
-export async function refreshToken() {
-  const refresh = localStorage.getItem("refresh_token");
-  if (!refresh) return false;
-
-  try {
-    const response = await fetch(`${API_BASE}/auth/refresh`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh_token: refresh }),
-    });
-
-    const data = await handleApiResponse<{
-      access_token: string;
-      refresh_token: string;
-    }>(response);
-
-    localStorage.setItem("access_token", data.access_token);
-    localStorage.setItem("refresh_token", data.refresh_token);
-
-    return true;
-  } catch {
-    // Refresh failed, clear tokens
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    return false;
-  }
-}
-
-/**
- * Logout - Clear tokens locally
- */
-export function logout() {
-  localStorage.removeItem("access_token");
-  localStorage.removeItem("refresh_token");
-  // Optionally call backend /auth/revoke-token if needed
+  // Redirect to clear any cached state
   window.location.href = "/";
 }
 
 /**
- * OAuth login - Direct redirect to Docker backend
+ * OAuth login - Redirect through nginx proxy
  */
 export function loginWithOAuth(provider: "google" | "github") {
   window.location.href = `${API_BASE}/auth/oauth/${provider}/login`;
 }
 
 /**
- * WebAuthn/Passkey registration - Direct call to Docker backend
+ * WebAuthn/Passkey registration - Uses HTTP-only cookies
  */
 export async function registerPasskey() {
-  const token = localStorage.getItem("access_token");
-  if (!token) throw new Error("Not authenticated");
-
   // Step 1: Begin registration
   const beginResponse = await fetch(
     `${API_BASE}/auth/passkeys/register/begin`,
     {
       method: "POST",
+      credentials: "include", // Include HTTP-only cookies
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     },
   );
 
-  const options = (await handleApiResponse(beginResponse)) as Record<
-    string,
-    unknown
-  >;
+  if (!beginResponse.ok) {
+    throw new Error("Failed to begin passkey registration");
+  }
+
+  const options = await beginResponse.json();
 
   // Step 2: Create credential using WebAuthn API
   const credential = await navigator.credentials.create(options);
@@ -171,34 +144,40 @@ export async function registerPasskey() {
     `${API_BASE}/auth/passkeys/register/complete`,
     {
       method: "POST",
+      credentials: "include", // Include HTTP-only cookies
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(credential),
     },
   );
 
-  return handleApiResponse(completeResponse);
+  if (!completeResponse.ok) {
+    throw new Error("Failed to complete passkey registration");
+  }
+
+  return await completeResponse.json();
 }
 
 /**
- * WebAuthn/Passkey authentication - Direct call to Docker backend
+ * WebAuthn/Passkey authentication - Uses HTTP-only cookies
  */
-export async function authenticateWithPasskey() {
+export async function authenticateWithPasskey(): Promise<boolean> {
   // Step 1: Begin authentication
   const beginResponse = await fetch(
     `${API_BASE}/auth/passkeys/authenticate/begin`,
     {
       method: "POST",
+      credentials: "include", // Include HTTP-only cookies
       headers: { "Content-Type": "application/json" },
     },
   );
 
-  const options = (await handleApiResponse(beginResponse)) as Record<
-    string,
-    unknown
-  >;
+  if (!beginResponse.ok) {
+    throw new Error("Failed to begin passkey authentication");
+  }
+
+  const options = await beginResponse.json();
 
   // Step 2: Get credential using WebAuthn API
   const credential = await navigator.credentials.get(options);
@@ -208,34 +187,43 @@ export async function authenticateWithPasskey() {
     `${API_BASE}/auth/passkeys/authenticate/complete`,
     {
       method: "POST",
+      credentials: "include", // Include HTTP-only cookies
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(credential),
     },
   );
 
-  const data = await handleApiResponse<{
-    access_token: string;
-    refresh_token: string;
-  }>(completeResponse);
+  if (completeResponse.ok) {
+    // Backend sets HTTP-only cookies automatically
+    return true;
+  }
 
-  // Store tokens
-  localStorage.setItem("access_token", data.access_token);
-  localStorage.setItem("refresh_token", data.refresh_token);
-
-  return data;
+  throw new Error("Passkey authentication failed");
 }
 
 /**
- * Simple auth state check
+ * NOTE: Authentication state is now managed by Astro middleware.
+ * Use Astro.locals.isAuthenticated instead of these functions.
+ *
+ * These functions are kept for backwards compatibility but are deprecated.
+ */
+
+/**
+ * @deprecated Use Astro.locals.isAuthenticated instead
  */
 export function isAuthenticated(): boolean {
-  return !!localStorage.getItem("access_token");
+  console.warn(
+    "isAuthenticated() is deprecated. Use Astro.locals.isAuthenticated instead.",
+  );
+  return false; // Always return false to force migration to middleware
 }
 
 /**
- * Get auth headers for API requests
+ * @deprecated HTTP-only cookies are included automatically
  */
 export function getAuthHeaders(): HeadersInit {
-  const token = localStorage.getItem("access_token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  console.warn(
+    'getAuthHeaders() is deprecated. Use credentials: "include" instead.',
+  );
+  return {}; // No manual headers needed with HTTP-only cookies
 }

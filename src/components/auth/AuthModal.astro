@@ -217,14 +217,14 @@ import BaseModal from '../common/BaseModal.astro';
             `;
 
             // Call backend OAuth login endpoint with correct redirect_uri
-            const response = await fetch(`http://localhost:8000/auth/oauth/login`, {
+            const response = await fetch(`http://localhost/auth/oauth/login`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
                 provider,
-                redirect_uri: `${window.location.origin}/auth/callback`
+                redirect_uri: `${window.location.origin}/auth/oauth/${provider}/callback`
               })
             });
 
@@ -286,7 +286,7 @@ import BaseModal from '../common/BaseModal.astro';
       showAuthLoading('Authenticating with passkey...');
 
       // Begin authentication
-      const beginResponse = await fetch('http://localhost:8000/auth/passkeys/authenticate/begin', {
+      const beginResponse = await fetch('http://localhost/auth/passkeys/authenticate/begin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -303,7 +303,7 @@ import BaseModal from '../common/BaseModal.astro';
       if (!credential) throw new Error('No credential returned');
 
       // Complete authentication
-      const completeResponse = await fetch('http://localhost:8000/auth/passkeys/authenticate/complete', {
+      const completeResponse = await fetch('http://localhost/auth/passkeys/authenticate/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -342,7 +342,7 @@ import BaseModal from '../common/BaseModal.astro';
       showAuthLoading('Creating passkey...');
 
       // Begin registration
-      const beginResponse = await fetch('http://localhost:8000/auth/passkeys/register/begin', {
+      const beginResponse = await fetch('http://localhost/auth/passkeys/register/begin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -363,7 +363,7 @@ import BaseModal from '../common/BaseModal.astro';
       if (!credential) throw new Error('No credential created');
 
       // Complete registration
-      const completeResponse = await fetch('http://localhost:8000/auth/passkeys/register/complete', {
+      const completeResponse = await fetch('http://localhost/auth/passkeys/register/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

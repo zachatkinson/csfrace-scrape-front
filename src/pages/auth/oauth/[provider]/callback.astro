@@ -1,13 +1,21 @@
 ---
 // Dynamic OAuth Callback Handler
 // Handles OAuth provider callbacks for any provider (google, github, microsoft, etc.)
+import { createContextLogger } from "../../../../utils/logger.ts";
+
 const { provider } = Astro.params;
+
+// Create context-specific logger for OAuth callback
+const oauthLogger = createContextLogger("OAuth-Callback");
 
 // Validate provider parameter
 const validProviders = ['google', 'github', 'microsoft'];
 if (!provider || !validProviders.includes(provider)) {
+  oauthLogger.error("Invalid OAuth provider", { provider, validProviders });
   return new Response('Invalid OAuth provider', { status: 400 });
 }
+
+oauthLogger.info("Processing OAuth callback", { provider });
 ---
 
 <html lang="en">
@@ -133,36 +141,140 @@ if (!provider || !validProviders.includes(provider)) {
           
           // Check if we're in a popup window
           if (window.opener && window.opener.postMessage) {
-            // Send callback data to parent window
-            window.opener.postMessage({
-              type: 'oauth_callback',
-              provider: provider,
-              code: code,
-              state: state
-            }, window.location.origin);
+            statusElement.textContent = 'Exchanging tokens...';
+
+            // Exchange authorization code for JWT tokens
+            const callbackUrl = new URL(`http://localhost/auth/oauth/${provider}/callback`);
+            callbackUrl.searchParams.set('code', code);
+            callbackUrl.searchParams.set('state', state);
+
+            const response = await fetch(callbackUrl.toString(), {
+              method: 'GET',
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+              },
+            });
+
+            const responseText = await response.text();
             
+            // Development-only logging for OAuth debugging
+            if (import.meta.env.DEV) {
+              console.warn('OAuth Debug - Response status:', response.status);
+              console.warn('OAuth Debug - Response headers:', [...response.headers.entries()]);
+              console.warn('OAuth Debug - Response body:', responseText);
+            }
+            
+            if (!response.ok) {
+              let errorData;
+              try {
+                errorData = JSON.parse(responseText);
+              } catch {
+                errorData = { detail: responseText };
+              }
+              throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            let tokenData;
+            try {
+              tokenData = JSON.parse(responseText);
+            } catch (e) {
+              console.error('Failed to parse JSON response:', e);
+              throw new Error('Invalid JSON response from server: ' + responseText.substring(0, 200));
+            }
+
+            // Validate token response
+            if (!tokenData.access_token || !tokenData.token_type) {
+              throw new Error('Invalid token response from server');
+            }
+
+            // Send token data to parent window
+            window.opener.postMessage({
+              type: 'oauth_success',
+              provider: provider,
+              tokens: {
+                access: tokenData.access_token,
+                refresh: tokenData.refresh_token,
+                expires: Date.now() + (tokenData.expires_in * 1000),
+              },
+              user: {
+                id: 'oauth_user',
+                email: '', // Will be filled by backend if available
+                name: '',
+                isVerified: true,
+                provider: provider,
+              }
+            }, window.location.origin);
+
             statusElement.textContent = 'Authentication successful!';
             messageElement.className = 'success';
             messageElement.style.display = 'block';
             messageElement.textContent = 'Closing window...';
-            
+
             // Close popup window
             setTimeout(() => {
               window.close();
-            }, window.CSFRACE_TIMING.UI.SLOW_ANIMATION);
+            }, 1500);
             
           } else {
-            // Handle full page redirect scenario
-            statusElement.textContent = 'Redirecting to application...';
+            // Handle full page redirect scenario - exchange tokens with backend first
+            statusElement.textContent = 'Exchanging tokens...';
+
+            // Exchange authorization code for JWT tokens via backend API
+            const backendUrl = new URL(`http://localhost/auth/oauth/${provider}/callback`);
+            backendUrl.searchParams.set('code', code);
+            backendUrl.searchParams.set('state', state);
+
+            const response = await fetch(backendUrl.toString(), {
+              method: 'GET',
+              credentials: 'include', // Include HTTP-only cookies
+              headers: {
+                'Accept': 'application/json',
+              },
+            });
+
+            const responseText = await response.text();
             
-            // Redirect to main app with callback parameters
-            const redirectUrl = new URL('/', window.location.origin);
-            redirectUrl.searchParams.set('oauth_callback', '1');
-            redirectUrl.searchParams.set('provider', provider);
-            redirectUrl.searchParams.set('code', code);
-            redirectUrl.searchParams.set('state', state);
+            // Development-only logging for OAuth debugging
+            if (import.meta.env.DEV) {
+              console.warn('OAuth Debug - Response status:', response.status);
+              console.warn('OAuth Debug - Response headers:', [...response.headers.entries()]);
+              console.warn('OAuth Debug - Response body:', responseText);
+            }
             
-            window.location.href = redirectUrl.toString();
+            if (!response.ok) {
+              let errorData;
+              try {
+                errorData = JSON.parse(responseText);
+              } catch {
+                errorData = { detail: responseText };
+              }
+              throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            let tokenData;
+            try {
+              tokenData = JSON.parse(responseText);
+            } catch (e) {
+              console.error('Failed to parse JSON response:', e);
+              throw new Error('Invalid JSON response from server: ' + responseText.substring(0, 200));
+            }
+
+            // Validate token response
+            if (!tokenData.access_token || !tokenData.token_type) {
+              throw new Error('Invalid token response from server');
+            }
+
+            // Success - backend has set HTTP-only cookies
+            statusElement.textContent = 'Authentication successful! Redirecting...';
+            messageElement.className = 'success';
+            messageElement.style.display = 'block';
+            messageElement.textContent = 'Welcome! Redirecting to application...';
+            
+            // Redirect to main app (SSE auth service will detect the cookies)
+            setTimeout(() => {
+              window.location.href = '/';
+            }, 1500);
           }
           
         } catch (error) {
@@ -182,12 +294,12 @@ if (!provider || !validProviders.includes(provider)) {
             
             setTimeout(() => {
               window.close();
-            }, window.CSFRACE_TIMING.JOB.JOB_STATUS_CHECK_INTERVAL);
+            }, 3000);
           } else {
             // Redirect back to main app with error
             setTimeout(() => {
               window.location.href = '/?auth_error=' + encodeURIComponent(error.message || 'Authentication failed');
-            }, window.CSFRACE_TIMING.JOB.JOB_STATUS_CHECK_INTERVAL);
+            }, 3000);
           }
         }
       }

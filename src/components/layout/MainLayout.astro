@@ -18,6 +18,9 @@ import AuthModal from '../auth/AuthModal.astro';
 import SettingsPanel from '../SettingsPanel.astro';
 // Import DRY/SOLID Sign In Button Component
 import AuthButton from '../AuthButton.astro';
+// Import DRY/SOLID Icon Components
+import { IconManage } from '../icons';
+
 
 export interface Props {
   title: string;
@@ -25,10 +28,13 @@ export interface Props {
   enableRealTimeUpdates?: boolean;
 }
 
-const { 
-  title, 
+const {
+  title,
   description = "WordPress to Shopify content converter with ultra-modern Liquid Glass UI"
 } = Astro.props;
+
+// Note: Authentication will be handled client-side since JWT tokens are stored in localStorage
+// This follows modern SPA patterns where authentication state is managed in the browser
 ---
 
 <!doctype html>
@@ -80,9 +86,21 @@ const {
                 <a href="/dashboard" class="px-3 py-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200">Job Dashboard</a>
                 <a href="/test-health" class="px-3 py-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200">Health Status</a>
               </nav>
-              
+
+              <!-- User Settings Button (for authenticated users only) -->
+              {Astro.locals.isAuthenticated && (
+                <button
+                  class="p-2 glass-card glass-button bg-white/5 hover:bg-white/15 rounded-lg transition-all duration-200"
+                  title="User Settings"
+                  aria-label="User Settings"
+                  onclick="window.dispatchEvent(new CustomEvent('open-user-settings'))"
+                >
+                  <IconManage class="w-5 h-5" />
+                </button>
+              )}
+
               <!-- Settings Button -->
-              <button 
+              <button
                 id="settings-toggle"
                 class="p-2 glass-card glass-button bg-white/5 hover:bg-white/15 rounded-lg transition-all duration-200"
                 title="Application Settings"
@@ -329,7 +347,13 @@ const {
             window.dispatchEvent(new CustomEvent('open-auth-modal'));
           });
         }
+
+        // Authentication state now handled by Astro middleware
+        // User settings button visibility is controlled server-side via Astro.locals
       });
+
+      // Legacy authentication function removed - now handled by Astro middleware with HTTP-only cookies
+
     </script>
 
     <!-- ASTRO MCP BEST PRACTICE: Global SSE Service in MainLayout -->
@@ -593,7 +617,10 @@ const {
       }
     </script>
 
+
     <!-- ASTRO MCP BEST PRACTICE: Component hydration handled by client:load directive above -->
     <!-- EventDrivenFooterStatus is automatically initialized by Astro Islands -->
+
+    <!-- Authentication Context now handled by AuthContextProvider Island above -->
   </body>
 </html>

@@ -140,24 +140,23 @@ class HealthDashboard {
     if (!corsStatusEl || !corsMessageEl || !corsLastCheckedEl) return;
 
     try {
-      // Test CORS by making a preflight-triggering request
+      // Test CORS by making a simple same-origin request (nginx proxy architecture)
+      // Since we're using nginx reverse proxy, all requests should be same-origin
       const response = await fetch(`${getApiBaseUrl()}/health`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        credentials: "include", // Include cookies for authentication
       });
 
       if (response.ok) {
         corsStatusEl.className = "status-circle status-up";
-        corsMessageEl.textContent = "CORS configured correctly";
+        corsMessageEl.textContent = "Nginx proxy routing correctly";
         corsLastCheckedEl.textContent = new Date().toLocaleTimeString();
       } else {
-        throw new Error(`HTTP ${response.status}`);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
     } catch (error) {
       corsStatusEl.className = "status-circle status-error";
-      corsMessageEl.textContent = `CORS error: ${error}`;
+      corsMessageEl.textContent = `Proxy error: ${error}`;
       corsLastCheckedEl.textContent = new Date().toLocaleTimeString();
     }
   }

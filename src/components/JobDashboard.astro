@@ -7,7 +7,7 @@
 
 // For client-side components, always use PUBLIC_API_BASE_URL (browser-accessible)
 // CRITICAL: JobDashboard runs in browser, so it must use PUBLIC_API_BASE_URL, not SERVER_API_BASE_URL
-const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL || 'http://localhost:8000';
+const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL || 'http://localhost';
 ---
 
 <!-- Custom element wrapper with data attributes (Astro best practice) -->

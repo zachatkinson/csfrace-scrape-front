@@ -29,7 +29,7 @@ export default defineConfig({
       SERVER_API_BASE_URL: envField.string({
         context: "server",
         access: "public",
-        default: "http://localhost:8000",
+        default: "http://localhost",
         optional: true,
       }),
 
@@ -37,7 +37,7 @@ export default defineConfig({
       PUBLIC_BACKEND_SSE_URL: envField.string({
         context: "client",
         access: "public",
-        default: "http://localhost:8000",
+        default: "http://localhost",
         optional: true,
       }),
 
@@ -145,6 +145,17 @@ export default defineConfig({
   },
   // Vite configuration for Liquid Glass optimization
   vite: {
+    // Server configuration for nginx reverse proxy support
+    server: {
+      host: true,
+      hmr: {
+        // Use the same port as nginx proxy (80) for WebSocket connections
+        clientPort: process.env.NODE_ENV === "development" ? 80 : 3000,
+      },
+      // Allow nginx proxy requests from nginx container
+      allowedHosts: ["localhost", "frontend-dev", "nginx-dev", ".localhost"],
+    },
+
     // ASTRO 2025: Inject build-time constants (zero runtime overhead)
     define: {
       "import.meta.env.VITE_ASTRO_VERSION": JSON.stringify(astroVersion),

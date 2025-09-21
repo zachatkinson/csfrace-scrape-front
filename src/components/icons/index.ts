@@ -9,6 +9,7 @@ export { default as IconBell } from "./IconBell.astro";
 export { default as IconClipboard } from "./IconClipboard.astro";
 export { default as IconClose } from "./IconClose.astro";
 export { default as IconDisplay } from "./IconDisplay.astro";
+export { default as IconManage } from "./IconManage.astro";
 export { default as IconSettings } from "./IconSettings.astro";
 
 // Icon component interface for consistent props

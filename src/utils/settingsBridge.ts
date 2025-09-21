@@ -5,7 +5,8 @@
  * to interact with the React useAppSettings hook through a global interface.
  */
 
-import type { AppSettings, ApiConfigSettings } from '../hooks/useAppSettings';
+import type { AppSettings, ApiConfigSettings } from "../interfaces/forms.ts";
+import type { UseAppSettingsReturn } from "../hooks/useAppSettings.ts";
 
 // =============================================================================
 // TYPES
@@ -20,14 +21,29 @@ export interface SettingsBridgeInterface {
   // Write settings
   updateAppSettings(settings: Partial<AppSettings>): void;
   updateApiSettings(settings: Partial<ApiConfigSettings>): void;
-  updateAllSettings(settings: { app?: Partial<AppSettings>; api?: Partial<ApiConfigSettings> }): void;
+  updateAllSettings(settings: {
+    app?: Partial<AppSettings>;
+    api?: Partial<ApiConfigSettings>;
+  }): void;
 
   // Form mapping utilities
   getFormValues(): Record<string, unknown>;
   setFormValues(values: Record<string, unknown>): void;
 
   // Event handling
-  onSettingsChange(callback: (settings: { app: AppSettings; api: ApiConfigSettings }) => void): () => void;
+  onSettingsChange(
+    callback: (settings: { app: AppSettings; api: ApiConfigSettings }) => void,
+  ): () => void;
+
+  // Backend integration state
+  isAuthenticated(): boolean;
+  isSyncing(): boolean;
+  isLoading(): boolean;
+
+  // Utility methods
+  resetToDefaults(): Promise<void>;
+  exportSettings(): string;
+  importSettings(settingsJson: string): Promise<boolean>;
 }
 
 // =============================================================================
@@ -35,25 +51,25 @@ export interface SettingsBridgeInterface {
 // =============================================================================
 
 class SettingsBridge implements SettingsBridgeInterface {
-  private appSettingsHook: any = null;
-  private apiSettingsHook: any = null;
-  private changeCallbacks: Array<(settings: any) => void> = [];
+  private useAppSettingsHook: UseAppSettingsReturn | null = null;
+  private changeCallbacks: Array<
+    (settings: { app: AppSettings; api: ApiConfigSettings }) => void
+  > = [];
 
   /**
    * Initialize the bridge with React hook instances
    * This should be called from a React component that uses the hooks
    */
-  initialize(appHook: any, apiHook: any): void {
-    this.appSettingsHook = appHook;
-    this.apiSettingsHook = apiHook;
+  initialize(useAppSettingsResult: UseAppSettingsReturn): void {
+    this.useAppSettingsHook = useAppSettingsResult;
   }
 
   getAppSettings(): AppSettings {
-    return this.appSettingsHook?.settings || this.getDefaultAppSettings();
+    return this.useAppSettingsHook?.appSettings || this.getDefaultAppSettings();
   }
 
   getApiSettings(): ApiConfigSettings {
-    return this.apiSettingsHook?.settings || this.getDefaultApiSettings();
+    return this.useAppSettingsHook?.apiSettings || this.getDefaultApiSettings();
   }
 
   getAllSettings() {
@@ -64,26 +80,74 @@ class SettingsBridge implements SettingsBridgeInterface {
   }
 
   updateAppSettings(settings: Partial<AppSettings>): void {
-    if (this.appSettingsHook?.updateSettings) {
-      this.appSettingsHook.updateSettings(settings);
+    if (this.useAppSettingsHook?.updateAppSettings) {
+      this.useAppSettingsHook.updateAppSettings(settings);
       this.notifyChangeCallbacks();
     }
   }
 
   updateApiSettings(settings: Partial<ApiConfigSettings>): void {
-    if (this.apiSettingsHook?.updateSettings) {
-      this.apiSettingsHook.updateSettings(settings);
+    if (this.useAppSettingsHook?.updateApiSettings) {
+      this.useAppSettingsHook.updateApiSettings(settings);
       this.notifyChangeCallbacks();
     }
   }
 
-  updateAllSettings(settings: { app?: Partial<AppSettings>; api?: Partial<ApiConfigSettings> }): void {
+  updateAllSettings(settings: {
+    app?: Partial<AppSettings>;
+    api?: Partial<ApiConfigSettings>;
+  }): void {
     if (settings.app) {
       this.updateAppSettings(settings.app);
     }
     if (settings.api) {
       this.updateApiSettings(settings.api);
     }
+  }
+
+  // =============================================================================
+  // BACKEND INTEGRATION STATE
+  // =============================================================================
+
+  isAuthenticated(): boolean {
+    return this.useAppSettingsHook?.isAuthenticated || false;
+  }
+
+  isSyncing(): boolean {
+    return this.useAppSettingsHook?.isSyncing || false;
+  }
+
+  isLoading(): boolean {
+    return this.useAppSettingsHook?.isLoading || false;
+  }
+
+  // =============================================================================
+  // UTILITY METHODS
+  // =============================================================================
+
+  async resetToDefaults(): Promise<void> {
+    if (this.useAppSettingsHook?.resetToDefaults) {
+      await this.useAppSettingsHook.resetToDefaults();
+      this.notifyChangeCallbacks();
+    }
+  }
+
+  exportSettings(): string {
+    if (this.useAppSettingsHook?.exportSettings) {
+      return this.useAppSettingsHook.exportSettings();
+    }
+    return JSON.stringify(this.getAllSettings(), null, 2);
+  }
+
+  async importSettings(settingsJson: string): Promise<boolean> {
+    if (this.useAppSettingsHook?.importSettings) {
+      const result = await this.useAppSettingsHook.importSettings(settingsJson);
+      if (result) {
+        this.notifyChangeCallbacks();
+      }
+      return result;
+    }
+    return false;
   }
 
   /**
@@ -95,12 +159,12 @@ class SettingsBridge implements SettingsBridgeInterface {
 
     return {
       // API Config tab
-      'api-timeout': api.apiTimeout,
-      'refresh-interval': api.refreshInterval,
+      "api-timeout": api.apiTimeout,
+      "refresh-interval": api.refreshInterval,
 
       // Job Defaults tab
-      'max-retries': app.maxRetries, // Use app.maxRetries as primary
-      'job-timeout': app.jobTimeout,
+      "max-retries": app.maxRetries, // Use app.maxRetries as primary
+      "job-timeout": app.jobTimeout,
     };
   }
 
@@ -112,26 +176,28 @@ class SettingsBridge implements SettingsBridgeInterface {
     const apiUpdates: Partial<ApiConfigSettings> = {};
 
     // Map form fields to settings
-    if (values['api-timeout'] !== undefined) {
-      apiUpdates.apiTimeout = Number(values['api-timeout']);
+    if (values["api-timeout"] !== undefined) {
+      apiUpdates.apiTimeout = Number(values["api-timeout"]);
     }
-    if (values['refresh-interval'] !== undefined) {
-      apiUpdates.refreshInterval = Number(values['refresh-interval']);
+    if (values["refresh-interval"] !== undefined) {
+      apiUpdates.refreshInterval = Number(values["refresh-interval"]);
     }
-    if (values['max-retries'] !== undefined) {
-      appUpdates.maxRetries = Number(values['max-retries']);
+    if (values["max-retries"] !== undefined) {
+      appUpdates.maxRetries = Number(values["max-retries"]);
       // Also update apiSettings.retryAttempts to keep them in sync
-      apiUpdates.retryAttempts = Number(values['max-retries']);
+      apiUpdates.retryAttempts = Number(values["max-retries"]);
     }
-    if (values['job-timeout'] !== undefined) {
-      appUpdates.jobTimeout = Number(values['job-timeout']);
+    if (values["job-timeout"] !== undefined) {
+      appUpdates.jobTimeout = Number(values["job-timeout"]);
     }
 
     // Apply updates
     this.updateAllSettings({ app: appUpdates, api: apiUpdates });
   }
 
-  onSettingsChange(callback: (settings: { app: AppSettings; api: ApiConfigSettings }) => void): () => void {
+  onSettingsChange(
+    callback: (settings: { app: AppSettings; api: ApiConfigSettings }) => void,
+  ): () => void {
     this.changeCallbacks.push(callback);
 
     // Return unsubscribe function
@@ -145,11 +211,11 @@ class SettingsBridge implements SettingsBridgeInterface {
 
   private notifyChangeCallbacks(): void {
     const settings = this.getAllSettings();
-    this.changeCallbacks.forEach(callback => {
+    this.changeCallbacks.forEach((callback) => {
       try {
         callback(settings);
       } catch (error) {
-        console.error('Settings bridge callback error:', error);
+        console.error("Settings bridge callback error:", error);
       }
     });
   }
@@ -172,7 +238,7 @@ class SettingsBridge implements SettingsBridgeInterface {
 
   private getDefaultApiSettings(): ApiConfigSettings {
     return {
-      apiUrl: "http://localhost:8000",
+      apiUrl: "http://localhost",
       apiTimeout: 30,
       refreshInterval: 10,
       retryAttempts: 3,
@@ -198,6 +264,6 @@ declare global {
 }
 
 // Expose to window for vanilla JS access
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   window.settingsBridge = settingsBridge;
 }

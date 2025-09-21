@@ -1,10 +1,29 @@
 /// <reference types="astro/client" />
 
-// Extend Astro namespace for middleware locals
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-declare namespace App {
-  interface Locals {
-    rateLimitRemaining?: number;
+// User type for authentication
+interface User {
+  id: string;
+  username: string;
+  email: string;
+  fullName?: string;
+  isActive: boolean;
+  isSuperuser: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Extend Astro namespace for authentication middleware locals
+declare global {
+  namespace App {
+    interface Locals {
+      // Authentication state (set by middleware)
+      user: User | null;
+      isAuthenticated: boolean;
+      isAdmin: boolean;
+
+      // Rate limiting
+      rateLimitRemaining?: number;
+    }
   }
 }
 

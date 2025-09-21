@@ -1,6 +1,6 @@
 /**
  * Performance SSE Service - SOLID Single Responsibility Principle
- * Dedicated service for consuming performance metrics from /performance/stream
+ * Dedicated service for consuming performance metrics from /health/stream
  * Following SOLID principles: Only handles performance metrics streaming
  */
 
@@ -57,7 +57,7 @@ export class PerformanceSSEService {
 
     try {
       const backendUrl = getApiBaseUrl();
-      const sseUrl = `${backendUrl}/performance/stream`;
+      const sseUrl = `${backendUrl}/health/stream`;
       console.log("🔗 [PerformanceSSE] Connecting to:", sseUrl);
       logger.info("Establishing performance SSE connection", { sseUrl });
 
@@ -167,20 +167,14 @@ export class PerformanceSSEService {
         },
       );
 
-      // Handle error events
-      this.eventSource.addEventListener("error", (event: MessageEvent) => {
-        try {
-          console.log("⚠️ [PerformanceSSE] Error event received:", event.data);
-          const errorData = JSON.parse(event.data);
-          console.error("⚠️ [PerformanceSSE] Parsed error data:", errorData);
-          logger.error("Performance SSE error event", { errorData });
-        } catch (error) {
-          console.error(
-            "❌ [PerformanceSSE] Error processing error event:",
-            error,
-          );
-          logger.error("Error processing performance error event", { error });
-        }
+      // Handle error events (SSE error events don't have JSON data)
+      this.eventSource.addEventListener("error", (event: Event) => {
+        console.log("⚠️ [PerformanceSSE] Error event received:", event.type);
+        logger.error("Performance SSE error event", {
+          type: event.type,
+          readyState: this.eventSource?.readyState,
+        });
+        this.isConnected = false;
       });
 
       this.eventSource.onerror = (error: Event) => {

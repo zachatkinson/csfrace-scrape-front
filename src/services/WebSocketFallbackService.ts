@@ -5,7 +5,7 @@
  */
 
 // Removed problematic astro:env/server import - use runtime environment
-const SERVER_API_BASE_URL = "http://localhost:8000";
+const SERVER_API_BASE_URL = "http://localhost";
 import type { HealthResponse } from "./HealthService";
 import { createContextLogger } from "../utils/logger";
 

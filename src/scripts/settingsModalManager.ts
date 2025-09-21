@@ -117,9 +117,11 @@ export class SettingsModalManager extends BaseModalManager {
 
       // Update button styles
       if (isActiveBtn) {
-        btn.className = "flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors bg-blue-500/20 text-blue-300 border border-blue-500/30";
+        btn.className =
+          "flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors bg-blue-500/20 text-blue-300 border border-blue-500/30";
       } else {
-        btn.className = "flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors text-white/60 hover:text-white hover:bg-white/5";
+        btn.className =
+          "flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors text-white/60 hover:text-white hover:bg-white/5";
       }
     });
 
@@ -130,7 +132,7 @@ export class SettingsModalManager extends BaseModalManager {
 
       // Remove inline display style and use proper display control
       const element = content as HTMLElement;
-      element.style.display = isActive ? 'block' : 'none';
+      element.style.display = isActive ? "block" : "none";
 
       // Also update classes for consistency
       content.classList.toggle("hidden", !isActive);
@@ -176,10 +178,17 @@ export class SettingsModalManager extends BaseModalManager {
     try {
       // Collect form values
       const formValues: Record<string, unknown> = {};
-      const fieldIds = ['api-timeout', 'refresh-interval', 'max-retries', 'job-timeout'];
+      const fieldIds = [
+        "api-timeout",
+        "refresh-interval",
+        "max-retries",
+        "job-timeout",
+      ];
 
-      fieldIds.forEach(fieldId => {
-        const input = this.modal?.querySelector(`#${fieldId}`) as HTMLInputElement;
+      fieldIds.forEach((fieldId) => {
+        const input = this.modal?.querySelector(
+          `#${fieldId}`,
+        ) as HTMLInputElement;
         if (input) {
           const value = Number(input.value);
           if (!isNaN(value)) {
@@ -202,7 +211,6 @@ export class SettingsModalManager extends BaseModalManager {
 
       // Optional: Close modal after saving
       // this.close();
-
     } catch (error) {
       this.logger.error("Failed to save settings", error);
     }
@@ -338,7 +346,9 @@ export class SettingsModalManager extends BaseModalManager {
 
       // Update form fields with current values
       Object.entries(formValues).forEach(([fieldId, value]) => {
-        const input = this.modal?.querySelector(`#${fieldId}`) as HTMLInputElement;
+        const input = this.modal?.querySelector(
+          `#${fieldId}`,
+        ) as HTMLInputElement;
         if (input) {
           input.value = String(value);
           this.logger.debug(`Loaded setting: ${fieldId} = ${value}`);

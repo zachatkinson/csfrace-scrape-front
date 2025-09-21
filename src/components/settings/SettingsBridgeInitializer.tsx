@@ -5,40 +5,28 @@
  * enabling vanilla JavaScript components to interact with React state.
  */
 
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import { useAppSettings } from "../../hooks/useAppSettings";
 import { settingsBridge } from "../../utils/settingsBridge";
+import type { AppSettings, ApiConfigSettings } from "../../interfaces/forms.ts";
 
 export interface SettingsBridgeInitializerProps {
   /** Optional callback when settings change */
-  onSettingsChange?: (settings: { app: any; api: any }) => void;
+  onSettingsChange?: (settings: {
+    app: AppSettings;
+    api: ApiConfigSettings;
+  }) => void;
 }
 
-export const SettingsBridgeInitializer: React.FC<SettingsBridgeInitializerProps> = ({
-  onSettingsChange,
-}) => {
-  // Use the app settings hooks - this returns separate appSettings and apiSettings
-  const {
-    appSettings,
-    apiSettings,
-    updateAppSettings,
-    updateApiSettings
-  } = useAppSettings();
-
-  // Create hook objects for the bridge
-  const apiHook = {
-    settings: apiSettings,
-    updateSettings: updateApiSettings,
-  };
-
-  const appHook = {
-    settings: appSettings,
-    updateSettings: updateAppSettings,
-  };
+export const SettingsBridgeInitializer: React.FC<
+  SettingsBridgeInitializerProps
+> = ({ onSettingsChange }) => {
+  // Use the app settings hook - get the complete result object
+  const useAppSettingsResult = useAppSettings();
 
   // Initialize the bridge when component mounts
   useEffect(() => {
-    settingsBridge.initialize(appHook, apiHook);
+    settingsBridge.initialize(useAppSettingsResult);
 
     // Set up change listener if callback provided
     let unsubscribe: (() => void) | undefined;
@@ -51,7 +39,7 @@ export const SettingsBridgeInitializer: React.FC<SettingsBridgeInitializerProps>
         unsubscribe();
       }
     };
-  }, [appSettings, apiSettings, onSettingsChange]);
+  }, [useAppSettingsResult, onSettingsChange]);
 
   // This component doesn't render anything visible
   return null;

@@ -108,6 +108,7 @@ export class AuthModalManager extends BaseModalManager {
     this.setupProviders();
     this.setupValidation();
     this.setupCustomEventListeners();
+    this.setupOAuthCallbackListener();
 
     this.logger.info("Authentication handlers set up");
   }
@@ -126,6 +127,34 @@ export class AuthModalManager extends BaseModalManager {
         this.openInMode(mode);
       } else {
         this.open();
+      }
+    });
+
+    // Listen for OAuth callback messages from popup windows
+    window.addEventListener("message", async (event: MessageEvent) => {
+      // Verify origin for security
+      if (event.origin !== window.location.origin) {
+        return;
+      }
+
+      const { type, provider, tokens, user, error } = event.data;
+
+      if (type === "oauth_success" && provider && tokens && user) {
+        this.logger.info("Received OAuth success", { provider });
+
+        // Create authenticated user object with received tokens
+        const authenticatedUser: AuthenticatedUser = {
+          ...user,
+          tokens: tokens,
+        };
+
+        this.handleAuthSuccess(authenticatedUser);
+      } else if (type === "oauth_error" && error) {
+        this.logger.error("OAuth error from popup", { error });
+        this.handleAuthError({
+          code: "OAUTH_ERROR",
+          message: error,
+        });
       }
     });
   }
@@ -333,7 +362,7 @@ export class AuthModalManager extends BaseModalManager {
         this.handleAuthError(result.error);
       }
     } catch (error) {
-      console.error("AuthModalManager: Form submission error:", error);
+      this.logger.error("Form submission error", error);
       this.handleAuthError({
         code: "SUBMISSION_ERROR",
         message: "An unexpected error occurred. Please try again.",
@@ -356,11 +385,26 @@ export class AuthModalManager extends BaseModalManager {
         provider: provider.name,
       });
 
-      // In a real implementation, this would redirect to the OAuth provider
-      // For now, simulate the OAuth flow
-      window.location.href = provider.authUrl;
+      // Open OAuth provider in popup window for better UX
+      const popup = window.open(
+        provider.authUrl,
+        `oauth_${provider.id}`,
+        "width=500,height=600,scrollbars=yes,resizable=yes",
+      );
+
+      if (!popup) {
+        throw new Error("Popup blocked. Please allow popups for this site.");
+      }
+
+      // Monitor popup closure in case user cancels
+      const checkClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkClosed);
+          this.logger.info("OAuth popup closed by user");
+        }
+      }, 1000);
     } catch (error) {
-      console.error(`AuthModalManager: ${provider.name} auth error:`, error);
+      this.logger.error(`${provider.name} auth error`, error);
       this.handleAuthError({
         code: "PROVIDER_ERROR",
         message: `Failed to authenticate with ${provider.name}. Please try again.`,
@@ -565,7 +609,7 @@ export class AuthModalManager extends BaseModalManager {
    * Handle authentication error
    */
   private handleAuthError(error: AuthError): void {
-    console.error("❌ AuthModalManager: Authentication error", error);
+    this.logger.error("Authentication error", error);
 
     // Show error in modal
     this.showError(error.message);
@@ -662,7 +706,7 @@ export class AuthModalManager extends BaseModalManager {
 
       sessionStorage.setItem("auth_tokens", JSON.stringify(user.tokens));
     } catch (error) {
-      console.error("Failed to store auth data:", error);
+      this.logger.error("Failed to store auth data", error);
     }
   }
 
@@ -699,5 +743,103 @@ export class AuthModalManager extends BaseModalManager {
   updateProviders(providers: AuthProvider[]): void {
     this.config.providers = providers;
     this.setupProviders();
+  }
+
+  /**
+   * Handle OAuth callback from popup window
+   */
+  private async handleOAuthCallback(
+    provider: string,
+    code: string,
+    state: string,
+  ): Promise<void> {
+    try {
+      this.logger.info(`Processing OAuth callback for ${provider}`);
+
+      // Exchange authorization code for JWT tokens
+      const callbackUrl = new URL(
+        `http://localhost/auth/oauth/${provider}/callback`,
+      );
+      callbackUrl.searchParams.set("code", code);
+      callbackUrl.searchParams.set("state", state);
+
+      const response = await fetch(callbackUrl.toString(), {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.detail || `HTTP ${response.status}: ${response.statusText}`,
+        );
+      }
+
+      const tokenData = await response.json();
+      this.logger.info(`Token exchange successful for ${provider}`, {
+        tokenData,
+      });
+
+      // Validate token response
+      if (!tokenData.access_token || !tokenData.token_type) {
+        throw new Error("Invalid token response from server");
+      }
+
+      // Create user object in expected format
+      const user: AuthenticatedUser = {
+        id: "oauth_user",
+        email: "", // Will be populated if available
+        name: "",
+        isVerified: true,
+        provider: provider,
+        tokens: {
+          access: tokenData.access_token,
+          refresh: tokenData.refresh_token,
+          expires: Date.now() + tokenData.expires_in * 1000,
+        },
+      };
+
+      this.logger.info(`Storing user data for ${provider}`, {
+        user: { ...user, tokens: "***" },
+      });
+      this.handleAuthSuccess(user);
+    } catch (error) {
+      this.logger.error(`OAuth callback failed for ${provider}`, error);
+      this.showError(
+        error instanceof Error ? error.message : "OAuth authentication failed",
+      );
+    }
+  }
+
+  /**
+   * Set up OAuth callback message listener
+   */
+  private setupOAuthCallbackListener(): void {
+    // Listen for OAuth callback messages from popup windows
+    window.addEventListener("message", async (event: MessageEvent) => {
+      // Security check: only accept messages from same origin
+      if (event.origin !== window.location.origin) {
+        this.logger.warn(
+          "OAuth: Rejected message from different origin",
+          { origin: event.origin }
+        );
+        return;
+      }
+
+      const { type, provider, code, state, error } = event.data;
+
+      if (type === "oauth_callback" && provider && code && state) {
+        this.logger.info(`Received OAuth callback message for ${provider}`);
+        await this.handleOAuthCallback(provider, code, state);
+      } else if (type === "oauth_error" && error) {
+        this.logger.error("Received OAuth error message", { error });
+        this.showError(error);
+      }
+    });
+
+    this.logger.info("OAuth callback message listener set up");
   }
 }
