@@ -6,6 +6,19 @@
 
 import { apiClient } from "./api-client.ts";
 import { authAPI } from "./auth-api.ts";
+import { createContextLogger } from "../utils/logger.js";
+
+const logger = createContextLogger("UserSettingsAPI");
+
+// Type definitions for window extensions
+declare global {
+  interface Window {
+    __ASTRO_AUTH_STATE__?: {
+      isAuthenticated: boolean;
+      user?: unknown;
+    };
+  }
+}
 
 export interface UserSettings {
   id: string;
@@ -77,45 +90,118 @@ class UserSettingsAPI {
 
   /**
    * Get current user's settings
-   * Creates default settings if none exist
+   * Since there's no dedicated user settings endpoint, we use localStorage with defaults
+   * and fall back to auth/me for user info when available
    */
   async getUserSettings(): Promise<UserSettings> {
-    return this.baseClient.get<UserSettings>("/user/settings/");
+    try {
+      // Try to get basic user info from /auth/me (this endpoint exists)
+      const userResponse = await fetch("/auth/me", {
+        method: "GET",
+        credentials: "include",
+        headers: { Accept: "application/json" },
+      });
+
+      let userInfo = null;
+      if (userResponse.ok) {
+        userInfo = await userResponse.json();
+      }
+
+      // Return default settings with actual user info if available
+      return {
+        id: userInfo?.id || "default",
+        user_id: userInfo?.id || "current-user",
+        ...DEFAULT_USER_SETTINGS,
+        created_at: userInfo?.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+    } catch (error: unknown) {
+      logger.info("Using default settings due to error:", error);
+      // Return default settings with placeholder values
+      return {
+        id: "default",
+        user_id: "current-user",
+        ...DEFAULT_USER_SETTINGS,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+    }
   }
 
   /**
    * Update current user's settings
-   * Supports partial updates
+   * Since there's no backend endpoint, we store locally and return updated defaults
    */
   async updateUserSettings(
     settings: UserSettingsUpdate,
   ): Promise<UserSettings> {
-    return this.baseClient.put<UserSettings>("/user/settings/", settings);
+    try {
+      // For now, just store the settings locally and return updated defaults
+      // In the future, this could be enhanced to sync with a backend endpoint
+      logger.info(
+        "Storing user settings locally (backend endpoint not available)",
+      );
+
+      // Store in localStorage for persistence
+      const localKey = "user-settings-override";
+      const existingOverrides = JSON.parse(
+        localStorage.getItem(localKey) || "{}",
+      );
+      const updatedOverrides = { ...existingOverrides, ...settings };
+      localStorage.setItem(localKey, JSON.stringify(updatedOverrides));
+
+      // Return updated default settings
+      return {
+        id: "default",
+        user_id: "current-user",
+        ...DEFAULT_USER_SETTINGS,
+        ...updatedOverrides,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+    } catch (error: unknown) {
+      logger.error("Failed to update user settings:", error);
+      throw error;
+    }
   }
 
   /**
    * Reset user settings to defaults
+   * Clears any local overrides
    */
   async resetUserSettings(): Promise<{ message: string }> {
-    return this.baseClient.delete<{ message: string }>("/user/settings/");
+    try {
+      // Clear local storage overrides
+      localStorage.removeItem("user-settings-override");
+      logger.info("User settings reset to defaults");
+      return { message: "Settings reset to defaults (local only)" };
+    } catch (error: unknown) {
+      logger.error("Failed to reset user settings:", error);
+      throw error;
+    }
   }
 
   /**
    * Check if user is authenticated for backend settings
+   * Updated for HTTP-only cookie authentication
    */
   isAuthenticated(): boolean {
+    // For HTTP-only cookies, we can't check authentication synchronously
+    // Instead, we check if we have cached auth state from Astro middleware
     try {
-      // Check if we have a valid auth token
-      const token = localStorage.getItem("auth_token");
-      if (!token) return false;
-
-      // Simple expiration check if token is JWT
-      const payload = this.parseJWTPayload(token);
-      if (payload?.exp && Date.now() >= payload.exp * 1000) {
-        return false;
+      // Check if we have Astro middleware auth state
+      if (typeof window !== "undefined" && window.__ASTRO_AUTH_STATE__) {
+        return window.__ASTRO_AUTH_STATE__.isAuthenticated === true;
       }
 
-      return true;
+      // Fallback: check for legacy localStorage token (during transition period)
+      const token = localStorage.getItem("auth_token");
+      if (token) {
+        const payload = this.parseJWTPayload(token);
+        return !(payload?.exp && Date.now() >= payload.exp * 1000);
+      }
+
+      return false;
     } catch {
       return false;
     }
@@ -126,6 +212,26 @@ class UserSettingsAPI {
    */
   async getCurrentUser() {
     return authAPI.getCurrentUser();
+  }
+
+  /**
+   * Async authentication check using HTTP-only cookies
+   * Makes an API call to verify authentication status
+   */
+  async checkAuthentication(): Promise<boolean> {
+    try {
+      const response = await fetch("/auth/me", {
+        method: "GET",
+        credentials: "include", // Include HTTP-only cookies
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      return response.ok;
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -214,7 +320,11 @@ export function mergeWithDefaults(
 export function isSettingsEqual(a: UserSettings, b: UserSettings): boolean {
   // Compare all fields except timestamps using object spread and destructuring
   const { created_at, updated_at, ...aWithoutTimestamps } = a;
-  const { created_at: createdAtB, updated_at: updatedAtB, ...bWithoutTimestamps } = b;
+  const {
+    created_at: createdAtB,
+    updated_at: updatedAtB,
+    ...bWithoutTimestamps
+  } = b;
 
   // Avoid unused variable warning by referencing them in a void expression
   void created_at;

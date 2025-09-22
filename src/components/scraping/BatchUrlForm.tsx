@@ -17,9 +17,6 @@ export interface BatchUrlFormProps {
   // Submission state
   isSubmitting: boolean;
 
-  // Auth state
-  isAuthenticated: boolean;
-
   // UI customization
   className?: string;
   title?: string;
@@ -37,7 +34,6 @@ export const BatchUrlForm: React.FC<BatchUrlFormProps> = ({
   onSubmit,
   onClear,
   isSubmitting,
-  isAuthenticated,
   className = "",
   title = "Batch URL Processing",
   subtitle = "Convert multiple WordPress URLs simultaneously",
@@ -56,7 +52,6 @@ export const BatchUrlForm: React.FC<BatchUrlFormProps> = ({
   const hasUrls = batchUrls.trim().length > 0;
 
   const getButtonText = () => {
-    if (!isAuthenticated) return "Sign In Required";
     if (isSubmitting) return "Creating Batch...";
     return `Process ${urlCount} URL${urlCount !== 1 ? "s" : ""}`;
   };
@@ -197,7 +192,7 @@ export const BatchUrlForm: React.FC<BatchUrlFormProps> = ({
           <LiquidButton
             variant="primary"
             size="lg"
-            disabled={!isValid || !isAuthenticated}
+            disabled={!isValid}
             loading={isSubmitting}
             onClick={onSubmit}
             leftIcon={

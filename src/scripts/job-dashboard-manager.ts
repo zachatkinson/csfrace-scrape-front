@@ -26,7 +26,9 @@ class JobDashboard extends HTMLElement {
 
     // Initialize display
     this.showLoading();
-    this.loadInitialJobs();
+
+    // Check authentication before loading jobs
+    this.checkAuthAndLoadJobs();
 
     // Setup SSE event listeners (DRY: reuses MainLayout SSE service)
     this.setupSSEListeners();
@@ -34,7 +36,17 @@ class JobDashboard extends HTMLElement {
     // Setup retry button
     const retryBtn = this.querySelector("#retry-load-jobs");
     retryBtn?.addEventListener("click", () => {
-      this.loadInitialJobs();
+      this.checkAuthAndLoadJobs();
+    });
+
+    // Listen for authentication state changes
+    window.addEventListener("user-logged-in", () => {
+      this.checkAuthAndLoadJobs();
+    });
+
+    window.addEventListener("user-logged-out", () => {
+      this.showEmptyState();
+      this.hideLoading();
     });
   }
 
@@ -97,8 +109,39 @@ class JobDashboard extends HTMLElement {
   };
 
   // ===================================================================
-  // Job Loading and Rendering (SOLID: Single Responsibility)
+  // Authentication and Job Loading (SOLID: Single Responsibility)
   // ===================================================================
+
+  async checkAuthAndLoadJobs() {
+    try {
+      // Check if user is authenticated before loading jobs
+      const authResponse = await fetch("/auth/me", {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+        },
+      });
+
+      if (authResponse.ok) {
+        // User is authenticated, load jobs
+        await this.loadInitialJobs();
+      } else {
+        // User is not authenticated, show empty state
+        this.logger.debug("User not authenticated, skipping job loading");
+        this.showEmptyState();
+        this.hideLoading();
+      }
+    } catch (error) {
+      this.logger.debug(
+        "Authentication check failed, skipping job loading",
+        error,
+      );
+      this.showEmptyState();
+      this.hideLoading();
+    }
+  }
 
   async loadInitialJobs() {
     try {
@@ -107,6 +150,13 @@ class JobDashboard extends HTMLElement {
 
       const response = await fetch(
         `${this.apiBaseUrl}/jobs/?page=1&page_size=10`,
+        {
+          method: "GET",
+          credentials: "include", // Include HTTP-only cookies for authentication
+          headers: {
+            Accept: "application/json",
+          },
+        },
       );
 
       if (!response.ok) {

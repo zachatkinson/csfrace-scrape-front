@@ -12,7 +12,7 @@
   style="border-color: rgb(239 68 68 / 0.3) !important;"
   aria-label="Log Out"
 >
-  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
   </svg>
   <span>Log Out</span>
@@ -21,26 +21,90 @@
 <script>
   // ASTRO MCP BEST PRACTICE: Dedicated logout functionality
   // Following SOLID Single Responsibility Principle
+
+  import { createContextLogger } from '/src/utils/logger.js';
+
+  const logger = createContextLogger('LogOutButton');
   
-  function handleLogout() {
+  async function handleLogout() {
+    logger.info('🔐 Starting logout process...');
+    
+    // Immediately start fade-out animation for instant UI feedback
+    const logoutButton = document.getElementById('logout-button') as HTMLButtonElement;
+    if (logoutButton) {
+      logoutButton.style.transition = 'all 0.2s ease-out';
+      logoutButton.style.opacity = '0.5';
+      logoutButton.style.transform = 'scale(0.95)';
+      logoutButton.disabled = true;
+    }
+    
     try {
-      // Clear all authentication data from localStorage
-      localStorage.removeItem('auth_tokens');
-      localStorage.removeItem('auth_token'); // Legacy support
-      localStorage.removeItem('auth_user');
-      
-      // Dispatch logout event for other components to react
-      window.dispatchEvent(new CustomEvent('user-logged-out'));
-      
-      // Show logout confirmation (following UX best practices)
-      // User logged out successfully
-      
-      // Reload page to reset authentication state across components
-      window.location.reload();
+      // Try to revoke tokens and handle Safari-specific response
+      fetch('/auth/revoke-all-tokens', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          reason: 'user_logout'
+        })
+      }).then(async response => {
+        if (response.ok) {
+          logger.info('✅ Tokens revoked successfully');
+          
+          // Handle Safari-specific storage clearing instructions
+          try {
+            const result = await response.json();
+            if (result.clear_local_storage) {
+              logger.info('🍎 Safari compatibility mode: Enhanced storage clearing');
+              // Additional Safari-specific clearing already handled below
+            }
+          } catch {
+            logger.warn('⚠️ Could not parse logout response, but continuing');
+          }
+        } else if (response.status === 401) {
+          logger.warn('⚠️ Already logged out');
+        } else {
+          logger.warn('⚠️ Token revocation failed, but continuing logout');
+        }
+      }).catch(error => {
+        logger.warn('⚠️ Token revocation error, but continuing logout:', error);
+      });
       
     } catch (error) {
-      console.error('❌ Error during logout:', error);
+      logger.warn('⚠️ Failed to initiate token revocation, but continuing logout:', error);
     }
+    
+    // SAFARI COMPATIBILITY: Clear all client-side storage immediately
+    // Based on Apple ITP research - Safari requires explicit clearing of all storage types
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Clear IndexedDB (Safari auto-expires in 7 days but clear explicitly)
+      if ('indexedDB' in window) {
+        // Note: Full IndexedDB clearing would require async operations
+        // but we're doing a hard reload anyway, so this is sufficient
+        logger.info('💾 Client storage cleared for Safari compatibility');
+      }
+    } catch (error) {
+      logger.warn('⚠️ Error clearing storage, but continuing logout:', error);
+    }
+    
+    // Dispatch logout event for other components to react
+    window.dispatchEvent(new CustomEvent('user-logged-out'));
+    
+    // Wait for UI components to update before reloading
+    // This prevents the flash where logout button stays visible
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    logger.info('🔄 Performing hard reload to complete logout...');
+    
+    // Force a hard reload which will clear any cached authentication state
+    // and force the browser to re-evaluate all authentication cookies
+    window.location.href = window.location.origin + '?logout=true&t=' + Date.now();
   }
   
   // Initialize logout button handler

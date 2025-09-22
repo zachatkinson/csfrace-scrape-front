@@ -10,7 +10,6 @@ import { ModeSwitcher } from "../scraping/Modeswitcher.tsx";
 import { SingleUrlForm } from "../scraping/SingleUrlForm.tsx";
 import { BatchUrlForm } from "../scraping/BatchUrlForm.tsx";
 import { getApiBaseUrl } from "../../constants/api";
-import { getAuthHeaders, isAuthenticated } from "../../utils/authApi";
 
 export interface ScrapingResult {
   content?: string;
@@ -50,7 +49,8 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
   maxConcurrentJobs: _maxConcurrentJobs = 5,
   className = "",
 }) => {
-  const authenticated = isAuthenticated();
+  // Authentication is now handled by Astro middleware
+  // Components receive auth state via props or context if needed
   const { state, actions } = useScrapingForm();
 
   // Direct API job submission - NO SERVICE ABSTRACTION!
@@ -65,8 +65,8 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...getAuthHeaders(),
         },
+        credentials: "include", // Use HTTP-only cookies for authentication
         body: JSON.stringify({ url, options }),
       }).then(async (response) => {
         if (!response.ok) {
@@ -106,8 +106,8 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...getAuthHeaders(),
         },
+        credentials: "include", // Use HTTP-only cookies for authentication
         body: JSON.stringify({
           name: `Batch ${new Date().toLocaleString()}`,
           urls,
@@ -192,7 +192,6 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
           validationResult={state.validationResult}
           isValidating={state.isValidating}
           isSubmitting={state.isSubmitting}
-          isAuthenticated={authenticated}
         />
       ) : (
         <BatchUrlForm
@@ -202,7 +201,6 @@ export const UrlScraper: React.FC<UrlScraperProps> = ({
           onSubmit={handleBatchFormSubmit}
           onClear={actions.clearBatchUrls}
           isSubmitting={state.isBatchSubmitting}
-          isAuthenticated={authenticated}
         />
       )}
 

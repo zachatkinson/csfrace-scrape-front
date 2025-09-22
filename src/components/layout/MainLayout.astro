@@ -18,6 +18,8 @@ import AuthModal from '../auth/AuthModal.astro';
 import SettingsPanel from '../SettingsPanel.astro';
 // Import DRY/SOLID Sign In Button Component
 import AuthButton from '../AuthButton.astro';
+// Import DRY/SOLID User Settings Modal Component
+import UserSettingsModal from '../modals/UserSettingsModal.astro';
 // Import DRY/SOLID Icon Components
 import { IconManage } from '../icons';
 
@@ -87,17 +89,18 @@ const {
                 <a href="/test-health" class="px-3 py-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200">Health Status</a>
               </nav>
 
-              <!-- User Settings Button (for authenticated users only) -->
-              {Astro.locals.isAuthenticated && (
+              <!-- User Settings Button (reactive to auth state) -->
+              <div id="user-settings-button-container" class={Astro.locals.isAuthenticated ? "" : "hidden"}>
                 <button
+                  id="user-settings-button"
                   class="p-2 glass-card glass-button bg-white/5 hover:bg-white/15 rounded-lg transition-all duration-200"
                   title="User Settings"
                   aria-label="User Settings"
                   onclick="window.dispatchEvent(new CustomEvent('open-user-settings'))"
                 >
-                  <IconManage class="w-5 h-5" />
+                  <IconManage class="w-5 h-5 text-white fill-current" />
                 </button>
-              )}
+              </div>
 
               <!-- Settings Button -->
               <button
@@ -124,6 +127,9 @@ const {
 
       <!-- Settings Panel - Astro Island -->
       <SettingsPanel />
+
+      <!-- User Settings Modal - Astro Island -->
+      <UserSettingsModal />
 
       <!-- Main Content -->
       <main class="flex-1 min-h-screen">

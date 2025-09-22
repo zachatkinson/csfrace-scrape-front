@@ -14,7 +14,8 @@ import { defineMiddleware } from "astro:middleware";
 import { createContextLogger } from "./utils/logger.ts";
 
 // Use the Astro App.Locals User type from env.d.ts
-type LocalsUser = App.Locals['user'];
+// eslint-disable-next-line no-undef
+type LocalsUser = App.Locals["user"];
 
 // Create context-specific logger for authentication middleware
 const authLogger = createContextLogger("Auth-Middleware");
@@ -37,7 +38,9 @@ interface AuthResponse {
 /**
  * Validate user session by calling backend /auth/me with HTTP-only cookies
  */
-async function validateUserSession(request: Request): Promise<NonNullable<LocalsUser> | null> {
+async function validateUserSession(
+  request: Request,
+): Promise<NonNullable<LocalsUser> | null> {
   try {
     // Extract cookies from request to forward to backend
     const cookieHeader = request.headers.get("cookie");
@@ -50,9 +53,7 @@ async function validateUserSession(request: Request): Promise<NonNullable<Locals
     }
 
     if (import.meta.env.DEV) {
-      authLogger.debug(
-        `Found cookies: ${cookieHeader.substring(0, 100)}...`,
-      );
+      authLogger.debug(`Found cookies: ${cookieHeader.substring(0, 100)}...`);
     }
 
     // Call backend /auth/me endpoint with cookies

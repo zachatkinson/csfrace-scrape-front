@@ -114,7 +114,7 @@ oauthLogger.info("Processing OAuth callback", { provider });
     <div id="message" style="display: none;"></div>
   </div>
 
-  <script define:vars={{ provider }} is:inline>
+  <script define:vars={{ provider, isDev: import.meta.env.DEV }} is:inline>
     // OAuth Callback Handler
     (function() {
       const statusElement = document.getElementById('status');
@@ -159,7 +159,7 @@ oauthLogger.info("Processing OAuth callback", { provider });
             const responseText = await response.text();
             
             // Development-only logging for OAuth debugging
-            if (import.meta.env.DEV) {
+            if (isDev) {
               console.warn('OAuth Debug - Response status:', response.status);
               console.warn('OAuth Debug - Response headers:', [...response.headers.entries()]);
               console.warn('OAuth Debug - Response body:', responseText);
@@ -236,7 +236,7 @@ oauthLogger.info("Processing OAuth callback", { provider });
             const responseText = await response.text();
             
             // Development-only logging for OAuth debugging
-            if (import.meta.env.DEV) {
+            if (isDev) {
               console.warn('OAuth Debug - Response status:', response.status);
               console.warn('OAuth Debug - Response headers:', [...response.headers.entries()]);
               console.warn('OAuth Debug - Response body:', responseText);

@@ -20,9 +20,6 @@ export interface SingleUrlFormProps {
   isValidating: boolean;
   isSubmitting: boolean;
 
-  // Auth state
-  isAuthenticated: boolean;
-
   // UI customization
   className?: string;
   title?: string;
@@ -40,7 +37,6 @@ export const SingleUrlForm: React.FC<SingleUrlFormProps> = ({
   validationResult,
   isValidating,
   isSubmitting,
-  isAuthenticated,
   className = "",
   title = "WordPress URL Converter",
   subtitle = "Enter a WordPress URL to convert to Shopify format",
@@ -63,18 +59,12 @@ export const SingleUrlForm: React.FC<SingleUrlFormProps> = ({
   };
 
   const getButtonText = () => {
-    if (!isAuthenticated) return "Sign In Required";
     if (isSubmitting) return "Creating Job...";
     return "Convert to Shopify";
   };
 
   const isDisabled = () => {
-    return (
-      !validationResult?.isValid ||
-      isValidating ||
-      isSubmitting ||
-      !isAuthenticated
-    );
+    return !validationResult?.isValid || isValidating || isSubmitting;
   };
 
   const validationStatus = getValidationStatus();

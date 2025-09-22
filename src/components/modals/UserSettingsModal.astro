@@ -1,0 +1,788 @@
+---
+/**
+ * UserSettingsModal - User account settings modal with passkey, SSO, and account management
+ * Following Astro best practices: HTML by default, JavaScript when needed
+ * DRY: Uses BaseModal for consistent behavior
+ * SOLID: Single responsibility for user settings UI
+ */
+
+import BaseModal from '../common/BaseModal.astro';
+---
+
+<!-- User Settings Modal using DRY/SOLID BaseModal -->
+<BaseModal 
+  id="user-settings-modal" 
+  closeButtonId="user-settings-close"
+  maxWidth="max-w-2xl"
+  backdropBlur={true}
+>
+  <div class="liquid-glass rounded-glass p-6 border border-white/20 user-settings">
+    <!-- Header -->
+    <div class="mb-6">
+      <h3 class="text-xl font-bold text-white">User Settings</h3>
+      <p class="text-white/70 text-sm mt-1">Manage your account, passkeys, and connected services</p>
+    </div>
+
+
+    <!-- Loading State -->
+    <div id="settings-loading" class="text-center py-8">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400"></div>
+      <p class="mt-2 text-white/70">Loading user settings...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="settings-error" class="hidden bg-red-500/20 border border-red-500/30 rounded-glass p-4 mb-6">
+      <div class="flex">
+        <svg class="w-5 h-5 text-red-400 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+        </svg>
+        <div>
+          <p class="text-red-100 font-medium">Error loading settings</p>
+          <p id="settings-error-message" class="text-red-200 text-sm mt-1"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Content -->
+    <div id="settings-content" class="hidden space-y-6">
+      <!-- User Info Section -->
+      <div class="bg-white/5 rounded-glass p-6 border border-white/10">
+        <h3 class="text-lg font-semibold text-white mb-4">Account Information</h3>
+        <div class="space-y-3">
+          <div>
+            <label class="text-sm font-medium text-white/90">Email</label>
+            <p id="user-email" class="text-white bg-black/20 px-3 py-2 border border-white/20 rounded-md">Loading...</p>
+          </div>
+          <div>
+            <label class="text-sm font-medium text-white/90">Account Created</label>
+            <p id="user-created" class="text-white bg-black/20 px-3 py-2 border border-white/20 rounded-md">Loading...</p>
+          </div>
+          <div>
+            <label class="text-sm font-medium text-white/90">Last Sign In</label>
+            <p id="user-last-signin" class="text-white bg-black/20 px-3 py-2 border border-white/20 rounded-md">Loading...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Passkey Management Section -->
+      <div class="bg-blue-500/10 rounded-glass p-6 border border-blue-500/20">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-white">Passkeys</h3>
+          <button id="add-passkey-btn" class="glass-button px-4 py-2 bg-blue-600/80 hover:bg-blue-700/90 text-white font-medium rounded-md border border-blue-500/30 transition-all duration-200 text-sm flex items-center">
+            <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Add Passkey
+          </button>
+        </div>
+        <p class="text-white/70 text-sm mb-4">Passkeys provide secure, passwordless authentication using your device's biometrics or security keys.</p>
+          
+        <!-- Passkey Loading -->
+        <div id="passkeys-loading" class="text-center py-4">
+          <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400"></div>
+          <p class="mt-2 text-sm text-white/70">Loading passkeys...</p>
+        </div>
+
+        <!-- Passkey List -->
+        <div id="passkeys-list" class="hidden space-y-3">
+          <!-- Passkeys will be dynamically populated here -->
+        </div>
+
+        <!-- No Passkeys State -->
+        <div id="no-passkeys" class="hidden text-center py-8">
+          <svg class="w-12 h-12 text-white/40 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-3a1 1 0 011-1l2.686-2.686a6 6 0 117.743-7.743z" />
+          </svg>
+          <p class="text-white/70">No passkeys configured</p>
+          <p class="text-sm text-white/50 mt-1">Add a passkey to enable secure passwordless sign-in</p>
+        </div>
+      </div>
+
+      <!-- SSO Connections Section -->
+      <div class="bg-green-500/10 rounded-glass p-6 border border-green-500/20">
+        <h3 class="text-lg font-semibold text-white mb-4">Connected Accounts</h3>
+        <p class="text-white/70 text-sm mb-6">Link your social accounts to sign in with one click.</p>
+          
+          <div class="space-y-4">
+          <!-- Google Connection -->
+          <div class="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-glass">
+            <div class="flex items-center">
+              <svg class="w-6 h-6 mr-3" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              </svg>
+              <div>
+                <p class="font-medium text-white">Google</p>
+                <p id="google-status" class="text-sm text-white/70">Checking connection...</p>
+              </div>
+            </div>
+            <button id="google-toggle" class="glass-button px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-medium rounded-md border border-white/30 hover:border-white/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm" disabled>
+              Loading...
+            </button>
+          </div>
+
+          <!-- GitHub Connection -->
+          <div class="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-glass">
+            <div class="flex items-center">
+              <svg class="w-6 h-6 mr-3" fill="white" viewBox="0 0 24 24">
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+              </svg>
+              <div>
+                <p class="font-medium text-white">GitHub</p>
+                <p id="github-status" class="text-sm text-white/70">Checking connection...</p>
+              </div>
+            </div>
+            <button id="github-toggle" class="glass-button px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-medium rounded-md border border-white/30 hover:border-white/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm" disabled>
+              Loading...
+            </button>
+          </div>
+
+          <!-- Microsoft Connection -->
+          <div class="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-glass">
+            <div class="flex items-center">
+              <svg class="w-6 h-6 mr-3" viewBox="0 0 24 24">
+                <path fill="#F25022" d="M1 1h10.5v10.5H1z"/>
+                <path fill="#00A4EF" d="M12.5 1H23v10.5H12.5z"/>
+                <path fill="#7FBA00" d="M1 12.5h10.5V23H1z"/>
+                <path fill="#FFB900" d="M12.5 12.5H23V23H12.5z"/>
+              </svg>
+              <div>
+                <p class="font-medium text-white">Microsoft</p>
+                <p id="microsoft-status" class="text-sm text-white/70">Checking connection...</p>
+              </div>
+            </div>
+            <button id="microsoft-toggle" class="glass-button px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-medium rounded-md border border-white/30 hover:border-white/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm" disabled>
+              Loading...
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Danger Zone -->
+      <div class="bg-red-500/10 border border-red-500/20 rounded-glass p-6">
+        <h3 class="text-lg font-semibold text-red-300 mb-4">Danger Zone</h3>
+        <div class="bg-red-500/5 border border-red-500/30 rounded-glass p-4">
+          <div class="flex items-start">
+            <svg class="w-5 h-5 text-red-400 mr-3 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
+            <div class="flex-1">
+              <h4 class="font-medium text-red-300">Delete Account</h4>
+              <p class="text-red-200 text-sm mt-1">
+                Permanently delete your account and all associated data. This action cannot be undone.
+              </p>
+              <button id="delete-account-btn" class="mt-3 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200">
+                Delete Account
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseModal>
+
+<!-- Delete Account Confirmation Modal using BaseModal -->
+<BaseModal 
+  id="delete-confirm-modal" 
+  closeButtonId="delete-confirm-close"
+  maxWidth="max-w-md"
+  backdropBlur={true}
+>
+  <div class="liquid-glass rounded-glass p-6 border border-white/20">
+    <!-- Header -->
+    <div class="mb-6 text-center">
+      <svg class="w-12 h-12 text-red-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+      </svg>
+      <h3 class="text-lg font-medium text-white mb-2">Are you absolutely sure?</h3>
+      <p class="text-white/70 mb-6">
+        This action will permanently delete your account, all your data, job history, and settings. This cannot be undone.
+      </p>
+    </div>
+
+    <div class="mb-6">
+      <label for="delete-confirmation" class="block text-sm font-medium text-white/90 mb-2">
+        Type "DELETE" to confirm:
+      </label>
+      <input 
+        type="text" 
+        id="delete-confirmation" 
+        class="w-full px-3 py-2 bg-black/30 border border-white/30 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+        placeholder="DELETE"
+        autocomplete="off"
+      >
+    </div>
+    <div class="flex justify-center space-x-4">
+      <button id="cancel-delete-btn" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-medium rounded-md border border-white/30 hover:border-white/50 transition-all duration-200">Cancel</button>
+      <button id="confirm-delete-btn" class="px-4 py-2 bg-red-600 text-white font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+        Delete Account
+      </button>
+    </div>
+  </div>
+</BaseModal>
+
+<!-- 
+  Astro Best Practice: Use script tags for interactivity
+  Following the same patterns as AuthModal - simple and DRY
+-->
+<script>
+  import { createContextLogger } from '../../utils/logger';
+
+  // Create logger instance for this component  
+  const logger = createContextLogger('UserSettingsModal');
+
+  // User settings data - properly typed following TypeScript best practices
+  interface UserInfo {
+    id: string;
+    username: string;
+    email: string;
+    full_name?: string;
+    created_at: string;
+    last_login?: string;
+  }
+
+  interface PasskeyInfo {
+    id: string;
+    name: string;
+    created_at: string;
+    last_used_at?: string;
+    is_active: boolean;
+  }
+
+  interface SSOConnectionStatus {
+    [provider: string]: boolean;
+  }
+
+  let userInfo: UserInfo | null = null;
+  let passkeys: PasskeyInfo[] = [];
+  let ssoConnections: SSOConnectionStatus = {};
+
+  // Clean Astro Islands script - Initialize UserSettingsModal functionality
+  logger.info('UserSettingsModal script loaded');
+
+  // Initialize modal functionality
+  document.addEventListener('DOMContentLoaded', () => {
+    // Listen for open event from user settings button
+    document.addEventListener('open-user-settings', () => {
+      openUserSettingsModal();
+    });
+
+    // Listen for close button clicks
+    const closeButton = document.getElementById('user-settings-close');
+    if (closeButton) {
+      closeButton.addEventListener('click', closeUserSettingsModal);
+    }
+
+    // Listen for backdrop clicks to close modal
+    const modal = document.getElementById('user-settings-modal');
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          closeUserSettingsModal();
+        }
+      });
+    }
+
+    // Listen for escape key to close modal
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const modal = document.getElementById('user-settings-modal');
+        if (modal && !modal.classList.contains('opacity-0')) {
+          closeUserSettingsModal();
+        }
+      }
+    });
+
+    // Initialize component functionality
+    initDeleteConfirmation();
+    initPasskeyManagement();
+    initSSOManagement();
+    
+    logger.info('UserSettingsModal initialized');
+  });
+
+  // Open user settings modal and load data
+  async function openUserSettingsModal() {
+    logger.info('Opening user settings modal');
+    
+    // Show modal using the same pattern as other modals
+    const modal = document.getElementById('user-settings-modal');
+    if (modal) {
+      modal.style.display = 'flex';
+      // Use requestAnimationFrame to ensure display change takes effect first
+      requestAnimationFrame(() => {
+        modal.classList.remove('opacity-0', 'pointer-events-none');
+        modal.classList.add('opacity-100', 'pointer-events-auto');
+      });
+    }
+    
+    await loadUserData();
+  }
+
+  // Close user settings modal
+  function closeUserSettingsModal() {
+    logger.info('Closing user settings modal');
+    
+    const modal = document.getElementById('user-settings-modal');
+    if (modal) {
+      modal.classList.remove('opacity-100', 'pointer-events-auto');
+      modal.classList.add('opacity-0', 'pointer-events-none');
+      
+      // Hide after animation completes
+      setTimeout(() => {
+        modal.style.display = 'none';
+      }, 300);
+    }
+  }
+
+  // Load all user data
+  async function loadUserData() {
+    const loadingEl = document.getElementById('settings-loading');
+    const errorEl = document.getElementById('settings-error');
+    const contentEl = document.getElementById('settings-content');
+
+    try {
+      loadingEl?.classList.remove('hidden');
+      errorEl?.classList.add('hidden');
+      contentEl?.classList.add('hidden');
+
+      // Load user information
+      await loadUserInfo();
+      await loadPasskeys();
+      await loadSSOConnections();
+
+      loadingEl?.classList.add('hidden');
+      contentEl?.classList.remove('hidden');
+    } catch (error) {
+      logger.error('Failed to load user settings:', error);
+      loadingEl?.classList.add('hidden');
+      errorEl?.classList.remove('hidden');
+      const errorMessage = document.getElementById('settings-error-message');
+      if (errorMessage) {
+        errorMessage.textContent = error instanceof Error ? error.message : 'Unknown error occurred';
+      }
+    }
+  }
+
+  // Load user information
+  async function loadUserInfo() {
+    const response = await fetch('/auth/me', {
+      method: 'GET',
+      credentials: 'include',
+      headers: { 'Accept': 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to load user information');
+    }
+
+    userInfo = await response.json();
+    
+    // Null check for userInfo before accessing properties
+    if (!userInfo) {
+      throw new Error('User information not available');
+    }
+    
+    // Update UI
+    const emailEl = document.getElementById('user-email');
+    const createdEl = document.getElementById('user-created');
+    const lastSigninEl = document.getElementById('user-last-signin');
+    
+    if (emailEl) emailEl.textContent = userInfo.email || 'Not available';
+    if (createdEl) createdEl.textContent = userInfo.created_at 
+      ? new Date(userInfo.created_at).toLocaleDateString() 
+      : 'Not available';
+    if (lastSigninEl) lastSigninEl.textContent = userInfo.last_login 
+      ? new Date(userInfo.last_login).toLocaleDateString() 
+      : 'Not available';
+  }
+
+  // Load passkeys
+  async function loadPasskeys() {
+    const loadingEl = document.getElementById('passkeys-loading');
+    const listEl = document.getElementById('passkeys-list');
+    const noPasskeysEl = document.getElementById('no-passkeys');
+
+    try {
+      loadingEl?.classList.remove('hidden');
+      listEl?.classList.add('hidden');
+      noPasskeysEl?.classList.add('hidden');
+
+      const response = await fetch('/auth/webauthn/credentials', {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'Accept': 'application/json' },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to load passkeys');
+      }
+
+      passkeys = await response.json();
+      
+      loadingEl?.classList.add('hidden');
+      
+      if (passkeys.length === 0) {
+        noPasskeysEl?.classList.remove('hidden');
+      } else {
+        renderPasskeys();
+        listEl?.classList.remove('hidden');
+      }
+    } catch (error) {
+      logger.error('Failed to load passkeys:', error);
+      loadingEl?.classList.add('hidden');
+      noPasskeysEl?.classList.remove('hidden');
+    }
+  }
+
+  // Render passkeys list
+  function renderPasskeys() {
+    const listEl = document.getElementById('passkeys-list');
+    if (!listEl) return;
+    
+    listEl.innerHTML = '';
+
+    passkeys.forEach((passkey, index) => {
+      const passkeyEl = document.createElement('div');
+      passkeyEl.className = 'flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-glass';
+      passkeyEl.innerHTML = `
+        <div class="flex items-center">
+          <svg class="w-5 h-5 text-blue-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-3a1 1 0 011-1l2.686-2.686a6 6 0 117.743-7.743z" />
+          </svg>
+          <div>
+            <p class="font-medium text-white">${passkey.name || `Passkey ${index + 1}`}</p>
+            <p class="text-sm text-white/70">Created ${new Date(passkey.created_at).toLocaleDateString()}</p>
+          </div>
+        </div>
+        <button class="text-red-400 hover:text-red-300 text-sm font-medium transition-colors duration-200" onclick="removePasskey('${passkey.id}')">
+          Remove
+        </button>
+      `;
+      listEl.appendChild(passkeyEl);
+    });
+  }
+
+  // Initialize passkey management
+  function initPasskeyManagement() {
+    const addBtn = document.getElementById('add-passkey-btn');
+    if (addBtn) {
+      addBtn.addEventListener('click', addPasskey);
+    }
+  }
+
+  // Add new passkey
+  async function addPasskey() {
+    try {
+      logger.info('Starting passkey registration');
+
+      const response = await fetch('/auth/webauthn/register/start', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json' 
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to start passkey registration');
+      }
+
+      const options = await response.json();
+      
+      // Create credential using WebAuthn API
+      const credential = await navigator.credentials.create({ publicKey: options }) as PublicKeyCredential;
+
+      if (!credential) {
+        throw new Error('Failed to create credential');
+      }
+
+      // Type the response properly for WebAuthn
+      const credentialResponse = credential.response as AuthenticatorAttestationResponse;
+
+      // Complete registration
+      const finishResponse = await fetch('/auth/webauthn/register/finish', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          id: credential.id,
+          rawId: Array.from(new Uint8Array(credential.rawId)),
+          type: credential.type,
+          response: {
+            attestationObject: Array.from(new Uint8Array(credentialResponse.attestationObject)),
+            clientDataJSON: Array.from(new Uint8Array(credentialResponse.clientDataJSON)),
+          },
+        }),
+      });
+
+      if (!finishResponse.ok) {
+        throw new Error('Failed to complete passkey registration');
+      }
+
+      logger.info('Passkey added successfully');
+      await loadPasskeys();
+    } catch (error) {
+      logger.error('Failed to add passkey:', error);
+      alert('Failed to add passkey. Please try again.');
+    }
+  }
+
+  // Remove passkey (global function for onclick)
+  // Extend the window interface for TypeScript
+  declare global {
+    interface Window {
+      removePasskey: (passkeyId: string) => Promise<void>;
+    }
+  }
+
+  window.removePasskey = async function(passkeyId: string): Promise<void> {
+    if (!confirm('Are you sure you want to remove this passkey?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/auth/webauthn/credentials/${passkeyId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { 'Accept': 'application/json' },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to remove passkey');
+      }
+
+      logger.info('Passkey removed successfully');
+      await loadPasskeys();
+    } catch (error) {
+      logger.error('Failed to remove passkey:', error);
+      alert('Failed to remove passkey. Please try again.');
+    }
+  };
+
+  // Load SSO connections
+  async function loadSSOConnections() {
+    const providers = ['google', 'github', 'microsoft'];
+    
+    for (const provider of providers) {
+      try {
+        const response = await fetch(`/auth/oauth/${provider}/status`, {
+          method: 'GET',
+          credentials: 'include',
+          headers: { 'Accept': 'application/json' },
+        });
+
+        const statusEl = document.getElementById(`${provider}-status`) as HTMLElement;
+        const toggleEl = document.getElementById(`${provider}-toggle`) as HTMLButtonElement;
+
+        if (response.ok) {
+          const data = await response.json();
+          ssoConnections[provider] = data.connected;
+          
+          if (data.connected) {
+            if (statusEl) {
+              statusEl.textContent = `Connected as ${data.email || 'Unknown'}`;
+              statusEl.className = 'text-sm text-green-400';
+            }
+            if (toggleEl) {
+              toggleEl.textContent = 'Disconnect';
+              toggleEl.className = 'glass-button px-4 py-2 bg-red-600/80 hover:bg-red-700/90 text-white font-medium rounded-md border border-red-500/30 transition-all duration-200 text-sm';
+              toggleEl.onclick = () => toggleSSO(provider);
+            }
+          } else {
+            if (statusEl) {
+              statusEl.textContent = 'Not connected';
+              statusEl.className = 'text-sm text-white/70';
+            }
+            if (toggleEl) {
+              toggleEl.textContent = 'Connect';
+              toggleEl.className = 'glass-button px-4 py-2 bg-blue-600/80 hover:bg-blue-700/90 text-white font-medium rounded-md border border-blue-500/30 transition-all duration-200 text-sm';
+              toggleEl.onclick = () => toggleSSO(provider);
+            }
+          }
+        } else {
+          if (statusEl) {
+            statusEl.textContent = 'Error checking status';
+            statusEl.className = 'text-sm text-red-400';
+          }
+          if (toggleEl) {
+            toggleEl.textContent = 'Connect';
+            toggleEl.className = 'glass-button px-4 py-2 bg-blue-600/80 hover:bg-blue-700/90 text-white font-medium rounded-md border border-blue-500/30 transition-all duration-200 text-sm';
+            toggleEl.onclick = () => toggleSSO(provider);
+          }
+        }
+
+        if (toggleEl) {
+          toggleEl.disabled = false;
+        }
+      } catch (error) {
+        logger.error(`Failed to check ${provider} connection:`, error);
+      }
+    }
+  }
+
+  // Initialize SSO management
+  function initSSOManagement() {
+    // SSO toggle handlers are set up in loadSSOConnections
+  }
+
+  // Toggle SSO connection
+  async function toggleSSO(provider: string) {
+    const isConnected = ssoConnections[provider];
+
+    if (isConnected) {
+      // Disconnect
+      if (!confirm(`Are you sure you want to disconnect your ${provider} account?`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/auth/oauth/${provider}/disconnect`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Accept': 'application/json' },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to disconnect ${provider} account`);
+        }
+
+        logger.info(`${provider} account disconnected successfully`);
+        await loadSSOConnections();
+      } catch (error) {
+        logger.error(`Failed to disconnect ${provider} account:`, error);
+        alert(`Failed to disconnect ${provider} account. Please try again.`);
+      }
+    } else {
+      // Connect
+      window.location.href = `/auth/oauth/${provider}`;
+    }
+  }
+
+  // Initialize delete confirmation
+  function initDeleteConfirmation() {
+    const deleteBtn = document.getElementById('delete-account-btn') as HTMLButtonElement;
+    const confirmInput = document.getElementById('delete-confirmation') as HTMLInputElement;
+    const confirmBtn = document.getElementById('confirm-delete-btn') as HTMLButtonElement;
+    const cancelBtn = document.getElementById('cancel-delete-btn') as HTMLButtonElement;
+
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', () => {
+        // Show delete confirmation modal
+        const deleteModal = document.getElementById('delete-confirm-modal');
+        if (deleteModal) {
+          deleteModal.style.display = 'flex';
+          deleteModal.classList.remove('opacity-0', 'pointer-events-none');
+          deleteModal.classList.add('opacity-100', 'pointer-events-auto');
+        }
+        if (confirmInput) confirmInput.value = '';
+        if (confirmBtn) confirmBtn.disabled = true;
+      });
+    }
+
+    if (confirmInput) {
+      confirmInput.addEventListener('input', () => {
+        if (confirmBtn) {
+          confirmBtn.disabled = confirmInput.value !== 'DELETE';
+        }
+      });
+    }
+
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', () => {
+        // Hide delete confirmation modal
+        const deleteModal = document.getElementById('delete-confirm-modal');
+        if (deleteModal) {
+          deleteModal.classList.add('opacity-0', 'pointer-events-none');
+          deleteModal.classList.remove('opacity-100', 'pointer-events-auto');
+          setTimeout(() => {
+            deleteModal.style.display = 'none';
+          }, 300);
+        }
+      });
+    }
+
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', deleteAccount);
+    }
+  }
+
+  // Delete account
+  async function deleteAccount() {
+    try {
+      const response = await fetch('/auth/delete-account', {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { 'Accept': 'application/json' },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete account');
+      }
+
+      // Account deleted successfully - redirect to home
+      logger.info('Account deleted successfully');
+      window.location.href = '/';
+    } catch (error) {
+      logger.error('Failed to delete account:', error);
+      alert('Failed to delete account. Please try again.');
+    }
+  }
+</script>
+
+<style>
+  /* User Settings Modal Styles */
+  .user-settings {
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  /* Glass effect styles matching the rest of the app */
+  .liquid-glass {
+    backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .rounded-glass {
+    border-radius: 12px;
+  }
+
+  .glass-button {
+    backdrop-filter: blur(8px);
+    transition: all 0.2s ease-out;
+  }
+
+  .glass-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .glass-button:active {
+    transform: translateY(0);
+  }
+
+  .glass-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  /* Smooth loading animation */
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+</style>

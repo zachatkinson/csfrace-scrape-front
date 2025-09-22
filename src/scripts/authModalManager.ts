@@ -822,10 +822,9 @@ export class AuthModalManager extends BaseModalManager {
     window.addEventListener("message", async (event: MessageEvent) => {
       // Security check: only accept messages from same origin
       if (event.origin !== window.location.origin) {
-        this.logger.warn(
-          "OAuth: Rejected message from different origin",
-          { origin: event.origin }
-        );
+        this.logger.warn("OAuth: Rejected message from different origin", {
+          origin: event.origin,
+        });
         return;
       }
 

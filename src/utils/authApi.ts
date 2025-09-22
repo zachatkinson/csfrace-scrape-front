@@ -202,28 +202,13 @@ export async function authenticateWithPasskey(): Promise<boolean> {
 }
 
 /**
- * NOTE: Authentication state is now managed by Astro middleware.
- * Use Astro.locals.isAuthenticated instead of these functions.
+ * DEPRECATED FUNCTIONS REMOVED
  *
- * These functions are kept for backwards compatibility but are deprecated.
+ * The following functions have been removed as part of the migration
+ * to HTTP-only cookie authentication:
+ *
+ * - isAuthenticated(): Use Astro.locals.isAuthenticated instead
+ * - getAuthHeaders(): Use credentials: "include" instead
+ *
+ * Authentication state is now managed by Astro middleware.
  */
-
-/**
- * @deprecated Use Astro.locals.isAuthenticated instead
- */
-export function isAuthenticated(): boolean {
-  console.warn(
-    "isAuthenticated() is deprecated. Use Astro.locals.isAuthenticated instead.",
-  );
-  return false; // Always return false to force migration to middleware
-}
-
-/**
- * @deprecated HTTP-only cookies are included automatically
- */
-export function getAuthHeaders(): HeadersInit {
-  console.warn(
-    'getAuthHeaders() is deprecated. Use credentials: "include" instead.',
-  );
-  return {}; // No manual headers needed with HTTP-only cookies
-}

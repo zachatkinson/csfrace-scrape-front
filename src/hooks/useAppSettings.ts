@@ -136,8 +136,8 @@ export const useAppSettings = (): UseAppSettingsReturn => {
 
   useEffect(() => {
     const initializeSettings = async () => {
-      // Check authentication status
-      const authStatus = userSettingsAPI.isAuthenticated();
+      // Check authentication status asynchronously for HTTP-only cookies
+      const authStatus = await userSettingsAPI.checkAuthentication();
       setIsAuthenticated(authStatus);
 
       try {
@@ -448,8 +448,8 @@ export const useAppSettings = (): UseAppSettingsReturn => {
   // =============================================================================
 
   useEffect(() => {
-    const handleAuthChange = () => {
-      const newAuthStatus = userSettingsAPI.isAuthenticated();
+    const handleAuthChange = async () => {
+      const newAuthStatus = await userSettingsAPI.checkAuthentication();
       if (newAuthStatus !== isAuthenticated) {
         setIsAuthenticated(newAuthStatus);
 

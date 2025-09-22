@@ -1,77 +1,218 @@
 ---
 /**
- * Auth Button Component - ASTRO MCP Best Practice
- * Conditionally renders SignInButton or LogOutButton based on auth state
- * Follows Astro's conditional rendering pattern like Clerk's SignedIn/SignedOut
+ * Morphing Auth Button Component - ASTRO MCP Best Practice
+ * Single button that smoothly morphs between Sign In and Log Out states
+ * Provides seamless user experience with fade transitions
  */
-
-import SignInButton from './SignInButton.astro';
-import LogOutButton from './LogOutButton.astro';
 ---
 
-<!-- ASTRO MCP PATTERN: Conditional Authentication UI -->
-<!-- This will be hydrated client-side to show the correct button -->
+<!-- ASTRO MCP PATTERN: Morphing Authentication UI -->
 <div id="auth-button-container" class="auth-button-wrapper">
-  <!-- Default: Show sign-in button (will be conditionally hidden) -->
-  <div id="signed-out-content">
-    <SignInButton />
-  </div>
-  
-  <!-- Show logout button when authenticated (hidden by default) -->
-  <div id="signed-in-content" class="hidden">
-    <LogOutButton />
-  </div>
+  <button
+    id="morphing-auth-button"
+    class="glass-button px-4 py-2 transition-all duration-300 flex items-center space-x-2"
+    aria-label="Authentication Action"
+  >
+    <!-- Icon container that morphs between sign-in and logout icons -->
+    <div id="auth-icon" class="auth-icon-container">
+      <!-- Sign In Icon (default) -->
+      <svg id="signin-icon" class="w-5 h-5 auth-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+      </svg>
+      
+      <!-- Log Out Icon (hidden by default) -->
+      <svg id="logout-icon" class="w-5 h-5 auth-icon auth-icon-hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+      </svg>
+    </div>
+    
+    <!-- Text that morphs between "Sign In" and "Log Out" -->
+    <span id="auth-text" class="auth-text">Sign In</span>
+  </button>
 </div>
 
 <script>
-  // ASTRO MCP BEST PRACTICE: Client-side conditional rendering
-  // Following the same pattern as Clerk's SignedIn/SignedOut components
+  // ASTRO MCP BEST PRACTICE: Morphing button with smooth state transitions
+  // Updated for HTTP-only cookie authentication
+
+  import { createContextLogger } from '/src/utils/logger.js';
+
+  const logger = createContextLogger('AuthButton');
   
-  function updateAuthUI() {
-    const signedOutContent = document.getElementById('signed-out-content');
-    const signedInContent = document.getElementById('signed-in-content');
+  async function checkAuthenticationStatus() {
+    try {
+      const response = await fetch('/auth/me', {
+        method: 'GET',
+        credentials: 'include', // Include HTTP-only cookies
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+      
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
+  
+  async function morphAuthButton() {
+    const button = document.getElementById('morphing-auth-button');
+    const authText = document.getElementById('auth-text');
+    const signinIcon = document.getElementById('signin-icon');
+    const logoutIcon = document.getElementById('logout-icon');
     
-    if (!signedOutContent || !signedInContent) return;
+    if (!button || !authText || !signinIcon || !logoutIcon) return;
     
-    // Check authentication state from localStorage
-    const authTokens = localStorage.getItem('auth_tokens');
-    const authToken = localStorage.getItem('auth_token'); // Legacy support
-    const isAuthenticated = !!(authTokens || authToken);
+    // Check authentication state using HTTP-only cookies
+    const isAuthenticated = await checkAuthenticationStatus();
     
     if (isAuthenticated) {
-      // User is authenticated - show logout button
-      signedOutContent.classList.add('hidden');
-      signedInContent.classList.remove('hidden');
+      // Morph to logout state
+      authText.textContent = 'Log Out';
+      button.className = 'glass-button px-4 py-2 text-red-400 hover:text-red-300 border-red-500/30 hover:border-red-500/50 transition-all duration-300 flex items-center space-x-2';
+      button.style.borderColor = 'rgb(239 68 68 / 0.3)';
+      
+      // Swap icons with fade
+      signinIcon.classList.add('auth-icon-hidden');
+      logoutIcon.classList.remove('auth-icon-hidden');
+      
+      // Set up logout functionality
+      button.onclick = handleLogout;
     } else {
-      // User is not authenticated - show sign-in button
-      signedOutContent.classList.remove('hidden');
-      signedInContent.classList.add('hidden');
+      // Morph to sign-in state  
+      authText.textContent = 'Sign In';
+      button.className = 'glass-button px-4 py-2 text-blue-400 hover:text-blue-300 border-blue-500/30 hover:border-blue-500/50 transition-all duration-300 flex items-center space-x-2';
+      button.style.borderColor = 'rgb(59 130 246 / 0.3)';
+      
+      // Swap icons with fade
+      signinIcon.classList.remove('auth-icon-hidden');
+      logoutIcon.classList.add('auth-icon-hidden');
+      
+      // Set up sign-in functionality
+      button.onclick = handleSignIn;
     }
+  }
+  
+  async function handleSignIn() {
+    // Open the sign-in modal (same as original SignInButton)
+    window.dispatchEvent(new CustomEvent('open-auth-modal'));
+  }
+  
+  async function handleLogout() {
+    logger.info('🔐 Starting logout process...');
+    
+    const button = document.getElementById('morphing-auth-button') as HTMLButtonElement;
+    if (button) {
+      button.style.opacity = '0.5';
+      button.style.transform = 'scale(0.95)';
+      button.disabled = true;
+    }
+    
+    try {
+      fetch('/auth/revoke-all-tokens', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          reason: 'user_logout'
+        })
+      }).then(async response => {
+        if (response.ok) {
+          logger.info('✅ Tokens revoked successfully');
+        } else if (response.status === 401) {
+          logger.warn('⚠️ Already logged out');
+        } else {
+          logger.warn('⚠️ Token revocation failed, but continuing logout');
+        }
+      }).catch(error => {
+        logger.warn('⚠️ Token revocation error, but continuing logout:', error);
+      });
+      
+    } catch (error) {
+      logger.warn('⚠️ Failed to initiate token revocation, but continuing logout:', error);
+    }
+
+    // Clear storage for Safari compatibility
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+      logger.info('💾 Client storage cleared for Safari compatibility');
+    } catch (error) {
+      logger.warn('⚠️ Error clearing storage, but continuing logout:', error);
+    }
+
+    // Dispatch logout event and wait for UI update
+    window.dispatchEvent(new CustomEvent('user-logged-out'));
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    logger.info('🔄 Performing hard reload to complete logout...');
+    window.location.href = window.location.origin + '?logout=true&t=' + Date.now();
   }
   
   // Initialize auth UI on page load
   document.addEventListener('DOMContentLoaded', () => {
-    updateAuthUI();
+    morphAuthButton();
   });
   
   // Listen for authentication state changes
-  window.addEventListener('user-logged-in', updateAuthUI);
-  window.addEventListener('user-logged-out', updateAuthUI);
-  window.addEventListener('auth-tokens-updated', updateAuthUI);
+  window.addEventListener('user-logged-in', morphAuthButton);
+  window.addEventListener('user-logged-out', morphAuthButton);
+  window.addEventListener('auth-tokens-updated', morphAuthButton);
+  window.addEventListener('authSuccess', morphAuthButton); // OAuth callback success
   
-  // Listen for storage changes (for cross-tab synchronization)
-  window.addEventListener('storage', (event) => {
-    if (event.key === 'auth_tokens' || event.key === 'auth_token' || event.key === 'auth_user') {
-      updateAuthUI();
-    }
-  });
+  // Poll authentication status periodically to catch auth changes
+  setInterval(morphAuthButton, 30000); // Check every 30 seconds
 </script>
 
 <style>
   .auth-button-wrapper {
-    /* Ensure consistent sizing regardless of which button is shown */
+    /* Container for the morphing button */
     min-height: 40px;
     display: flex;
     align-items: center;
+  }
+  
+  .auth-icon-container {
+    /* Container for overlapping icons */
+    position: relative;
+    width: 20px;
+    height: 20px;
+  }
+  
+  .auth-icon {
+    /* Smooth icon transitions */
+    position: absolute;
+    top: 0;
+    left: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  
+  .auth-icon-hidden {
+    /* Hidden icon state with subtle rotation */
+    opacity: 0;
+    transform: scale(0.8) rotate(90deg);
+    pointer-events: none;
+  }
+  
+  .auth-text {
+    /* Smooth text transitions */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 60px; /* Prevent layout shift between "Sign In" and "Log Out" */
+  }
+  
+  /* Button morphing transitions */
+  #morphing-auth-button {
+    /* Ensure all button properties transition smoothly */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+  
+  #morphing-auth-button:disabled {
+    /* Disabled state for logout process */
+    cursor: not-allowed;
   }
 </style>

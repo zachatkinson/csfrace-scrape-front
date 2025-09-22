@@ -73,11 +73,11 @@ export class SignInButtonManager {
   /**
    * Initialize the sign-in button manager
    */
-  init(): void {
+  async init(): Promise<void> {
     try {
       this.cacheElements();
       this.setupEventListeners();
-      this.setupUI();
+      await this.setupUI();
 
       logger.info("Initialized successfully");
     } catch (error) {
@@ -128,13 +128,19 @@ export class SignInButtonManager {
   /**
    * Set up UI state
    */
-  private setupUI(): void {
+  private async setupUI(): Promise<void> {
     if (!this.button) return;
 
-    // Check if user is already authenticated
-    const existingAuth = this.getStoredAuth();
-    if (existingAuth) {
-      this.updateButtonForAuthenticatedState(existingAuth);
+    // Check if user is already authenticated (HTTP-only cookies)
+    const isAuth = await this.checkAuthenticationStatus();
+    if (isAuth) {
+      // Get user info for display
+      const userInfo = await this.getCurrentUserInfo();
+      if (userInfo) {
+        this.updateButtonForAuthenticatedState(userInfo);
+      } else {
+        this.updateButtonForUnauthenticatedState();
+      }
     } else {
       this.updateButtonForUnauthenticatedState();
     }
@@ -149,9 +155,9 @@ export class SignInButtonManager {
     if (this.isLoading) return;
 
     try {
-      // Check if user is already authenticated
-      const existingAuth = this.getStoredAuth();
-      if (existingAuth) {
+      // Check if user is already authenticated (HTTP-only cookies)
+      const isAuth = await this.checkAuthenticationStatus();
+      if (isAuth) {
         // User is already signed in, handle sign out
         this.setLoadingState(true);
         await this.handleSignOut();
@@ -253,7 +259,10 @@ export class SignInButtonManager {
     try {
       logger.info("Signing out");
 
-      // Clear stored authentication
+      // Call API logout to clear HTTP-only cookies
+      await this.performAPILogout();
+
+      // Clear stored authentication (legacy support)
       this.clearStoredAuth();
 
       // Update UI
@@ -262,8 +271,10 @@ export class SignInButtonManager {
       // Emit logout event
       window.dispatchEvent(new CustomEvent("user-logged-out"));
 
-      // Optional: Make API call to revoke tokens
-      // await this.revokeTokens();
+      // Redirect to refresh page and clear any cached state
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
     } catch (error) {
       logger.error("Error during sign-out", error);
     }
@@ -358,6 +369,77 @@ export class SignInButtonManager {
     this.button.classList.add("error");
     this.button.classList.remove("authenticated");
     this.button.title = error.message;
+  }
+
+  // =============================================================================
+  // AUTHENTICATION UTILITIES (HTTP-ONLY COOKIES)
+  // =============================================================================
+
+  /**
+   * Check authentication status using HTTP-only cookies
+   */
+  private async checkAuthenticationStatus(): Promise<boolean> {
+    try {
+      const response = await fetch("/auth/me", {
+        method: "GET",
+        credentials: "include", // Include HTTP-only cookies
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Get current user info from API
+   */
+  private async getCurrentUserInfo(): Promise<AuthUser | null> {
+    try {
+      const response = await fetch("/auth/me", {
+        method: "GET",
+        credentials: "include", // Include HTTP-only cookies
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        return {
+          id: userData.id || userData.user_id || "unknown",
+          email: userData.email || "",
+          name: userData.name || userData.display_name || userData.email,
+          avatar: userData.avatar || userData.picture,
+          provider: userData.provider || "oauth",
+        };
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Sign out by calling logout API
+   */
+  private async performAPILogout(): Promise<void> {
+    try {
+      await fetch("/auth/logout", {
+        method: "POST",
+        credentials: "include", // Include HTTP-only cookies
+        headers: {
+          Accept: "application/json",
+        },
+      });
+    } catch (error) {
+      logger.warn("Failed to call logout API", error);
+      // Continue with client-side logout even if API call fails
+    }
   }
 
   // =============================================================================

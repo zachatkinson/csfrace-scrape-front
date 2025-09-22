@@ -7,7 +7,6 @@
  */
 
 import { getApiBaseUrl } from "../constants/api";
-import { getAuthHeaders } from "./authApi";
 import { handleApiResponse } from "./api-utils.ts";
 
 const API_BASE = getApiBaseUrl();
@@ -27,8 +26,8 @@ export async function createJob(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...getAuthHeaders(),
     },
+    credentials: "include", // Use HTTP-only cookies for authentication
     body: JSON.stringify({
       url,
       options: {
@@ -57,8 +56,8 @@ export async function createBatch(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...getAuthHeaders(),
     },
+    credentials: "include", // Use HTTP-only cookies for authentication
     body: JSON.stringify({
       name: options.name || `Batch ${new Date().toLocaleString()}`,
       urls,
@@ -78,7 +77,7 @@ export async function createBatch(
  */
 export async function getJob(jobId: string) {
   const response = await fetch(`${API_BASE}/jobs/${jobId}`, {
-    headers: getAuthHeaders(),
+    credentials: "include", // Use HTTP-only cookies for authentication
   });
 
   return handleApiResponse(response);
@@ -101,7 +100,7 @@ export async function getJobs(
 
   const url = `${API_BASE}/jobs${searchParams.toString() ? "?" + searchParams.toString() : ""}`;
   const response = await fetch(url, {
-    headers: getAuthHeaders(),
+    credentials: "include", // Use HTTP-only cookies for authentication
   });
 
   return handleApiResponse(response);
@@ -112,7 +111,7 @@ export async function getJobs(
  */
 export async function getBatch(batchId: string) {
   const response = await fetch(`${API_BASE}/batches/${batchId}`, {
-    headers: getAuthHeaders(),
+    credentials: "include", // Use HTTP-only cookies for authentication
   });
 
   return handleApiResponse(response);
@@ -133,7 +132,7 @@ export async function getBatches(
 
   const url = `${API_BASE}/batches${searchParams.toString() ? "?" + searchParams.toString() : ""}`;
   const response = await fetch(url, {
-    headers: getAuthHeaders(),
+    credentials: "include", // Use HTTP-only cookies for authentication
   });
 
   return handleApiResponse(response);
@@ -145,7 +144,7 @@ export async function getBatches(
 export async function cancelJob(jobId: string) {
   const response = await fetch(`${API_BASE}/jobs/${jobId}/cancel`, {
     method: "POST",
-    headers: getAuthHeaders(),
+    credentials: "include", // Use HTTP-only cookies for authentication
   });
 
   return handleApiResponse(response);
@@ -157,7 +156,7 @@ export async function cancelJob(jobId: string) {
 export async function deleteJob(jobId: string) {
   const response = await fetch(`${API_BASE}/jobs/${jobId}`, {
     method: "DELETE",
-    headers: getAuthHeaders(),
+    credentials: "include", // Use HTTP-only cookies for authentication
   });
 
   return handleApiResponse(response);
