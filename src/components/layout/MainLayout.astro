@@ -13,9 +13,9 @@ import '../../styles/global.css';
 // Import pure UI component for health status (Astro MCP best practice)
 import EventDrivenFooterStatus from '../health/EventDrivenFooterStatus.astro'; // Astro native component
 // Import DRY/SOLID Auth Modal Component
-import AuthModal from '../auth/AuthModal.astro';
-// Import DRY/SOLID Settings Panel Component
-import SettingsPanel from '../SettingsPanel.astro';
+import AuthModal from '../modals/AuthModal.astro';
+// Import DRY/SOLID App Settings Modal Component
+import AppSettingsModal from '../modals/AppSettingsModal.astro';
 // Import DRY/SOLID Sign In Button Component
 import AuthButton from '../AuthButton.astro';
 // Import DRY/SOLID User Settings Modal Component
@@ -126,7 +126,7 @@ const {
       <AuthModal />
 
       <!-- Settings Panel - Astro Island -->
-      <SettingsPanel />
+      <AppSettingsModal />
 
       <!-- User Settings Modal - Astro Island -->
       <UserSettingsModal />
@@ -334,7 +334,7 @@ const {
         }
       };
 
-      // Settings panel functionality now handled by SettingsPanel.astro custom element
+      // App settings functionality now handled by AppSettingsModal.astro custom element
       // All modal behavior moved to BaseModalManager for DRY/SOLID architecture
 
       // Settings button handler

@@ -31,11 +31,13 @@ const {
   id={id}
   class={`fixed inset-0 ${zIndex} flex items-center justify-center p-4 pointer-events-none opacity-0 transition-opacity duration-300 ease-out ${className}`}
   style="display: none;"
+  data-modal-container
 >
   <!-- Unified Backdrop with Conditional Blur (matching AuthModal) - Force light backdrop -->
   <div 
     class="base-modal-backdrop animate-fade-in" 
     style={`position: absolute; inset: 0; background-color: rgba(255, 255, 255, 0.1) !important; ${backdropBlur ? 'backdrop-filter: blur(12px) !important;' : ''}`}
+    data-modal-backdrop
   ></div>
   
   <!-- Modal Container with Unified Scale Animation -->

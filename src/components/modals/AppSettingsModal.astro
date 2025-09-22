@@ -6,16 +6,16 @@
  */
 
 // Import DRY/SOLID BaseModal component
-import BaseModal from './common/BaseModal.astro';
+import BaseModal from '../common/BaseModal.astro';
 
 // Import DRY/SOLID Icon Components
-import IconSettings from './icons/IconSettings.astro';
-import IconClipboard from './icons/IconClipboard.astro';
-import IconDisplay from './icons/IconDisplay.astro';
-import IconBell from './icons/IconBell.astro';
+import IconSettings from '../icons/IconSettings.astro';
+import IconClipboard from '../icons/IconClipboard.astro';
+import IconDisplay from '../icons/IconDisplay.astro';
+import IconBell from '../icons/IconBell.astro';
 
 // Import Settings Bridge for React/JS integration
-import SettingsBridgeInitializer from './settings/SettingsBridgeInitializer.tsx';
+import SettingsBridgeInitializer from '../settings/SettingsBridgeInitializer.tsx';
 
 // Use fixed IDs for DRY/SOLID modal management
 const panelId = "settings-panel";
@@ -548,8 +548,8 @@ const settingsContentId = "settings-content";
 
 <!-- DRY/SOLID Settings Modal using SettingsModalManager -->
 <script>
-  import { SettingsModalManager } from '../scripts/settingsModalManager';
-  import { createContextLogger } from '../utils/logger';
+  import { SettingsModalManager } from '../../scripts/settingsModalManager';
+  import { createContextLogger } from '../../utils/logger';
 
   // Create logger for this component
   const logger = createContextLogger('SettingsPanel');

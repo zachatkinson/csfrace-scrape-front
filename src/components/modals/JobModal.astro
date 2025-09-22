@@ -9,9 +9,9 @@
 // =============================================================================
 // IMPORTS & TYPES
 // =============================================================================
-import type { IJobModalProps } from '../types/dashboard.types';
-import { DASHBOARD_CSS_CLASSES } from '../types/dashboard.types';
-import BaseModal from '../../common/BaseModal.astro';
+import type { IJobModalProps } from '../dashboard/types/dashboard.types';
+import { DASHBOARD_CSS_CLASSES } from '../dashboard/types/dashboard.types';
+import BaseModal from '../common/BaseModal.astro';
 
 // =============================================================================
 // COMPONENT PROPS
@@ -82,7 +82,7 @@ const {
      ============================================================================= -->
 <script>
   import { BaseModalManager } from '/src/scripts/baseModalManager';
-  import { createContextLogger } from '../../../utils/logger';
+  import { createContextLogger } from '../../utils/logger';
 
   const logger = createContextLogger('JobModal');
 

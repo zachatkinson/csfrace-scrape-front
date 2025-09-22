@@ -1,0 +1,50 @@
+---
+/**
+ * SectionDivider - DRY/SOLID Reusable Divider Component
+ * Single Responsibility: Create consistent section dividers with text and proper spacing
+ * Follows DRY principle by eliminating duplicate divider code and spacing
+ * Handles all margins/padding internally for clean usage
+ */
+
+export interface Props {
+  text: string;
+  className?: string;
+  topSpacing?: string;
+  bottomSpacing?: string;
+}
+
+const {
+  text,
+  className = "",
+  topSpacing = "mt-6",
+  bottomSpacing = "mb-6"
+} = Astro.props;
+---
+
+<!-- Modern CSS Text Divider with self-contained spacing -->
+<div class={`divider-text ${topSpacing} ${bottomSpacing} text-sm text-white/60 ${className}`}>
+  <span>{text}</span>
+</div>
+
+<style>
+  .divider-text {
+    display: flex;
+    align-items: center;
+    text-align: center;
+  }
+
+  .divider-text::before,
+  .divider-text::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .divider-text:not(:empty)::before {
+    margin-right: 1rem;
+  }
+
+  .divider-text:not(:empty)::after {
+    margin-left: 1rem;
+  }
+</style>

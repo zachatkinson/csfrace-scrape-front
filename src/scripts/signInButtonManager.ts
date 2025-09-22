@@ -321,7 +321,11 @@ export class SignInButtonManager {
   private updateButtonForUnauthenticatedState(): void {
     if (!this.button) return;
 
-    this.button.innerHTML =
+    // Preserve color during transition
+    this.button.style.color = "";
+    this.button.style.backgroundColor = "";
+
+    const newContent =
       this.originalButtonContent ||
       `
       <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -330,8 +334,14 @@ export class SignInButtonManager {
       Sign In
     `;
 
-    this.button.classList.remove("authenticated", "error");
-    this.button.disabled = false;
+    // Smooth transition by preserving styles during content change
+    requestAnimationFrame(() => {
+      if (this.button) {
+        this.button.innerHTML = newContent;
+        this.button.classList.remove("authenticated", "error");
+        this.button.disabled = false;
+      }
+    });
   }
 
   /**
@@ -340,17 +350,27 @@ export class SignInButtonManager {
   private updateButtonForAuthenticatedState(user: AuthUser): void {
     if (!this.button) return;
 
-    this.button.innerHTML = `
+    // Preserve color during transition
+    this.button.style.color = "";
+    this.button.style.backgroundColor = "";
+
+    const newContent = `
       <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
       </svg>
       ${user.name || user.email}
     `;
 
-    this.button.classList.add("authenticated");
-    this.button.classList.remove("error");
-    this.button.disabled = false;
-    this.button.title = "Click to sign out";
+    // Smooth transition by preserving styles during content change
+    requestAnimationFrame(() => {
+      if (this.button) {
+        this.button.innerHTML = newContent;
+        this.button.classList.add("authenticated");
+        this.button.classList.remove("error");
+        this.button.disabled = false;
+        this.button.title = "Click to sign out";
+      }
+    });
   }
 
   /**
@@ -359,16 +379,26 @@ export class SignInButtonManager {
   private updateButtonForErrorState(error: AuthError): void {
     if (!this.button) return;
 
-    this.button.innerHTML = `
+    // Preserve color during transition
+    this.button.style.color = "";
+    this.button.style.backgroundColor = "";
+
+    const newContent = `
       <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
       </svg>
       Sign In Failed
     `;
 
-    this.button.classList.add("error");
-    this.button.classList.remove("authenticated");
-    this.button.title = error.message;
+    // Smooth transition by preserving styles during content change
+    requestAnimationFrame(() => {
+      if (this.button) {
+        this.button.innerHTML = newContent;
+        this.button.classList.add("error");
+        this.button.classList.remove("authenticated");
+        this.button.title = error.message;
+      }
+    });
   }
 
   // =============================================================================

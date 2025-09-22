@@ -1,0 +1,45 @@
+---
+/**
+ * OAuth Connection Card - DRY/SOLID SSO Connection Management
+ * Single Responsibility: Display SSO provider connection status and management
+ * Reuses existing OAuth infrastructure (icons, types, etc.)
+ */
+
+import OAuthProviderIcons from './OAuthProviderIcons.astro';
+import type { OAuthProviderId } from '../../../types/oauth';
+
+export interface Props {
+  provider: OAuthProviderId;
+  displayName: string;
+  statusId: string;
+  toggleId: string;
+  className?: string;
+}
+
+const {
+  provider,
+  displayName,
+  statusId,
+  toggleId,
+  className = ""
+} = Astro.props;
+---
+
+<!-- OAuth Connection Management Card -->
+<div class={`flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-lg ${className}`}>
+  <div class="flex items-center">
+    <!-- Provider Icon using existing DRY component -->
+    <OAuthProviderIcons provider={provider} className="w-6 h-6 mr-3" />
+    <div>
+      <p class="font-medium text-white">{displayName}</p>
+      <p id={statusId} class="text-sm text-white/70">Checking connection...</p>
+    </div>
+  </div>
+  <button
+    id={toggleId}
+    class="glass-button px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-medium rounded-md border border-white/30 hover:border-white/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+    disabled
+  >
+    Loading...
+  </button>
+</div>
