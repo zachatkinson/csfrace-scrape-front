@@ -278,6 +278,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -330,17 +335,17 @@ jobs:
       - name: TypeScript type checking
         run: |
           echo "🔧 Running TypeScript type check..."
-          ppnpm run type-check
+          pnpm run type-check
 
       - name: ESLint analysis
         run: |
           echo "🔍 Running ESLint..."
-          ppnpm run lint -- --format=compact --max-warnings=0
+          pnpm run lint -- --format=compact --max-warnings=0
 
       - name: Prettier formatting check
         run: |
           echo "✨ Checking code formatting..."
-          ppnpm run format:check
+          pnpm run format:check
 
       - name: Security scan with ESLint Security
         run: |
@@ -350,7 +355,7 @@ jobs:
       - name: Bundle analysis
         run: |
           echo "📦 Analyzing bundle size..."
-          ppnpm run build
+          pnpm run build
           du -sh dist/
 
       - name: Report quality metrics
@@ -374,6 +379,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -421,6 +431,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -474,6 +489,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -558,6 +578,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -601,6 +626,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
