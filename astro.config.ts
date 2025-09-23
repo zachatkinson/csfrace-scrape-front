@@ -153,7 +153,14 @@ export default defineConfig({
         clientPort: process.env.NODE_ENV === "development" ? 80 : 3000,
       },
       // Allow nginx proxy requests from nginx container
-      allowedHosts: ["localhost", "frontend-dev", "nginx-dev", ".localhost"],
+      allowedHosts: [
+        "localhost",
+        "frontend",
+        "frontend-dev",
+        "nginx",
+        "nginx-dev",
+        ".localhost",
+      ],
     },
 
     // ASTRO 2025: Inject build-time constants (zero runtime overhead)

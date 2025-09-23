@@ -201,13 +201,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initializeAuth();
 
-    // Set up periodic auth status checking (Astro best practice)
-    const authCheckInterval = setInterval(() => {
+    // Set up event-driven auth state detection (efficient, no polling!)
+    const handleAuthStateChange = () => {
       const cookieAuthStatus = getAuthStatusFromCookie();
       setState((prev) => {
         // Only update if cookie status differs from current state
         if (prev.isAuthenticated !== cookieAuthStatus.isAuthenticated) {
-          logger.info("Auth status changed via cookie", {
+          logger.info("Auth status changed via cookie event", {
             previous: prev.isAuthenticated,
             current: cookieAuthStatus.isAuthenticated,
           });
@@ -219,11 +219,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         return prev;
       });
-    }, 2000); // Check every 2 seconds
+    };
+
+    // Listen for OAuth callback success via postMessage
+    const handleOAuthMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+
+      if (event.data?.type === "oauth_success") {
+        logger.info("OAuth success message received", {
+          provider: event.data.provider,
+          hasTokens: !!event.data.tokens,
+        });
+
+        // Immediately verify auth status after OAuth success
+        setTimeout(async () => {
+          try {
+            const response = await fetch(`${getApiBase()}/auth/me`, {
+              credentials: "include",
+              headers: { Accept: "application/json" },
+            });
+
+            if (response.ok) {
+              const user = await response.json();
+              setState((prev) => ({
+                ...prev,
+                isAuthenticated: true,
+                user,
+                authReason: "oauth_success",
+                error: null,
+              }));
+              logger.info("OAuth verification successful", { user });
+            }
+          } catch (error) {
+            logger.error("OAuth verification failed", { error });
+          }
+        }, 500); // Small delay to ensure cookies are set
+      }
+    };
+
+    // Listen for manual auth state refresh events
+    const handleAuthRefresh = () => {
+      handleAuthStateChange();
+    };
+
+    // Add event listeners
+    window.addEventListener("message", handleOAuthMessage);
+    window.addEventListener("authStateChanged", handleAuthRefresh);
+
+    // Optional: Listen for storage events (for multi-tab scenarios)
+    window.addEventListener("storage", (e) => {
+      if (e.key === "auth_user" || e.key?.startsWith("auth_")) {
+        handleAuthStateChange();
+      }
+    });
 
     // Cleanup on unmount
     return () => {
-      clearInterval(authCheckInterval);
+      window.removeEventListener("message", handleOAuthMessage);
+      window.removeEventListener("authStateChanged", handleAuthRefresh);
+      window.removeEventListener("storage", handleAuthStateChange);
       logger.info("Cleaned up authentication service");
     };
   }, []);
@@ -267,6 +321,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           authReason: "login_successful",
         }));
         logger.info("Login successful", { user });
+
+        // Trigger auth state change event for other components
+        window.dispatchEvent(new CustomEvent("authStateChanged"));
       } else {
         throw new Error("Login succeeded but user data fetch failed");
       }

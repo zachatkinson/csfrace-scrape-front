@@ -21,8 +21,8 @@ type LocalsUser = App.Locals["user"];
 const authLogger = createContextLogger("Auth-Middleware");
 
 // Backend API base URL - use nginx service for Docker internal networking
-// Frontend container needs to route through nginx-dev container, not localhost
-const API_BASE = "http://nginx-dev";
+// Frontend container needs to route through nginx container, not localhost
+const API_BASE = "http://nginx";
 
 interface AuthResponse {
   id: string;

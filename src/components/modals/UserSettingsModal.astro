@@ -166,12 +166,9 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
     last_login?: string;
   }
 
-  interface PasskeyInfo {
-    id: string;
-    name: string;
-    created_at: string;
-    last_used_at?: string;
-    is_active: boolean;
+  // CSRF token interface for proper typing (SOLID: Interface Segregation)
+  interface WindowWithCSRF extends Window {
+    csrfToken?: string;
   }
 
   interface SSOConnection {
@@ -187,8 +184,6 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
   }
 
   let userInfo: UserInfo | null = null;
-  // @ts-ignore - Will be used when passkey functionality is implemented
-  let passkeys: PasskeyInfo[] = [];
   let ssoConnections: SSOConnectionStatus = {};
 
   // Clean Astro Islands script - Initialize UserSettingsModal functionality
@@ -235,6 +230,62 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
     
     logger.info('UserSettingsModal initialized');
   });
+
+  // Security utility: Clear authentication data on logout/deletion
+  function clearAuthenticationData() {
+    // Clear any localStorage auth data
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user_data');
+
+    // Clear any sessionStorage auth data
+    sessionStorage.removeItem('auth_token');
+    sessionStorage.removeItem('refresh_token');
+    sessionStorage.removeItem('user_data');
+
+    // Dispatch logout event for other components
+    window.dispatchEvent(new CustomEvent('auth-logout'));
+  }
+
+  // DRY utility: Show success message
+  function showSuccessMessage(message: string) {
+    const existingToast = document.getElementById('success-toast');
+    if (existingToast) {
+      existingToast.remove();
+    }
+
+    const toast = document.createElement('div');
+    toast.id = 'success-toast';
+    toast.className = 'fixed top-4 right-4 bg-green-600/90 text-white px-6 py-3 rounded-md shadow-lg z-50 backdrop-blur-sm border border-green-500/30';
+    toast.textContent = message;
+
+    document.body.appendChild(toast);
+
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+      toast.remove();
+    }, 3000);
+  }
+
+  // DRY utility: Show error message
+  function showErrorMessage(message: string) {
+    const existingToast = document.getElementById('error-toast');
+    if (existingToast) {
+      existingToast.remove();
+    }
+
+    const toast = document.createElement('div');
+    toast.id = 'error-toast';
+    toast.className = 'fixed top-4 right-4 bg-red-600/90 text-white px-6 py-3 rounded-md shadow-lg z-50 backdrop-blur-sm border border-red-500/30';
+    toast.textContent = message;
+
+    document.body.appendChild(toast);
+
+    // Auto-remove after 5 seconds for errors
+    setTimeout(() => {
+      toast.remove();
+    }, 5000);
+  }
 
   // Open user settings modal and load data
   async function openUserSettingsModal() {
@@ -339,15 +390,15 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
   // Update passkey button based on current passkey status
   async function updatePasskeyButton() {
     try {
-      const response = await fetch('/auth/webauthn/credentials', {
+      const response = await fetch('/auth/passkeys/summary', {
         method: 'GET',
         credentials: 'include',
         headers: { 'Accept': 'application/json' },
       });
 
       if (response.ok) {
-        const credentials = await response.json();
-        hasPasskeys = credentials && credentials.length > 0;
+        const summary = await response.json();
+        hasPasskeys = summary.count > 0;
       } else {
         hasPasskeys = false;
       }
@@ -397,7 +448,7 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
     try {
       logger.info('Starting passkey registration');
 
-      const response = await fetch('/auth/webauthn/register/start', {
+      const response = await fetch('/auth/passkeys/register/begin', {
         method: 'POST',
         credentials: 'include',
         headers: { 
@@ -423,7 +474,7 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
       const credentialResponse = credential.response as AuthenticatorAttestationResponse;
 
       // Complete registration
-      const finishResponse = await fetch('/auth/webauthn/register/finish', {
+      const finishResponse = await fetch('/auth/passkeys/register/complete', {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -463,7 +514,7 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
       logger.info('Starting passkey revocation');
 
       // First get all credentials
-      const response = await fetch('/auth/webauthn/credentials', {
+      const response = await fetch('/auth/passkeys/summary', {
         method: 'GET',
         credentials: 'include',
         headers: { 'Accept': 'application/json' },
@@ -473,11 +524,11 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
         throw new Error('Failed to get passkeys');
       }
 
-      const credentials = await response.json();
+      const summary = await response.json();
 
       // Delete each credential
-      for (const credential of credentials) {
-        const deleteResponse = await fetch(`/auth/webauthn/credentials/${credential.id}`, {
+      for (const credential of summary.credentials || []) {
+        const deleteResponse = await fetch(`/auth/passkeys/${credential.id}`, {
           method: 'DELETE',
           credentials: 'include',
           headers: { 'Accept': 'application/json' },
@@ -602,53 +653,18 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
 
   // Check for real SSO connection data from backend database
   async function getRealSSOConnectionData(provider: string): Promise<{connected: boolean, email?: string} | null> {
-    // Option 1: Try dedicated OAuth connections endpoint (when implemented)
-    try {
-      const response = await fetch(`/auth/oauth/${provider}/status`, {
-        method: 'GET',
-        credentials: 'include',
-        headers: { 'Accept': 'application/json' },
-      });
+    // TODO: These endpoints are not implemented yet in the backend
+    // For now, return null to use heuristic detection
+    // Future implementation will check:
+    // - `/auth/oauth/${provider}/status` for individual provider status
+    // - `/auth/linked-accounts` for all linked OAuth accounts
 
-      if (response.ok) {
-        const data = await response.json();
-        return {
-          connected: data.connected || false,
-          email: data.email
-        };
-      }
-    } catch {
-      // Endpoint doesn't exist yet, try other methods
-    }
+    // Silently skip unimplemented endpoints to avoid 404 console errors
+    logger.debug(`OAuth status endpoints not implemented yet for ${provider}, using heuristic detection`);
 
-    // Option 1b: Try general linked accounts endpoint
-    try {
-      const response = await fetch('/auth/linked-accounts', {
-        method: 'GET',
-        credentials: 'include',
-        headers: { 'Accept': 'application/json' },
-      });
-
-      if (response.ok) {
-        const linkedAccounts = await response.json();
-        const providerAccount = linkedAccounts.find((account: { provider: string; email?: string }) => account.provider === provider);
-
-        if (providerAccount) {
-          return {
-            connected: true,
-            email: providerAccount.email
-          };
-        } else {
-          return {
-            connected: false
-          };
-        }
-      }
-    } catch {
-      // Linked accounts endpoint doesn't exist yet
-    }
-
-    // Option 2: Check user settings for OAuth connection data
+    // Skip user settings check for OAuth data to avoid 404s
+    // Option 2: Check user settings for OAuth connection data (when implemented)
+    /*
     try {
       const settingsResponse = await fetch('/user/settings/', {
         method: 'GET',
@@ -670,6 +686,7 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
     } catch {
       // Custom settings don't contain OAuth data yet
     }
+    */
 
     // Option 3: TODO - Add more database checking methods as backend evolves
 
@@ -765,23 +782,10 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
         return;
       }
 
-      try {
-        const response = await fetch(`/auth/oauth/${provider}/disconnect`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Accept': 'application/json' },
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to disconnect ${provider} account`);
-        }
-
-        logger.info(`${provider} account disconnected successfully`);
-        await loadSSOConnections();
-      } catch (error) {
-        logger.error(`Failed to disconnect ${provider} account:`, error);
-        alert(`Failed to disconnect ${provider} account. Please try again.`);
-      }
+      // TODO: Implement OAuth disconnect endpoint in backend
+      // For now, show a message that this feature is coming soon
+      alert(`OAuth disconnect functionality is coming soon! The ${provider} disconnect endpoint is not yet implemented in the backend.`);
+      logger.info(`OAuth disconnect requested for ${provider}, but endpoint not implemented yet`);
     } else {
       // Connect
       window.location.href = `/auth/oauth/${provider}`;
@@ -836,41 +840,99 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
     }
   }
 
-  // Delete account
+  // Delete account - Enhanced with proper error handling and security
   async function deleteAccount() {
-    try {
-      const response = await fetch('/auth/delete-account', {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { 'Accept': 'application/json' },
-      });
+    const confirmBtn = document.getElementById('confirm-delete-btn') as HTMLButtonElement;
+    const deleteModal = document.getElementById('delete-confirm-modal');
 
-      if (!response.ok) {
-        throw new Error('Failed to delete account');
+    try {
+      // Show loading state
+      if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Deleting...';
       }
 
-      // Account deleted successfully - redirect to home
+      logger.info('Initiating account deletion');
+
+      // DEBUG: Add detailed logging to track request for debugging
+      logger.debug('About to send DELETE request to /auth/delete-account');
+      logger.debug('Current cookies available:', document.cookie ? 'Cookies present' : 'No cookies');
+      logger.debug('Request timestamp:', new Date().toISOString());
+
+      // Enhanced fetch with proper security headers and error handling
+      const response = await fetch('/auth/delete-account', {
+        method: 'DELETE',
+        credentials: 'include', // Critical: Include HTTP-only auth cookies
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          // Add CSRF protection if available (DRY: using typed interface)
+          ...((window as WindowWithCSRF).csrfToken && { 'X-CSRF-Token': (window as WindowWithCSRF).csrfToken })
+        },
+        // Add request timeout for better UX
+        signal: AbortSignal.timeout(30000) // 30 second timeout
+      });
+
+      // Enhanced error handling with specific status codes
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+
+        switch (response.status) {
+          case 401:
+            throw new Error('Authentication expired. Please sign in again.');
+          case 403:
+            throw new Error('You do not have permission to delete this account.');
+          case 404:
+            throw new Error('Account not found or already deleted.');
+          case 429:
+            throw new Error('Too many requests. Please try again later.');
+          case 500:
+            throw new Error('Server error. Please try again later.');
+          default:
+            throw new Error(errorData.message || `Failed to delete account (${response.status})`);
+        }
+      }
+
+      // Account deleted successfully
       logger.info('Account deleted successfully');
-      window.location.href = '/';
+
+      // Clear any stored auth data
+      clearAuthenticationData();
+
+      // Hide confirmation modal
+      if (deleteModal) {
+        deleteModal.style.display = 'none';
+      }
+
+      // Show success message briefly before redirect
+      showSuccessMessage('Account deleted successfully. Redirecting...');
+
+      // Redirect to home page after brief delay
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 2000);
+
     } catch (error) {
       logger.error('Failed to delete account:', error);
-      alert('Failed to delete account. Please try again.');
+
+      // Reset button state
+      if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Delete Account';
+      }
+
+      // Show user-friendly error message
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete account. Please try again.';
+      showErrorMessage(errorMessage);
     }
   }
 </script>
 
 <style>
-  /* User Settings Modal Styles */
-  .user-settings {
-    max-width: 600px;
-    max-height: 90vh;
-    overflow-y: auto;
-  }
-
-  /* Glass effect styles matching the rest of the app */
-  .liquid-glass {
-    backdrop-filter: blur(12px);
-    background: rgba(255, 255, 255, 0.05);
+  /* Modal styles and animations - following Astro best practices */
+  .glass {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
 

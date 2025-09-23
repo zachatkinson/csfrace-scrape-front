@@ -289,6 +289,16 @@ class AuthAPI {
     });
   }
 
+  // Account Self-Service
+  async deleteCurrentUserAccount(): Promise<{ message: string }> {
+    return this.baseClient["request"]<{ message: string }>(
+      "/auth/delete-account",
+      {
+        method: "DELETE",
+      },
+    );
+  }
+
   // Utility Methods
   setAuthToken(token: string): void {
     this.baseClient.setAPIKey(token);
