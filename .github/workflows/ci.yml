@@ -282,17 +282,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Audit dependencies for vulnerabilities
         run: |
-          echo "🔍 Running npm audit..."
-          npm audit --audit-level=high --only=prod
+          echo "🔍 Running pnpm audit..."
+          pnpm audit --audit-level=high --prod
 
       - name: Check for outdated dependencies
         run: |
           echo "📦 Checking for outdated dependencies..."
-          npm outdated --long || true
+          pnpm outdated || true
 
       - name: License compliance check
         run: |
@@ -317,25 +317,30 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: 'pnpm'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: TypeScript type checking
         run: |
           echo "🔧 Running TypeScript type check..."
-          npm run type-check
+          ppnpm run type-check
 
       - name: ESLint analysis
         run: |
           echo "🔍 Running ESLint..."
-          npm run lint -- --format=compact --max-warnings=0
+          ppnpm run lint -- --format=compact --max-warnings=0
 
       - name: Prettier formatting check
         run: |
           echo "✨ Checking code formatting..."
-          npm run format:check
+          ppnpm run format:check
 
       - name: Security scan with ESLint Security
         run: |
@@ -345,7 +350,7 @@ jobs:
       - name: Bundle analysis
         run: |
           echo "📦 Analyzing bundle size..."
-          npm run build
+          ppnpm run build
           du -sh dist/
 
       - name: Report quality metrics
@@ -374,15 +379,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Run unit tests
         run: |
           echo "🧪 Running unit tests..."
-          npm run test:unit -- --coverage
+          pnpm run test:unit -- --coverage
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -421,20 +426,20 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps ${{ matrix.browser }}
 
       - name: Build application
-        run: npm run build
+        run: pnpm run build
 
       - name: Start application
         run: |
-          npm run preview &
+          pnpm run preview &
           npx wait-on http://localhost:4321
 
       - name: Run E2E tests
@@ -474,21 +479,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Start mock backend
         run: |
           echo "🔧 Starting mock backend service..."
-          npm run start:mock-backend &
+          pnpm run start:mock-backend &
           npx wait-on http://localhost:8000/health
 
       - name: Run integration tests
         run: |
           echo "🔗 Running integration tests..."
-          npm run test:integration
+          pnpm run test:integration
 
       - name: Upload integration test results
         uses: actions/upload-artifact@v4
@@ -557,17 +562,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build application
-        run: npm run build
+        run: pnpm run build
 
       - name: Start application
         run: |
-          npm run preview &
+          pnpm run preview &
           npx wait-on http://localhost:4321
 
       - name: Run accessibility tests
@@ -601,17 +606,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build application
-        run: npm run build
+        run: pnpm run build
 
       - name: Start application
         run: |
-          npm run preview &
+          pnpm run preview &
           npx wait-on http://localhost:4321
 
       - name: Run Lighthouse CI
