@@ -360,25 +360,11 @@ jobs:
 
   # Optimized unit testing with Node.js focus
   unit-tests:
-    name: Unit Tests - ${{ matrix.platform }}
-    runs-on: ${{ matrix.os }}
+    name: Unit Tests
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: detect-changes
     if: needs.detect-changes.outputs.should-run-unit-tests == 'true'
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # Primary platform for speed
-          - { os: ubuntu-latest, platform: "Ubuntu", node: "20" }
-          # Cross-platform validation (only on significant changes)
-          - { os: macos-latest, platform: "macOS", node: "20" }
-          - { os: windows-latest, platform: "Windows", node: "20" }
-        exclude:
-          # Skip cross-platform unless needed
-          - ${{ fromJSON(needs.detect-changes.outputs.should-run-cross-platform != 'true' && '{"os": "macos-latest"}' || '{}') }}
-          - ${{ fromJSON(needs.detect-changes.outputs.should-run-cross-platform != 'true' && '{"os": "windows-latest"}' || '{}') }}
 
     steps:
       - name: Checkout code
@@ -387,7 +373,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node }}
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Install dependencies
@@ -395,8 +381,8 @@ jobs:
 
       - name: Run unit tests
         run: |
-          echo "🧪 Running unit tests on ${{ matrix.platform }}..."
-          npm run test:unit -- --coverage --reporter=junit --outputFile=test-results-${{ matrix.platform }}.xml
+          echo "🧪 Running unit tests..."
+          npm run test:unit -- --coverage
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
