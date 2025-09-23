@@ -405,12 +405,13 @@ jobs:
           retention-days: 7
 
       - name: Upload coverage to Codecov
-        if: matrix.platform == 'Ubuntu'
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage/lcov.info
           flags: unit
           name: codecov-unit
+          slug: zachatkinson/csfrace-scrape-front
 
   # E2E testing with Playwright
   e2e-tests:
@@ -717,11 +718,13 @@ jobs:
           echo "Coverage data from unit tests, integration tests, and E2E tests combined"
 
       - name: Upload final coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/lcov.info
           flags: combined
           name: codecov-combined
+          slug: zachatkinson/csfrace-scrape-front
 
       - name: Create final summary
         run: |
