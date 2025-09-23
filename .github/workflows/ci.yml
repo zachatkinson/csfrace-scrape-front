@@ -521,6 +521,16 @@ jobs:
           path: coverage/
           retention-days: 7
 
+      - name: Upload coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage/lcov.info
+          flags: integration
+          name: codecov-integration
+          slug: zachatkinson/csfrace-scrape-front
+
   # Docker build and security scanning
   docker-build-security:
     name: Docker Build & Security Scan
@@ -697,41 +707,3 @@ jobs:
           fi
 
   # Final status reporting job
-  finalize-coverage-reports:
-    name: Finalize Coverage Reports
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: [unit-tests, integration-tests, e2e-tests]
-    if: always() && (needs.unit-tests.result != 'skipped' || needs.integration-tests.result != 'skipped')
-
-    steps:
-      - name: Download all test artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: test-results-*
-          merge-multiple: true
-
-      - name: Generate combined coverage report
-        run: |
-          echo "📊 Generating combined coverage report..."
-          # Combine coverage reports from different test suites
-          echo "Coverage data from unit tests, integration tests, and E2E tests combined"
-
-      - name: Upload final coverage
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/lcov.info
-          flags: combined
-          name: codecov-combined
-          slug: zachatkinson/csfrace-scrape-front
-
-      - name: Create final summary
-        run: |
-          echo "## 📊 Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Unit Tests**: ${{ needs.unit-tests.result }}"
-          echo "- **Integration Tests**: ${{ needs.integration-tests.result }}"
-          echo "- **E2E Tests**: ${{ needs.e2e-tests.result }}"
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📈 Coverage reports uploaded to Codecov for detailed analysis."
