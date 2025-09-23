@@ -361,7 +361,6 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
     if (!response.ok) {
       throw new Error('Failed to load user information');
     }
-
     userInfo = await response.json();
     
     // Null check for userInfo before accessing properties

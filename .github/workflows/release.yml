@@ -1,107 +1,134 @@
-name: Release & Integration
+name: Semantic Release
 
 on:
-  push:
-    branches: [main, master, next, beta, alpha, "[0-9]+.x", "[0-9]+.[0-9]+.x"]
+  workflow_run:
+    workflows: ["Consolidated CI/CD & Frontend Automation"]
+    types:
+      - completed
+    branches:
+      - master
+  workflow_dispatch:  # Add manual trigger for testing
 
-permissions:
-  contents: write
-  issues: write
-  pull-requests: write
-  id-token: write
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  NODE_VERSION: "20"
 
 jobs:
-  # Quality gates first - fail fast
-  quality-checks:
-    name: Quality Checks
+  release:
+    name: Semantic Release
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "lts/*"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm clean-install
-
-      - name: Lint code
-        run: npm run lint
-
-      - name: Type check
-        run: npm run type-check
-
-      - name: Run tests
-        run: npm run test
-
-      - name: Security audit
-        run: npm audit signatures
-
-  # Build and release
-  build-and-release:
-    name: Build & Release
-    runs-on: ubuntu-latest
-    needs: quality-checks
-    timeout-minutes: 15
+    concurrency:
+      group: ${{ github.workflow }}-release-${{ github.ref_name }}
+      cancel-in-progress: false  # Don't cancel releases in progress
+    # Only run if CI workflow completed successfully or manually triggered
+    # Skip if triggered by our own release commits to prevent cascading releases
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       !contains(github.event.workflow_run.head_commit.message, 'chore(release):'))
+    permissions:
+      id-token: write  # For provenance
+      contents: write  # For creating releases
+      issues: write    # For creating issues
+      pull-requests: write  # For creating PRs
+      packages: write  # For container registry
+      attestations: write  # For build provenance
+      actions: write  # For workflow dispatch
+      checks: write  # For status checks
     outputs:
-      release-published: ${{ steps.release.outputs.new-release-published }}
-      release-version: ${{ steps.release.outputs.new-release-version }}
+      released: ${{ steps.semantic.outputs.released }}
+      version: ${{ steps.semantic.outputs.version }}
+      tag: ${{ steps.semantic.outputs.tag }}
+      image-tag: ${{ steps.container-outputs.outputs.image-tag }}
+      image-digest: ${{ steps.container-outputs.outputs.image-digest }}
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          persist-credentials: false
+          fetch-depth: 0  # Full history for semantic release
+          token: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "lts/*"
-          cache: "npm"
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
 
       - name: Install dependencies
-        run: npm clean-install
+        run: npm ci
 
-      - name: Build application
-        run: npm run build
-
-      - name: Release
-        id: release
+      - name: Semantic Release
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          semantic_version: 23
+          extra_plugins: |
+            @semantic-release/changelog@6.0.3
+            @semantic-release/git@10.0.1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npx semantic-release
 
-  # Trigger umbrella repo update only on successful release
-  trigger-umbrella-update:
-    name: Update Umbrella Repository
-    runs-on: ubuntu-latest
-    needs: build-and-release
-    if: needs.build-and-release.outputs.release-published == 'true'
-    timeout-minutes: 5
-    steps:
-      - name: Format commit message
-        id: format-commit
+      # Container Build & Publish - Only if release was created
+      - name: Set up Docker Buildx
+        if: steps.semantic.outputs.new_release_published == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        if: steps.semantic.outputs.new_release_published == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract container metadata
+        if: steps.semantic.outputs.new_release_published == 'true'
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}},value=${{ steps.semantic.outputs.new_release_version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ steps.semantic.outputs.new_release_version }}
+            type=semver,pattern={{major}},value=${{ steps.semantic.outputs.new_release_version }}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push container image
+        if: steps.semantic.outputs.new_release_published == 'true'
+        id: container
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          target: production
+
+      - name: Generate container attestation
+        if: steps.semantic.outputs.new_release_published == 'true'
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.container.outputs.digest }}
+          push-to-registry: true
+
+      - name: Set container outputs
+        if: steps.semantic.outputs.new_release_published == 'true'
+        id: container-outputs
         run: |
-          # Get first line of commit message (title only)
-          COMMIT_TITLE=$(echo '${{ github.event.head_commit.message }}' | head -n1 | tr -d '\n\r')
-          # Limit to 80 characters and remove problematic characters
-          CLEAN_TITLE=$(echo "$COMMIT_TITLE" | cut -c1-80 | sed 's/[[:cntrl:]]//g')
-          echo "title=$CLEAN_TITLE" >> $GITHUB_OUTPUT
-          echo "short_sha=${GITHUB_SHA:0:7}" >> $GITHUB_OUTPUT
+          echo "image-tag=${{ fromJSON(steps.meta.outputs.json).tags[0] }}" >> $GITHUB_OUTPUT
+          echo "image-digest=${{ steps.container.outputs.digest }}" >> $GITHUB_OUTPUT
 
-      - name: Trigger umbrella repo submodule update
+      - name: Update Umbrella Repository
+        if: steps.semantic.outputs.new_release_published == 'true'
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.UMBRELLA_REPO_TOKEN }}
@@ -112,20 +139,27 @@ jobs:
               "repository": "${{ github.repository }}",
               "ref": "${{ github.ref }}",
               "sha": "${{ github.sha }}",
-              "short_sha": "${{ steps.format-commit.outputs.short_sha }}",
-              "actor": "${{ github.actor }}",
-              "workflow": "${{ github.workflow }}",
-              "timestamp": "${{ github.event.head_commit.timestamp }}",
-              "message": "${{ steps.format-commit.outputs.title }}",
-              "url": "${{ github.event.head_commit.url }}",
-              "release_version": "${{ needs.build-and-release.outputs.release-version }}"
+              "version": "${{ steps.semantic.outputs.new_release_version }}",
+              "release_url": "https://github.com/${{ github.repository }}/releases/tag/v${{ steps.semantic.outputs.new_release_version }}"
             }
 
-      - name: Log successful integration
+      - name: Create release success summary
+        if: success()
         run: |
-          echo "🚀 Frontend release v${{ needs.build-and-release.outputs.release-version }} published"
-          echo "📡 Triggered umbrella repo integration update"
-          echo "Repository: ${{ github.repository }}"
-          echo "Branch: ${{ github.ref_name }}"
-          echo "Release: v${{ needs.build-and-release.outputs.release-version }}"
-          echo "Commit: ${{ github.sha }}"
+          echo "## ✅ Semantic Release Completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** Release created successfully" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Release Details" >> $GITHUB_STEP_SUMMARY
+          echo "Check the [Releases page](https://github.com/${{ github.repository }}/releases) for the new release." >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ steps.semantic.outputs.new_release_published }}" == "true" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🐳 Container Image" >> $GITHUB_STEP_SUMMARY
+            echo "**Version:** \`${{ steps.semantic.outputs.new_release_version }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "**Image:** \`${{ steps.container-outputs.outputs.image-tag }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "**Digest:** \`${{ steps.container-outputs.outputs.image-digest }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Container image published to GitHub Container Registry with semantic version tags." >> $GITHUB_STEP_SUMMARY
+          fi

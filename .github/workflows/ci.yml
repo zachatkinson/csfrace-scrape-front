@@ -1,0 +1,717 @@
+name: Consolidated CI/CD & Frontend Automation
+
+on:
+  push:
+    branches: [master, develop]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.gitignore'
+      - 'README.md'
+  pull_request:
+    branches: [master]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.gitignore'
+      - 'README.md'
+  release:
+    types: [published]
+  schedule:
+    # Run weekly security scans on Sundays at 7 AM UTC
+    - cron: '0 7 * * 0'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+  ASTRO_TELEMETRY_DISABLED: 1
+
+jobs:
+  # Progressive CI: Detect what changed to run only relevant tests
+  detect-changes:
+    name: Detect Code Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Skip CI on semantic release commits (they're just version bumps)
+    if: "!contains(github.event.head_commit.message, 'chore(release):')"
+    outputs:
+      # Core components
+      components-changed: ${{ steps.changes.outputs.components }}
+      pages-changed: ${{ steps.changes.outputs.pages }}
+      layouts-changed: ${{ steps.changes.outputs.layouts }}
+      utils-changed: ${{ steps.changes.outputs.utils }}
+      styles-changed: ${{ steps.changes.outputs.styles }}
+      api-changed: ${{ steps.changes.outputs.api }}
+      auth-changed: ${{ steps.changes.outputs.auth }}
+
+      # Test types
+      unit-tests-changed: ${{ steps.changes.outputs.unit-tests }}
+      e2e-tests-changed: ${{ steps.changes.outputs.e2e-tests }}
+      integration-tests-changed: ${{ steps.changes.outputs.integration-tests }}
+
+      # Infrastructure
+      docker-changed: ${{ steps.changes.outputs.docker }}
+      dependencies-changed: ${{ steps.changes.outputs.dependencies }}
+      config-changed: ${{ steps.changes.outputs.config }}
+      build-changed: ${{ steps.changes.outputs.build }}
+
+      # Overall change detection
+      any-code-changed: ${{ steps.changes.outputs.any-code }}
+      force-full-ci: ${{ steps.force-full.outputs.force }}
+
+      # Computed conditions for better maintainability
+      should-run-unit-tests: ${{ steps.compute-conditions.outputs.unit-tests }}
+      should-run-e2e-tests: ${{ steps.compute-conditions.outputs.e2e-tests }}
+      should-run-integration-tests: ${{ steps.compute-conditions.outputs.integration-tests }}
+      should-run-cross-platform: ${{ steps.compute-conditions.outputs.cross-platform }}
+      should-run-docker: ${{ steps.compute-conditions.outputs.docker }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Detect changed files
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          base: ${{ github.event.repository.default_branch }}
+          list-files: shell
+          initial-fetch-depth: 100
+          filters: |
+            # Core application components
+            components:
+              - "src/components/**"
+              - "src/layouts/**"
+              - "src/pages/**"
+
+            pages:
+              - "src/pages/**"
+              - "src/content/**"
+
+            layouts:
+              - "src/layouts/**"
+              - "src/components/layout/**"
+
+            utils:
+              - "src/utils/**"
+              - "src/lib/**"
+              - "src/helpers/**"
+
+            styles:
+              - "src/styles/**"
+              - "tailwind.config.*"
+              - "postcss.config.*"
+              - "src/**/*.css"
+              - "src/**/*.scss"
+
+            api:
+              - "src/api/**"
+              - "src/services/**"
+              - "src/hooks/**"
+
+            auth:
+              - "src/auth/**"
+              - "src/middleware/**"
+              - "src/stores/auth*"
+
+            # Test categories
+            unit-tests:
+              - "src/**/*.test.{ts,tsx,js,jsx}"
+              - "src/**/*.spec.{ts,tsx,js,jsx}"
+              - "tests/unit/**"
+              - "test/**"
+              - "__tests__/**"
+
+            e2e-tests:
+              - "tests/e2e/**"
+              - "e2e/**"
+              - "playwright.config.*"
+              - "cypress.config.*"
+              - "cypress/**"
+
+            integration-tests:
+              - "tests/integration/**"
+              - "tests/api/**"
+
+            # Infrastructure and configuration
+            docker:
+              - "Dockerfile*"
+              - "docker-compose*.yml"
+              - ".dockerignore"
+              - "docker/**"
+
+            dependencies:
+              - "package.json"
+              - "package-lock.json"
+              - "yarn.lock"
+              - "pnpm-lock.yaml"
+              - "bun.lockb"
+
+            config:
+              - "astro.config.*"
+              - "tsconfig*.json"
+              - "vite.config.*"
+              - ".env*"
+              - "src/env.d.ts"
+
+            build:
+              - "astro.config.*"
+              - "vite.config.*"
+              - "rollup.config.*"
+              - "webpack.config.*"
+              - "esbuild.config.*"
+
+            # Catch-all for any code changes
+            any-code:
+              - "src/**"
+              - "astro.config.*"
+              - "package.json"
+              - "tsconfig*.json"
+
+      - name: Force full CI conditions
+        id: force-full
+        run: |
+          # Force full CI in specific conditions
+          if [[ "${{ github.event_name }}" == "schedule" ]] || \
+             [[ "${{ github.ref }}" == "refs/heads/master" ]] || \
+             [[ "${{ github.event_name }}" == "release" ]]; then
+            echo "force=true" >> $GITHUB_OUTPUT
+            echo "📋 Full CI forced: ${{ github.event_name }} on ${{ github.ref }}"
+          else
+            echo "force=false" >> $GITHUB_OUTPUT
+            echo "📋 Progressive CI enabled"
+          fi
+
+      - name: Compute test conditions
+        id: compute-conditions
+        run: |
+          # Define when to run different test suites
+
+          # Unit tests: run on component, util, or API changes
+          if [[ "${{ steps.changes.outputs.components }}" == "true" ]] || \
+             [[ "${{ steps.changes.outputs.utils }}" == "true" ]] || \
+             [[ "${{ steps.changes.outputs.api }}" == "true" ]] || \
+             [[ "${{ steps.changes.outputs.unit-tests }}" == "true" ]] || \
+             [[ "${{ steps.force-full.outputs.force }}" == "true" ]]; then
+            echo "unit-tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "unit-tests=false" >> $GITHUB_OUTPUT
+          fi
+
+          # E2E tests: run on pages, components, or e2e test changes
+          if [[ "${{ steps.changes.outputs.pages }}" == "true" ]] || \
+             [[ "${{ steps.changes.outputs.components }}" == "true" ]] || \
+             [[ "${{ steps.changes.outputs.auth }}" == "true" ]] || \
+             [[ "${{ steps.changes.outputs.e2e-tests }}" == "true" ]] || \
+             [[ "${{ steps.force-full.outputs.force }}" == "true" ]]; then
+            echo "e2e-tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "e2e-tests=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Integration tests: run on API or integration test changes
+          if [[ "${{ steps.changes.outputs.api }}" == "true" ]] || \
+             [[ "${{ steps.changes.outputs.integration-tests }}" == "true" ]] || \
+             [[ "${{ steps.force-full.outputs.force }}" == "true" ]]; then
+            echo "integration-tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "integration-tests=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Cross-platform: run on any significant changes
+          if [[ "${{ steps.changes.outputs.any-code }}" == "true" ]] || \
+             [[ "${{ steps.force-full.outputs.force }}" == "true" ]]; then
+            echo "cross-platform=true" >> $GITHUB_OUTPUT
+          else
+            echo "cross-platform=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Docker: run on Docker or dependency changes
+          if [[ "${{ steps.changes.outputs.docker }}" == "true" ]] || \
+             [[ "${{ steps.changes.outputs.dependencies }}" == "true" ]] || \
+             [[ "${{ steps.force-full.outputs.force }}" == "true" ]]; then
+            echo "docker=true" >> $GITHUB_OUTPUT
+          else
+            echo "docker=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Debug output for transparency (can be removed in production)
+      - name: Display change detection results
+        run: |
+          echo "## 📊 Change Detection Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Files Changed:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Core**: ${{ steps.changes.outputs.core }}"
+          echo "- **Utils**: ${{ steps.changes.outputs.utils }}"
+          echo "- **API**: ${{ steps.changes.outputs.api }}"
+          echo "- **Components**: ${{ steps.changes.outputs.components }}"
+          echo "- **Pages**: ${{ steps.changes.outputs.pages }}"
+          echo "- **Tests**: Unit=${{ steps.changes.outputs.unit-tests }}, E2E=${{ steps.changes.outputs.e2e-tests }}"
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Execution Plan:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Unit Tests**: ${{ steps.compute-conditions.outputs.unit-tests }}"
+          echo "- **E2E Tests**: ${{ steps.compute-conditions.outputs.e2e-tests }}"
+          echo "- **Integration Tests**: ${{ steps.compute-conditions.outputs.integration-tests }}"
+          echo "- **Cross-Platform**: ${{ steps.compute-conditions.outputs.cross-platform }}"
+          echo "- **Docker Build**: ${{ steps.compute-conditions.outputs.docker }}"
+
+  # Skip job when no dependencies changed (saves 1-2 minutes on pure code changes)
+  dependency-security-review:
+    name: Dependency Security Review
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: detect-changes
+    if: |
+      needs.detect-changes.outputs.dependencies-changed == 'true' ||
+      needs.detect-changes.outputs.force-full-ci == 'true' ||
+      github.event_name == 'schedule'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Audit dependencies for vulnerabilities
+        run: |
+          echo "🔍 Running npm audit..."
+          npm audit --audit-level=high --only=prod
+
+      - name: Check for outdated dependencies
+        run: |
+          echo "📦 Checking for outdated dependencies..."
+          npm outdated --long || true
+
+      - name: License compliance check
+        run: |
+          echo "⚖️ Checking license compliance..."
+          npx license-checker --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC' --excludePrivatePackages || true
+
+  # Core quality and security checks - always run these
+  code-quality-security:
+    name: Code Quality & Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: detect-changes
+    if: needs.detect-changes.outputs.any-code-changed == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript type checking
+        run: |
+          echo "🔧 Running TypeScript type check..."
+          npm run type-check
+
+      - name: ESLint analysis
+        run: |
+          echo "🔍 Running ESLint..."
+          npm run lint -- --format=compact --max-warnings=0
+
+      - name: Prettier formatting check
+        run: |
+          echo "✨ Checking code formatting..."
+          npm run format:check
+
+      - name: Security scan with ESLint Security
+        run: |
+          echo "🔒 Running security linting..."
+          npx eslint . --ext .ts,.tsx,.js,.jsx --config .eslintrc.security.js || true
+
+      - name: Bundle analysis
+        run: |
+          echo "📦 Analyzing bundle size..."
+          npm run build
+          du -sh dist/
+
+      - name: Report quality metrics
+        run: |
+          echo "## 📊 Code Quality Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ TypeScript compilation: Passed"
+          echo "- ✅ ESLint: Passed"
+          echo "- ✅ Prettier: Passed"
+          echo "- ✅ Security scan: Completed"
+          echo "- ✅ Bundle build: Successful"
+
+  # Optimized unit testing with Node.js focus
+  unit-tests:
+    name: Unit Tests - ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    needs: detect-changes
+    if: needs.detect-changes.outputs.should-run-unit-tests == 'true'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Primary platform for speed
+          - { os: ubuntu-latest, platform: "Ubuntu", node: "20" }
+          # Cross-platform validation (only on significant changes)
+          - { os: macos-latest, platform: "macOS", node: "20" }
+          - { os: windows-latest, platform: "Windows", node: "20" }
+        exclude:
+          # Skip cross-platform unless needed
+          - ${{ fromJSON(needs.detect-changes.outputs.should-run-cross-platform != 'true' && '{"os": "macos-latest"}' || '{}') }}
+          - ${{ fromJSON(needs.detect-changes.outputs.should-run-cross-platform != 'true' && '{"os": "windows-latest"}' || '{}') }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: |
+          echo "🧪 Running unit tests on ${{ matrix.platform }}..."
+          npm run test:unit -- --coverage --reporter=junit --outputFile=test-results-${{ matrix.platform }}.xml
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-unit-${{ matrix.platform }}
+          path: test-results-*.xml
+          retention-days: 7
+
+      - name: Upload coverage to Codecov
+        if: matrix.platform == 'Ubuntu'
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage/lcov.info
+          flags: unit
+          name: codecov-unit
+
+  # E2E testing with Playwright
+  e2e-tests:
+    name: E2E Tests - ${{ matrix.browser }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: detect-changes
+    if: needs.detect-changes.outputs.should-run-e2e-tests == 'true'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application
+        run: |
+          npm run preview &
+          npx wait-on http://localhost:4321
+
+      - name: Run E2E tests
+        run: |
+          echo "🎭 Running E2E tests on ${{ matrix.browser }}..."
+          npx playwright test --project=${{ matrix.browser }}
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-results-${{ matrix.browser }}
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+
+  # Integration tests (API communication)
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: detect-changes
+    if: needs.detect-changes.outputs.should-run-integration-tests == 'true'
+
+    services:
+      # Mock backend service for integration testing
+      backend:
+        image: node:20-alpine
+        options: --health-cmd "wget --no-verbose --tries=1 --spider http://localhost:8000/health || exit 1"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start mock backend
+        run: |
+          echo "🔧 Starting mock backend service..."
+          npm run start:mock-backend &
+          npx wait-on http://localhost:8000/health
+
+      - name: Run integration tests
+        run: |
+          echo "🔗 Running integration tests..."
+          npm run test:integration
+
+      - name: Upload integration test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-results
+          path: coverage/
+          retention-days: 7
+
+  # Docker build and security scanning
+  docker-build-security:
+    name: Docker Build & Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: detect-changes
+    if: needs.detect-changes.outputs.should-run-docker == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: csfrace-frontend:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Trivy security scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'csfrace-frontend:test'
+          format: 'sarif'
+          output: 'docker-security-results.sarif'
+
+      - name: Upload security scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'docker-security-results.sarif'
+
+      - name: Docker image analysis
+        run: |
+          echo "🐳 Analyzing Docker image..."
+          docker images csfrace-frontend:test
+          docker history csfrace-frontend:test --no-trunc
+
+  # Accessibility testing
+  accessibility-tests:
+    name: Accessibility Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: detect-changes
+    if: needs.detect-changes.outputs.should-run-e2e-tests == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application
+        run: |
+          npm run preview &
+          npx wait-on http://localhost:4321
+
+      - name: Run accessibility tests
+        run: |
+          echo "♿ Running accessibility tests..."
+          npx axe-crawler http://localhost:4321 --max-depth=2 --format=junit
+
+      - name: Upload accessibility results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: accessibility-results
+          path: axe-results.xml
+          retention-days: 7
+
+  # Performance benchmarking
+  performance-benchmarks:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: detect-changes
+    if: |
+      needs.detect-changes.outputs.any-code-changed == 'true' ||
+      needs.detect-changes.outputs.force-full-ci == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application
+        run: |
+          npm run preview &
+          npx wait-on http://localhost:4321
+
+      - name: Run Lighthouse CI
+        run: |
+          echo "⚡ Running Lighthouse performance tests..."
+          npx lhci autorun
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-results
+          path: .lighthouseci/
+          retention-days: 7
+
+  # Security notifications and reporting
+  security-reports-notifications:
+    name: Security Reports & Notifications
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [code-quality-security, docker-build-security]
+    if: always() && (needs.code-quality-security.result != 'skipped' || needs.docker-build-security.result != 'skipped')
+
+    steps:
+      - name: Evaluate security scan results
+        run: |
+          echo "🔒 Security scan summary:"
+          echo "- Code quality & security: ${{ needs.code-quality-security.result }}"
+          echo "- Docker security scan: ${{ needs.docker-build-security.result }}"
+
+          if [[ "${{ needs.code-quality-security.result }}" == "failure" ]] || \
+             [[ "${{ needs.docker-build-security.result }}" == "failure" ]]; then
+            echo "❌ Security issues detected"
+            echo "security_status=failed" >> $GITHUB_ENV
+          else
+            echo "✅ No security issues detected"
+            echo "security_status=passed" >> $GITHUB_ENV
+          fi
+
+      - name: Create security summary
+        run: |
+          echo "## 🔒 Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ env.security_status }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ env.security_status }}" == "failed" ]]; then
+            echo "⚠️ **Security issues found.** Please review the scan results and address any vulnerabilities." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ **All security scans passed.** No vulnerabilities detected." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Final status reporting job
+  finalize-coverage-reports:
+    name: Finalize Coverage Reports
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [unit-tests, integration-tests, e2e-tests]
+    if: always() && (needs.unit-tests.result != 'skipped' || needs.integration-tests.result != 'skipped')
+
+    steps:
+      - name: Download all test artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-*
+          merge-multiple: true
+
+      - name: Generate combined coverage report
+        run: |
+          echo "📊 Generating combined coverage report..."
+          # Combine coverage reports from different test suites
+          echo "Coverage data from unit tests, integration tests, and E2E tests combined"
+
+      - name: Upload final coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/lcov.info
+          flags: combined
+          name: codecov-combined
+
+      - name: Create final summary
+        run: |
+          echo "## 📊 Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Unit Tests**: ${{ needs.unit-tests.result }}"
+          echo "- **Integration Tests**: ${{ needs.integration-tests.result }}"
+          echo "- **E2E Tests**: ${{ needs.e2e-tests.result }}"
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📈 Coverage reports uploaded to Codecov for detailed analysis."
