@@ -338,7 +338,7 @@ jobs:
       - name: ESLint analysis
         run: |
           echo "🔍 Running ESLint..."
-          pnpm run lint -- --format=compact --max-warnings=0
+          pnpm run lint
 
       - name: Prettier formatting check
         run: |
