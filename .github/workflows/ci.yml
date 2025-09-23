@@ -413,6 +413,15 @@ jobs:
           name: codecov-unit
           slug: zachatkinson/csfrace-scrape-front
 
+      - name: Upload test results to Codecov
+        if: always()
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./test-results.junit.xml
+          flags: unit
+          name: codecov-unit-tests
+
   # E2E testing with Playwright
   e2e-tests:
     name: E2E Tests - ${{ matrix.browser }}
@@ -530,6 +539,15 @@ jobs:
           flags: integration
           name: codecov-integration
           slug: zachatkinson/csfrace-scrape-front
+
+      - name: Upload test results to Codecov
+        if: always()
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./test-results.junit.xml
+          flags: integration
+          name: codecov-integration-tests
 
   # Docker build and security scanning
   docker-build-security:

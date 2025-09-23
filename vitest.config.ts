@@ -5,6 +5,11 @@ export default defineConfig({
     globals: true,
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
+    // Output JUnit XML for Codecov Test Analytics
+    reporters: ["default", "junit"],
+    outputFile: {
+      junit: "./test-results.junit.xml",
+    },
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html", "lcov"],
