@@ -206,8 +206,7 @@ export class AuthTestHelpers {
     },
     admin: {
       email: "admin@example.com",
-      password:
-        process.env.VITE_TEST_ADMIN_PASSWORD || "SecureAdminPass123!",
+      password: process.env.VITE_TEST_ADMIN_PASSWORD || "SecureAdminPass123!",
       name: "Admin User",
     },
   };
