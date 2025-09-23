@@ -423,7 +423,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium, firefox, webkit]
+        browser: [chromium, firefox]
+        # Note: webkit/Safari testing skipped in CI due to Linux compatibility issues
+        # Test Safari manually or use dedicated macOS environments
 
     steps:
       - name: Checkout code
