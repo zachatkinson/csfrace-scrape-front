@@ -45,32 +45,35 @@ test.describe("Security Features", () => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
-    // Look for input fields to test basic XSS protection
-    const inputs = await page.$$(
-      'input[type="text"], input[type="url"], textarea',
-    );
+    // First activate single post mode to make the URL input visible
+    const singlePostBtn = page.locator("#single-post-btn");
+    await expect(singlePostBtn).toBeVisible();
+    await singlePostBtn.click();
 
-    if (inputs.length > 0) {
-      const testInput = inputs[0];
+    // Wait for the interface to show
+    await page.waitForTimeout(500);
 
-      // Test basic XSS payload
-      await testInput.fill('<script>alert("xss")</script>');
+    // Now look for the visible URL input field
+    const urlInput = page.locator("#wordpress-url");
+    await expect(urlInput).toBeVisible();
 
-      // Verify the script tag doesn't execute
-      let alertTriggered = false;
-      page.on("dialog", async (dialog) => {
-        alertTriggered = true;
-        await dialog.dismiss();
-      });
+    // Test basic XSS payload
+    await urlInput.fill('<script>alert("xss")</script>');
 
-      await page.waitForTimeout(1000);
-      expect(alertTriggered).toBe(false);
+    // Verify the script tag doesn't execute
+    let alertTriggered = false;
+    page.on("dialog", async (dialog) => {
+      alertTriggered = true;
+      await dialog.dismiss();
+    });
 
-      // Get the actual value to see if it was sanitized
-      const value = await testInput.inputValue();
-      // Value might be sanitized or escaped
-      console.log("Input value after XSS test:", value);
-    }
+    await page.waitForTimeout(1000);
+    expect(alertTriggered).toBe(false);
+
+    // Get the actual value to see if it was sanitized
+    const value = await urlInput.inputValue();
+    // Value might be sanitized or escaped
+    console.log("Input value after XSS test:", value);
   });
 
   test("should handle authentication flow securely", async ({ page }) => {

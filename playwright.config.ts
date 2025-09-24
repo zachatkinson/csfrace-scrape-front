@@ -10,7 +10,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : "50%",
   reporter: "html",
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000",
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000", // Docker frontend
     trace: "on-first-retry",
     video: "retain-on-failure",
     screenshot: "only-on-failure",
@@ -31,9 +31,6 @@ export default defineConfig({
     },
   ],
 
-  webServer: {
-    command: "npm run dev",
-    port: 3000,
-    reuseExistingServer: true, // Use existing Docker server
-  },
+  // Remove webServer config - tests should use existing Docker containers
+  // Frontend runs in Docker on port 3000, backend on port 8000
 });
