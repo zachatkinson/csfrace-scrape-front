@@ -22,7 +22,7 @@ const authLogger = createContextLogger("Auth-Middleware");
 
 // Backend API base URL - use nginx service for Docker internal networking
 // Frontend container needs to route through nginx container, not localhost
-const API_BASE = "http://nginx";
+const API_BASE = import.meta.env.VITE_SERVER_API_URL || "http://nginx-dev";
 
 interface AuthResponse {
   id: string;
