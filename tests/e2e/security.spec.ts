@@ -3,7 +3,7 @@ import {
   SecurityTestHelpers,
   AuthTestHelpers,
   TEST_DATA,
-} from "../src/utils/test-helpers";
+} from "../../src/utils/test-helpers";
 
 test.describe("Security Tests", () => {
   test.describe("Headers and CSP", () => {

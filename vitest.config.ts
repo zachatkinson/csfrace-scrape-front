@@ -32,17 +32,19 @@ export default defineConfig({
         },
       },
     },
-    // Include patterns for test files
+    // Include patterns for test files (exclude .spec.ts which are for Playwright)
     include: [
-      "src/**/*.{test,spec}.{js,ts,tsx}",
+      "src/**/*.test.{js,ts,tsx}",
       "tests/unit/**/*.{js,ts,tsx}",
+      "tests/integration/**/*.{js,ts,tsx}",
     ],
-    // Exclude patterns
+    // Exclude patterns (exclude all .spec.ts files as they are for Playwright)
     exclude: [
       "node_modules/**",
       "dist/**",
-      "tests/**/*.spec.ts",
+      "**/*.spec.ts",
       "tests/e2e/**",
+      "tests/screenshots/**",
     ],
     // Test timeout
     testTimeout: 10000,

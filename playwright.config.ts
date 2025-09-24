@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
-  testDir: "./tests",
+  testDir: "./tests/e2e",
   // Only run .spec.ts files, exclude unit tests
   testMatch: /.*\.spec\.ts$/,
   fullyParallel: true,
