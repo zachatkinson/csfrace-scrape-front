@@ -468,7 +468,7 @@ jobs:
       - name: Run E2E tests
         run: |
           echo "🎭 Running E2E tests on ${{ matrix.browser }}..."
-          npx playwright test --project=${{ matrix.browser }}
+          PLAYWRIGHT_RUNNING=true npx playwright test --project=${{ matrix.browser }}
 
       - name: Upload test results
         uses: actions/upload-artifact@v4

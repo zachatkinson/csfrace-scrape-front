@@ -4,7 +4,7 @@ export default defineConfig({
   test: {
     globals: false,
     environment: "jsdom",
-    setupFiles: ["./src/test/setup.ts"],
+    setupFiles: process.env.PLAYWRIGHT_RUNNING ? [] : ["./src/test/setup.ts"],
     // Output JUnit XML for Codecov Test Analytics
     reporters: ["default", "junit"],
     outputFile: {
