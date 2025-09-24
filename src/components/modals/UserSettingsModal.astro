@@ -358,6 +358,13 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
       headers: { 'Accept': 'application/json' },
     });
 
+    // Handle unauthorized users gracefully - not an error, just not signed in
+    if (response.status === 401 || response.status === 403) {
+      logger.info('User not authenticated - settings unavailable until sign in');
+      userInfo = null;
+      return; // Don't throw error for expected unauthenticated state
+    }
+
     if (!response.ok) {
       throw new Error('Failed to load user information');
     }
