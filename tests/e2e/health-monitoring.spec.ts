@@ -22,7 +22,7 @@ test.describe("Health Monitoring System", () => {
 
   test("should load test-health page successfully", async ({ page }) => {
     await page.goto("/test-health");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // Check for health dashboard title
     const dashboardTitle = page.locator(
@@ -45,7 +45,7 @@ test.describe("Health Monitoring System", () => {
 
   test("should show system performance overview", async ({ page }) => {
     await page.goto("/test-health");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // Check for performance metrics section
     const performanceSection = page.locator(
@@ -63,7 +63,7 @@ test.describe("Health Monitoring System", () => {
 
   test("should have export functionality", async ({ page }) => {
     await page.goto("/test-health");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // Check for export buttons
     const exportJsonBtn = page.locator("#export-json-btn");
@@ -82,7 +82,7 @@ test.describe("Health Monitoring System", () => {
 
   test("should display raw data preview", async ({ page }) => {
     await page.goto("/test-health");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // Check for raw data sections
     const healthDataPreview = page.locator("#raw-health-data");
@@ -99,7 +99,7 @@ test.describe("Health Monitoring System", () => {
 
     // Navigate to test-health
     await page.goto("/test-health");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // Verify we're on the correct page
     const healthTitle = page.locator('h1:has-text("System Health Dashboard")');
@@ -124,7 +124,7 @@ test.describe("Health Monitoring System", () => {
 
     // Screenshot of health dashboard
     await page.goto("/test-health");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(2000); // Allow time for any dynamic content
     await page.screenshot({
       path: "tests/screenshots/health-dashboard-full.png",
