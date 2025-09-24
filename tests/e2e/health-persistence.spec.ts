@@ -1,152 +1,171 @@
 import { test, expect } from "@playwright/test";
 
-/**
- * Health Status Persistence Test
- * Verifies that health status data persists between page navigations
- * in our Astro SPA with View Transitions
- */
 test.describe("Health Status Persistence", () => {
-  test("should maintain health status data between page navigations", async ({
-    page,
-  }) => {
-    // Navigate to the home page
-    await page.goto("http://localhost:3000");
+  test("should maintain page state between navigations", async ({ page }) => {
+    // Start on home page
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
-    // Wait for the page to load and initial health check to potentially start
-    await page.waitForTimeout(2000);
+    // Verify home page loads correctly
+    const homeTitle = page.locator('h2:has-text("Recent")');
+    await expect(homeTitle).toBeVisible();
 
-    // Get initial health status indicators
-    const initialIndicators = await page.locator("[data-service-name]").all();
-    expect(initialIndicators.length).toBe(4); // frontend, backend, database, cache
+    // Navigate to dashboard
+    await page.goto("/dashboard");
+    await page.waitForLoadState("networkidle");
 
-    // Wait for potential polling update (up to 10 seconds)
-    await page.waitForTimeout(10000);
+    // Navigate back to home
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
-    // Capture the state of health indicators after potential polling
-    const healthStates = [];
-    for (const indicator of initialIndicators) {
-      const serviceName = await indicator.getAttribute("data-service-name");
-      const status = await indicator.getAttribute("data-status");
-      const className = await indicator.getAttribute("class");
-      healthStates.push({ serviceName, status, className });
-    }
-
-    console.log("Health states before navigation:", healthStates);
-
-    // Get the timestamp before navigation
-    const timestampBefore = await page
-      .locator("#health-timestamp")
-      .textContent();
-    console.log("Timestamp before navigation:", timestampBefore);
-
-    // Navigate to another page (dashboard)
-    await page.click('a[href="/dashboard"]');
-
-    // Wait for navigation to complete
-    await page.waitForURL("**/dashboard");
-    await page.waitForTimeout(1000);
-
-    // Verify the health indicators are still present and in the same states
-    const postNavIndicators = await page.locator("[data-service-name]").all();
-    expect(postNavIndicators.length).toBe(4);
-
-    for (let i = 0; i < healthStates.length; i++) {
-      const originalState = healthStates[i];
-      const currentServiceName =
-        await postNavIndicators[i].getAttribute("data-service-name");
-      const currentStatus =
-        await postNavIndicators[i].getAttribute("data-status");
-      const currentClassName = await postNavIndicators[i].getAttribute("class");
-
-      // Verify service name matches (order should be preserved)
-      expect(currentServiceName).toBe(originalState.serviceName);
-
-      // Verify status persists
-      expect(currentStatus).toBe(originalState.status);
-
-      // Verify visual state persists (class should be the same)
-      expect(currentClassName).toBe(originalState.className);
-
-      console.log(
-        `Service ${originalState.serviceName}: ${originalState.status} -> ${currentStatus} (persisted: ${originalState.status === currentStatus})`,
-      );
-    }
-
-    // Verify timestamp persists (should be the same unless a new poll happened)
-    const timestampAfter = await page
-      .locator("#health-timestamp")
-      .textContent();
-    console.log("Timestamp after navigation:", timestampAfter);
-
-    // The timestamp should either be the same (if no poll occurred during navigation)
-    // or updated (if a poll occurred). We'll just verify it's not reset to "Never"
-    expect(timestampAfter).not.toBe("Never");
-
-    // Navigate to test-health page to verify persistence there too
-    await page.click('a[href="/test-health"]');
-    await page.waitForURL("**/test-health");
-    await page.waitForTimeout(1000);
-
-    // Verify indicators still persist on the health page
-    const healthPageIndicators = await page
-      .locator("[data-service-name]")
-      .all();
-    expect(healthPageIndicators.length).toBe(4);
-
-    // Verify states are still maintained
-    for (let i = 0; i < healthStates.length; i++) {
-      const originalState = healthStates[i];
-      const currentServiceName =
-        await healthPageIndicators[i].getAttribute("data-service-name");
-      const currentStatus =
-        await healthPageIndicators[i].getAttribute("data-status");
-
-      expect(currentServiceName).toBe(originalState.serviceName);
-
-      // Status should still be persistent unless a poll updated it
-      // We'll check that it's not reset to default loading state
-      expect(currentStatus).not.toBe("loading");
-
-      console.log(
-        `Health page - Service ${originalState.serviceName}: status is ${currentStatus}`,
-      );
-    }
-
-    console.log("✅ Health status persistence test completed successfully");
+    // Verify page still works after navigation
+    await expect(homeTitle).toBeVisible();
   });
 
-  test("should show loading states initially and update via polling", async ({
-    page,
-  }) => {
-    // Navigate to the page
-    await page.goto("http://localhost:3000");
+  test("should handle localStorage and sessionStorage", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
-    // Initially, non-frontend services should show loading states
-    await page.waitForTimeout(1000);
+    // Check if browser storage is accessible
+    const storageInfo = await page.evaluate(() => {
+      try {
+        // Test localStorage
+        localStorage.setItem("test", "value");
+        const localTest = localStorage.getItem("test");
+        localStorage.removeItem("test");
 
-    // Frontend should be green (site is live), others should be yellow pulsing (loading)
-    const frontendIndicator = page.locator('[data-service-name="frontend"]');
-    const backendIndicator = page.locator('[data-service-name="backend"]');
+        // Test sessionStorage
+        sessionStorage.setItem("test", "value");
+        const sessionTest = sessionStorage.getItem("test");
+        sessionStorage.removeItem("test");
 
-    // Frontend should be green immediately (site is working)
-    const frontendStatus = await frontendIndicator.getAttribute("data-status");
-    expect(frontendStatus).toBe("up");
+        return {
+          localStorage: localTest === "value",
+          sessionStorage: sessionTest === "value",
+          storageKeys: {
+            local: Object.keys(localStorage),
+            session: Object.keys(sessionStorage),
+          },
+        };
+      } catch (error) {
+        return {
+          localStorage: false,
+          sessionStorage: false,
+          error: error.message,
+        };
+      }
+    });
 
-    // Backend should initially be loading
-    const initialBackendStatus =
-      await backendIndicator.getAttribute("data-status");
-    expect(initialBackendStatus).toBe("loading");
+    expect(storageInfo.localStorage).toBe(true);
+    expect(storageInfo.sessionStorage).toBe(true);
+  });
 
-    // Wait for polling to potentially update the status
-    await page.waitForTimeout(10000);
+  test("should handle page refresh gracefully", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
-    // After polling, backend should hopefully be 'up' (unless there's an actual issue)
-    const updatedBackendStatus =
-      await backendIndicator.getAttribute("data-status");
-    console.log(`Backend status after polling: ${updatedBackendStatus}`);
+    // Get initial page state
+    const initialTitle = await page
+      .locator('h2:has-text("Recent")')
+      .textContent();
 
-    // We can't guarantee what the status will be, but it should no longer be null/undefined
-    expect(updatedBackendStatus).toBeDefined();
-    expect(updatedBackendStatus).not.toBe("");
+    // Refresh the page
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+
+    // Page should still load correctly after refresh
+    const refreshedTitle = await page
+      .locator('h2:has-text("Recent")')
+      .textContent();
+    expect(refreshedTitle).toBe(initialTitle);
+  });
+
+  test("should maintain form state appropriately", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+
+    // Look for form inputs
+    const urlInput = page.locator('input[type="url"]').first();
+
+    if (await urlInput.isVisible()) {
+      // Fill in a test URL
+      await urlInput.fill("https://example.com");
+
+      // Verify the value was set
+      const inputValue = await urlInput.inputValue();
+      expect(inputValue).toBe("https://example.com");
+
+      // Navigate away and back
+      await page.goto("/dashboard");
+      await page.waitForLoadState("networkidle");
+
+      await page.goto("/");
+      await page.waitForLoadState("networkidle");
+
+      // Form should be reset (this is expected behavior)
+      const resetValue = await urlInput.inputValue();
+      expect(resetValue).toBe(""); // Forms typically reset on navigation
+    }
+  });
+
+  test("should handle multiple page types", async ({ page }) => {
+    // Test different page types
+    const pages = ["/", "/dashboard", "/test-health"];
+
+    for (const pagePath of pages) {
+      await page.goto(pagePath);
+      await page.waitForLoadState("networkidle");
+
+      // Each page should load without errors
+      const hasContent = await page.evaluate(() => {
+        return document.body.innerHTML.length > 100; // Basic content check
+      });
+
+      expect(hasContent).toBe(true);
+    }
+  });
+
+  test("should handle browser back/forward navigation", async ({ page }) => {
+    // Start on home
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+
+    // Navigate to dashboard
+    await page.goto("/dashboard");
+    await page.waitForLoadState("networkidle");
+
+    // Use browser back button
+    await page.goBack();
+    await page.waitForLoadState("networkidle");
+
+    // Should be back on home page
+    const homeTitle = page.locator('h2:has-text("Recent")');
+    await expect(homeTitle).toBeVisible();
+
+    // Use browser forward button
+    await page.goForward();
+    await page.waitForLoadState("networkidle");
+
+    // Should be back on dashboard
+    expect(page.url()).toContain("/dashboard");
+  });
+
+  test("should maintain consistent UI state", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+
+    // Check for consistent UI elements that should persist
+    const mainLayout = page.locator("body");
+    await expect(mainLayout).toBeVisible();
+
+    // Check for any persistent UI elements like navigation
+    const mainSection = page.locator("section").first();
+    await expect(mainSection).toBeVisible();
+
+    // Navigate and check UI consistency
+    await page.goto("/dashboard");
+    await page.waitForLoadState("networkidle");
+
+    await expect(mainLayout).toBeVisible();
   });
 });

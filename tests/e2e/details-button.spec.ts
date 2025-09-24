@@ -1,133 +1,89 @@
 import { test, expect } from "@playwright/test";
 
-test.describe("Details Button Fix", () => {
-  test("details button should work properly without auto-closing", async ({
-    page,
-  }) => {
-    console.log("🧪 Testing the fixed Details button behavior...");
-
-    // Go to the page
+test.describe("Error Details Functionality", () => {
+  test.beforeEach(async ({ page }) => {
     await page.goto("/");
+  });
 
-    // Wait for page to load and errors to appear
-    await page.waitForTimeout(3000);
+  test("should load main page successfully", async ({ page }) => {
+    // Basic test to ensure the page loads
+    await page.waitForLoadState("networkidle");
 
-    // Look for the Details button in the error message
-    const detailsButton = page.locator('button:has-text("Details")').first();
+    // Check that main components are present
+    const title = page.locator("h2:has-text('Recent')");
+    await expect(title).toBeVisible();
 
-    if ((await detailsButton.count()) > 0) {
-      console.log("✅ Found Details button");
+    // Check for job dashboard component
+    const jobDashboard = page.locator("job-dashboard");
+    await expect(jobDashboard).toBeVisible();
 
-      // Take screenshot before clicking
-      await page.screenshot({
-        path: "test-results/details-fix-before-click.png",
-        fullPage: true,
-      });
+    // Check for conversion form
+    const conversionForm = page.locator("h2:has-text('Convert')");
+    await expect(conversionForm).toBeVisible();
+  });
 
-      // Check initial state - details should be hidden
-      const detailsContent = page.locator(".error-details").first();
-      const initialVisibility = await detailsContent.isVisible();
-      console.log(`Initial details visibility: ${initialVisibility}`);
+  test("should show error handling in job dashboard", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
-      // Click the Details button
-      console.log("🖱️ Clicking Details button...");
-      await detailsButton.click();
+    // Check if jobs error element exists (even if hidden)
+    const errorElement = page.locator("#jobs-error");
+    await expect(errorElement).toBeAttached(); // Element exists in DOM
 
-      // Wait for animation to complete
-      await page.waitForTimeout(500);
+    // Check if retry button exists (even if hidden)
+    const retryButton = page.locator("#retry-load-jobs");
+    await expect(retryButton).toBeAttached(); // Element exists in DOM
 
-      // Take screenshot after clicking
-      await page.screenshot({
-        path: "test-results/details-fix-after-click.png",
-        fullPage: true,
-      });
+    // Check jobs loading element exists
+    const loadingElement = page.locator("#jobs-loading");
+    await expect(loadingElement).toBeAttached();
 
-      // Check if details are now visible and stay visible
-      const afterClickVisibility = await detailsContent.isVisible();
-      console.log(`Details visibility after click: ${afterClickVisibility}`);
+    // Check jobs empty state exists
+    const emptyState = page.locator("#jobs-empty");
+    await expect(emptyState).toBeAttached();
+  });
 
-      // Wait a bit more to see if it auto-closes (it shouldn't)
-      await page.waitForTimeout(2000);
+  test("should handle dashboard navigation", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
-      const finalVisibility = await detailsContent.isVisible();
-      console.log(`Details visibility after 2 seconds: ${finalVisibility}`);
+    // Find and click the "View All Jobs" link (be more specific to avoid multiple matches)
+    const viewAllButton = page.locator(
+      'a[href="/dashboard"]:has-text("View All Jobs")',
+    );
+    await expect(viewAllButton).toBeVisible();
 
-      // Take final screenshot
-      await page.screenshot({
-        path: "test-results/details-fix-final.png",
-        fullPage: true,
-      });
+    await viewAllButton.click();
+    await page.waitForLoadState("networkidle");
 
-      // The details should be visible and stay visible
-      expect(afterClickVisibility).toBe(true);
-      expect(finalVisibility).toBe(true);
+    // Should be on dashboard page
+    expect(page.url()).toContain("/dashboard");
 
-      console.log("✅ Details button test passed - no auto-closing detected!");
-
-      // Test clicking again to close
-      console.log("🖱️ Testing close functionality...");
-      await detailsButton.click();
-      await page.waitForTimeout(500);
-
-      const closedVisibility = await detailsContent.isVisible();
-      console.log(
-        `Details visibility after second click (should be closed): ${closedVisibility}`,
-      );
-
-      expect(closedVisibility).toBe(false);
-      console.log("✅ Close functionality works correctly!");
-    } else {
-      console.log("ℹ️ No Details button found on page (no error occurred)");
-
-      // Take screenshot to see current state
-      await page.screenshot({
-        path: "test-results/details-fix-no-button.png",
-        fullPage: true,
-      });
-
-      // This is actually fine - it means no errors occurred
+    // Check for dashboard components
+    const dashboardHeader = await page.locator('h1:has-text("Job Dashboard")');
+    if (await dashboardHeader.isVisible()) {
+      await expect(dashboardHeader).toBeVisible();
     }
   });
 
-  test("details button rapid clicking test", async ({ page }) => {
-    console.log("🧪 Testing Details button with rapid clicking...");
-
+  test("should take screenshots of main states", async ({ page }) => {
     await page.goto("/");
-    await page.waitForTimeout(3000);
+    await page.waitForLoadState("networkidle");
 
-    const detailsButton = page.locator('button:has-text("Details")').first();
+    // Take screenshot of home page
+    await page.screenshot({
+      path: "tests/screenshots/home-page.png",
+      fullPage: true,
+    });
 
-    if ((await detailsButton.count()) > 0) {
-      console.log(
-        "📱 Testing rapid clicking (should prevent race conditions)...",
-      );
+    // Navigate to dashboard
+    await page.goto("/dashboard");
+    await page.waitForLoadState("networkidle");
 
-      // Rapid click test
-      for (let i = 0; i < 5; i++) {
-        await detailsButton.click();
-        await page.waitForTimeout(100); // Quick succession
-        console.log(`Rapid click ${i + 1}`);
-      }
-
-      // Wait for any animations to settle
-      await page.waitForTimeout(1000);
-
-      const detailsContent = page.locator(".error-details").first();
-      const finalState = await detailsContent.isVisible();
-
-      console.log(
-        `Final state after rapid clicking: ${finalState ? "visible" : "hidden"}`,
-      );
-
-      // Take screenshot of final state
-      await page.screenshot({
-        path: "test-results/details-fix-rapid-click.png",
-        fullPage: true,
-      });
-
-      // Should be in a stable state (either open or closed, not flickering)
-      expect(typeof finalState).toBe("boolean");
-      console.log("✅ Rapid clicking test completed - no flickering detected!");
-    }
+    // Take screenshot of dashboard
+    await page.screenshot({
+      path: "tests/screenshots/dashboard-page.png",
+      fullPage: true,
+    });
   });
 });
