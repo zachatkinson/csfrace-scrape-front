@@ -684,7 +684,7 @@ jobs:
           EOF
 
           # Install axe-playwright if not available
-          npm install -D axe-playwright playwright
+          pnpm add -D axe-playwright playwright
 
           # Run the accessibility test with a timeout
           timeout 300 node accessibility-test.js || echo "⚠️ Accessibility test timed out after 5 minutes"
