@@ -29,6 +29,7 @@ Modern Astro-powered frontend for the CSFrace WordPress-to-Shopify content conve
 ## 🏃‍♂️ Quick Start
 
 ### Prerequisites
+
 - **Node.js** 18+ and **npm** 9+
 - **Backend API** running at `http://localhost:8000`
 
@@ -51,14 +52,14 @@ npm run dev
 
 ## 📜 Available Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server with hot reload |
-| `npm run build` | Build optimized production bundle |
-| `npm run preview` | Preview production build locally |
-| `npm run type-check` | Run TypeScript type checking |
-| `npm run lint` | Lint code with ESLint |
-| `npm run format` | Format code with Prettier |
+| Command              | Description                              |
+| -------------------- | ---------------------------------------- |
+| `npm run dev`        | Start development server with hot reload |
+| `npm run build`      | Build optimized production bundle        |
+| `npm run preview`    | Preview production build locally         |
+| `npm run type-check` | Run TypeScript type checking             |
+| `npm run lint`       | Lint code with ESLint                    |
+| `npm run format`     | Format code with Prettier                |
 
 ## 🏗 Architecture
 
@@ -103,12 +104,14 @@ SSE    /events          # Server-sent events
 ## 🚀 Deployment
 
 ### Production Build
+
 ```bash
 npm run build           # Creates optimized dist/ folder
 npm run preview        # Test production build locally
 ```
 
 ### Environment Variables
+
 ```bash
 # Required for production
 PUBLIC_API_URL=https://api.csfrace.com
@@ -117,6 +120,7 @@ PUBLIC_JWT_SECRET=your-jwt-secret
 ```
 
 ### Docker Deployment
+
 ```bash
 docker build -t csfrace-frontend .
 docker run -p 4321:4321 csfrace-frontend
@@ -140,6 +144,7 @@ npm run test:coverage # Generate coverage report
 6. Push and create Pull Request
 
 ### Code Standards
+
 - **TypeScript**: Strict mode, no `any` types
 - **SOLID Principles**: Dependency injection and interface segregation
 - **Testing**: Unit tests for new features
