@@ -624,7 +624,7 @@ jobs:
       - name: Start application
         run: |
           pnpm run preview &
-          npx wait-on http://localhost:4321 --timeout=30000
+          npx wait-on http://localhost:3000 --timeout=30000
 
       - name: Run accessibility tests
         run: |
@@ -643,10 +643,10 @@ jobs:
             const page = await context.newPage();
 
             const pagesToTest = [
-              { url: 'http://localhost:4321', name: 'Homepage' },
-              { url: 'http://localhost:4321/dashboard', name: 'Dashboard' },
-              { url: 'http://localhost:4321/scraper', name: 'Scraper' },
-              { url: 'http://localhost:4321/settings', name: 'Settings' }
+              { url: 'http://localhost:3000', name: 'Homepage' },
+              { url: 'http://localhost:3000/dashboard', name: 'Dashboard' },
+              { url: 'http://localhost:3000/scraper', name: 'Scraper' },
+              { url: 'http://localhost:3000/settings', name: 'Settings' }
             ];
 
             let totalViolations = 0;
