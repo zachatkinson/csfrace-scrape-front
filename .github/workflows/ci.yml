@@ -182,7 +182,8 @@ jobs:
           # Force full CI in specific conditions
           if [[ "${{ github.event_name }}" == "schedule" ]] || \
              [[ "${{ github.ref }}" == "refs/heads/master" ]] || \
-             [[ "${{ github.event_name }}" == "release" ]]; then
+             [[ "${{ github.event_name }}" == "release" ]] || \
+             ${{ contains(github.event.head_commit.message, '[force ci]') }}; then
             echo "force=true" >> $GITHUB_OUTPUT
             echo "📋 Full CI forced: ${{ github.event_name }} on ${{ github.ref }}"
           else
