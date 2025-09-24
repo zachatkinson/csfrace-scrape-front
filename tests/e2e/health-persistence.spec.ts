@@ -51,7 +51,7 @@ test.describe("Health Status Persistence", () => {
         return {
           localStorage: false,
           sessionStorage: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: error instanceof Error ? error.message : "Unknown error",
         };
       }
     });
