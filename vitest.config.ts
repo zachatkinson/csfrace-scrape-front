@@ -38,7 +38,12 @@ export default defineConfig({
       "tests/unit/**/*.{js,ts,tsx}",
     ],
     // Exclude patterns
-    exclude: ["node_modules/**", "dist/**", "tests/**/*.spec.ts", "tests/e2e/**"],
+    exclude: [
+      "node_modules/**",
+      "dist/**",
+      "tests/**/*.spec.ts",
+      "tests/e2e/**",
+    ],
     // Test timeout
     testTimeout: 10000,
   },
