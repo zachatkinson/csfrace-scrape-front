@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="6" failures="0" errors="0" time="0.566">
+    <testsuite name="tests/unit/utils.test.ts" timestamp="2025-09-24T03:45:27.102Z" hostname="Zachs-MacBook-Pro.local" tests="6" failures="0" errors="0" skipped="0" time="0.001969292">
+        <testcase classname="tests/unit/utils.test.ts" name="Utility Functions &gt; formatFileSize &gt; should format bytes correctly" time="0.000652333">
+        </testcase>
+        <testcase classname="tests/unit/utils.test.ts" name="Utility Functions &gt; formatFileSize &gt; should handle null/undefined values" time="0.000107292">
+        </testcase>
+        <testcase classname="tests/unit/utils.test.ts" name="Utility Functions &gt; formatRelativeTime &gt; should format relative time correctly" time="0.000259959">
+        </testcase>
+        <testcase classname="tests/unit/utils.test.ts" name="Utility Functions &gt; formatRelativeTime &gt; should handle invalid dates" time="0.00006275">
+        </testcase>
+        <testcase classname="tests/unit/utils.test.ts" name="Utility Functions &gt; capitalize &gt; should capitalize first letter" time="0.000118792">
+        </testcase>
+        <testcase classname="tests/unit/utils.test.ts" name="Utility Functions &gt; capitalize &gt; should handle empty strings" time="0.000104917">
+        </testcase>
+    </testsuite>
+</testsuites>

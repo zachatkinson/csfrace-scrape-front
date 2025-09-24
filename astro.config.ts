@@ -4,6 +4,7 @@ import node from "@astrojs/node";
 import { readFileSync } from "fs";
 
 import tailwindcss from "@tailwindcss/vite";
+import { codecovVitePlugin } from "@codecov/vite-plugin";
 
 // =============================================================================
 // ASTRO 2025 ULTIMATE EFFICIENCY: BUILD-TIME VARIABLE INJECTION
@@ -215,7 +216,15 @@ export default defineConfig({
       },
     },
 
-    plugins: tailwindcss() as any,
+    plugins: [
+      tailwindcss(),
+      // Put the Codecov Vite plugin after all other plugins
+      codecovVitePlugin({
+        enableBundleAnalysis: process.env.CODECOV_TOKEN !== undefined,
+        bundleName: "csfrace-frontend",
+        uploadToken: process.env.CODECOV_TOKEN || "",
+      }),
+    ] as any,
   },
   // Environment variables configuration
   // Backend API URLs should be defined in .env files as:

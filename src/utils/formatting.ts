@@ -27,6 +27,12 @@ export function formatFileSize(bytes: number | null | undefined): string {
 export function formatRelativeTime(dateString: string): string {
   try {
     const date = new Date(dateString);
+
+    // Check if date is invalid
+    if (isNaN(date.getTime())) {
+      return "Unknown";
+    }
+
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / (1000 * 60));

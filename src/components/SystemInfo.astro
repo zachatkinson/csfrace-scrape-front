@@ -1,0 +1,77 @@
+---
+/**
+ * SystemInfo Component - Displays frontend system information
+ * Matches backend system endpoint pattern for consistency
+ */
+interface Props {
+  class?: string;
+}
+
+const { class: className = '' } = Astro.props;
+
+// System information (frontend equivalent of backend /health/system)
+const systemInfo = {
+  name: 'CSFrace Frontend',
+  version: '5.12.0',
+  framework: 'Astro v5.13.7',
+  runtime: 'Node.js',
+  environment: import.meta.env.MODE,
+  buildTime: new Date().toISOString(),
+  features: [
+    'Progressive CI/CD',
+    'Semantic Release',
+    'Umbrella Repository Integration',
+    'Server Islands',
+    'Liquid Glass UI'
+  ]
+};
+---
+
+<div class={`system-info glass-card p-6 ${className}`}>
+  <h3 class="text-lg font-semibold text-white mb-4">Frontend System Information</h3>
+  
+  <div class="space-y-3">
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <span class="text-white/60 text-sm">Service:</span>
+        <p class="text-white font-medium">{systemInfo.name}</p>
+      </div>
+      <div>
+        <span class="text-white/60 text-sm">Version:</span>
+        <p class="text-white font-medium">v{systemInfo.version}</p>
+      </div>
+      <div>
+        <span class="text-white/60 text-sm">Framework:</span>
+        <p class="text-white font-medium">{systemInfo.framework}</p>
+      </div>
+      <div>
+        <span class="text-white/60 text-sm">Environment:</span>
+        <p class="text-white font-medium capitalize">{systemInfo.environment}</p>
+      </div>
+    </div>
+    
+    <div>
+      <span class="text-white/60 text-sm">Build Time:</span>
+      <p class="text-white font-medium text-xs font-mono">{systemInfo.buildTime}</p>
+    </div>
+    
+    <div>
+      <span class="text-white/60 text-sm">Features:</span>
+      <div class="flex flex-wrap gap-1 mt-1">
+        {systemInfo.features.map(feature => (
+          <span class="px-2 py-1 bg-blue-500/20 text-blue-300 rounded text-xs">
+            {feature}
+          </span>
+        ))}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .system-info {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+</style>

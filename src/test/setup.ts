@@ -1,9 +1,9 @@
-import { vi } from 'vitest';
+import { vi } from "vitest";
 
 // Mock global objects that might not be available in the test environment
-Object.defineProperty(window, 'matchMedia', {
+Object.defineProperty(window, "matchMedia", {
   writable: true,
-  value: vi.fn().mockImplementation(query => ({
+  value: vi.fn().mockImplementation((query: string) => ({
     matches: false,
     media: query,
     onchange: null,
@@ -30,10 +30,10 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
 }));
 
 // Mock crypto for environments that don't have it
-Object.defineProperty(global, 'crypto', {
+Object.defineProperty(global, "crypto", {
   value: {
-    randomUUID: vi.fn(() => 'test-uuid-123'),
-    getRandomValues: vi.fn((arr) => arr),
+    randomUUID: vi.fn(() => "test-uuid-123"),
+    getRandomValues: vi.fn((arr: Uint8Array) => arr),
   },
 });
 

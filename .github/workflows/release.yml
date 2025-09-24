@@ -7,7 +7,7 @@ on:
       - completed
     branches:
       - master
-  workflow_dispatch:  # Add manual trigger for testing
+  workflow_dispatch: # Add manual trigger for testing
 
 env:
   REGISTRY: ghcr.io
@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     concurrency:
       group: ${{ github.workflow }}-release-${{ github.ref_name }}
-      cancel-in-progress: false  # Don't cancel releases in progress
+      cancel-in-progress: false # Don't cancel releases in progress
     # Only run if CI workflow completed successfully or manually triggered
     # Skip if triggered by our own release commits to prevent cascading releases
     if: |
@@ -28,14 +28,14 @@ jobs:
       (github.event.workflow_run.conclusion == 'success' &&
        !contains(github.event.workflow_run.head_commit.message, 'chore(release):'))
     permissions:
-      id-token: write  # For provenance
-      contents: write  # For creating releases
-      issues: write    # For creating issues
-      pull-requests: write  # For creating PRs
-      packages: write  # For container registry
-      attestations: write  # For build provenance
-      actions: write  # For workflow dispatch
-      checks: write  # For status checks
+      id-token: write # For provenance
+      contents: write # For creating releases
+      issues: write # For creating issues
+      pull-requests: write # For creating PRs
+      packages: write # For container registry
+      attestations: write # For build provenance
+      actions: write # For workflow dispatch
+      checks: write # For status checks
     outputs:
       released: ${{ steps.semantic.outputs.released }}
       version: ${{ steps.semantic.outputs.version }}
@@ -47,14 +47,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Full history for semantic release
+          fetch-depth: 0 # Full history for semantic release
           token: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci

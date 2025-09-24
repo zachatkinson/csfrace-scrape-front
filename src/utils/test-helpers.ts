@@ -201,13 +201,12 @@ export class AuthTestHelpers {
   static readonly TEST_USERS: Record<string, ITestAuthUser> = {
     valid: {
       email: "test@example.com",
-      password: import.meta.env.VITE_TEST_USER_PASSWORD || "SecureTestPass123!",
+      password: process.env.VITE_TEST_USER_PASSWORD || "SecureTestPass123!",
       name: "Test User",
     },
     admin: {
       email: "admin@example.com",
-      password:
-        import.meta.env.VITE_TEST_ADMIN_PASSWORD || "SecureAdminPass123!",
+      password: process.env.VITE_TEST_ADMIN_PASSWORD || "SecureAdminPass123!",
       name: "Admin User",
     },
   };
