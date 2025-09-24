@@ -462,9 +462,23 @@ const {
               // Following SOLID principles: Single Responsibility - health SSE only handles health events
 
               this.eventSource.onerror = (error: Event) => {
+                // Check if this might be due to authentication/backend unavailable
+                const isLikelyAuthIssue = this.eventSource?.readyState === EventSource.CLOSED;
+
+                if (isLikelyAuthIssue) {
+                  console.info('ℹ️ [SSEService] Connection failed - user may need to sign in or backend unavailable');
+                  sseLogger.info('SSE connection failed - authentication may be required', { error });
+                } else {
+                  console.error('❌ [SSEService] Unexpected connection error:', error);
+                  sseLogger.error('SSE connection error', { error });
+                }
+
                 this.isConnected = false;
-                sseLogger.error('Connection error', { error });
-                this.handleRetry();
+
+                // Only retry if it's not an auth issue
+                if (!isLikelyAuthIssue) {
+                  this.handleRetry();
+                }
               };
 
             } catch (error) {
@@ -562,9 +576,23 @@ const {
               });
 
               this.eventSource.onerror = (error: Event) => {
+                // Check if this might be due to authentication/backend unavailable
+                const isLikelyAuthIssue = this.eventSource?.readyState === EventSource.CLOSED;
+
+                if (isLikelyAuthIssue) {
+                  console.info('ℹ️ JobSSEService: Connection failed - user may need to sign in or backend unavailable');
+                  jobLogger.info('Job SSE connection failed - authentication may be required', { error });
+                } else {
+                  console.error('❌ JobSSEService: Unexpected connection error:', error);
+                  jobLogger.error('Job SSE connection error', { error });
+                }
+
                 this.isConnected = false;
-                console.error('❌ JobSSEService: Connection error:', error);
-                this.handleRetry();
+
+                // Only retry if it's not an auth issue
+                if (!isLikelyAuthIssue) {
+                  this.handleRetry();
+                }
               };
 
             } catch (error) {

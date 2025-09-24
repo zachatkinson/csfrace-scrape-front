@@ -178,10 +178,23 @@ export class PerformanceSSEService {
       });
 
       this.eventSource.onerror = (error: Event) => {
-        console.error("💔 [PerformanceSSE] Connection error occurred:", error);
+        // Check if this might be due to authentication/backend unavailable
+        const isLikelyAuthIssue = this.eventSource?.readyState === EventSource.CLOSED;
+
+        if (isLikelyAuthIssue) {
+          console.info("ℹ️ [PerformanceSSE] Connection failed - user may need to sign in or backend unavailable");
+          logger.info("Performance SSE connection failed - authentication may be required", { error });
+        } else {
+          console.error("💔 [PerformanceSSE] Unexpected connection error:", error);
+          logger.error("Performance SSE connection error", { error });
+        }
+
         this.isConnected = false;
-        logger.error("Performance SSE connection error", { error });
-        this.handleRetry();
+
+        // Only retry if it's not an auth issue
+        if (!isLikelyAuthIssue) {
+          this.handleRetry();
+        }
       };
     } catch (error) {
       console.error(
