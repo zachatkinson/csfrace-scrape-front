@@ -597,7 +597,7 @@ jobs:
   accessibility-tests:
     name: Accessibility Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 20  # Increased from 15 to 20 minutes
+    timeout-minutes: 20 # Increased from 15 to 20 minutes
     needs: detect-changes
     if: needs.detect-changes.outputs.should-run-e2e-tests == 'true'
 
