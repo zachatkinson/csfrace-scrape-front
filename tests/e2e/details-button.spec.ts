@@ -18,7 +18,7 @@ test.describe("Error Details Functionality", () => {
     await expect(jobDashboard).toBeVisible();
 
     // Check for conversion form
-    const conversionForm = page.locator("h2:has-text('Convert')");
+    const conversionForm = page.locator("h1:has-text('WordPress to Shopify')");
     await expect(conversionForm).toBeVisible();
   });
 

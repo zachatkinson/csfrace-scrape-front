@@ -21,6 +21,7 @@
     "test:unit:coverage": "vitest --coverage",
     "test:integration": "playwright test --grep='@integration'",
     "test:e2e": "playwright test",
+    "test:e2e:local": "PLAYWRIGHT_BASE_URL=http://localhost playwright test",
     "start:mock-backend": "node scripts/mock-backend.js"
   },
   "dependencies": {

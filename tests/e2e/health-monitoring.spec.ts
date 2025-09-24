@@ -13,7 +13,7 @@ test.describe("Health Monitoring System", () => {
     await expect(mainContent).toBeVisible();
 
     // Check for main components
-    const conversionForm = page.locator("h2:has-text('Convert')");
+    const conversionForm = page.locator("h1:has-text('WordPress to Shopify')");
     const jobDashboard = page.locator("h2:has-text('Recent')");
 
     await expect(conversionForm).toBeVisible();
