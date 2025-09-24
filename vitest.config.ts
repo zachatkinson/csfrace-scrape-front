@@ -2,7 +2,7 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    globals: true,
+    globals: false,
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
     // Output JUnit XML for Codecov Test Analytics
@@ -38,7 +38,7 @@ export default defineConfig({
       "tests/unit/**/*.{js,ts,tsx}",
     ],
     // Exclude patterns
-    exclude: ["node_modules/**", "dist/**", "tests/e2e/**"],
+    exclude: ["node_modules/**", "dist/**", "tests/**/*.spec.ts", "tests/e2e/**"],
     // Test timeout
     testTimeout: 10000,
   },
