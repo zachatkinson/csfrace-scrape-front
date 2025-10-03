@@ -67,8 +67,17 @@ test.describe("E2E Smoke Tests", () => {
         !error.includes("favicon") &&
         !error.includes("404") &&
         // CSP violations (expected in development - inline styles/handlers)
+        // Firefox format: "Content-Security-Policy: The page's settings blocked..."
         !error.includes("Content-Security-Policy") &&
         !error.includes("CSP") &&
+        // Chromium format: "Refused to apply inline style because it violates..."
+        !error.includes("Refused to apply inline style") &&
+        !error.includes("Refused to execute inline script") &&
+        !error.includes("Content Security Policy directive") &&
+        // Resource loading errors (expected without backend)
+        !error.includes("Failed to load resource") &&
+        !error.includes("ERR_CONNECTION_REFUSED") &&
+        !error.includes("net::ERR_") &&
         // SSE/Backend connection errors (expected in tests without backend)
         !error.includes("Cross-Origin Request Blocked") &&
         !error.includes("can't establish a connection") &&
