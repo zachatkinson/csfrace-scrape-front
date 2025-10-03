@@ -139,10 +139,8 @@ export default defineConfig({
     port: 3000,
     host: true,
   },
-  // Security configuration - simplified CSP for now
-  experimental: {
-    csp: true,
-  },
+  // Security configuration - CSP handled by src/middleware/security.ts
+  // DO NOT enable experimental.csp - conflicts with custom middleware
   // Vite configuration for Liquid Glass optimization
   vite: {
     // Server configuration for nginx reverse proxy support
