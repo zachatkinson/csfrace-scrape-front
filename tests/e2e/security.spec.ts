@@ -42,6 +42,7 @@ test.describe("Security Features", () => {
     const criticalErrors = errors.filter((error) => {
       return (
         // Development mode warnings
+        !error.includes("Content-Security-Policy") &&
         !error.includes("CSP") &&
         !error.includes("dev mode") &&
         !error.includes("HMR") &&

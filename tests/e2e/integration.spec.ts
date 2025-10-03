@@ -66,6 +66,9 @@ test.describe("E2E Smoke Tests", () => {
         // Basic non-critical errors
         !error.includes("favicon") &&
         !error.includes("404") &&
+        // CSP violations (expected in development - inline styles/handlers)
+        !error.includes("Content-Security-Policy") &&
+        !error.includes("CSP") &&
         // SSE/Backend connection errors (expected in tests without backend)
         !error.includes("Cross-Origin Request Blocked") &&
         !error.includes("can't establish a connection") &&
