@@ -1,22 +1,22 @@
-import { defineConfig } from 'vitest/config';
-import { fileURLToPath } from 'url';
+import { defineConfig } from "vitest/config";
+import { fileURLToPath } from "url";
 
 export default defineConfig({
   test: {
-    name: 'integration',
+    name: "integration",
     globals: true,
-    environment: 'node',
-    include: ['tests/integration/**/*.{test,spec}.{js,ts}'],
+    environment: "node",
+    include: ["tests/integration/**/*.{test,spec}.{js,ts}"],
     coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html', 'lcov'],
-      reportsDirectory: './coverage/integration',
-      include: ['src/**/*.{js,ts}'],
+      provider: "v8",
+      reporter: ["text", "json", "html", "lcov"],
+      reportsDirectory: "./coverage/integration",
+      include: ["src/**/*.{js,ts}"],
       exclude: [
-        'node_modules/',
-        'tests/',
-        '**/*.spec.{js,ts}',
-        '**/*.test.{js,ts}',
+        "node_modules/",
+        "tests/",
+        "**/*.spec.{js,ts}",
+        "**/*.test.{js,ts}",
       ],
     },
     testTimeout: 30000,
@@ -24,7 +24,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
 });
