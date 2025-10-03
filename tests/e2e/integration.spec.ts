@@ -68,7 +68,13 @@ test.describe("E2E Smoke Tests", () => {
         !error.includes("JobSSEService") &&
         // CORS errors (expected without backend)
         !error.includes("CORS header") &&
-        !error.includes("Same Origin Policy")
+        !error.includes("Same Origin Policy") &&
+        // Centralized logger output (expected error logging)
+        !error.includes("[ERROR]") &&
+        !error.includes("[CRITICAL]") &&
+        !error.includes("[WARN]") &&
+        !error.match(/\[\d{4}-\d{2}-\d{2}T/) &&
+        !error.includes("🚨")
       );
     });
 
