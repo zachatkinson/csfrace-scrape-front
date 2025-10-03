@@ -551,6 +551,10 @@ jobs:
     timeout-minutes: 20
     needs: detect-changes
     if: needs.detect-changes.outputs.should-run-docker == 'true'
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
 
     steps:
       - name: Checkout code
