@@ -21,7 +21,7 @@ describe('API Health Integration Tests', () => {
         if (response.ok) {
           break;
         }
-      } catch (error) {
+      } catch {
         retries++;
         if (retries >= maxRetries) {
           throw new Error(`API not available after ${maxRetries} retries`);
