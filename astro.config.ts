@@ -4,7 +4,6 @@ import node from "@astrojs/node";
 import { readFileSync } from "fs";
 
 import tailwindcss from "@tailwindcss/vite";
-import { codecovVitePlugin } from "@codecov/vite-plugin";
 
 // =============================================================================
 // ASTRO 2025 ULTIMATE EFFICIENCY: BUILD-TIME VARIABLE INJECTION
@@ -150,8 +149,13 @@ export default defineConfig({
     server: {
       host: true,
       hmr: {
-        // Use the same port as nginx proxy (80) for WebSocket connections
-        clientPort: process.env.NODE_ENV === "development" ? 80 : 3000,
+        // Vite v6 WebSocket configuration for HTTPS reverse proxy
+        port: 443,
+        clientPort: 443,
+        // Force WebSocket URL to use correct HTTPS endpoint
+        host: "localhost",
+        protocol: "wss",
+        overlay: false, // Disable error overlay to prevent interference
       },
       // Allow nginx proxy requests from nginx container
       allowedHosts: [
@@ -216,15 +220,7 @@ export default defineConfig({
       },
     },
 
-    plugins: [
-      tailwindcss(),
-      // Put the Codecov Vite plugin after all other plugins
-      codecovVitePlugin({
-        enableBundleAnalysis: process.env.CODECOV_TOKEN !== undefined,
-        bundleName: "csfrace-frontend",
-        uploadToken: process.env.CODECOV_TOKEN || "",
-      }),
-    ] as any,
+    plugins: [tailwindcss()] as any,
   },
   // Environment variables configuration
   // Backend API URLs should be defined in .env files as:

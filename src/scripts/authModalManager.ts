@@ -758,7 +758,7 @@ export class AuthModalManager extends BaseModalManager {
 
       // Exchange authorization code for JWT tokens
       const callbackUrl = new URL(
-        `http://localhost/auth/oauth/${provider}/callback`,
+        `https://localhost/auth/oauth/${provider}/callback`,
       );
       callbackUrl.searchParams.set("code", code);
       callbackUrl.searchParams.set("state", state);

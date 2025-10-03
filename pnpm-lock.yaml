@@ -179,6 +179,10 @@ importers:
       wait-on:
         specifier: ^8.0.2
         version: 8.0.5
+    optionalDependencies:
+      lightningcss-wasm:
+        specifier: ^1.30.1
+        version: 1.30.2
 
 packages:
   "@actions/core@1.11.1":
@@ -7293,6 +7297,15 @@ packages:
     engines: { node: ">= 12.0.0" }
     cpu: [x64]
     os: [linux]
+
+  lightningcss-wasm@1.30.2:
+    resolution:
+      {
+        integrity: sha512-3QB24h07oFTwiXI/wItgEv5De1prsmrZFWluuTyLO7/CFk4kEC5zgG7V6qQNGLBB5+QhSnGMixUALWHXj+J3Ug==,
+      }
+    engines: { node: ">= 12.0.0" }
+    bundledDependencies:
+      - napi-wasm
 
   lightningcss-win32-arm64-msvc@1.30.1:
     resolution:
@@ -16679,6 +16692,9 @@ snapshots:
     optional: true
 
   lightningcss-linux-x64-musl@1.30.1:
+    optional: true
+
+  lightningcss-wasm@1.30.2:
     optional: true
 
   lightningcss-win32-arm64-msvc@1.30.1:

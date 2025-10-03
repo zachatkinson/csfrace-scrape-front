@@ -757,6 +757,14 @@ export class EnhancedApiClient {
   }
 
   /**
+   * Set or update the API key for authentication
+   * Used to add Bearer token after user login
+   */
+  setAPIKey(apiKey: string): void {
+    this.config.apiKey = apiKey;
+  }
+
+  /**
    * Enhanced request method with sophisticated error handling
    * SOLID: Single Responsibility - HTTP request with full error support
    */

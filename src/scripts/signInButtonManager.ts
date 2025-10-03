@@ -409,6 +409,16 @@ export class SignInButtonManager {
    * Check authentication status using HTTP-only cookies
    */
   private async checkAuthenticationStatus(): Promise<boolean> {
+    // OPTION 1: Check client-side storage first to avoid 401 errors on static pages
+    const hasToken =
+      localStorage.getItem("auth_token") ||
+      sessionStorage.getItem("auth_token") ||
+      document.cookie.includes("auth_token");
+
+    if (!hasToken) {
+      return false;
+    }
+
     try {
       const response = await fetch("/auth/me", {
         method: "GET",
@@ -418,7 +428,14 @@ export class SignInButtonManager {
         },
       });
 
-      return response.ok;
+      if (!response.ok) {
+        // Clean up invalid tokens
+        localStorage.removeItem("auth_token");
+        sessionStorage.removeItem("auth_token");
+        return false;
+      }
+
+      return true;
     } catch {
       return false;
     }
@@ -428,6 +445,16 @@ export class SignInButtonManager {
    * Get current user info from API
    */
   private async getCurrentUserInfo(): Promise<AuthUser | null> {
+    // OPTION 1: Check client-side storage first to avoid 401 errors on static pages
+    const hasToken =
+      localStorage.getItem("auth_token") ||
+      sessionStorage.getItem("auth_token") ||
+      document.cookie.includes("auth_token");
+
+    if (!hasToken) {
+      return null;
+    }
+
     try {
       const response = await fetch("/auth/me", {
         method: "GET",

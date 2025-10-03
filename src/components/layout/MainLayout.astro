@@ -24,6 +24,8 @@ import UserSettingsModal from '../modals/UserSettingsModal.astro';
 import { IconManage } from '../icons';
 // Import Version Display Component
 import VersionDisplay from '../VersionDisplay.astro';
+// Import ViewTransitions for DOMContentLoaded events
+import { ViewTransitions } from 'astro:transitions';
 
 
 export interface Props {
@@ -344,6 +346,63 @@ const {
 
       // Settings button handler
       document.addEventListener('DOMContentLoaded', () => {
+        // CRITICAL: Initialize API client with auth token from storage
+        import('../../lib/api-client').then(({ initializeAPIClientAuth }) => {
+          initializeAPIClientAuth();
+        });
+
+        // Check for OAuth success from callback redirect (localStorage for cross-tab)
+        const oauthSuccess = localStorage.getItem('oauth_success');
+        if (oauthSuccess) {
+          try {
+            const authData = JSON.parse(oauthSuccess);
+            // Remove the flag
+            localStorage.removeItem('oauth_success');
+
+            // CRITICAL: Reinitialize API client with new token after OAuth login
+            import('../../lib/api-client').then(({ initializeAPIClientAuth }) => {
+              initializeAPIClientAuth();
+            });
+
+            // Trigger auth success events to update UI state
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('user-logged-in', {
+                detail: authData.user
+              }));
+              window.dispatchEvent(new CustomEvent('auth-success', {
+                detail: authData.user
+              }));
+              console.log('🎉 OAuth authentication successful!', authData);
+            }, 100);
+          } catch (error) {
+            console.error('Failed to parse OAuth success data:', error);
+            localStorage.removeItem('oauth_success');
+          }
+        }
+
+        // Listen for OAuth success from other tabs (cross-tab authentication)
+        window.addEventListener('storage', (event) => {
+          if (event.key === 'oauth_success' && event.newValue) {
+            try {
+              const authData = JSON.parse(event.newValue);
+              console.log('🎉 OAuth success detected from another tab!', authData);
+
+              // Trigger auth success events
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('user-logged-in', {
+                  detail: authData.user
+                }));
+                window.dispatchEvent(new CustomEvent('auth-success', {
+                  detail: authData.user
+                }));
+                updateUserSettingsVisibility();
+              }, 100);
+            } catch (error) {
+              console.error('Failed to parse OAuth success from storage event:', error);
+            }
+          }
+        });
+
         const settingsBtn = document.getElementById('settings-toggle');
         if (settingsBtn) {
           settingsBtn.addEventListener('click', () => {
@@ -359,8 +418,49 @@ const {
           });
         }
 
-        // Authentication state now handled by Astro middleware
-        // User settings button visibility is controlled server-side via Astro.locals
+        // Update user settings button visibility based on auth state
+        function updateUserSettingsVisibility() {
+          const userSettingsContainer = document.getElementById('user-settings-button-container');
+          if (userSettingsContainer) {
+            // Always check with the backend since OAuth uses HTTP-only cookies
+            // that can't be read by JavaScript
+            fetch('/auth/me', {
+              method: 'GET',
+              credentials: 'include',
+              headers: { 'Accept': 'application/json' }
+            })
+            .then(response => {
+              if (response.ok) {
+                userSettingsContainer.classList.remove('hidden');
+                console.log('✅ Authentication verified - showing user settings');
+              } else {
+                userSettingsContainer.classList.add('hidden');
+                console.log('❌ Authentication invalid - hiding user settings');
+                // Clean up invalid tokens
+                localStorage.removeItem('auth_token');
+                sessionStorage.removeItem('auth_token');
+                localStorage.removeItem('oauth_success');
+              }
+            })
+            .catch((error) => {
+              userSettingsContainer.classList.add('hidden');
+              console.log('⚠️  Authentication check failed:', error.message);
+              // Don't clean up tokens on network error - server might be down
+            });
+          }
+        }
+
+        // Update visibility on page load and auth state changes
+        updateUserSettingsVisibility();
+        
+        // Listen for authentication state changes
+        window.addEventListener('user-logged-in', updateUserSettingsVisibility);
+        window.addEventListener('user-logged-out', updateUserSettingsVisibility);
+        window.addEventListener('auth-tokens-updated', updateUserSettingsVisibility);
+        window.addEventListener('auth-success', updateUserSettingsVisibility); // Fixed: was 'authSuccess', now 'auth-success'
+        
+        // Poll periodically to catch auth changes
+        setInterval(updateUserSettingsVisibility, 30000);
       });
 
       // Legacy authentication function removed - now handled by Astro middleware with HTTP-only cookies
@@ -462,22 +562,39 @@ const {
               // Following SOLID principles: Single Responsibility - health SSE only handles health events
 
               this.eventSource.onerror = (error: Event) => {
-                // Check if this might be due to authentication/backend unavailable
-                const isLikelyAuthIssue = this.eventSource?.readyState === EventSource.CLOSED;
+                const readyState = this.eventSource?.readyState;
+                sseLogger.info('SSE error details', {
+                  readyState,
+                  EventSourceConstants: {
+                    CONNECTING: EventSource.CONNECTING,
+                    OPEN: EventSource.OPEN,
+                    CLOSED: EventSource.CLOSED
+                  }
+                });
 
-                if (isLikelyAuthIssue) {
-                  console.info('ℹ️ [SSEService] Connection failed - user may need to sign in or backend unavailable');
-                  sseLogger.info('SSE connection failed - authentication may be required', { error });
+                // Check if this might be due to backend unavailable or CORS issues
+                const isConnectionClosed = readyState === EventSource.CLOSED;
+                const isConnecting = readyState === EventSource.CONNECTING;
+
+                if (isConnectionClosed) {
+                  console.info('ℹ️ [SSEService] Connection closed - backend may be unavailable or CORS issue');
+                  sseLogger.info('SSE connection closed', { error, readyState });
+                } else if (isConnecting) {
+                  console.info('ℹ️ [SSEService] Connection still trying to establish');
+                  sseLogger.info('SSE still connecting', { error, readyState });
                 } else {
                   console.error('❌ [SSEService] Unexpected connection error:', error);
-                  sseLogger.error('SSE connection error', { error });
+                  sseLogger.error('SSE connection error', { error, readyState });
                 }
 
                 this.isConnected = false;
 
-                // Only retry if it's not an auth issue
-                if (!isLikelyAuthIssue) {
-                  this.handleRetry();
+                // Don't retry immediately if we're still connecting
+                if (!isConnecting) {
+                  // Add a longer delay before retry to avoid rapid reconnections
+                  setTimeout(() => {
+                    this.handleRetry();
+                  }, 3000);
                 }
               };
 
@@ -505,9 +622,12 @@ const {
           }
         };
 
-        // Initialize SSE service
+        // Initialize SSE service - this is for public health data, should work for all users
         document.addEventListener('DOMContentLoaded', () => {
-          window.__healthSSEService?.connect();
+          // Wait a moment to let the page fully load
+          setTimeout(() => {
+            window.__healthSSEService?.connect();
+          }, 1000);
         });
 
         // Cleanup on unload
@@ -619,9 +739,19 @@ const {
           }
         };
 
-        // Initialize job SSE service
+        // Initialize job SSE service ONLY for authenticated users
         document.addEventListener('DOMContentLoaded', () => {
-          window.__jobSSEService?.connect();
+          // Check if user is authenticated before connecting to job metrics
+          const isAuthenticated = document.cookie.includes('auth_token') ||
+                                 localStorage.getItem('auth_token') ||
+                                 sessionStorage.getItem('auth_token');
+
+          if (isAuthenticated) {
+            console.log('User authenticated - connecting to job SSE');
+            window.__jobSSEService?.connect();
+          } else {
+            console.log('User not authenticated - skipping job SSE connection');
+          }
         });
 
         // Cleanup on unload
@@ -644,9 +774,19 @@ const {
 
         window.__performanceSSEService = performanceSSEService;
 
-        // Initialize performance SSE service
+        // Initialize performance SSE service ONLY for authenticated users
         document.addEventListener('DOMContentLoaded', () => {
-          window.__performanceSSEService?.connect();
+          // Check if user is authenticated before connecting to performance metrics
+          const isAuthenticated = document.cookie.includes('auth_token') ||
+                                 localStorage.getItem('auth_token') ||
+                                 sessionStorage.getItem('auth_token');
+
+          if (isAuthenticated) {
+            performanceLogger.info('User authenticated - connecting to performance SSE');
+            window.__performanceSSEService?.connect();
+          } else {
+            performanceLogger.info('User not authenticated - skipping performance SSE connection');
+          }
         });
 
         // Cleanup on unload

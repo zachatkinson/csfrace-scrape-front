@@ -40,6 +40,8 @@
   const logger = createContextLogger('AuthButton');
   
   async function checkAuthenticationStatus() {
+    // Check authentication status via HTTP-only cookies using /auth/me endpoint
+    // This is the only reliable way since OAuth tokens are stored as HTTP-only cookies
     try {
       const response = await fetch('/auth/me', {
         method: 'GET',
@@ -48,46 +50,66 @@
           'Accept': 'application/json',
         },
       });
-      
-      return response.ok;
-    } catch {
+
+      if (response.ok) {
+        logger.info('User is authenticated via HTTP-only cookies');
+        return true;
+      } else {
+        logger.info('User is not authenticated', { status: response.status });
+        // Clean up any old client-side tokens that might exist
+        localStorage.removeItem('auth_token');
+        sessionStorage.removeItem('auth_token');
+        return false;
+      }
+    } catch (error) {
+      logger.warn('Failed to check authentication status', { error: error.message });
       return false;
     }
   }
   
   async function morphAuthButton() {
+    logger.info('morphAuthButton called - checking authentication state');
+
     const button = document.getElementById('morphing-auth-button');
     const authText = document.getElementById('auth-text');
     const signinIcon = document.getElementById('signin-icon');
     const logoutIcon = document.getElementById('logout-icon');
-    
-    if (!button || !authText || !signinIcon || !logoutIcon) return;
-    
+
+    if (!button || !authText || !signinIcon || !logoutIcon) {
+      logger.warn('Missing auth button elements', {
+        button: !!button, authText: !!authText, signinIcon: !!signinIcon, logoutIcon: !!logoutIcon
+      });
+      return;
+    }
+
     // Check authentication state using HTTP-only cookies
     const isAuthenticated = await checkAuthenticationStatus();
-    
+    logger.info('Authentication check result', { isAuthenticated });
+
     if (isAuthenticated) {
       // Morph to logout state
+      logger.info('Morphing to logout state');
       authText.textContent = 'Log Out';
       button.className = 'glass-button px-4 py-2 text-red-400 hover:text-red-300 border-red-500/30 hover:border-red-500/50 transition-all duration-300 flex items-center space-x-2';
       button.style.borderColor = 'rgb(239 68 68 / 0.3)';
-      
+
       // Swap icons with fade
       signinIcon.classList.add('auth-icon-hidden');
       logoutIcon.classList.remove('auth-icon-hidden');
-      
+
       // Set up logout functionality
       button.onclick = handleLogout;
     } else {
-      // Morph to sign-in state  
+      // Morph to sign-in state
+      logger.info('Morphing to sign-in state');
       authText.textContent = 'Sign In';
       button.className = 'glass-button px-4 py-2 text-blue-400 hover:text-blue-300 border-blue-500/30 hover:border-blue-500/50 transition-all duration-300 flex items-center space-x-2';
       button.style.borderColor = 'rgb(59 130 246 / 0.3)';
-      
+
       // Swap icons with fade
       signinIcon.classList.remove('auth-icon-hidden');
       logoutIcon.classList.add('auth-icon-hidden');
-      
+
       // Set up sign-in functionality
       button.onclick = handleSignIn;
     }
@@ -154,14 +176,30 @@
   
   // Initialize auth UI on page load
   document.addEventListener('DOMContentLoaded', () => {
+    logger.info('DOMContentLoaded - initializing auth button');
     morphAuthButton();
   });
-  
+
   // Listen for authentication state changes
-  window.addEventListener('user-logged-in', morphAuthButton);
-  window.addEventListener('user-logged-out', morphAuthButton);
-  window.addEventListener('auth-tokens-updated', morphAuthButton);
-  window.addEventListener('authSuccess', morphAuthButton); // OAuth callback success
+  window.addEventListener('user-logged-in', () => {
+    logger.info('user-logged-in event received');
+    morphAuthButton();
+  });
+
+  window.addEventListener('user-logged-out', () => {
+    logger.info('user-logged-out event received');
+    morphAuthButton();
+  });
+
+  window.addEventListener('auth-tokens-updated', () => {
+    logger.info('auth-tokens-updated event received');
+    morphAuthButton();
+  });
+
+  window.addEventListener('auth-success', () => {
+    logger.info('auth-success event received');
+    morphAuthButton();
+  }); // OAuth callback success (fixed event name)
   
   // Poll authentication status periodically to catch auth changes
   setInterval(morphAuthButton, 30000); // Check every 30 seconds

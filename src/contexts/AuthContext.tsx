@@ -135,10 +135,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const cookieAuthStatus = getAuthStatusFromCookie();
         logger.info("Cookie auth status", { cookieAuthStatus });
 
-        // Verify auth status with backend using HTTP-only cookies
         let backendAuthStatus = { authenticated: false, user: null };
+
         try {
-          // Make a request to check current session (backend will read HTTP-only cookies)
+          // Check current session (backend will read HTTP-only cookies)
           const response = await fetch(`${getApiBase()}/auth/me`, {
             credentials: "include", // Include HTTP-only cookies
             headers: { Accept: "application/json" },
@@ -583,6 +583,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated,
         status: response.status,
       });
+
       return isAuthenticated;
     } catch (error) {
       logger.error("Auth status check failed", { error });

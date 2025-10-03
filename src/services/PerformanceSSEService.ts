@@ -57,7 +57,7 @@ export class PerformanceSSEService {
 
     try {
       const backendUrl = getApiBaseUrl();
-      const sseUrl = `${backendUrl}/health/stream`;
+      const sseUrl = `${backendUrl}/performance/stream`;
       console.log("🔗 [PerformanceSSE] Connecting to:", sseUrl);
       logger.info("Establishing performance SSE connection", { sseUrl });
 
@@ -179,13 +179,22 @@ export class PerformanceSSEService {
 
       this.eventSource.onerror = (error: Event) => {
         // Check if this might be due to authentication/backend unavailable
-        const isLikelyAuthIssue = this.eventSource?.readyState === EventSource.CLOSED;
+        const isLikelyAuthIssue =
+          this.eventSource?.readyState === EventSource.CLOSED;
 
         if (isLikelyAuthIssue) {
-          console.info("ℹ️ [PerformanceSSE] Connection failed - user may need to sign in or backend unavailable");
-          logger.info("Performance SSE connection failed - authentication may be required", { error });
+          console.info(
+            "ℹ️ [PerformanceSSE] Connection failed - user may need to sign in or backend unavailable",
+          );
+          logger.info(
+            "Performance SSE connection failed - authentication may be required",
+            { error },
+          );
         } else {
-          console.error("💔 [PerformanceSSE] Unexpected connection error:", error);
+          console.error(
+            "💔 [PerformanceSSE] Unexpected connection error:",
+            error,
+          );
           logger.error("Performance SSE connection error", { error });
         }
 
