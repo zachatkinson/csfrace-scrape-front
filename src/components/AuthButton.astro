@@ -62,7 +62,9 @@
         return false;
       }
     } catch (error) {
-      logger.warn('Failed to check authentication status', { error: error.message });
+      logger.warn('Failed to check authentication status', {
+        error: error instanceof Error ? error.message : String(error)
+      });
       return false;
     }
   }

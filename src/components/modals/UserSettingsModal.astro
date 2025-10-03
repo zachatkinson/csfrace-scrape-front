@@ -230,7 +230,7 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
     initSSOManagement();
 
     // Listen for authentication events to update SSO connection status
-    window.addEventListener('auth-success', async (event) => {
+    window.addEventListener('auth-success', async () => {
       logger.info('Authentication success detected, refreshing SSO connections');
       await loadSSOConnections();
     });
@@ -722,7 +722,9 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
           return null;
         }
       } catch (error) {
-        logger.debug('OAuth connections endpoint not available, trying alternative approach', { error: error.message });
+        logger.debug('OAuth connections endpoint not available, trying alternative approach', {
+          error: error instanceof Error ? error.message : String(error)
+        });
       }
 
       // Option 2: Check if /auth/me contains OAuth provider information from database
@@ -802,8 +804,7 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
     */
 
     // Option 3: TODO - Add more database checking methods as backend evolves
-
-    return null; // No real data available, use fallback heuristics
+    // Return null is already done at line 777
   }
 
   // Intelligent SSO connection detection - works for any provider without hardcoding
@@ -988,8 +989,9 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
       };
 
       // Add CSRF protection if available
-      if ((window as WindowWithCSRF).csrfToken) {
-        headers['X-CSRF-Token'] = (window as WindowWithCSRF).csrfToken;
+      const csrfToken = (window as WindowWithCSRF).csrfToken;
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
       }
 
       const response = await fetch(`${apiBaseUrl}/auth/account`, {

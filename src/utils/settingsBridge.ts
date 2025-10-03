@@ -133,21 +133,27 @@ class SettingsBridge implements SettingsBridgeInterface {
   }
 
   exportSettings(): string {
-    if (this.useAppSettingsHook?.exportSettings) {
-      return this.useAppSettingsHook.exportSettings();
-    }
+    // Export current settings as JSON
     return JSON.stringify(this.getAllSettings(), null, 2);
   }
 
   async importSettings(settingsJson: string): Promise<boolean> {
-    if (this.useAppSettingsHook?.importSettings) {
-      const result = await this.useAppSettingsHook.importSettings(settingsJson);
-      if (result) {
-        this.notifyChangeCallbacks();
+    try {
+      const parsed = JSON.parse(settingsJson);
+
+      if (parsed.app) {
+        this.updateAppSettings(parsed.app);
       }
-      return result;
+      if (parsed.api) {
+        this.updateApiSettings(parsed.api);
+      }
+
+      this.notifyChangeCallbacks();
+      return true;
+    } catch (error) {
+      console.error("Failed to import settings:", error);
+      return false;
     }
-    return false;
   }
 
   /**

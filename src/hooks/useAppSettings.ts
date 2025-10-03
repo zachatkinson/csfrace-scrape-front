@@ -12,13 +12,23 @@ import {
   updateAppSettings,
   updateApiSettings,
   resetToDefaults,
+  type UserSettingsState,
 } from "../stores/userSettings";
+
+/**
+ * Return type for useAppSettings hook
+ */
+export type UseAppSettingsReturn = UserSettingsState & {
+  updateAppSettings: typeof updateAppSettings;
+  updateApiSettings: typeof updateApiSettings;
+  resetToDefaults: typeof resetToDefaults;
+};
 
 /**
  * App Settings Hook
  * Ultra-thin wrapper for Nano store - just for React components
  */
-export const useAppSettings = () => {
+export const useAppSettings = (): UseAppSettingsReturn => {
   const state = useStore(userSettingsStore);
 
   return {
