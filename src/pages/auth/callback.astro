@@ -4,6 +4,9 @@
  * Handles OAuth provider redirects and exchanges authorization codes for tokens
  */
 
+// HYBRID MODE: Server-side rendering needed for OAuth token exchange
+export const prerender = false;
+
 import MainLayout from '../../components/layout/MainLayout.astro';
 
 const title = 'Authentication - CSFrace';
@@ -107,10 +110,10 @@ const description = 'Completing authentication...';
         }
         
         const user = await userResponse.json();
-        
-        // Store tokens and user in localStorage
-        localStorage.setItem('auth_tokens', JSON.stringify(tokens));
-        localStorage.setItem('auth_user', JSON.stringify(user));
+
+        // Note: Tokens are now stored in httpOnly cookies by the backend
+        // Only store non-sensitive user data for UI purposes
+        localStorage.setItem('user_data', JSON.stringify(user));
         
         // Clean up OAuth state
         sessionStorage.removeItem('oauth_provider');
