@@ -51,6 +51,15 @@ test.describe("E2E Smoke Tests", () => {
     // Allow some time for any delayed errors
     await page.waitForTimeout(1000);
 
+    // Debug: Log all errors to see what we're dealing with
+    if (errors.length > 0) {
+      console.log("=== All Console Errors Detected ===");
+      errors.forEach((error, index) => {
+        console.log(`Error ${index + 1}:`, error);
+      });
+      console.log("===================================");
+    }
+
     // Filter out expected errors that occur when backend is not running
     const criticalErrors = errors.filter((error) => {
       return (
@@ -73,10 +82,18 @@ test.describe("E2E Smoke Tests", () => {
         !error.includes("[ERROR]") &&
         !error.includes("[CRITICAL]") &&
         !error.includes("[WARN]") &&
-        !error.match(/\[\d{4}-\d{2}-\d{2}T/) &&
+        !/\[\d{4}-\d{2}-\d{2}T/.test(error) &&
         !error.includes("🚨")
       );
     });
+
+    if (criticalErrors.length > 0) {
+      console.log("=== Critical Errors After Filtering ===");
+      criticalErrors.forEach((error, index) => {
+        console.log(`Critical ${index + 1}:`, error);
+      });
+      console.log("========================================");
+    }
 
     expect(criticalErrors.length).toBe(0);
   });
