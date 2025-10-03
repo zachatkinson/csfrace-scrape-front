@@ -1,6 +1,9 @@
 ---
 // Dynamic OAuth Callback Handler
 // Handles OAuth provider callbacks for any provider (google, github, microsoft, etc.)
+// HYBRID MODE: Server-side rendering needed for OAuth provider callback
+export const prerender = false;
+
 import { createContextLogger } from "../../../../utils/logger.ts";
 
 const { provider } = Astro.params;
@@ -144,7 +147,7 @@ oauthLogger.info("Processing OAuth callback", { provider });
             statusElement.textContent = 'Exchanging tokens...';
 
             // Exchange authorization code for JWT tokens
-            const callbackUrl = new URL(`http://localhost/auth/oauth/${provider}/callback`);
+            const callbackUrl = new URL(`https://localhost/auth/oauth/${provider}/callback`);
             callbackUrl.searchParams.set('code', code);
             callbackUrl.searchParams.set('state', state);
 
@@ -221,7 +224,7 @@ oauthLogger.info("Processing OAuth callback", { provider });
             statusElement.textContent = 'Exchanging tokens...';
 
             // Exchange authorization code for JWT tokens via backend API
-            const backendUrl = new URL(`http://localhost/auth/oauth/${provider}/callback`);
+            const backendUrl = new URL(`https://localhost/auth/oauth/${provider}/callback`);
             backendUrl.searchParams.set('code', code);
             backendUrl.searchParams.set('state', state);
 
@@ -270,7 +273,29 @@ oauthLogger.info("Processing OAuth callback", { provider });
             messageElement.className = 'success';
             messageElement.style.display = 'block';
             messageElement.textContent = 'Welcome! Redirecting to application...';
-            
+
+            // Note: Tokens are now stored in httpOnly cookies by the backend
+            // Only store non-sensitive user data for UI purposes
+
+            // Store auth success flag for main app to detect (localStorage for cross-tab)
+            localStorage.setItem('oauth_success', JSON.stringify({
+              provider: provider,
+              timestamp: Date.now(),
+              user: {
+                id: tokenData.user?.id || 'oauth_user',
+                email: tokenData.user?.email || '',
+                name: tokenData.user?.name || tokenData.user?.display_name || '',
+                provider: provider
+              }
+            }));
+
+            // Broadcast to other tabs
+            window.dispatchEvent(new StorageEvent('storage', {
+              key: 'oauth_success',
+              newValue: localStorage.getItem('oauth_success'),
+              url: window.location.href
+            }));
+
             // Redirect to main app (SSE auth service will detect the cookies)
             setTimeout(() => {
               window.location.href = '/';

@@ -39,56 +39,32 @@
     }
     
     try {
-      // Try to revoke tokens and handle Safari-specific response
-      fetch('/auth/revoke-all-tokens', {
+      // Call backend logout endpoint to clear httpOnly cookies
+      const response = await fetch('/auth/logout', {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Accept': 'application/json',
-          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          reason: 'user_logout'
-        })
-      }).then(async response => {
-        if (response.ok) {
-          logger.info('✅ Tokens revoked successfully');
-          
-          // Handle Safari-specific storage clearing instructions
-          try {
-            const result = await response.json();
-            if (result.clear_local_storage) {
-              logger.info('🍎 Safari compatibility mode: Enhanced storage clearing');
-              // Additional Safari-specific clearing already handled below
-            }
-          } catch {
-            logger.warn('⚠️ Could not parse logout response, but continuing');
-          }
-        } else if (response.status === 401) {
-          logger.warn('⚠️ Already logged out');
-        } else {
-          logger.warn('⚠️ Token revocation failed, but continuing logout');
-        }
-      }).catch(error => {
-        logger.warn('⚠️ Token revocation error, but continuing logout:', error);
       });
-      
-    } catch (error) {
-      logger.warn('⚠️ Failed to initiate token revocation, but continuing logout:', error);
-    }
-    
-    // SAFARI COMPATIBILITY: Clear all client-side storage immediately
-    // Based on Apple ITP research - Safari requires explicit clearing of all storage types
-    try {
-      localStorage.clear();
-      sessionStorage.clear();
-      
-      // Clear IndexedDB (Safari auto-expires in 7 days but clear explicitly)
-      if ('indexedDB' in window) {
-        // Note: Full IndexedDB clearing would require async operations
-        // but we're doing a hard reload anyway, so this is sufficient
-        logger.info('💾 Client storage cleared for Safari compatibility');
+
+      if (response.ok) {
+        logger.info('✅ Logout successful - cookies cleared');
+      } else if (response.status === 401) {
+        logger.warn('⚠️ Already logged out');
+      } else {
+        logger.warn('⚠️ Logout request failed, but continuing');
       }
+    } catch (error) {
+      logger.warn('⚠️ Logout error, but continuing:', error);
+    }
+
+    // Clear non-sensitive client-side data (NOT tokens - those are in httpOnly cookies)
+    try {
+      // Only clear user-related data, not tokens
+      localStorage.removeItem('user_data');
+      sessionStorage.removeItem('user_data');
+      logger.info('💾 Client-side user data cleared');
     } catch (error) {
       logger.warn('⚠️ Error clearing storage, but continuing logout:', error);
     }

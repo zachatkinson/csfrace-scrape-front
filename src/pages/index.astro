@@ -1,5 +1,8 @@
 ---
 // Main landing page - trigger full CI test suite
+// HYBRID MODE: Static generation for public landing page (no auth required)
+export const prerender = true;
+
 import MainLayout from '../components/layout/MainLayout.astro';
 import ConversionForm from '../components/ConversionForm.astro';
 import JobDashboard from '../components/JobDashboard.astro';

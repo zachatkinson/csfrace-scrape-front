@@ -1,0 +1,195 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Auth Debug Tool</title>
+    <style>
+      body {
+        font-family: monospace;
+        margin: 20px;
+        background: #1a1a1a;
+        color: #fff;
+      }
+      button {
+        padding: 15px 30px;
+        margin: 10px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        background: #2563eb;
+        color: white;
+        font-size: 16px;
+      }
+      pre {
+        background: #333;
+        padding: 15px;
+        border-radius: 5px;
+        white-space: pre-wrap;
+      }
+      .result {
+        margin: 20px 0;
+        padding: 15px;
+        border-radius: 5px;
+        background: #374151;
+      }
+      .success {
+        background: #065f46;
+      }
+      .error {
+        background: #991b1b;
+      }
+      .warning {
+        background: #92400e;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔍 OAuth Authentication Debugger</h1>
+
+    <button onclick="debugAuth()">🔍 Debug Authentication</button>
+    <button onclick="testVisibility()">👁️ Test UI Visibility</button>
+    <button onclick="clearStorage()">🧹 Clear Storage</button>
+
+    <div id="output"></div>
+
+    <script>
+      async function debugAuth() {
+        const output = document.getElementById("output");
+
+        try {
+          console.log("Starting auth debug...");
+
+          // Check localStorage
+          const oauthSuccess = localStorage.getItem("oauth_success");
+          const authToken = localStorage.getItem("auth_token");
+
+          // Check sessionStorage
+          const sessionToken = sessionStorage.getItem("auth_token");
+
+          // Check cookies (only non-httpOnly ones are visible)
+          const cookies = document.cookie;
+
+          // Test /auth/me endpoint
+          const response = await fetch("/auth/me", {
+            method: "GET",
+            credentials: "include",
+            headers: { Accept: "application/json" },
+          });
+
+          const responseData = await response.text();
+          let parsedData;
+          try {
+            parsedData = JSON.parse(responseData);
+          } catch {
+            parsedData = responseData;
+          }
+
+          // Check if astro:page-load event fires
+          let astroPageLoadFired = false;
+          document.addEventListener("astro:page-load", () => {
+            astroPageLoadFired = true;
+          });
+
+          const results = `
+🔍 AUTHENTICATION DEBUG RESULTS
+
+📦 Storage Check:
+- localStorage.oauth_success: ${oauthSuccess ? "✅ Found" : "❌ Not found"}
+- localStorage.auth_token: ${authToken ? "✅ Found" : "❌ Not found"}
+- sessionStorage.auth_token: ${sessionToken ? "✅ Found" : "❌ Not found"}
+- Visible cookies: ${cookies || "(none - likely all HTTP-only)"}
+
+🌐 Backend API (/auth/me):
+- Status: ${response.status} ${response.statusText}
+- Authenticated: ${response.ok ? "✅ YES" : "❌ NO"}
+- Response: ${JSON.stringify(parsedData, null, 2)}
+
+🎯 Expected UI Behavior:
+- User should see: ${response.ok ? "👁️ User Settings Button VISIBLE" : "🚫 User Settings Button HIDDEN"}
+- Auth button should show: ${response.ok ? "Logout" : "Sign In"}
+
+📍 Current Page URL: ${window.location.href}
+
+⚠️ IMPORTANT: If cookies are set but /auth/me returns 401:
+- Check if you're on the correct domain (https://localhost)
+- Ensure nginx is routing to backend correctly
+- Verify cookies have correct domain/path settings
+
+${oauthSuccess ? "📋 OAuth Success Data:\n" + oauthSuccess : ""}
+                `;
+
+          output.innerHTML = `<div class="result ${response.ok ? "success" : "error"}">
+                    <pre>${results}</pre>
+                </div>`;
+        } catch (error) {
+          output.innerHTML = `<div class="result error">
+                    <pre>❌ Error: ${error.message}\n\nStack:\n${error.stack}</pre>
+                </div>`;
+        }
+      }
+
+      async function testVisibility() {
+        const output = document.getElementById("output");
+
+        // Test what the actual UI sees
+        const testHTML = `
+                <div id="user-settings-button-container" class="hidden">
+                    <button>User Settings (Test)</button>
+                </div>
+            `;
+
+        const testDiv = document.createElement("div");
+        testDiv.innerHTML = testHTML;
+        document.body.appendChild(testDiv);
+
+        const container = document.getElementById(
+          "user-settings-button-container",
+        );
+
+        // Simulate the updateUserSettingsVisibility function
+        const response = await fetch("/auth/me", {
+          method: "GET",
+          credentials: "include",
+          headers: { Accept: "application/json" },
+        });
+
+        if (response.ok) {
+          container.classList.remove("hidden");
+          output.innerHTML = `<div class="result success">
+                    <pre>✅ UI Update Test:
+- API returned authenticated
+- Removed 'hidden' class
+- Element visible: ${container.offsetParent !== null}
+- Current classes: ${container.className || "(none)"}
+
+If you still don't see the button in the main app, the issue might be:
+1. The astro:page-load event not firing
+2. The element ID not matching
+3. CSS overriding the visibility</pre>
+                </div>`;
+        } else {
+          output.innerHTML = `<div class="result error">
+                    <pre>❌ UI Update Test:
+- API returned NOT authenticated (${response.status})
+- 'hidden' class would remain
+- This explains why button doesn't show</pre>
+                </div>`;
+        }
+
+        // Clean up
+        setTimeout(() => testDiv.remove(), 5000);
+      }
+
+      function clearStorage() {
+        localStorage.clear();
+        sessionStorage.clear();
+        alert("Storage cleared! (Note: HTTP-only cookies remain)");
+        debugAuth();
+      }
+
+      // Auto-run on load
+      window.addEventListener("load", () => {
+        setTimeout(debugAuth, 500);
+      });
+    </script>
+  </body>
+</html>

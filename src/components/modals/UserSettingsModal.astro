@@ -152,6 +152,7 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
 -->
 <script>
   import { createContextLogger } from '../../utils/logger';
+  import { getApiBaseUrl } from '../../constants/api';
 
   // Create logger instance for this component  
   const logger = createContextLogger('UserSettingsModal');
@@ -181,6 +182,15 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
 
   interface SSOConnectionStatus {
     [provider: string]: SSOConnection;
+  }
+
+  // Backend OAuth connection data type
+  interface OAuthConnectionData {
+    provider?: string;
+    provider_name?: string;
+    connected: boolean;
+    email?: string;
+    user_email?: string;
   }
 
   let userInfo: UserInfo | null = null;
@@ -227,20 +237,26 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
     initDeleteConfirmation();
     initPasskeyManagement();
     initSSOManagement();
-    
+
+    // Listen for authentication events to update SSO connection status
+    window.addEventListener('auth-success', async () => {
+      logger.info('Authentication success detected, refreshing SSO connections');
+      await loadSSOConnections();
+    });
+
+    window.addEventListener('user-logged-in', async () => {
+      logger.info('User logged in, refreshing SSO connections');
+      await loadSSOConnections();
+    });
+
     logger.info('UserSettingsModal initialized');
   });
 
   // Security utility: Clear authentication data on logout/deletion
   function clearAuthenticationData() {
-    // Clear any localStorage auth data
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('refresh_token');
+    // Note: With httpOnly cookies, the backend clears auth cookies on account deletion
+    // We only need to clear non-sensitive client-side data here
     localStorage.removeItem('user_data');
-
-    // Clear any sessionStorage auth data
-    sessionStorage.removeItem('auth_token');
-    sessionStorage.removeItem('refresh_token');
     sessionStorage.removeItem('user_data');
 
     // Dispatch logout event for other components
@@ -352,11 +368,32 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
 
   // Load user information
   async function loadUserInfo() {
+    // OPTION 1: Check client-side storage first to avoid 401 errors on static pages
+    const hasToken = localStorage.getItem('auth_token') ||
+                     sessionStorage.getItem('auth_token') ||
+                     document.cookie.includes('auth_token');
+
+    if (!hasToken) {
+      logger.info('User not authenticated - settings unavailable until sign in');
+      userInfo = null;
+      return;
+    }
+
     const response = await fetch('/auth/me', {
       method: 'GET',
       credentials: 'include',
       headers: { 'Accept': 'application/json' },
     });
+
+    // Handle unauthorized users gracefully - not an error, just not signed in
+    if (response.status === 401 || response.status === 403) {
+      logger.info('User not authenticated - settings unavailable until sign in');
+      userInfo = null;
+      // Clean up invalid tokens
+      localStorage.removeItem('auth_token');
+      sessionStorage.removeItem('auth_token');
+      return; // Don't throw error for expected unauthenticated state
+    }
 
     if (!response.ok) {
       throw new Error('Failed to load user information');
@@ -583,7 +620,7 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
   async function getConnectedSSOProviders(): Promise<SSOConnectionStatus> {
     const connections: SSOConnectionStatus = {};
 
-    // Get real user data from the authenticated session
+    // Get real user data from the authenticated session (httpOnly cookies)
     let currentUser: UserInfo | null = null;
     try {
       const userResponse = await fetch('/auth/me', {
@@ -650,18 +687,106 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
     }
   }
 
-  // Check for real SSO connection data from backend database
+  // Check for real SSO connection data from backend database - BEST PRACTICE APPROACH
   async function getRealSSOConnectionData(provider: string): Promise<{connected: boolean, email?: string} | null> {
-    // TODO: These endpoints are not implemented yet in the backend
-    // For now, return null to use heuristic detection
-    // Future implementation will check:
-    // - `/auth/oauth/${provider}/status` for individual provider status
-    // - `/auth/linked-accounts` for all linked OAuth accounts
+    try {
+      // BEST PRACTICE: Query the backend database for OAuth connections
+      // This should check the sso_logins or oauth_connections table for the current user
 
-    // Silently skip unimplemented endpoints to avoid 404 console errors
-    logger.debug(`OAuth status endpoints not implemented yet for ${provider}, using heuristic detection`);
+      // Option 1: Try dedicated OAuth connections endpoint
+      try {
+        const response = await fetch('/auth/oauth/connections', {
+          method: 'GET',
+          credentials: 'include',
+          headers: { 'Accept': 'application/json' },
+        });
 
-    // Skip user settings check for OAuth data to avoid 404s
+        if (response.ok) {
+          const connections = await response.json();
+          logger.info('OAuth connections from database:', { connections, provider });
+
+          // CRITICAL FIX: Always return definitive result when backend endpoint works
+          // This prevents fallback to heuristic logic which was causing false positives
+
+          // Check if provider is in the connections list
+          const providerConnection = connections.find((conn: OAuthConnectionData) => conn.provider === provider || conn.provider_name === provider);
+          if (providerConnection && providerConnection.connected) {
+            logger.info(`Provider ${provider} found in database as connected`, { providerConnection });
+            return {
+              connected: true,
+              email: providerConnection.email || providerConnection.user_email
+            };
+          } else {
+            logger.info(`Provider ${provider} not found in database connections or marked as disconnected`, {
+              connectionsCount: connections.length,
+              providerFound: !!providerConnection,
+              providerConnected: providerConnection?.connected
+            });
+            // CRITICAL: Return definitive false result to prevent heuristic fallback
+            return { connected: false };
+          }
+        } else if (response.status === 401) {
+          logger.debug('User not authenticated, cannot check OAuth connections');
+          // Return null to allow fallback to client-side authentication check
+          return null;
+        }
+      } catch (error) {
+        logger.debug('OAuth connections endpoint not available, trying alternative approach', {
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
+
+      // Option 2: Check if /auth/me contains OAuth provider information from database
+      const response = await fetch('/auth/me', {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'Accept': 'application/json' },
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        logger.info('User data from /auth/me:', { userData });
+
+        // Check for OAuth provider info in user data (populated from database)
+        if (userData.oauth_providers || userData.sso_providers || userData.connected_providers) {
+          const providers = userData.oauth_providers || userData.sso_providers || userData.connected_providers;
+          if (Array.isArray(providers)) {
+            const isConnected = providers.includes(provider);
+            return {
+              connected: isConnected,
+              email: isConnected ? userData.email : undefined
+            };
+          } else if (typeof providers === 'object') {
+            const providerData = providers[provider];
+            if (providerData) {
+              return {
+                connected: true,
+                email: providerData.email || userData.email
+              };
+            }
+          }
+        }
+
+        // Check auth_method field for OAuth provider information
+        if (userData.auth_method) {
+          if (userData.auth_method.includes(`oauth_${provider}`) || userData.auth_method.includes(provider)) {
+            return {
+              connected: true,
+              email: userData.email
+            };
+          }
+        }
+      }
+
+      // If no OAuth data found in database responses, return null for heuristic fallback
+      return null;
+
+    } catch (error) {
+      logger.warn('Error checking real SSO connection data from database:', error);
+      return null;
+    }
+
+    // Skip legacy user settings check for OAuth data to avoid 404s
     // Option 2: Check user settings for OAuth connection data (when implemented)
     /*
     try {
@@ -688,8 +813,7 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
     */
 
     // Option 3: TODO - Add more database checking methods as backend evolves
-
-    return null; // No real data available, use fallback heuristics
+    // Return null is already done at line 777
   }
 
   // Intelligent SSO connection detection - works for any provider without hardcoding
@@ -700,8 +824,7 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
       return { connected: false };
     }
 
-    // For now, we'll use heuristics to detect probable connections
-    // This is much better than hardcoding specific providers
+    // Enhanced heuristics to detect probable connections
 
     // Heuristic 1: Check if user email domain suggests SSO provider
     const emailDomain = currentUser.email?.split('@')[1]?.toLowerCase();
@@ -716,17 +839,30 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
     const patterns = providerPatterns[provider] || [];
     const domainMatches = emailDomain && patterns.includes(emailDomain);
 
-    // Heuristic 2: For demonstration, we'll assume the current session came from the most likely SSO provider
-    // In real implementation, this would be replaced by actual backend connection tracking
+    // Heuristic 2: If user is authenticated via OAuth, determine most likely provider
+    // Since we're in the user settings modal, the user is already authenticated
+    // We need to identify which OAuth provider they used
 
+    // If email domain matches a provider, that's the most likely connection
     if (domainMatches) {
+      logger.info(`Email domain ${emailDomain} matches ${provider}, showing as connected`);
       return {
         connected: true,
         email: currentUser.email
       };
     }
 
-    // Default: assume not connected (until backend provides real data)
+    // Heuristic 3: Only show as connected if email domain clearly indicates the provider
+    if (domainMatches) {
+      logger.info(`Email domain ${emailDomain} matches ${provider}, showing as connected`);
+      return {
+        connected: true,
+        email: currentUser.email
+      };
+    }
+
+    // Default: assume not connected unless we have clear evidence
+    // This is more conservative and avoids false positives
     return { connected: false };
   }
 
@@ -853,21 +989,24 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
 
       logger.info('Initiating account deletion');
 
-      // DEBUG: Add detailed logging to track request for debugging
-      logger.debug('About to send DELETE request to /auth/delete-account');
-      logger.debug('Current cookies available:', document.cookie ? 'Cookies present' : 'No cookies');
-      logger.debug('Request timestamp:', new Date().toISOString());
+      // Enhanced fetch relying on httpOnly cookies for authentication
+      const apiBaseUrl = getApiBaseUrl();
 
-      // Enhanced fetch with proper security headers and error handling
-      const response = await fetch('/auth/delete-account', {
+      const headers: Record<string, string> = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      };
+
+      // Add CSRF protection if available
+      const csrfToken = (window as WindowWithCSRF).csrfToken;
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
+
+      const response = await fetch(`${apiBaseUrl}/auth/account`, {
         method: 'DELETE',
         credentials: 'include', // Critical: Include HTTP-only auth cookies
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          // Add CSRF protection if available (DRY: using typed interface)
-          ...((window as WindowWithCSRF).csrfToken && { 'X-CSRF-Token': (window as WindowWithCSRF).csrfToken })
-        },
+        headers,
         // Add request timeout for better UX
         signal: AbortSignal.timeout(30000) // 30 second timeout
       });

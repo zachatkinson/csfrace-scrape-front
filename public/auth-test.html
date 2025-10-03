@@ -1,0 +1,174 @@
+<!doctype html>
+<html>
+  <head>
+    <title>OAuth Authentication Test</title>
+    <style>
+      body {
+        font-family: monospace;
+        margin: 20px;
+        background: #1a1a1a;
+        color: #fff;
+      }
+      button {
+        padding: 15px 30px;
+        margin: 10px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        background: #2563eb;
+        color: white;
+        font-size: 16px;
+      }
+      pre {
+        background: #333;
+        padding: 15px;
+        border-radius: 5px;
+        white-space: pre-wrap;
+      }
+      .result {
+        margin: 20px 0;
+        padding: 15px;
+        border-radius: 5px;
+        background: #374151;
+      }
+      .success {
+        background: #065f46;
+      }
+      .error {
+        background: #991b1b;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔍 OAuth Authentication Debugger</h1>
+
+    <p>
+      <strong>Step 1:</strong> Complete OAuth at:
+      <a href="/" target="_blank" style="color: #60a5fa">Main App (Sign In)</a>
+    </p>
+    <p><strong>Step 2:</strong> Return here and check results</p>
+
+    <button onclick="testAuth()">🔍 Check Authentication Status</button>
+    <button onclick="clearAll()">🧹 Clear All Storage</button>
+
+    <div id="output">
+      <div class="result">
+        Click "Check Authentication Status" to see OAuth state...
+      </div>
+    </div>
+
+    <script>
+      async function testAuth() {
+        const output = document.getElementById("output");
+
+        try {
+          console.log("🔍 Starting authentication test...");
+
+          // Check localStorage
+          const oauthSuccess = localStorage.getItem("oauth_success");
+          const authTokenLocal = localStorage.getItem("auth_token");
+
+          // Check sessionStorage
+          const authTokenSession = sessionStorage.getItem("auth_token");
+
+          // Check cookies
+          const cookies = document.cookie;
+          const hasAuthCookie = cookies.includes("auth_token");
+
+          output.innerHTML =
+            '<div class="result">🔄 Testing authentication status...</div>';
+
+          // Test /auth/me endpoint
+          console.log("🌐 Calling /auth/me endpoint...");
+          const authResponse = await fetch("/auth/me", {
+            method: "GET",
+            credentials: "include",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+            },
+          });
+
+          let authData;
+          const responseText = await authResponse.text();
+
+          try {
+            authData = JSON.parse(responseText);
+          } catch (e) {
+            authData = { error: "Invalid JSON", text: responseText };
+          }
+
+          console.log("📊 Authentication test results:", {
+            status: authResponse.status,
+            ok: authResponse.ok,
+            data: authData,
+          });
+
+          // Analyze results
+          const hasAnyToken =
+            authTokenLocal || authTokenSession || hasAuthCookie;
+          const isAuthenticated = authResponse.ok;
+
+          const statusClass = isAuthenticated ? "success" : "error";
+          const statusText = isAuthenticated
+            ? "✅ AUTHENTICATED"
+            : "❌ NOT AUTHENTICATED";
+
+          const results = `
+🔍 OAUTH AUTHENTICATION TEST RESULTS
+
+📦 Storage Analysis:
+├─ oauth_success (localStorage): ${oauthSuccess ? "✅ Found" : "❌ Not found"}
+├─ auth_token (localStorage): ${authTokenLocal ? "✅ Found" : "❌ Not found"}
+├─ auth_token (sessionStorage): ${authTokenSession ? "✅ Found" : "❌ Not found"}
+└─ auth cookies: ${hasAuthCookie ? "✅ Found" : "❌ Not found"}
+
+🌐 Backend API Test (/auth/me):
+├─ HTTP Status: ${authResponse.status} ${authResponse.statusText}
+├─ Success: ${authResponse.ok ? "✅ YES" : "❌ NO"}
+└─ Response: ${JSON.stringify(authData, null, 2)}
+
+🎯 MainLayout Logic Analysis:
+├─ hasToken check: ${hasAnyToken ? "✅ PASS (tokens found)" : "❌ FAIL (no tokens)"}
+├─ API authentication: ${isAuthenticated ? "✅ AUTHENTICATED" : "❌ NOT AUTHENTICATED"}
+└─ User settings visibility: ${isAuthenticated ? "👁️  SHOULD BE VISIBLE" : "🚫 SHOULD BE HIDDEN"}
+
+${oauthSuccess ? "📋 OAuth Success Details:\n" + JSON.stringify(JSON.parse(oauthSuccess), null, 2) : "❌ No OAuth success flag found"}
+
+💡 Next Steps:
+${!isAuthenticated ? "1. Complete OAuth login in the main app\n2. Return here and recheck" : "1. Check if user settings button is visible in main app\n2. If not visible, there may be a UI update issue"}
+                `;
+
+          output.innerHTML = `<div class="result ${statusClass}"><h3>${statusText}</h3><pre>${results}</pre></div>`;
+        } catch (error) {
+          console.error("❌ Authentication test error:", error);
+          output.innerHTML = `
+                    <div class="result error">
+                        <h3>❌ TEST ERROR</h3>
+                        <pre>Error: ${error.message}
+
+Stack trace:
+${error.stack}</pre>
+                    </div>
+                `;
+        }
+      }
+
+      function clearAll() {
+        localStorage.removeItem("oauth_success");
+        localStorage.removeItem("auth_token");
+        sessionStorage.removeItem("auth_token");
+        document.cookie =
+          "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        alert("🧹 All authentication data cleared!");
+        setTimeout(testAuth, 500);
+      }
+
+      // Auto-test when page loads
+      window.addEventListener("load", () => {
+        console.log("🔍 OAuth Authentication Debugger loaded");
+        setTimeout(testAuth, 1000);
+      });
+    </script>
+  </body>
+</html>

@@ -95,14 +95,14 @@ class UserSettingsAPI {
    */
   async getUserSettings(): Promise<UserSettings> {
     try {
-      // Try to get basic user info from /auth/me (this endpoint exists)
+      let userInfo = null;
+      // Try to get basic user info from /auth/me (backend uses httpOnly cookies)
       const userResponse = await fetch("/auth/me", {
         method: "GET",
         credentials: "include",
         headers: { Accept: "application/json" },
       });
 
-      let userInfo = null;
       if (userResponse.ok) {
         userInfo = await userResponse.json();
       }

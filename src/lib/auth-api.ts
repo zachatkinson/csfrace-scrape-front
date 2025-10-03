@@ -291,12 +291,9 @@ class AuthAPI {
 
   // Account Self-Service
   async deleteCurrentUserAccount(): Promise<{ message: string }> {
-    return this.baseClient["request"]<{ message: string }>(
-      "/auth/delete-account",
-      {
-        method: "DELETE",
-      },
-    );
+    return this.baseClient["request"]<{ message: string }>("/auth/account", {
+      method: "DELETE",
+    });
   }
 
   // Utility Methods

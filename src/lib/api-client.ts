@@ -434,8 +434,13 @@ class APIClient extends EnhancedApiClient {
   }
 
   // Utility methods
-  setAPIKey(apiKey: string) {
+  /**
+   * Set or update the API key for authentication
+   * Call this after user login to enable authenticated requests
+   */
+  override setAPIKey(apiKey: string): void {
     this.apiKey = apiKey;
+    super.setAPIKey(apiKey); // Update parent class config to add Authorization header
   }
 
   setBaseURL(baseURL: string) {
@@ -445,6 +450,18 @@ class APIClient extends EnhancedApiClient {
 
 // Singleton instance
 export const apiClient = new APIClient();
+
+/**
+ * Initialize API client with authentication token from storage
+ * Call this on app initialization to restore authenticated session
+ *
+ * Note: With httpOnly cookies, tokens are automatically included by the browser.
+ * This function is kept for compatibility but no longer needs to set tokens manually.
+ */
+export function initializeAPIClientAuth(): void {
+  // No-op: Authentication is now handled via httpOnly cookies
+  // The browser automatically includes cookies with credentials: 'include'
+}
 
 // Job status utilities
 export const JOB_STATUS_LABELS: Record<DashboardJobStatus, string> = {

@@ -23,6 +23,7 @@ ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
 
 # Install dependencies conditionally based on NODE_ENV
+# lightningcss-wasm is installed from optionalDependencies in package.json
 RUN if [ "$NODE_ENV" = "development" ]; then \
         pnpm install --frozen-lockfile; \
     else \
@@ -30,6 +31,14 @@ RUN if [ "$NODE_ENV" = "development" ]; then \
         pnpm run build && \
         pnpm prune --production; \
     fi
+
+# CRITICAL LIGHTNINGCSS FIX: Create pkg directory and copy WASM files
+# Fixes ARM64 Docker + lightningcss incompatibility (missing ../pkg directory)
+# lightningcss-wasm is already installed from package.json optionalDependencies
+# Using pnpm directory structure: .pnpm/package@version/node_modules/package
+RUN mkdir -p node_modules/.pnpm/lightningcss@1.30.1/node_modules/lightningcss/pkg && \
+    cp -r node_modules/.pnpm/lightningcss-wasm@1.30.2/node_modules/lightningcss-wasm/* \
+          node_modules/.pnpm/lightningcss@1.30.1/node_modules/lightningcss/pkg/ 2>/dev/null || true
 
 # Copy source code and ensure proper ownership
 COPY --chown=astro:nodejs . .

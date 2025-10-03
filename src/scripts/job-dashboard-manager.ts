@@ -114,6 +114,22 @@ class JobDashboard extends HTMLElement {
 
   async checkAuthAndLoadJobs() {
     try {
+      // OPTION 1: Check client-side storage first to avoid 401 errors on static pages
+      const hasToken =
+        localStorage.getItem("auth_token") ||
+        sessionStorage.getItem("auth_token") ||
+        document.cookie.includes("auth_token");
+
+      if (!hasToken) {
+        // User is not authenticated, show empty state
+        this.logger.debug(
+          "User not authenticated (no tokens), skipping job loading",
+        );
+        this.showEmptyState();
+        this.hideLoading();
+        return;
+      }
+
       // Check if user is authenticated before loading jobs
       const authResponse = await fetch("/auth/me", {
         method: "GET",
@@ -128,7 +144,9 @@ class JobDashboard extends HTMLElement {
         // User is authenticated, load jobs
         await this.loadInitialJobs();
       } else {
-        // User is not authenticated, show empty state
+        // Clean up invalid tokens and show empty state
+        localStorage.removeItem("auth_token");
+        sessionStorage.removeItem("auth_token");
         this.logger.debug("User not authenticated, skipping job loading");
         this.showEmptyState();
         this.hideLoading();
