@@ -1,9 +1,9 @@
 import { test, expect } from "@playwright/test";
 
-test.describe("Integration Tests @integration", () => {
+test.describe("E2E Smoke Tests", () => {
   const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
 
-  test("should load frontend application @integration", async ({ page }) => {
+  test("should load frontend application", async ({ page }) => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
@@ -15,7 +15,7 @@ test.describe("Integration Tests @integration", () => {
     await expect(body).toBeVisible();
   });
 
-  test("should render page title @integration", async ({ page }) => {
+  test("should render page title", async ({ page }) => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
@@ -25,7 +25,7 @@ test.describe("Integration Tests @integration", () => {
     expect(title.length).toBeGreaterThan(0);
   });
 
-  test("should have working navigation @integration", async ({ page }) => {
+  test("should have working navigation", async ({ page }) => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
@@ -37,9 +37,7 @@ test.describe("Integration Tests @integration", () => {
     await expect(head).toBeAttached();
   });
 
-  test("should load without JavaScript errors @integration", async ({
-    page,
-  }) => {
+  test("should load without JavaScript errors", async ({ page }) => {
     const errors: string[] = [];
     page.on("console", (msg) => {
       if (msg.type() === "error") {
