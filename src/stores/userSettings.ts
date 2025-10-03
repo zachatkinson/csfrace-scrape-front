@@ -7,7 +7,7 @@
  * DRY: Eliminates localStorage/backend dual storage
  */
 
-import { atom, task, onMount } from "nanostores";
+import { atom, onMount } from "nanostores";
 import type { AppSettings, ApiConfigSettings } from "../interfaces/forms";
 import { createContextLogger } from "../utils/logger";
 
@@ -204,7 +204,7 @@ async function saveSettingsToBackend(
  * Initialize user settings on app load
  * Loads from backend if authenticated, uses defaults otherwise
  */
-export const initializeSettings = task(async () => {
+export const initializeSettings = async (): Promise<void> => {
   logger.info("Initializing user settings...");
 
   userSettingsStore.set({
@@ -272,13 +272,14 @@ export const initializeSettings = task(async () => {
     });
     useDefaultSettings(false);
   }
-});
+};
 
 /**
  * Update app settings and sync to backend
  */
-export const updateAppSettings = task(
-  async (newSettings: Partial<AppSettings>) => {
+export const updateAppSettings = async (
+  newSettings: Partial<AppSettings>,
+): Promise<void> => {
     const currentState = userSettingsStore.get();
     const updatedAppSettings = { ...currentState.appSettings, ...newSettings };
 
@@ -310,14 +311,14 @@ export const updateAppSettings = task(
         isSyncing: false,
       });
     }
-  },
-);
+};
 
 /**
  * Update API settings and sync to backend
  */
-export const updateApiSettings = task(
-  async (newSettings: Partial<ApiConfigSettings>) => {
+export const updateApiSettings = async (
+  newSettings: Partial<ApiConfigSettings>,
+): Promise<void> => {
     const currentState = userSettingsStore.get();
     const updatedApiSettings = { ...currentState.apiSettings, ...newSettings };
 
@@ -349,13 +350,12 @@ export const updateApiSettings = task(
         isSyncing: false,
       });
     }
-  },
-);
+};
 
 /**
  * Reset settings to defaults
  */
-export const resetToDefaults = task(async () => {
+export const resetToDefaults = async (): Promise<void> => {
   const currentState = userSettingsStore.get();
 
   if (currentState.isAuthenticated) {
@@ -378,7 +378,7 @@ export const resetToDefaults = task(async () => {
     // Just use local defaults
     useDefaultSettings(false);
   }
-});
+};
 
 // =============================================================================
 // UTILITY FUNCTIONS
@@ -439,11 +439,17 @@ function applySettingsToDom(
 if (typeof window !== "undefined") {
   // Initialize when first subscriber mounts
   onMount(userSettingsStore, () => {
-    initializeSettings();
+    initializeSettings().catch((error) =>
+      logger.error("Failed to initialize settings on mount", { error }),
+    );
 
     // Re-initialize on auth changes
     const handleAuthChange = () => {
-      initializeSettings();
+      initializeSettings().catch((error) =>
+        logger.error("Failed to re-initialize settings on auth change", {
+          error,
+        }),
+      );
     };
 
     window.addEventListener("auth-success", handleAuthChange);
