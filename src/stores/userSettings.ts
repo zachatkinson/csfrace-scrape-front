@@ -256,12 +256,12 @@ export const initializeSettings = async (): Promise<void> => {
       } else {
         // Backend failed, use defaults
         logger.warn("Failed to load from backend, using defaults");
-        useDefaultSettings(true);
+        setDefaultSettings(true);
       }
     } else {
       // Not authenticated, use defaults
       logger.info("User not authenticated - using default settings");
-      useDefaultSettings(false);
+      setDefaultSettings(false);
     }
   } catch (error) {
     logger.error("Failed to initialize settings", { error });
@@ -270,7 +270,7 @@ export const initializeSettings = async (): Promise<void> => {
       isLoading: false,
       error: "Failed to initialize settings",
     });
-    useDefaultSettings(false);
+    setDefaultSettings(false);
   }
 };
 
@@ -280,37 +280,37 @@ export const initializeSettings = async (): Promise<void> => {
 export const updateAppSettings = async (
   newSettings: Partial<AppSettings>,
 ): Promise<void> => {
-    const currentState = userSettingsStore.get();
-    const updatedAppSettings = { ...currentState.appSettings, ...newSettings };
+  const currentState = userSettingsStore.get();
+  const updatedAppSettings = { ...currentState.appSettings, ...newSettings };
 
-    // Optimistically update UI
+  // Optimistically update UI
+  userSettingsStore.set({
+    ...currentState,
+    appSettings: updatedAppSettings,
+    isSyncing: true,
+  });
+
+  // Apply to DOM immediately
+  applySettingsToDom({ ...updatedAppSettings, ...currentState.apiSettings });
+
+  if (currentState.isAuthenticated) {
+    // Sync to backend (single source of truth)
+    const success = await saveSettingsToBackend(
+      updatedAppSettings,
+      currentState.apiSettings,
+    );
+
     userSettingsStore.set({
-      ...currentState,
-      appSettings: updatedAppSettings,
-      isSyncing: true,
+      ...userSettingsStore.get(),
+      isSyncing: false,
+      error: success ? null : "Failed to save settings",
     });
-
-    // Apply to DOM immediately
-    applySettingsToDom({ ...updatedAppSettings, ...currentState.apiSettings });
-
-    if (currentState.isAuthenticated) {
-      // Sync to backend (single source of truth)
-      const success = await saveSettingsToBackend(
-        updatedAppSettings,
-        currentState.apiSettings,
-      );
-
-      userSettingsStore.set({
-        ...userSettingsStore.get(),
-        isSyncing: false,
-        error: success ? null : "Failed to save settings",
-      });
-    } else {
-      userSettingsStore.set({
-        ...userSettingsStore.get(),
-        isSyncing: false,
-      });
-    }
+  } else {
+    userSettingsStore.set({
+      ...userSettingsStore.get(),
+      isSyncing: false,
+    });
+  }
 };
 
 /**
@@ -319,37 +319,37 @@ export const updateAppSettings = async (
 export const updateApiSettings = async (
   newSettings: Partial<ApiConfigSettings>,
 ): Promise<void> => {
-    const currentState = userSettingsStore.get();
-    const updatedApiSettings = { ...currentState.apiSettings, ...newSettings };
+  const currentState = userSettingsStore.get();
+  const updatedApiSettings = { ...currentState.apiSettings, ...newSettings };
 
-    // Optimistically update UI
+  // Optimistically update UI
+  userSettingsStore.set({
+    ...currentState,
+    apiSettings: updatedApiSettings,
+    isSyncing: true,
+  });
+
+  // Apply to DOM immediately
+  applySettingsToDom({ ...currentState.appSettings, ...updatedApiSettings });
+
+  if (currentState.isAuthenticated) {
+    // Sync to backend (single source of truth)
+    const success = await saveSettingsToBackend(
+      currentState.appSettings,
+      updatedApiSettings,
+    );
+
     userSettingsStore.set({
-      ...currentState,
-      apiSettings: updatedApiSettings,
-      isSyncing: true,
+      ...userSettingsStore.get(),
+      isSyncing: false,
+      error: success ? null : "Failed to save settings",
     });
-
-    // Apply to DOM immediately
-    applySettingsToDom({ ...currentState.appSettings, ...updatedApiSettings });
-
-    if (currentState.isAuthenticated) {
-      // Sync to backend (single source of truth)
-      const success = await saveSettingsToBackend(
-        currentState.appSettings,
-        updatedApiSettings,
-      );
-
-      userSettingsStore.set({
-        ...userSettingsStore.get(),
-        isSyncing: false,
-        error: success ? null : "Failed to save settings",
-      });
-    } else {
-      userSettingsStore.set({
-        ...userSettingsStore.get(),
-        isSyncing: false,
-      });
-    }
+  } else {
+    userSettingsStore.set({
+      ...userSettingsStore.get(),
+      isSyncing: false,
+    });
+  }
 };
 
 /**
@@ -376,7 +376,7 @@ export const resetToDefaults = async (): Promise<void> => {
     }
   } else {
     // Just use local defaults
-    useDefaultSettings(false);
+    setDefaultSettings(false);
   }
 };
 
@@ -384,7 +384,7 @@ export const resetToDefaults = async (): Promise<void> => {
 // UTILITY FUNCTIONS
 // =============================================================================
 
-function useDefaultSettings(isAuthenticated: boolean) {
+function setDefaultSettings(isAuthenticated: boolean) {
   const defaults = {
     ...getDefaultAppSettings(),
     ...getDefaultApiSettings(),
@@ -418,7 +418,9 @@ function applySettingsToDom(
 
   // Update API client if available
   if (settings.apiUrl && typeof window !== "undefined") {
-    const apiClient = (window as { apiClient?: { setBaseURL?: (url: string) => void } }).apiClient;
+    const apiClient = (
+      window as { apiClient?: { setBaseURL?: (url: string) => void } }
+    ).apiClient;
     if (apiClient && typeof apiClient.setBaseURL === "function") {
       apiClient.setBaseURL(settings.apiUrl);
     }
