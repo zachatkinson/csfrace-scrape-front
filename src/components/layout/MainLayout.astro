@@ -342,6 +342,10 @@ const {
       // App settings functionality now handled by AppSettingsModal.astro custom element
       // All modal behavior moved to BaseModalManager for DRY/SOLID architecture
 
+      // Import logger
+      import { createContextLogger } from '/src/utils/logger.js';
+      const authLogger = createContextLogger('MainLayout-Auth');
+
       // Settings button handler
       document.addEventListener('DOMContentLoaded', () => {
         // CRITICAL: Initialize API client with auth token from storage
@@ -370,10 +374,10 @@ const {
               window.dispatchEvent(new CustomEvent('auth-success', {
                 detail: authData.user
               }));
-              console.log('🎉 OAuth authentication successful!', authData);
+              authLogger.info('OAuth authentication successful', { user: authData.user });
             }, 100);
           } catch (error) {
-            console.error('Failed to parse OAuth success data:', error);
+            authLogger.error('Failed to parse OAuth success data', { error });
             localStorage.removeItem('oauth_success');
           }
         }
@@ -383,7 +387,7 @@ const {
           if (event.key === 'oauth_success' && event.newValue) {
             try {
               const authData = JSON.parse(event.newValue);
-              console.log('🎉 OAuth success detected from another tab!', authData);
+              authLogger.info('OAuth success detected from another tab', { user: authData.user });
 
               // Trigger auth success events
               setTimeout(() => {
@@ -396,7 +400,7 @@ const {
                 updateUserSettingsVisibility();
               }, 100);
             } catch (error) {
-              console.error('Failed to parse OAuth success from storage event:', error);
+              authLogger.error('Failed to parse OAuth success from storage event', { error });
             }
           }
         });
@@ -430,10 +434,10 @@ const {
             .then(response => {
               if (response.ok) {
                 userSettingsContainer.classList.remove('hidden');
-                console.log('✅ Authentication verified - showing user settings');
+                authLogger.info('Authentication verified - showing user settings');
               } else {
                 userSettingsContainer.classList.add('hidden');
-                console.log('❌ Authentication invalid - hiding user settings');
+                authLogger.info('Authentication invalid - hiding user settings', { status: response.status });
                 // Clean up invalid tokens
                 localStorage.removeItem('auth_token');
                 sessionStorage.removeItem('auth_token');
@@ -442,7 +446,7 @@ const {
             })
             .catch((error) => {
               userSettingsContainer.classList.add('hidden');
-              console.log('⚠️  Authentication check failed:', error.message);
+              authLogger.warn('Authentication check failed', { error: error instanceof Error ? error.message : String(error) });
               // Don't clean up tokens on network error - server might be down
             });
           }
@@ -552,7 +556,7 @@ const {
 
                   updateHealthData(healthData);
                 } catch (error) {
-                  console.error('❌ SSEService: Error processing update:', error);
+                  sseLogger.error('Error processing update', { error });
                 }
               });
 
@@ -575,14 +579,11 @@ const {
                 const isConnecting = readyState === EventSource.CONNECTING;
 
                 if (isConnectionClosed) {
-                  console.info('ℹ️ [SSEService] Connection closed - backend may be unavailable or CORS issue');
-                  sseLogger.info('SSE connection closed', { error, readyState });
+                  sseLogger.info('SSE connection closed - backend may be unavailable or CORS issue', { error, readyState });
                 } else if (isConnecting) {
-                  console.info('ℹ️ [SSEService] Connection still trying to establish');
-                  sseLogger.info('SSE still connecting', { error, readyState });
+                  sseLogger.info('SSE connection still trying to establish', { error, readyState });
                 } else {
-                  console.error('❌ [SSEService] Unexpected connection error:', error);
-                  sseLogger.error('SSE connection error', { error, readyState });
+                  sseLogger.error('SSE unexpected connection error', { error, readyState });
                 }
 
                 this.isConnected = false;
@@ -698,11 +699,9 @@ const {
                 const isLikelyAuthIssue = this.eventSource?.readyState === EventSource.CLOSED;
 
                 if (isLikelyAuthIssue) {
-                  console.info('ℹ️ JobSSEService: Connection failed - user may need to sign in or backend unavailable');
-                  jobLogger.info('Job SSE connection failed - authentication may be required', { error });
+                  jobLogger.info('Job SSE connection failed - authentication may be required or backend unavailable', { error });
                 } else {
-                  console.error('❌ JobSSEService: Unexpected connection error:', error);
-                  jobLogger.error('Job SSE connection error', { error });
+                  jobLogger.error('Job SSE unexpected connection error', { error });
                 }
 
                 this.isConnected = false;
@@ -714,7 +713,7 @@ const {
               };
 
             } catch (error) {
-              console.error('💥 JobSSEService: Failed to create connection:', error);
+              jobLogger.error('Failed to create Job SSE connection', { error });
               this.handleRetry();
             }
           },
@@ -745,10 +744,10 @@ const {
                                  sessionStorage.getItem('auth_token');
 
           if (isAuthenticated) {
-            console.log('User authenticated - connecting to job SSE');
+            jobLogger.info('User authenticated - connecting to job SSE');
             window.__jobSSEService?.connect();
           } else {
-            console.log('User not authenticated - skipping job SSE connection');
+            jobLogger.info('User not authenticated - skipping job SSE connection');
           }
         });
 

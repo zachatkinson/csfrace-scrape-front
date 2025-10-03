@@ -184,6 +184,15 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
     [provider: string]: SSOConnection;
   }
 
+  // Backend OAuth connection data type
+  interface OAuthConnectionData {
+    provider?: string;
+    provider_name?: string;
+    connected: boolean;
+    email?: string;
+    user_email?: string;
+  }
+
   let userInfo: UserInfo | null = null;
   let ssoConnections: SSOConnectionStatus = {};
 
@@ -700,7 +709,7 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
           // This prevents fallback to heuristic logic which was causing false positives
 
           // Check if provider is in the connections list
-          const providerConnection = connections.find((conn: any) => conn.provider === provider || conn.provider_name === provider);
+          const providerConnection = connections.find((conn: OAuthConnectionData) => conn.provider === provider || conn.provider_name === provider);
           if (providerConnection && providerConnection.connected) {
             logger.info(`Provider ${provider} found in database as connected`, { providerConnection });
             return {
