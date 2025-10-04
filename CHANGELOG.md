@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.1](https://github.com/zachatkinson/csfrace-scrape-front/compare/v1.0.0...v1.0.1) (2025-10-04)
+
+### 🐛 Bug Fixes
+
+* replace Docker target with build-args for single-stage Dockerfile ([38b1ec9](https://github.com/zachatkinson/csfrace-scrape-front/commit/38b1ec98522eb4675ff580064ab6d92f0da63b28))
+
 ## 1.0.0 (2025-10-04)
 
 ### ⚠ BREAKING CHANGES
