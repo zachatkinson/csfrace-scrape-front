@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.3](https://github.com/zachatkinson/csfrace-scrape-front/compare/v1.1.2...v1.1.3) (2025-10-05)
+
+### 🐛 Bug Fixes
+
+* update codecov action parameters to use 'files' instead of deprecated 'file' ([64b9907](https://github.com/zachatkinson/csfrace-scrape-front/commit/64b990715a0358d13c33eb22bce472cf31d5f5fd))
+
 ## [1.1.2](https://github.com/zachatkinson/csfrace-scrape-front/compare/v1.1.1...v1.1.2) (2025-10-05)
 
 ### 🐛 Bug Fixes
