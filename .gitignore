@@ -105,3 +105,6 @@ cache/
 # CI/CD artifacts
 .github/artifacts/
 ci-output/
+
+# Semantic Release generated files
+CHANGELOG.md
