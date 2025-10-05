@@ -2,7 +2,12 @@
 # Single stage with environment-variable driven behavior
 # Based on official Docker recommendations for 2024+
 
-FROM --platform=linux/amd64 node:20-alpine
+# CRITICAL: lightningcss ARM64 workaround (still required as of 2025)
+# Using build arg instead of hardcoded platform to satisfy Docker linting
+# Default to linux/amd64 to fix lightningcss native binary issues on ARM64 Macs
+# See: https://github.com/parcel-bundler/lightningcss/issues/335
+ARG BUILDPLATFORM=linux/amd64
+FROM --platform=${BUILDPLATFORM} node:20-alpine
 
 # Install pnpm globally
 RUN npm install -g pnpm@9
