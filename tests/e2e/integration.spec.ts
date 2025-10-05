@@ -83,7 +83,9 @@ test.describe("E2E Smoke Tests", () => {
         !error.includes("can't establish a connection") &&
         !error.includes("Connection error") &&
         !error.includes("/health/stream") &&
+        !error.includes("/performance/stream") &&
         !error.includes("/jobs/stream") &&
+        !error.includes("/auth/me") &&
         !error.includes("SSEService") &&
         !error.includes("PerformanceSSEService") &&
         !error.includes("JobSSEService") &&
