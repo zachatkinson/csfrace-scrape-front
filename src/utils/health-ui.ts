@@ -4,6 +4,7 @@
  */
 
 import type { ServiceStatus } from "../types/health";
+import { formatDateTime } from "./timezone";
 
 export class HealthUIHelper {
   static createGlassButton(type: "copy" | "clear", id: string, title: string) {
@@ -78,13 +79,8 @@ export class HealthUIHelper {
     const element = document.getElementById(elementId);
     if (element) {
       const now = new Date();
-      const timeString = now.toLocaleTimeString("en-US", {
-        hour12: false,
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      });
-      element.textContent = `Last updated: ${timeString}`;
+      const { time } = formatDateTime(now, { includeSeconds: true });
+      element.textContent = `Last updated: ${time}`;
     }
   }
 
