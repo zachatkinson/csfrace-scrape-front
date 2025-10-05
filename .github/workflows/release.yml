@@ -92,7 +92,6 @@ jobs:
       version: v${{ needs.semantic-release.outputs.version }}
       dockerfile-path: ./Dockerfile
       build-context: .
-      build-target: production
 
   # Job 3: Notify orchestrator (DRY: Reusable workflow)
   notify-orchestrator:
