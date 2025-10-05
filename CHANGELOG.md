@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.4](https://github.com/zachatkinson/csfrace-scrape-front/compare/v1.1.3...v1.1.4) (2025-10-05)
+
+### ♻️ Code Refactoring
+
+* migrate to DRY/SOLID/SOC CI/CD architecture ([fbc286d](https://github.com/zachatkinson/csfrace-scrape-front/commit/fbc286d2e835fc8e183987558c3257d4991c27dc))
+
 ## [1.1.3](https://github.com/zachatkinson/csfrace-scrape-front/compare/v1.1.2...v1.1.3) (2025-10-05)
 
 ### 🐛 Bug Fixes
