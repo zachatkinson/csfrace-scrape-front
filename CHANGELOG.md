@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1](https://github.com/zachatkinson/csfrace-scrape-front/compare/v1.1.0...v1.1.1) (2025-10-05)
+
+### 🐛 Bug Fixes
+
+* use build arg for platform flag to satisfy Docker linting ([e3cd957](https://github.com/zachatkinson/csfrace-scrape-front/commit/e3cd957c0feeee83c8eb3e586f58c74298c0fa0c))
+
 ## [1.1.0](https://github.com/zachatkinson/csfrace-scrape-front/compare/v1.0.1...v1.1.0) (2025-10-05)
 
 ### 🚀 Features
