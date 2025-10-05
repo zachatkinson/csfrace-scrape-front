@@ -1,6 +1,6 @@
 /**
  * Performance SSE Service - SOLID Single Responsibility Principle
- * Dedicated service for consuming performance metrics from /health/stream
+ * Dedicated service for consuming performance metrics from /performance/stream
  * Following SOLID principles: Only handles performance metrics streaming
  */
 
@@ -133,12 +133,9 @@ export class PerformanceSSEService {
                   (((systemMetrics.network_bytes_sent as number) || 0) +
                     ((systemMetrics.network_bytes_recv as number) || 0)) /
                     (1024 * 1024) || 0, // Convert to MB total
-                avg_response:
-                  (applicationMetrics.avg_response_time as number) || 0,
-                p95_response:
-                  (applicationMetrics.p95_response_time as number) || 0,
-                max_response:
-                  (applicationMetrics.max_response_time as number) || 0,
+                avg_response: (applicationMetrics.avg_response as number) || 0,
+                p95_response: (applicationMetrics.p95_response as number) || 0,
+                max_response: (applicationMetrics.max_response as number) || 0,
                 active_connections:
                   (applicationMetrics.active_connections as number) || 0,
                 queue_length: (applicationMetrics.queue_length as number) || 0,

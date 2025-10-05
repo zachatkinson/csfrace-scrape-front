@@ -642,6 +642,7 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const response = await fetch(url, {
     method: options.method || "GET",
+    credentials: "include", // CRITICAL: Required for httpOnly cookies
     ...(options.headers && { headers: options.headers }),
     ...(options.body && { body: options.body }),
     ...(options.signal && { signal: options.signal }),

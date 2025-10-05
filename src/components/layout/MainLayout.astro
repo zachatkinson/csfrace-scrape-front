@@ -762,8 +762,18 @@ const {
     <script>
       import { performanceSSEService } from '/src/services/PerformanceSSEService.ts';
       import { createContextLogger } from '/src/utils/logger.js';
+      import { getTimezonePreferences, setTimezonePreferences } from '/src/utils/timezone.js';
 
       const performanceLogger = createContextLogger('PerformanceSSEMain');
+
+      // Initialize timezone preferences with 12-hour format
+      document.addEventListener('DOMContentLoaded', () => {
+        const currentPrefs = getTimezonePreferences();
+        // Ensure 12-hour format is always used for service card timestamps
+        if (currentPrefs.use24Hour !== false) {
+          setTimezonePreferences({ use24Hour: false });
+        }
+      });
 
       // SINGLETON PATTERN: Global performance SSE service (following SOLID principles)
       if (!window.__performanceSSEService) {
@@ -771,19 +781,12 @@ const {
 
         window.__performanceSSEService = performanceSSEService;
 
-        // Initialize performance SSE service ONLY for authenticated users
+        // Initialize public performance SSE service (no authentication required)
         document.addEventListener('DOMContentLoaded', () => {
-          // Check if user is authenticated before connecting to performance metrics
-          const isAuthenticated = document.cookie.includes('auth_token') ||
-                                 localStorage.getItem('auth_token') ||
-                                 sessionStorage.getItem('auth_token');
-
-          if (isAuthenticated) {
-            performanceLogger.info('User authenticated - connecting to performance SSE');
-            window.__performanceSSEService?.connect();
-          } else {
-            performanceLogger.info('User not authenticated - skipping performance SSE connection');
-          }
+          // Performance metrics are public monitoring data (non-sensitive)
+          // Backend endpoint /performance/stream is public (no auth required)
+          performanceLogger.info('Connecting to public performance SSE endpoint');
+          window.__performanceSSEService?.connect();
         });
 
         // Cleanup on unload

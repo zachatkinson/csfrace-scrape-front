@@ -59,7 +59,13 @@ export function formatTimestamp(
       return "Invalid Date";
     }
 
-    const mergedOptions = { ...DEFAULT_TIMEZONE_OPTIONS, ...options };
+    // Load user preferences first, then merge with defaults and passed options
+    const userPrefs = getTimezonePreferences();
+    const mergedOptions = {
+      ...DEFAULT_TIMEZONE_OPTIONS,
+      ...userPrefs,
+      ...options,
+    };
 
     return formatDateWithOptions(dateObj, mergedOptions);
   } catch (error) {
