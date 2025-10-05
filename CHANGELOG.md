@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0](https://github.com/zachatkinson/csfrace-scrape-front/compare/v1.0.1...v1.1.0) (2025-10-05)
+
+### 🚀 Features
+
+* health monitoring improvements and 12-hour timestamp format ([1b572d0](https://github.com/zachatkinson/csfrace-scrape-front/commit/1b572d06f87514a4e4496e2e0b3cff2db7f3b819))
+
+### 🐛 Bug Fixes
+
+* add missing backend endpoint filters to E2E tests ([e544aab](https://github.com/zachatkinson/csfrace-scrape-front/commit/e544aab6f0e26d134125fecf8976cd3e23d72819))
+
 ## [1.0.1](https://github.com/zachatkinson/csfrace-scrape-front/compare/v1.0.0...v1.0.1) (2025-10-04)
 
 ### 🐛 Bug Fixes
