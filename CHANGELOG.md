@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.6](https://github.com/zachatkinson/csfrace-scrape-front/compare/v1.1.5...v1.1.6) (2025-10-06)
+
+### 🐛 Bug Fixes
+
+* remove build-target parameter from Docker publish workflow ([038ea73](https://github.com/zachatkinson/csfrace-scrape-front/commit/038ea73f5d209c406d32db007244bccb378d3373))
+* test orchestrator notification workflow for frontend releases ([c2f658e](https://github.com/zachatkinson/csfrace-scrape-front/commit/c2f658e2a440cf17779f61f8f4a25bde8984a47a))
+
 ## [1.1.5](https://github.com/zachatkinson/csfrace-scrape-front/compare/v1.1.4...v1.1.5) (2025-10-05)
 
 ### 🐛 Bug Fixes
