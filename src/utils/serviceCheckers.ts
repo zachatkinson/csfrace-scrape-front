@@ -836,12 +836,7 @@ export class BackendServiceChecker {
           systemInfo.memory_usage ||
           systemInfo.memory_used,
       ),
-      cpu: this.formatCpu(
-        data.cpu ||
-          systemInfo.cpu ||
-          systemInfo.cpu_percent ||
-          systemInfo.cpu_usage,
-      ),
+      cpu: this.formatCpu(data.cpu || systemInfo.cpu || systemInfo.cpu_percent),
       version: data.version || systemInfo.version || this.getDefaultVersion(),
       database: database.status || "Unknown",
       cache: cache.status || "Unknown",

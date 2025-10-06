@@ -12,7 +12,6 @@ import { getApiBaseUrl } from "../constants/api";
 const logger = createContextLogger("PerformanceSSEService");
 
 export interface PerformanceMetrics {
-  cpu_usage: number;
   memory_usage: number;
   disk_usage: number;
   network_io: number;
@@ -126,7 +125,6 @@ export class PerformanceSSEService {
                 performanceUpdate.data.application_metrics || {};
 
               const performanceMetrics: PerformanceMetrics = {
-                cpu_usage: (systemMetrics.cpu_percent as number) || 0,
                 memory_usage: (systemMetrics.memory_percent as number) || 0,
                 disk_usage: (systemMetrics.disk_percent as number) || 0,
                 network_io:

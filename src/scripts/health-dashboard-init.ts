@@ -30,59 +30,8 @@ class HealthDashboard {
   }
 
   private setupEventListeners(): void {
-    // ASTRO MCP BEST PRACTICE: Refresh buttons trigger backend health check via API
-    // This will cause the backend to emit new SSE events with fresh data
-    document
-      .getElementById("refresh-all-btn")
-      ?.addEventListener("click", async () => {
-        try {
-          await fetch(`${getApiBaseUrl()}/health/trigger-check`, {
-            method: "POST",
-          });
-          // Manual health check triggered
-        } catch (error) {
-          console.error("❌ Failed to trigger health check:", error);
-        }
-      });
-
-    // Individual refresh buttons also trigger the backend health check
-    const refreshButtons = [
-      "refresh-frontend-btn",
-      "refresh-backend-btn",
-      "refresh-postgresql-btn",
-      "refresh-redis-btn",
-    ];
-
-    refreshButtons.forEach((buttonId) => {
-      document.getElementById(buttonId)?.addEventListener("click", async () => {
-        try {
-          await fetch(`${getApiBaseUrl()}/health/trigger-check`, {
-            method: "POST",
-          });
-          console.log(`✅ Manual health check triggered via ${buttonId}`);
-        } catch (error) {
-          console.error(
-            `❌ Failed to trigger health check via ${buttonId}:`,
-            error,
-          );
-        }
-      });
-    });
-
-    // Auto-refresh toggle - deprecated but kept for UI consistency
-    const autoRefreshToggle = document.getElementById(
-      "auto-refresh-toggle",
-    ) as HTMLInputElement;
-    autoRefreshToggle?.addEventListener("change", (e) => {
-      const target = e.target as HTMLInputElement;
-      if (target.checked) {
-        console.log("ℹ️ Auto-refresh enabled (SSE provides real-time updates)");
-      } else {
-        console.log(
-          "ℹ️ Auto-refresh disabled (SSE still provides real-time updates)",
-        );
-      }
-    });
+    // REMOVED: Refresh buttons no longer needed as data auto-updates via nanostores/SSE
+    // Health data updates automatically through SSE events from the backend
 
     // Export buttons
     document
@@ -295,7 +244,6 @@ class HealthDashboard {
   private initializePerformanceMetrics(): void {
     // Initialize with default values - real data comes via SSE
     const initialMetrics = {
-      cpu_usage: 0,
       memory_usage: 0,
       disk_usage: 0,
       network_io: 0,
@@ -347,8 +295,6 @@ class HealthDashboard {
     );
 
     // Update UI elements with proper type checking
-    const getCpuUsage =
-      typeof metrics.cpu_usage === "number" ? metrics.cpu_usage : 0;
     const getMemoryUsage =
       typeof metrics.memory_usage === "number" ? metrics.memory_usage : 0;
     const getDiskUsage =
@@ -369,15 +315,14 @@ class HealthDashboard {
       typeof metrics.queue_length === "number" ? metrics.queue_length : 0;
 
     console.log(
-      "🔢 [HealthDashboard] Processed values - CPU:",
-      getCpuUsage,
-      "Memory:",
+      "🔢 [HealthDashboard] Processed values - Memory:",
       getMemoryUsage,
       "Disk:",
       getDiskUsage,
+      "Network:",
+      getNetworkIo,
     );
 
-    this.updateElementText("cpu-usage", `${Math.round(getCpuUsage)}%`);
     this.updateElementText("memory-usage", `${Math.round(getMemoryUsage)}%`);
     this.updateElementText("disk-usage", `${Math.round(getDiskUsage)}%`);
     this.updateElementText(
@@ -422,7 +367,6 @@ class HealthDashboard {
     );
 
     // Update progress bars
-    this.updateProgressBar("cpu-progress", getCpuUsage);
     this.updateProgressBar("memory-progress", getMemoryUsage);
     this.updateProgressBar("disk-progress", getDiskUsage);
     this.updateProgressBar("network-progress", Math.min(100, getNetworkIo / 2)); // Scale network I/O
@@ -452,7 +396,6 @@ class HealthDashboard {
 
   private gatherPerformanceMetrics(): Record<string, string | null> {
     return {
-      cpu_usage: document.getElementById("cpu-usage")?.textContent || null,
       memory_usage:
         document.getElementById("memory-usage")?.textContent || null,
       disk_usage: document.getElementById("disk-usage")?.textContent || null,
@@ -489,7 +432,6 @@ class HealthDashboard {
         timestamp: new Date(
           Date.now() - (points - i) * (timeRange === "7d" ? 3600000 : 1800000),
         ).toISOString(),
-        cpu_usage: Math.floor(Math.random() * 60) + 20,
         memory_usage: Math.floor(Math.random() * 50) + 30,
         response_time: Math.floor(Math.random() * 100) + 20,
       });
@@ -631,9 +573,6 @@ class HealthDashboard {
     const performanceData = {
       timestamp: new Date().toISOString(),
       system_metrics: {
-        cpu_usage: this.extractNumericValue(
-          document.getElementById("cpu-usage")?.textContent,
-        ),
         memory_usage: this.extractNumericValue(
           document.getElementById("memory-usage")?.textContent,
         ),
