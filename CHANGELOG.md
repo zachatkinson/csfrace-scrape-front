@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0](https://github.com/zachatkinson/csfrace-scrape-front/compare/v1.1.6...v1.2.0) (2025-10-07)
+
+### ⚠ BREAKING CHANGES
+
+* CPU usage metrics no longer displayed on health dashboard
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+### 🚀 Features
+
+* remove CPU usage from health dashboard performance metrics ([2b46eaf](https://github.com/zachatkinson/csfrace-scrape-front/commit/2b46eaf628fd568021f5f61136bf6a11e96f4f32))
+
+### 🐛 Bug Fixes
+
+* update E2E tests to match health dashboard after CPU usage removal ([2d623e2](https://github.com/zachatkinson/csfrace-scrape-front/commit/2d623e29940abc2c582869a44b894cd05d76c54f))
+
 ## [1.1.6](https://github.com/zachatkinson/csfrace-scrape-front/compare/v1.1.5...v1.1.6) (2025-10-06)
 
 ### 🐛 Bug Fixes
