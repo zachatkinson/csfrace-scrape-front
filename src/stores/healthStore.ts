@@ -56,7 +56,6 @@ export interface IOverallStatus {
 }
 
 export interface IPerformanceMetrics {
-  cpu_usage: number;
   memory_usage: number;
   disk_usage: number;
   network_io: number;
@@ -103,7 +102,6 @@ export const $healthData = map<IConsolidatedHealthData>({
     lastUpdateFormatted: "Never",
   },
   performanceMetrics: {
-    cpu_usage: 0,
     memory_usage: 0,
     disk_usage: 0,
     network_io: 0,
@@ -162,7 +160,6 @@ export const $serviceMetrics = computed($healthData, (healthData) => {
 export const $performanceMetrics = computed($healthData, (healthData) => {
   return (
     healthData.performanceMetrics || {
-      cpu_usage: 0,
       memory_usage: 0,
       disk_usage: 0,
       network_io: 0,
@@ -308,7 +305,6 @@ export function resetHealthState(): void {
       lastUpdateFormatted: "Never",
     },
     performanceMetrics: {
-      cpu_usage: 0,
       memory_usage: 0,
       disk_usage: 0,
       network_io: 0,

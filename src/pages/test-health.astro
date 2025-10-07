@@ -9,17 +9,8 @@ import BaseHealthCard from '../components/health/BaseHealthCard.astro';
 
 <MainLayout title="System Health Dashboard" description="Comprehensive monitoring and diagnostics for all system services">
 
-  <!-- Refresh Button Animation Styles -->
+  <!-- Health Dashboard Styles -->
   <style>
-    .refresh-pulse {
-      animation: refresh-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    }
-
-    @keyframes refresh-pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-    }
-
     .glass-card {
       background: rgba(255, 255, 255, 0.05);
       backdrop-filter: blur(10px);
@@ -46,20 +37,9 @@ import BaseHealthCard from '../components/health/BaseHealthCard.astro';
 
     <!-- Dashboard Header -->
     <div class="glass-card p-6">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h1 class="text-3xl font-bold text-white mb-2">System Health Dashboard</h1>
-          <p class="text-white/70">Real-time monitoring and diagnostics for all system services</p>
-        </div>
-        <button
-          id="refresh-all-btn"
-          class="glass-button px-4 py-2 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-500/50 hover:border-blue-500/70 rounded-lg transition-all duration-200 flex items-center gap-2"
-        >
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          Refresh All
-        </button>
+      <div class="mb-4">
+        <h1 class="text-3xl font-bold text-white mb-2">System Health Dashboard</h1>
+        <p class="text-white/70">Real-time monitoring and diagnostics for all system services</p>
       </div>
 
       <!-- Overall Status -->
@@ -91,28 +71,28 @@ import BaseHealthCard from '../components/health/BaseHealthCard.astro';
         serviceName="Frontend"
         customIdPrefix="frontend"
         defaultMessage="Frontend Active"
-        showRefreshButton={true}
+        showRefreshButton={false}
       />
 
       <BaseHealthCard
         serviceName="Backend"
         customIdPrefix="backend"
         defaultMessage="Loading..."
-        showRefreshButton={true}
+        showRefreshButton={false}
       />
 
       <BaseHealthCard
         serviceName="PostgreSQL"
         customIdPrefix="postgresql"
         defaultMessage="Via Backend Health Check"
-        showRefreshButton={true}
+        showRefreshButton={false}
       />
 
       <BaseHealthCard
         serviceName="Redis"
         customIdPrefix="redis"
         defaultMessage="Via Backend Health Check"
-        showRefreshButton={true}
+        showRefreshButton={false}
       />
     </div>
 
@@ -120,18 +100,7 @@ import BaseHealthCard from '../components/health/BaseHealthCard.astro';
     <div class="glass-card p-6">
       <h3 class="text-xl font-semibold text-white mb-4">System Performance Overview</h3>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        <!-- CPU Usage -->
-        <div class="bg-black/20 p-4 rounded-lg">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-white/60 text-sm">CPU Usage</span>
-            <span id="cpu-usage" class="text-white font-bold">--%</span>
-          </div>
-          <div class="w-full bg-gray-700 rounded-full h-2">
-            <div id="cpu-progress" class="bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
-          </div>
-        </div>
-
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
         <!-- Memory Usage -->
         <div class="bg-black/20 p-4 rounded-lg">
           <div class="flex items-center justify-between mb-2">

@@ -909,21 +909,55 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
 
   // Toggle SSO connection
   async function toggleSSO(provider: string) {
-    const isConnected = ssoConnections[provider];
+    const connection = ssoConnections[provider];
 
-    if (isConnected) {
+    if (connection?.connected) {
       // Disconnect
-      if (!confirm(`Are you sure you want to disconnect your ${provider} account?`)) {
+      if (!confirm(`Are you sure you want to disconnect your ${connection.displayName} account?`)) {
         return;
       }
 
-      // TODO: Implement OAuth disconnect endpoint in backend
-      // For now, show a message that this feature is coming soon
-      alert(`OAuth disconnect functionality is coming soon! The ${provider} disconnect endpoint is not yet implemented in the backend.`);
-      logger.info(`OAuth disconnect requested for ${provider}, but endpoint not implemented yet`);
+      try {
+        logger.info(`Disconnecting OAuth provider: ${provider}`);
+
+        const apiBaseUrl = getApiBaseUrl();
+        const response = await fetch(`${apiBaseUrl}/auth/oauth/connections/${provider}`, {
+          method: 'DELETE',
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+
+          if (response.status === 400) {
+            // Safety check failed - would lock user out
+            throw new Error(errorData.detail || 'Cannot disconnect this account. Please set a password or connect another OAuth provider first.');
+          } else if (response.status === 404) {
+            throw new Error(`${connection.displayName} account is not connected.`);
+          } else {
+            throw new Error(errorData.detail || `Failed to disconnect ${connection.displayName} account.`);
+          }
+        }
+
+        const result = await response.json();
+        logger.info(`OAuth provider ${provider} disconnected successfully`, result);
+
+        showSuccessMessage(`${connection.displayName} account disconnected successfully.`);
+
+        // Reload SSO connections to update UI
+        await loadSSOConnections();
+      } catch (error) {
+        logger.error(`Failed to disconnect OAuth provider ${provider}:`, error);
+        const errorMessage = error instanceof Error ? error.message : `Failed to disconnect ${connection.displayName} account.`;
+        showErrorMessage(errorMessage);
+      }
     } else {
-      // Connect
-      window.location.href = `/auth/oauth/${provider}`;
+      // Connect - navigate to backend OAuth endpoint
+      const apiBaseUrl = getApiBaseUrl();
+      window.location.href = `${apiBaseUrl}/auth/oauth/${provider}`;
     }
   }
 

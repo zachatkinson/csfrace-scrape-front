@@ -223,8 +223,7 @@ export class HealthDashboardManager {
     // Only dispatch if we have real performance data (not fallback zeros)
     const hasRealData =
       performanceMetrics &&
-      ((performanceMetrics.cpu_usage as number) > 0 ||
-        (performanceMetrics.memory_usage as number) > 0 ||
+      ((performanceMetrics.memory_usage as number) > 0 ||
         (performanceMetrics.disk_usage as number) > 0 ||
         (performanceMetrics.network_io as number) > 0);
 
