@@ -30,17 +30,13 @@ test.describe("Health Monitoring System", () => {
     );
     await expect(dashboardTitle).toBeVisible();
 
-    // Check for refresh button
-    const refreshButton = page.locator("#refresh-all-btn");
-    await expect(refreshButton).toBeVisible();
-
     // Check for overall status section
     const overallStatus = page.locator("#overall-status");
     await expect(overallStatus).toBeVisible();
 
-    // Test refresh functionality
-    await refreshButton.click();
-    await page.waitForTimeout(1000); // Allow time for refresh
+    // Check for overall message
+    const overallMessage = page.locator("#overall-message");
+    await expect(overallMessage).toBeVisible();
   });
 
   test("should show system performance overview", async ({ page }) => {
@@ -53,12 +49,14 @@ test.describe("Health Monitoring System", () => {
     );
     await expect(performanceSection).toBeVisible();
 
-    // Check for performance metrics
-    const cpuUsage = page.locator("#cpu-usage");
+    // Check for performance metrics (CPU usage removed, memory and disk remain)
     const memoryUsage = page.locator("#memory-usage");
+    const diskUsage = page.locator("#disk-usage");
+    const networkIO = page.locator("#network-io");
 
-    await expect(cpuUsage).toBeVisible();
     await expect(memoryUsage).toBeVisible();
+    await expect(diskUsage).toBeVisible();
+    await expect(networkIO).toBeVisible();
   });
 
   test("should have export functionality", async ({ page }) => {
