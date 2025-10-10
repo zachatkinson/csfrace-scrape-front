@@ -124,48 +124,59 @@
   
   async function handleLogout() {
     logger.info('🔐 Starting logout process...');
-    
+
     const button = document.getElementById('morphing-auth-button') as HTMLButtonElement;
     if (button) {
       button.style.opacity = '0.5';
       button.style.transform = 'scale(0.95)';
       button.disabled = true;
     }
-    
+
+    // CRITICAL SECURITY: Call /auth/logout to properly clear HTTP-only cookies
+    // This endpoint calls CookieService.clear_auth_cookies() on the backend
     try {
-      fetch('/auth/revoke-all-tokens', {
+      const response = await fetch('/auth/logout', {
         method: 'POST',
-        credentials: 'include',
+        credentials: 'include', // REQUIRED: Send HTTP-only cookies to backend
         headers: {
           'Accept': 'application/json',
-          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          reason: 'user_logout'
-        })
-      }).then(async response => {
-        if (response.ok) {
-          logger.info('✅ Tokens revoked successfully');
-        } else if (response.status === 401) {
-          logger.warn('⚠️ Already logged out');
-        } else {
-          logger.warn('⚠️ Token revocation failed, but continuing logout');
-        }
-      }).catch(error => {
-        logger.warn('⚠️ Token revocation error, but continuing logout:', error);
       });
-      
+
+      if (response.ok) {
+        logger.info('✅ Logged out successfully - cookies cleared on backend');
+      } else if (response.status === 401) {
+        logger.warn('⚠️ Already logged out');
+      } else {
+        logger.error('❌ Logout failed on backend', { status: response.status });
+        // Don't continue - this is a security issue
+        if (button) {
+          button.style.opacity = '1';
+          button.style.transform = 'scale(1)';
+          button.disabled = false;
+        }
+        alert('Logout failed. Please try again or contact support.');
+        return;
+      }
     } catch (error) {
-      logger.warn('⚠️ Failed to initiate token revocation, but continuing logout:', error);
+      logger.error('❌ Logout request failed', { error });
+      // Don't continue - this is a security issue
+      if (button) {
+        button.style.opacity = '1';
+        button.style.transform = 'scale(1)';
+        button.disabled = false;
+      }
+      alert('Logout failed due to network error. Please try again.');
+      return;
     }
 
-    // Clear storage for Safari compatibility
+    // Clear storage for Safari compatibility (after backend confirms)
     try {
       localStorage.clear();
       sessionStorage.clear();
       logger.info('💾 Client storage cleared for Safari compatibility');
     } catch (error) {
-      logger.warn('⚠️ Error clearing storage, but continuing logout:', error);
+      logger.warn('⚠️ Error clearing storage, but backend cookies are cleared:', error);
     }
 
     // Dispatch logout event and wait for UI update

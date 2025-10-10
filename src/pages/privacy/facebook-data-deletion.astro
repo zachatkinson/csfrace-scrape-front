@@ -1,0 +1,206 @@
+---
+/**
+ * Facebook Data Deletion Instructions Page
+ *
+ * This page fulfills Facebook's Platform Policy requirement for data deletion.
+ * Required when app is in Live mode.
+ *
+ * @see https://developers.facebook.com/docs/development/create-an-app/app-dashboard/data-deletion-callback
+ */
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facebook Data Deletion Instructions - CSFrace</title>
+    <meta name="description" content="Instructions for deleting your Facebook data from CSFrace">
+    <meta name="robots" content="noindex, nofollow">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #1877F2;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        h2 {
+            color: #333;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        p {
+            margin-bottom: 15px;
+        }
+
+        ol, ul {
+            margin-left: 20px;
+            margin-bottom: 20px;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #1877F2;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .contact {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 4px;
+            margin-top: 30px;
+        }
+
+        a {
+            color: #1877F2;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Facebook Data Deletion Instructions</h1>
+        <p class="subtitle">CSFrace - Web Scraping Application</p>
+
+        <div class="info-box">
+            <strong>📋 Purpose:</strong> This page explains how to delete your Facebook data from CSFrace in compliance with Facebook's Platform Policy.
+        </div>
+
+        <h2>What Data We Store</h2>
+        <p>When you sign in with Facebook, we collect and store:</p>
+        <ul>
+            <li><strong>Profile Information:</strong> Your Facebook user ID, name, and email address</li>
+            <li><strong>Profile Picture:</strong> Your Facebook profile picture URL (if available)</li>
+            <li><strong>Authentication Token:</strong> OAuth access token (expires automatically)</li>
+        </ul>
+
+        <h2>How to Delete Your Data</h2>
+        <p>You have <strong>two options</strong> to delete your Facebook data from CSFrace:</p>
+
+        <h3>Option 1: Delete Your CSFrace Account</h3>
+        <ol>
+            <li>Log in to your CSFrace account at <a href="https://localhost:3000" target="_blank">https://localhost:3000</a></li>
+            <li>Navigate to <strong>Settings</strong> → <strong>Account</strong></li>
+            <li>Click on <strong>"Delete Account"</strong></li>
+            <li>Confirm the deletion</li>
+        </ol>
+        <p>This will permanently delete all your data from our system, including your Facebook information.</p>
+
+        <h3>Option 2: Disconnect Your Facebook Account</h3>
+        <ol>
+            <li>Log in to your CSFrace account at <a href="https://localhost:3000" target="_blank">https://localhost:3000</a></li>
+            <li>Navigate to <strong>Settings</strong> → <strong>Connected Accounts</strong></li>
+            <li>Find <strong>Facebook</strong> in the list of connected accounts</li>
+            <li>Click <strong>"Disconnect"</strong> next to Facebook</li>
+        </ol>
+        <p>This will remove your Facebook connection and delete all Facebook-related data while keeping your CSFrace account active (if you have other login methods).</p>
+
+        <h3>Option 3: Request Manual Deletion</h3>
+        <p>If you're unable to access your account, you can request manual data deletion:</p>
+        <ol>
+            <li>Send an email to: <a href="mailto:privacy@csfrace.com">privacy@csfrace.com</a></li>
+            <li>Include your Facebook email address or user ID</li>
+            <li>Subject line: "Facebook Data Deletion Request"</li>
+            <li>We will process your request within <strong>30 days</strong></li>
+        </ol>
+
+        <div class="warning-box">
+            <strong>⚠️ Important:</strong> Data deletion is <strong>permanent and cannot be undone</strong>. Make sure you want to delete your data before proceeding.
+        </div>
+
+        <h2>What Happens After Deletion</h2>
+        <ul>
+            <li>Your Facebook profile information is immediately removed from our database</li>
+            <li>Your profile picture URL is deleted</li>
+            <li>OAuth tokens are revoked and removed</li>
+            <li>You will no longer be able to sign in with Facebook (unless you reconnect)</li>
+            <li>Deletion is processed within <strong>24-48 hours</strong></li>
+        </ul>
+
+        <h2>Data Retention</h2>
+        <p>We do <strong>NOT</strong> retain your Facebook data after deletion, except:</p>
+        <ul>
+            <li><strong>Legal Requirements:</strong> If required by law to retain certain data</li>
+            <li><strong>Backup Systems:</strong> Backups are purged on a rolling 30-day cycle</li>
+        </ul>
+
+        <h2>Third-Party Data</h2>
+        <p>This deletion request only removes your data from <strong>CSFrace</strong>. To manage your Facebook data:</p>
+        <ol>
+            <li>Go to <a href="https://www.facebook.com/settings?tab=applications" target="_blank">Facebook Settings → Apps and Websites</a></li>
+            <li>Find <strong>CSFrace</strong> in the list</li>
+            <li>Click <strong>Remove</strong> to revoke CSFrace's access to your Facebook data</li>
+        </ol>
+
+        <div class="contact">
+            <h2>Need Help?</h2>
+            <p>If you have questions or need assistance with data deletion:</p>
+            <ul>
+                <li><strong>Email:</strong> <a href="mailto:privacy@csfrace.com">privacy@csfrace.com</a></li>
+                <li><strong>Support:</strong> <a href="mailto:support@csfrace.com">support@csfrace.com</a></li>
+                <li><strong>Response Time:</strong> We typically respond within 24-48 hours</li>
+            </ul>
+        </div>
+
+        <div class="info-box" style="margin-top: 30px;">
+            <strong>📅 Last Updated:</strong> {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}<br>
+            <strong>🔒 Privacy Policy:</strong> <a href="/privacy">View our full Privacy Policy</a>
+        </div>
+    </div>
+</body>
+</html>

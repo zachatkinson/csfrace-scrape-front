@@ -111,7 +111,15 @@ function isAuthEndpoint(pathname: string): boolean {
  * Runs on every request to set authentication state
  */
 export const onRequest = defineMiddleware(async (context, next) => {
-  const { request, locals, url } = context;
+  const { request, locals, url, isPrerendered } = context;
+
+  // Skip auth validation for prerendered pages (can't access request.headers)
+  if (isPrerendered) {
+    locals.user = null;
+    locals.isAuthenticated = false;
+    locals.isAdmin = false;
+    return next();
+  }
 
   // Skip auth validation for static assets and auth endpoints
   if (

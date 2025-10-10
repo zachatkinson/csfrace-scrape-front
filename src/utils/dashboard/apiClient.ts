@@ -17,26 +17,31 @@ import { getApiBaseUrl } from "../../constants/api.ts";
 /**
  * Simple API call wrapper using shared utilities - NOT a service class
  * SOLID: DRY - Uses centralized fetch patterns from api-utils
+ * CRITICAL: Uses structured error handling to support 204 No Content responses
  */
 const apiCall = async <T = unknown>(
   endpoint: string,
   options: RequestInit = {},
 ): Promise<T> => {
   const apiBaseUrl = getApiBaseUrl();
-  return apiFetch(`${apiBaseUrl}${endpoint}`, {
-    method: (options.method || "GET") as
-      | "GET"
-      | "POST"
-      | "PUT"
-      | "DELETE"
-      | "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      ...((options.headers as Record<string, string>) || {}),
+  return apiFetch(
+    `${apiBaseUrl}${endpoint}`,
+    {
+      method: (options.method || "GET") as
+        | "GET"
+        | "POST"
+        | "PUT"
+        | "DELETE"
+        | "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...((options.headers as Record<string, string>) || {}),
+      },
+      body: options.body as string | FormData,
+      signal: options.signal || undefined,
     },
-    body: options.body as string | FormData,
-    signal: options.signal || undefined,
-  });
+    true, // CRITICAL: Enable structured errors to handle 204 responses
+  );
 };
 
 // =============================================================================
@@ -63,21 +68,23 @@ export const getJobs = async (
   if (params.sort_by) searchParams.set("sort_by", params.sort_by);
   if (params.sort_order) searchParams.set("sort_order", params.sort_order);
 
-  const endpoint = `/jobs${searchParams.toString() ? `?${searchParams}` : ""}`;
+  // CRITICAL: Backend endpoint requires trailing slash to avoid 307 redirect
+  const endpoint = `/jobs/${searchParams.toString() ? `?${searchParams}` : ""}`;
   return apiCall<IJobsResponse>(endpoint);
 };
 
 /**
  * Get single job details from backend API
  */
-export const getJob = async (jobId: number): Promise<IBackendJob> => {
+export const getJob = async (jobId: number | string): Promise<IBackendJob> => {
   return apiCall<IBackendJob>(`/jobs/${jobId}`);
 };
 
 /**
  * Delete job via backend API
+ * CRITICAL: Backend expects UUID string, frontend may pass number
  */
-export const deleteJob = async (jobId: number): Promise<void> => {
+export const deleteJob = async (jobId: number | string): Promise<void> => {
   await apiCall(`/jobs/${jobId}`, {
     method: "DELETE",
   });
@@ -86,7 +93,7 @@ export const deleteJob = async (jobId: number): Promise<void> => {
 /**
  * Retry failed job via backend API
  */
-export const retryJob = async (jobId: number): Promise<void> => {
+export const retryJob = async (jobId: number | string): Promise<void> => {
   await apiCall(`/jobs/${jobId}/retry`, {
     method: "POST",
   });
@@ -95,18 +102,23 @@ export const retryJob = async (jobId: number): Promise<void> => {
 /**
  * Cancel running job via backend API
  */
-export const cancelJob = async (jobId: number): Promise<void> => {
+export const cancelJob = async (jobId: number | string): Promise<void> => {
   await apiCall(`/jobs/${jobId}/cancel`, {
     method: "POST",
   });
 };
 
 /**
- * Get job result/download content via backend API
+ * Download job result as ZIP file via backend API
+ * Returns blob for client-side download
  */
-export const downloadJobContent = async (jobId: number): Promise<string> => {
+export const downloadJobContent = async (
+  jobId: number | string,
+): Promise<Blob> => {
   const apiBaseUrl = getApiBaseUrl();
-  const response = await fetch(`${apiBaseUrl}/jobs/${jobId}/download`);
+  const response = await fetch(`${apiBaseUrl}/jobs/${jobId}/download`, {
+    credentials: "include", // Include auth cookies
+  });
 
   if (!response.ok) {
     throw new Error(
@@ -114,7 +126,7 @@ export const downloadJobContent = async (jobId: number): Promise<string> => {
     );
   }
 
-  return response.text();
+  return response.blob(); // Return binary ZIP blob
 };
 
 /**

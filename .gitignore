@@ -9,6 +9,7 @@ build/
 
 # Dependencies
 node_modules/
+.pnpm-store/
 
 # Package manager files (keep the one you use, ignore others)
 package-lock.json

@@ -121,21 +121,44 @@ export const mapBackendStatus = (backendStatus: string): JobStatus => {
 };
 
 /**
+ * Backend job that may come from SSE events (has 'url' field) or REST API (has 'source_url' field)
+ */
+interface IBackendJobWithURL extends IBackendJob {
+  url?: string;
+}
+
+/**
  * SOLID: Single responsibility - Convert backend job to frontend job data
  */
 export const convertBackendJob: JobConverter = (
   backendJob: IBackendJob,
 ): IJobData => {
+  // CRITICAL: Backend SSE sends "url", REST API sends "source_url"
+  // Handle both field names for compatibility
+  const backendJobWithURL = backendJob as IBackendJobWithURL;
+  const sourceUrl = backendJob.source_url || backendJobWithURL.url || "";
+
+  // Extract domain from URL if not provided by backend
+  const domain =
+    backendJob.domain ||
+    (() => {
+      try {
+        return new URL(sourceUrl).hostname;
+      } catch {
+        return undefined;
+      }
+    })();
+
   return {
     // Basic job info
     id: backendJob.id,
-    title: extractTitleFromUrl(backendJob.source_url),
-    source_url: backendJob.source_url,
-    domain: backendJob.domain,
+    title: backendJob.title || extractTitleFromUrl(sourceUrl),
+    source_url: sourceUrl,
+    domain,
 
     // Status and progress
     status: mapBackendStatus(backendJob.status),
-    progress: calculateJobProgress(backendJob),
+    progress: backendJob.progress ?? calculateJobProgress(backendJob), // Use backend progress if available
 
     // Timestamps
     createdAt: new Date(backendJob.created_at),
@@ -148,7 +171,7 @@ export const convertBackendJob: JobConverter = (
 
     // Duration and error info
     duration: calculateJobDuration(backendJob),
-    error: backendJob.error_message,
+    error: backendJob.error_message ?? undefined,
     error_type: backendJob.error_type,
 
     // Retry and priority info
@@ -157,16 +180,19 @@ export const convertBackendJob: JobConverter = (
     priority: (backendJob.priority as JobPriority) || "normal",
 
     // Content info
-    contentSize: backendJob.content_size_bytes,
+    contentSize: backendJob.output_size_bytes ?? backendJob.content_size_bytes,
     imagesDownloaded: backendJob.images_downloaded,
-    batchId: backendJob.batch_id,
+    batchId: backendJob.batch_id ?? undefined,
 
-    // Estimated values for UI display
-    wordCount: Math.floor(Math.random() * 2000) + 500,
-    imageCount: backendJob.images_downloaded || Math.floor(Math.random() * 10),
-    fileSize: backendJob.content_size_bytes
-      ? formatFileSize(backendJob.content_size_bytes)
-      : undefined,
+    // Content metadata from content_results table (backend enrichment)
+    wordCount: backendJob.word_count ?? 0,
+    imageCount: backendJob.image_count ?? (backendJob.images_downloaded || 0),
+    fileSize:
+      backendJob.output_size_bytes || backendJob.content_size_bytes
+        ? formatFileSize(
+            backendJob.output_size_bytes ?? backendJob.content_size_bytes ?? 0,
+          )
+        : undefined,
   };
 };
 
@@ -330,4 +356,39 @@ export const sanitizeJobData = (job: IJobData): IJobData => {
     error: job.error ? job.error.substring(0, 500) : job.error, // Limit error message length
     progress: Math.max(0, Math.min(100, job.progress)), // Ensure progress is 0-100
   };
+};
+
+/**
+ * SOLID: Single responsibility - Generate status message for job
+ * Replaces progress percentage with meaningful status messages
+ */
+export const getJobStatusMessage = (job: IJobData): string => {
+  switch (job.status) {
+    case "completed":
+      return "Job completed successfully";
+
+    case "failed":
+      // Show error reason if available, otherwise generic message
+      return job.error
+        ? `Job failed: ${job.error}`
+        : "Job failed: Unknown error";
+
+    case "cancelled":
+      return "Job was cancelled";
+
+    case "running":
+    case "scraping":
+      return job.progress > 0
+        ? `Processing: ${job.progress}%`
+        : "Job is running";
+
+    case "validating":
+      return "Validating URL";
+
+    case "pending":
+      return "Job is queued";
+
+    default:
+      return `Status: ${job.status}`;
+  }
 };

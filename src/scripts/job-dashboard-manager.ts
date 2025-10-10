@@ -6,23 +6,46 @@
  * =============================================================================
  */
 
-import { getApiBaseUrl } from "/src/constants/api.ts";
 import * as jobUtils from "/src/utils/dashboard/jobUtils.ts";
 import { createContextLogger } from "../utils/logger.js";
-import type { IJobData } from "../types/job.ts";
+import type { IJobData, IBackendJob } from "../types/job.ts";
+
+interface SSEEventData {
+  url?: string;
+  domain?: string | null;
+  title?: string;
+  progress_percent?: number | null;
+  created_at?: string;
+  updated_at?: string | null;
+  error_message?: string | null;
+  processing_time_ms?: string | null;
+  word_count?: number | null;
+  image_count?: number | null;
+}
+
+interface SSEJobEvent {
+  job_id: string;
+  event_type: string;
+  status: string;
+  timestamp: string;
+  data: SSEEventData;
+}
 
 class JobDashboard extends HTMLElement {
   private readonly logger = createContextLogger("JobDashboard");
-  private apiBaseUrl: string = "";
   private jobs: IJobData[] = [];
+  private readonly STORAGE_KEY = "recent_jobs_cache";
+  private readonly CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
   constructor() {
     super();
   }
 
   connectedCallback() {
-    // Read configuration from data attributes (Astro best practice)
-    this.apiBaseUrl = this.dataset.apiUrl || getApiBaseUrl();
+    // Configuration now handled via SSE events from MainLayout (DRY principle)
+
+    // Try to load cached jobs first for instant display
+    this.loadCachedJobs();
 
     // Initialize display
     this.showLoading();
@@ -67,6 +90,12 @@ class JobDashboard extends HTMLElement {
   // ===================================================================
 
   setupSSEListeners() {
+    // Listen for initial job data from MainLayout SSE service (SINGLE SOURCE OF TRUTH)
+    window.addEventListener(
+      "jobsInitialData",
+      this.handleInitialData.bind(this) as EventListener,
+    );
+
     // Listen for real-time job updates from MainLayout SSE service
     window.addEventListener(
       "jobSSEUpdate",
@@ -78,26 +107,110 @@ class JobDashboard extends HTMLElement {
     );
   }
 
+  handleInitialData = (event: Event) => {
+    const customEvent = event as CustomEvent;
+    const { jobs } = customEvent.detail;
+
+    this.logger.info("JobDashboard: Received initial job data from SSE", {
+      jobCount: jobs?.length || 0,
+    });
+
+    if (jobs && Array.isArray(jobs)) {
+      // Convert backend jobs to frontend format
+      this.jobs = jobs.map(jobUtils.convertBackendJob);
+      this.saveCachedJobs();
+      this.renderJobs();
+      this.hideLoading();
+    }
+  };
+
   handleJobSSEUpdate = (event: Event) => {
     const customEvent = event as CustomEvent;
     const { jobUpdate } = customEvent.detail;
-    this.logger.info("JobDashboard: Processing SSE job update", { jobUpdate });
+
+    this.logger.info("JobDashboard: Processing SSE job update", {
+      jobUpdate,
+      eventType: jobUpdate.event_type,
+      status: jobUpdate.status,
+      hasTitle: !!jobUpdate.data?.title,
+      title: jobUpdate.data?.title,
+      rawEvent: JSON.stringify(jobUpdate, null, 2),
+    });
 
     if (jobUpdate) {
+      // Transform SSE event data to IBackendJob format for convertBackendJob()
+      // SSE events have structure: { job_id, event_type, status, timestamp, data: { url, domain, ... } }
+      // But convertBackendJob() expects: { id, source_url, status, title, created_at, ... }
+      const transformedJob = this.transformSSEEventToBackendJob(jobUpdate);
+
       // Update existing job or add new job
-      const jobIndex = this.jobs.findIndex((job) => job.id === jobUpdate.id);
-      const convertedJob = jobUtils.convertBackendJob(jobUpdate);
+      const jobIndex = this.jobs.findIndex(
+        (job) => job.id === transformedJob.id,
+      );
+      const convertedJob = jobUtils.convertBackendJob(transformedJob);
 
       if (jobIndex >= 0) {
-        this.jobs[jobIndex] = convertedJob;
+        // MERGE with existing job data to preserve fields not in SSE update
+        // CRITICAL: Preserve source_url if not provided in update to prevent "undefined" bug
+        // CRITICAL: Use title from SSE event if available (not from URL extraction fallback)
+        const sseHasTitle =
+          jobUpdate.data?.title && jobUpdate.data.title.trim().length > 0;
+
+        // TypeScript safety: Ensure existing job exists before accessing properties
+        const existingJob = this.jobs[jobIndex];
+        if (existingJob) {
+          this.jobs[jobIndex] = {
+            ...existingJob,
+            ...convertedJob,
+            // Explicitly preserve source_url if the update doesn't include it
+            source_url: convertedJob.source_url || existingJob.source_url,
+            // CRITICAL: Update title ONLY if SSE event includes it (completion event has scraped title)
+            title: sseHasTitle ? jobUpdate.data.title : existingJob.title,
+          };
+        }
       } else {
         this.jobs.unshift(convertedJob);
       }
+
+      // Save updated jobs to cache
+      this.saveCachedJobs();
 
       // Re-render jobs
       this.renderJobs();
     }
   };
+
+  /**
+   * Transform SSE event data structure to IBackendJob format
+   * SSE events: { job_id, event_type, status, timestamp, data: { url, domain, title?, progress_percent?, ... } }
+   * IBackendJob: { id, source_url, status, title, created_at, ... }
+   * CRITICAL: Always provide source_url to prevent "undefined" bugs in UI
+   */
+  private transformSSEEventToBackendJob(sseEvent: SSEJobEvent): IBackendJob {
+    return {
+      id: sseEvent.job_id,
+      // CRITICAL: SSE events MUST include url in data, but fallback to prevent undefined
+      source_url: sseEvent.data?.url || "URL not available",
+      domain: sseEvent.data?.domain ?? null,
+      status: sseEvent.status,
+      title: sseEvent.data?.title || "Loading Title…", // Placeholder title for new jobs
+      created_at: sseEvent.data?.created_at || sseEvent.timestamp,
+      started_at: sseEvent.data?.updated_at || null,
+      completed_at: sseEvent.status === "completed" ? sseEvent.timestamp : null,
+      error_message: sseEvent.data?.error_message || null,
+      processing_time_ms: sseEvent.data?.processing_time_ms
+        ? parseInt(sseEvent.data.processing_time_ms)
+        : null,
+      // TypeScript strict mode: progress must be number (0 if null/undefined)
+      progress: sseEvent.data?.progress_percent ?? 0,
+      word_count: sseEvent.data?.word_count || null,
+      image_count: sseEvent.data?.image_count || null,
+      // Required fields from IBackendJob interface
+      retry_count: 0,
+      max_retries: 3,
+      timeout_seconds: 300,
+    };
+  }
 
   handleJobsDataRefresh = (event: Event) => {
     const customEvent = event as CustomEvent;
@@ -141,8 +254,9 @@ class JobDashboard extends HTMLElement {
       });
 
       if (authResponse.ok) {
-        // User is authenticated, load jobs
-        await this.loadInitialJobs();
+        // User is authenticated - SSE will provide initial data via jobsInitialData event
+        // No need for separate REST API call (DRY: single source of truth)
+        this.logger.info("User authenticated - waiting for SSE initial data");
       } else {
         // Clean up invalid tokens and show empty state
         localStorage.removeItem("auth_token");
@@ -161,35 +275,43 @@ class JobDashboard extends HTMLElement {
     }
   }
 
-  async loadInitialJobs() {
+  // ===================================================================
+  // Cache Management (Persistence across navigation)
+  // ===================================================================
+
+  private loadCachedJobs() {
     try {
-      this.showLoading();
-      this.hideError();
+      const cachedData = sessionStorage.getItem(this.STORAGE_KEY);
+      if (!cachedData) return;
 
-      const response = await fetch(
-        `${this.apiBaseUrl}/jobs/?page=1&page_size=10`,
-        {
-          method: "GET",
-          credentials: "include", // Include HTTP-only cookies for authentication
-          headers: {
-            Accept: "application/json",
-          },
-        },
-      );
+      const { jobs, timestamp } = JSON.parse(cachedData);
+      const age = Date.now() - timestamp;
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      // Only use cache if it's fresh (within cache duration)
+      if (age < this.CACHE_DURATION_MS && jobs && jobs.length > 0) {
+        this.jobs = jobs;
+        this.renderJobs();
+        this.hideLoading();
+        this.logger.debug("Loaded jobs from cache", {
+          count: jobs.length,
+          ageMs: age,
+        });
       }
-
-      const data = await response.json();
-      this.jobs = data.jobs.map(jobUtils.convertBackendJob);
-
-      this.renderJobs();
-      this.hideLoading();
     } catch (error) {
-      this.logger.error("Failed to load jobs", error);
-      this.showError();
-      this.hideLoading();
+      this.logger.debug("Failed to load cached jobs", error);
+    }
+  }
+
+  private saveCachedJobs() {
+    try {
+      const cacheData = {
+        jobs: this.jobs,
+        timestamp: Date.now(),
+      };
+      sessionStorage.setItem(this.STORAGE_KEY, JSON.stringify(cacheData));
+      this.logger.debug("Saved jobs to cache", { count: this.jobs.length });
+    } catch (error) {
+      this.logger.debug("Failed to save jobs to cache", error);
     }
   }
 
@@ -209,9 +331,10 @@ class JobDashboard extends HTMLElement {
       .map((job) => this.renderJobItem(job))
       .join("");
 
-    // Show jobs list, hide empty state
+    // Show jobs list, hide empty state and loading
     jobsList.classList.remove("hidden");
     emptyState.classList.add("hidden");
+    this.hideLoading(); // CRITICAL: Hide loading spinner when jobs are rendered
   }
 
   renderJobItem(job: IJobData) {
@@ -308,10 +431,15 @@ class JobDashboard extends HTMLElement {
   }
 
   // Public method for other components to trigger refresh
+  // SSE provides automatic updates, so manual refresh is rarely needed
   refresh(showLoading = true) {
     if (showLoading) {
-      this.loadInitialJobs();
+      this.showLoading();
     }
+    // SSE will automatically send updated data via jobsInitialData or jobSSEUpdate events
+    this.logger.info(
+      "Manual refresh requested - SSE will provide updated data",
+    );
   }
 }
 

@@ -42,6 +42,13 @@ import type {
 
 const logger = createContextLogger("AuthContext");
 
+// WebAuthn credential interface for excludeCredentials/allowCredentials
+interface WebAuthnCredentialDescriptor {
+  type: string;
+  id: string;
+  transports?: string[];
+}
+
 // DRY/SOLID: Use centralized API base URL
 const getApiBase = () => getApiBaseUrl();
 
@@ -111,8 +118,20 @@ const apiRequestWithCookies = async (
   });
 
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(error || `API request failed: ${response.status}`);
+    let errorMessage: string;
+    try {
+      const errorData = await response.json();
+      console.error("API request failed:", {
+        endpoint,
+        status: response.status,
+        statusText: response.statusText,
+        errorData,
+      });
+      errorMessage = errorData.detail || JSON.stringify(errorData);
+    } catch {
+      errorMessage = await response.text();
+    }
+    throw new Error(errorMessage || `API request failed: ${response.status}`);
   }
 
   return response.json();
@@ -431,6 +450,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Passkey registration
+  // Helper function to convert base64url to ArrayBuffer
+  const base64urlToBuffer = (base64url: string): ArrayBuffer => {
+    const base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(
+      base64.length + ((4 - (base64.length % 4)) % 4),
+      "=",
+    );
+    const binary = atob(padded);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes.buffer;
+  };
+
+  // Helper function to convert ArrayBuffer to base64url
+  const bufferToBase64url = (buffer: ArrayBuffer): string => {
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]!);
+    }
+    return btoa(binary)
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=/g, "");
+  };
+
   const registerPasskey = useCallback(async () => {
     if (!state.isAuthenticated)
       throw new Error("Must be logged in to register passkey");
@@ -438,18 +485,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const options = await apiRequestWithCookies(
+      // Backend returns { public_key, challenge_key, device_name }
+      const response = await apiRequestWithCookies(
         "/auth/passkeys/register/begin",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            device_name: "Default Device",
+          }),
+        },
       );
 
-      // Use WebAuthn API
-      const credential = await navigator.credentials.create({
-        publicKey: options,
-      });
+      // Convert base64url strings to ArrayBuffers for WebAuthn API
+      const publicKeyOptions = {
+        ...response.public_key,
+        challenge: base64urlToBuffer(response.public_key.challenge),
+        user: {
+          ...response.public_key.user,
+          id: base64urlToBuffer(response.public_key.user.id),
+        },
+        excludeCredentials:
+          response.public_key.excludeCredentials?.map(
+            (cred: WebAuthnCredentialDescriptor) => ({
+              ...cred,
+              id: base64urlToBuffer(cred.id),
+            }),
+          ) || [],
+      };
 
+      // Use WebAuthn API with converted options
+      const credential = (await navigator.credentials.create({
+        publicKey: publicKeyOptions,
+      })) as PublicKeyCredential;
+
+      const credentialResponse =
+        credential.response as AuthenticatorAttestationResponse;
+
+      // Send credential with challenge_key to backend
       await apiRequestWithCookies("/auth/passkeys/register/complete", {
         method: "POST",
-        body: JSON.stringify({ credential }),
+        body: JSON.stringify({
+          credential_response: {
+            id: credential.id,
+            rawId: bufferToBase64url(credential.rawId),
+            type: credential.type,
+            response: {
+              attestationObject: bufferToBase64url(
+                credentialResponse.attestationObject,
+              ),
+              clientDataJSON: bufferToBase64url(
+                credentialResponse.clientDataJSON,
+              ),
+            },
+          },
+          challenge_key: response.challenge_key,
+          device_name: response.device_name,
+        }),
       });
 
       setState((prev) => ({ ...prev, isLoading: false }));
@@ -471,18 +562,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const options = await apiRequestWithCookies(
+      // Backend returns { public_key, challenge_key }
+      const response = await apiRequestWithCookies(
         "/auth/passkeys/authenticate/begin",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            username: null, // Usernameless/discoverable authentication
+          }),
+        },
       );
 
-      // Use WebAuthn API
+      // Convert base64url challenge to ArrayBuffer for WebAuthn API
+      const publicKeyOptions = {
+        ...response.public_key,
+        challenge: base64urlToBuffer(response.public_key.challenge),
+        allowCredentials:
+          response.public_key.allowCredentials?.map(
+            (cred: WebAuthnCredentialDescriptor) => ({
+              ...cred,
+              id: base64urlToBuffer(cred.id),
+            }),
+          ) || [],
+      };
+
+      // Use WebAuthn API with converted options
       const credential = await navigator.credentials.get({
-        publicKey: options,
+        publicKey: publicKeyOptions,
       });
 
+      // Send credential with challenge_key to backend
       await apiRequestWithCookies("/auth/passkeys/authenticate/complete", {
         method: "POST",
-        body: JSON.stringify({ credential }),
+        body: JSON.stringify({
+          credential_response: credential,
+          challenge_key: response.challenge_key,
+        }),
       });
 
       // Backend sets HTTP-only cookies automatically
@@ -678,13 +793,54 @@ export function useWebAuthn() {
 }
 
 export function useUserProfile() {
-  const { user, isLoading, error, clearError } = useAuth();
+  const context = useAuth();
+  const { user, isLoading, error, clearError } = context;
+  const [isUpdating, setIsUpdating] = React.useState(false);
+  const [updateError, setUpdateError] = React.useState<string | null>(null);
 
-  const updateProfile = async (_profileData: Partial<UserProfile>) => {
-    // TODO: Implement profile update call to Docker backend
-    logger.warn("Profile update not implemented yet");
-    throw new Error("Profile update functionality not implemented");
+  const updateProfile = useCallback(
+    async (profileData: Partial<UserProfile>) => {
+      if (!context.isAuthenticated) {
+        throw new Error("Must be authenticated to update profile");
+      }
+
+      setIsUpdating(true);
+      setUpdateError(null);
+
+      try {
+        // Call Docker backend profile update endpoint
+        const response = await apiRequestWithCookies("/auth/profile", {
+          method: "PATCH",
+          body: JSON.stringify(profileData),
+        });
+
+        logger.info("Profile updated successfully", { response });
+
+        // Refresh auth status to get updated user data (best practice: use existing context method)
+        await context.reconnectSSE();
+
+        return response;
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Profile update failed";
+        setUpdateError(errorMessage);
+        logger.error("Profile update failed", { error: err });
+        throw err;
+      } finally {
+        setIsUpdating(false);
+      }
+    },
+    [context],
+  );
+
+  return {
+    user,
+    isLoading: isLoading || isUpdating,
+    error: error || updateError,
+    updateProfile,
+    clearError: () => {
+      clearError();
+      setUpdateError(null);
+    },
   };
-
-  return { user, isLoading, error, updateProfile, clearError };
 }

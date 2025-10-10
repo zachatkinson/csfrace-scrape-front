@@ -28,6 +28,9 @@ importers:
       "@heroicons/react":
         specifier: ^2.2.0
         version: 2.2.0(react@19.1.1)
+      "@microsoft/fetch-event-source":
+        specifier: ^2.0.1
+        version: 2.0.1
       "@nanostores/react":
         specifier: ^1.0.0
         version: 1.0.0(nanostores@1.0.1)(react@19.1.1)
@@ -1577,6 +1580,12 @@ packages:
       }
     engines: { node: ">=18" }
     hasBin: true
+
+  "@microsoft/fetch-event-source@2.0.1":
+    resolution:
+      {
+        integrity: sha512-W6CLUJ2eBMw3Rec70qrsEW0jOm/3twwJv21mrmj2yORiaVmVYGS4sSS5yUwvQc1ZlDLYGPnClVWmUUMagKNsfA==,
+      }
 
   "@nanostores/react@1.0.0":
     resolution:
@@ -12550,6 +12559,8 @@ snapshots:
     transitivePeerDependencies:
       - encoding
       - supports-color
+
+  "@microsoft/fetch-event-source@2.0.1": {}
 
   "@nanostores/react@1.0.0(nanostores@1.0.1)(react@19.1.1)":
     dependencies:

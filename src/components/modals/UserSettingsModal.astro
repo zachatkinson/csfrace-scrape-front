@@ -53,6 +53,15 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
         </svg>
         <span id="passkey-text">Add Passkey</span>
       </button>
+
+      <!-- Registered Passkeys List -->
+      <div id="passkeys-list" class="hidden space-y-3">
+        <SectionDivider text="Registered Passkeys" />
+        <div id="passkeys-container" class="space-y-3">
+          <!-- Passkeys will be dynamically inserted here -->
+        </div>
+      </div>
+
       <!-- Connected Accounts Divider -->
       <SectionDivider text="Connected Accounts" />
       <!-- SSO Connections Section -->
@@ -94,13 +103,26 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
       <SectionDivider text="Danger Zone" />
 
       <!-- Danger Zone -->
-      <div>
-        <p class="text-white/70 text-sm mb-4 text-center">
-          Permanently delete your account and all associated data. This action cannot be undone.
-        </p>
-        <button id="delete-account-btn" class="w-full px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200">
-          Delete Account
-        </button>
+      <div class="space-y-3">
+        <!-- Revoke All Passkeys -->
+        <div id="revoke-passkeys-section" class="hidden">
+          <p class="text-white/70 text-sm mb-2 text-center">
+            Revoke all registered passkeys. You can re-register them later if needed.
+          </p>
+          <button id="revoke-passkeys-btn" class="w-full px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-all duration-200">
+            Revoke All Passkeys
+          </button>
+        </div>
+
+        <!-- Delete Account -->
+        <div>
+          <p class="text-white/70 text-sm mb-2 text-center">
+            Permanently delete your account and all associated data. This action cannot be undone.
+          </p>
+          <button id="delete-account-btn" class="w-full px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200">
+            Delete Account
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -191,6 +213,27 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
     connected: boolean;
     email?: string;
     user_email?: string;
+  }
+
+  // WebAuthn passkey device interface
+  interface PasskeyDevice {
+    id: string;
+    name: string;
+    last_used_at?: string;
+    created_at?: string;
+  }
+
+  // Passkey summary interface
+  interface PasskeySummary {
+    total_passkeys: number;
+    devices: PasskeyDevice[];
+  }
+
+  // WebAuthn credential interface for excludeCredentials/allowCredentials
+  interface WebAuthnCredentialDescriptor {
+    type: string;
+    id: string;
+    transports?: string[];
   }
 
   let userInfo: UserInfo | null = null;
@@ -379,7 +422,8 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
       return;
     }
 
-    const response = await fetch('/auth/me', {
+    const apiBaseUrl = getApiBaseUrl();
+    const response = await fetch(`${apiBaseUrl}/auth/me`, {
       method: 'GET',
       credentials: 'include',
       headers: { 'Accept': 'application/json' },
@@ -426,7 +470,8 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
   // Update passkey button based on current passkey status
   async function updatePasskeyButton() {
     try {
-      const response = await fetch('/auth/passkeys/summary', {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/auth/passkeys/summary`, {
         method: 'GET',
         credentials: 'include',
         headers: { 'Accept': 'application/json' },
@@ -434,7 +479,10 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
 
       if (response.ok) {
         const summary = await response.json();
-        hasPasskeys = summary.count > 0;
+        hasPasskeys = summary.total_passkeys > 0;
+
+        // Load and display passkey list
+        await loadPasskeys(summary);
       } else {
         hasPasskeys = false;
       }
@@ -454,14 +502,14 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
     const icon = iconElement as unknown as SVGElement;
 
     if (hasPasskeys) {
-      // User has passkeys - show revoke option
-      text.textContent = 'Revoke Passkey';
-      button.className = 'w-full glass-button px-4 py-3 bg-red-600/80 hover:bg-red-700/90 text-white font-medium rounded-md border border-red-500/30 transition-all duration-200 text-sm flex items-center justify-center';
+      // User has passkeys - change button to "Add Another Passkey"
+      text.textContent = 'Add Another Passkey';
+      button.className = 'w-full glass-button px-4 py-3 bg-blue-600/80 hover:bg-blue-700/90 text-white font-medium rounded-md border border-blue-500/30 transition-all duration-200 text-sm flex items-center justify-center';
 
-      // Change icon to minus/remove icon
-      icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />';
+      // Keep plus icon
+      icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />';
 
-      button.onclick = revokePasskey;
+      button.onclick = addPasskey;
     } else {
       // User has no passkeys - show add option
       text.textContent = 'Add Passkey';
@@ -474,33 +522,252 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
     }
   }
 
+  // Load and display passkeys
+  async function loadPasskeys(summary: PasskeySummary) {
+    const passkeysListDiv = document.getElementById('passkeys-list');
+    const passkeysContainer = document.getElementById('passkeys-container');
+    const revokePasskeysSection = document.getElementById('revoke-passkeys-section');
+
+    if (!passkeysListDiv || !passkeysContainer) return;
+
+    // Show/hide passkeys list based on whether user has passkeys
+    if (summary.devices && summary.devices.length > 0) {
+      passkeysListDiv.classList.remove('hidden');
+
+      // Show revoke all passkeys button when user has passkeys
+      if (revokePasskeysSection) {
+        revokePasskeysSection.classList.remove('hidden');
+      }
+
+      // Clear existing passkeys
+      passkeysContainer.innerHTML = '';
+
+      // Add each passkey
+      summary.devices.forEach((device: PasskeyDevice) => {
+        const passkeyCard = createPasskeyCard(device);
+        passkeysContainer.appendChild(passkeyCard);
+      });
+    } else {
+      passkeysListDiv.classList.add('hidden');
+
+      // Hide revoke all passkeys button when user has no passkeys
+      if (revokePasskeysSection) {
+        revokePasskeysSection.classList.add('hidden');
+      }
+    }
+  }
+
+  // Create a passkey card element (styled to match SSO cards)
+  function createPasskeyCard(device: PasskeyDevice): HTMLElement {
+    const card = document.createElement('div');
+    card.className = 'flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-lg';
+
+    // Format last used date
+    const lastUsed = device.last_used_at
+      ? new Date(device.last_used_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      : 'Never used';
+
+    card.innerHTML = `
+      <div class="flex items-center">
+        <svg class="w-6 h-6 text-blue-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+        </svg>
+        <div>
+          <p class="font-medium text-white">${device.name || 'Unknown Device'}</p>
+          <p class="text-sm text-white/70">Last used: ${lastUsed}</p>
+        </div>
+      </div>
+      <button
+        data-passkey-id="${device.id}"
+        class="passkey-disconnect-btn glass-button px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-medium rounded-md border border-white/30 hover:border-white/50 transition-all duration-200 text-sm"
+      >
+        Disconnect
+      </button>
+    `;
+
+    // Attach disconnect handler
+    const disconnectBtn = card.querySelector('.passkey-disconnect-btn');
+    if (disconnectBtn) {
+      disconnectBtn.addEventListener('click', () => disconnectPasskey(device.id, device.name));
+    }
+
+    return card;
+  }
+
+  // Disconnect individual passkey
+  async function disconnectPasskey(credentialId: string, deviceName: string) {
+    if (!confirm(`Are you sure you want to disconnect "${deviceName}"? You will need to re-register this device if you want to use it again.`)) {
+      return;
+    }
+
+    try {
+      const apiBaseUrl = getApiBaseUrl();
+      // URL encode the credential ID to handle special characters
+      const encodedCredentialId = encodeURIComponent(credentialId);
+      const url = `${apiBaseUrl}/auth/passkeys/${encodedCredentialId}`;
+
+      logger.info('Disconnecting passkey', { credentialId, encodedCredentialId, deviceName, url });
+
+      const response = await fetch(url, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { 'Accept': 'application/json' },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+        logger.error('Passkey disconnect failed', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData,
+          credentialId,
+          url
+        });
+        throw new Error(`Failed to disconnect passkey: ${JSON.stringify(errorData)}`);
+      }
+
+      const result = await response.json();
+      logger.info('Passkey disconnected successfully', { credentialId, deviceName, result });
+      showSuccessMessage(`${deviceName} disconnected successfully!`);
+
+      // Refresh passkey list
+      await updatePasskeyButton();
+    } catch (error) {
+      logger.error('Failed to disconnect passkey:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Failed to disconnect passkey. Please try again.';
+      showErrorMessage(errorMsg);
+    }
+  }
+
   // Initialize passkey management
   function initPasskeyManagement() {
     // Button event handlers are set in updatePasskeyButton()
   }
 
+  // Detect device name from user agent
+  function getDeviceName(): string {
+    const ua = navigator.userAgent;
+
+    // macOS devices
+    if (ua.includes('Mac OS X')) {
+      if (ua.includes('iPhone')) return 'iPhone';
+      if (ua.includes('iPad')) return 'iPad';
+      if (ua.includes('iPod')) return 'iPod';
+      return 'Mac';
+    }
+
+    // Windows devices
+    if (ua.includes('Windows')) return 'Windows PC';
+
+    // Android devices
+    if (ua.includes('Android')) {
+      if (ua.includes('Mobile')) return 'Android Phone';
+      return 'Android Tablet';
+    }
+
+    // Linux
+    if (ua.includes('Linux')) return 'Linux PC';
+
+    // iOS devices (fallback)
+    if (ua.includes('iPhone')) return 'iPhone';
+    if (ua.includes('iPad')) return 'iPad';
+
+    // Fallback
+    return 'Unknown Device';
+  }
+
   // Add new passkey
+  // Helper function to convert base64url to ArrayBuffer
+  function base64urlToBuffer(base64url: string): ArrayBuffer {
+    const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64.padEnd(base64.length + (4 - base64.length % 4) % 4, '=');
+    const binary = atob(padded);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes.buffer;
+  }
+
+  // Helper function to convert ArrayBuffer to base64url
+  function bufferToBase64url(buffer: ArrayBuffer): string {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]!);
+    }
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  }
+
   async function addPasskey() {
     try {
       logger.info('Starting passkey registration');
 
-      const response = await fetch('/auth/passkeys/register/begin', {
+      // Auto-detect device name (no prompt for better UX)
+      const deviceName = getDeviceName();
+
+      // Backend returns { public_key, challenge_key, device_name }
+      const apiBaseUrl = getApiBaseUrl();
+      const url = `${apiBaseUrl}/auth/passkeys/register/begin`;
+      logger.info('Calling passkey registration endpoint', { url, apiBaseUrl, deviceName });
+
+      const response = await fetch(url, {
         method: 'POST',
         credentials: 'include',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json' 
+          'Accept': 'application/json'
         },
+        body: JSON.stringify({
+          device_name: deviceName
+        })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to start passkey registration');
+        const errorText = await response.text();
+        logger.error('Passkey registration failed', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText,
+          url
+        });
+        throw new Error(`Failed to start passkey registration: ${response.status} ${response.statusText}`);
       }
 
       const options = await response.json();
-      
-      // Create credential using WebAuthn API
-      const credential = await navigator.credentials.create({ publicKey: options }) as PublicKeyCredential;
+      logger.info('Received options from backend', { options });
+
+      // Convert base64url strings to ArrayBuffers for WebAuthn API
+      let credential: PublicKeyCredential;
+      try {
+        const publicKeyOptions = {
+          ...options.public_key,
+          challenge: base64urlToBuffer(options.public_key.challenge),
+          user: {
+            ...options.public_key.user,
+            id: base64urlToBuffer(options.public_key.user.id),
+          },
+          excludeCredentials: options.public_key.excludeCredentials?.map((cred: WebAuthnCredentialDescriptor) => ({
+            ...cred,
+            id: base64urlToBuffer(cred.id),
+          })) || [],
+        };
+
+        logger.info('Converted publicKeyOptions', { publicKeyOptions });
+
+        // CRITICAL: Use converted options for WebAuthn API
+        credential = await navigator.credentials.create({
+          publicKey: publicKeyOptions
+        }) as PublicKeyCredential;
+      } catch (conversionError) {
+        logger.error('Error during WebAuthn conversion or creation', {
+          error: conversionError,
+          message: conversionError instanceof Error ? conversionError.message : String(conversionError),
+          stack: conversionError instanceof Error ? conversionError.stack : undefined,
+          options
+        });
+        throw conversionError;
+      }
 
       if (!credential) {
         throw new Error('Failed to create credential');
@@ -509,8 +776,8 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
       // Type the response properly for WebAuthn
       const credentialResponse = credential.response as AuthenticatorAttestationResponse;
 
-      // Complete registration
-      const finishResponse = await fetch('/auth/passkeys/register/complete', {
+      // Complete registration with challenge_key and device_name
+      const finishResponse = await fetch(`${apiBaseUrl}/auth/passkeys/register/complete`, {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -518,68 +785,136 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
           'Accept': 'application/json'
         },
         body: JSON.stringify({
-          id: credential.id,
-          rawId: Array.from(new Uint8Array(credential.rawId)),
-          type: credential.type,
-          response: {
-            attestationObject: Array.from(new Uint8Array(credentialResponse.attestationObject)),
-            clientDataJSON: Array.from(new Uint8Array(credentialResponse.clientDataJSON)),
+          credential_response: {
+            id: credential.id,
+            rawId: bufferToBase64url(credential.rawId),
+            type: credential.type,
+            response: {
+              attestationObject: bufferToBase64url(credentialResponse.attestationObject),
+              clientDataJSON: bufferToBase64url(credentialResponse.clientDataJSON),
+            },
           },
+          challenge_key: options.challenge_key,  // ✅ Required for backend verification
+          device_name: options.device_name,      // ✅ Device name from backend
         }),
       });
 
       if (!finishResponse.ok) {
-        throw new Error('Failed to complete passkey registration');
+        const errorData = await finishResponse.json().catch(() => ({ detail: 'Unknown error' }));
+        logger.error('Passkey registration completion failed:', {
+          status: finishResponse.status,
+          statusText: finishResponse.statusText,
+          error: errorData
+        });
+        throw new Error(`Failed to complete passkey registration: ${JSON.stringify(errorData)}`);
       }
 
       logger.info('Passkey added successfully');
+      showSuccessMessage('Passkey added successfully!');
       await updatePasskeyButton(); // Refresh button state
     } catch (error) {
       logger.error('Failed to add passkey:', error);
-      alert('Failed to add passkey. Please try again.');
+      const errorMsg = error instanceof Error ? error.message : 'Failed to add passkey. Please try again.';
+      showErrorMessage(errorMsg);
     }
   }
 
-  // Revoke all passkeys
-  async function revokePasskey() {
-    if (!confirm('Are you sure you want to revoke all your passkeys? This will disable passwordless authentication for your account.')) {
+  // Revoke all passkeys - bulk passkey revocation for user security
+  async function revokeAllPasskeys() {
+    if (!confirm('Are you sure you want to revoke all your passkeys? This will disable passwordless authentication for your account. You can re-register passkeys later if needed.')) {
       return;
     }
 
-    try {
-      logger.info('Starting passkey revocation');
+    // Disable button during operation to prevent double-clicks
+    const revokeButton = document.getElementById('revoke-passkeys-btn') as HTMLButtonElement;
+    const originalText = revokeButton?.textContent || 'Revoke All Passkeys';
 
-      // First get all credentials
-      const response = await fetch('/auth/passkeys/summary', {
+    try {
+      if (revokeButton) {
+        revokeButton.disabled = true;
+        revokeButton.textContent = 'Revoking...';
+      }
+
+      logger.info('Starting bulk passkey revocation');
+
+      // Get all passkeys for current user
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/auth/passkeys/summary`, {
         method: 'GET',
         credentials: 'include',
         headers: { 'Accept': 'application/json' },
       });
 
       if (!response.ok) {
-        throw new Error('Failed to get passkeys');
+        throw new Error('Failed to retrieve passkey list');
       }
 
-      const summary = await response.json();
+      const summary: PasskeySummary = await response.json();
+      const devices = summary.devices || [];
 
-      // Delete each credential
-      for (const credential of summary.credentials || []) {
-        const deleteResponse = await fetch(`/auth/passkeys/${credential.id}`, {
-          method: 'DELETE',
-          credentials: 'include',
-          headers: { 'Accept': 'application/json' },
-        });
+      if (devices.length === 0) {
+        showErrorMessage('No passkeys found to revoke.');
+        return;
+      }
 
-        if (!deleteResponse.ok) {
-          throw new Error(`Failed to delete passkey ${credential.id}`);
+      // Delete each passkey sequentially (ensures proper cleanup)
+      let successCount = 0;
+      let failedCount = 0;
+
+      for (const device of devices) {
+        try {
+          // URL encode credential ID to handle special characters
+          const encodedCredentialId = encodeURIComponent(device.id);
+          const deleteResponse = await fetch(`${apiBaseUrl}/auth/passkeys/${encodedCredentialId}`, {
+            method: 'DELETE',
+            credentials: 'include',
+            headers: { 'Accept': 'application/json' },
+          });
+
+          if (deleteResponse.ok) {
+            successCount++;
+            logger.info('Passkey revoked', { deviceId: device.id, deviceName: device.name });
+          } else {
+            failedCount++;
+            logger.error('Failed to revoke passkey', {
+              deviceId: device.id,
+              deviceName: device.name,
+              status: deleteResponse.status
+            });
+          }
+        } catch (error) {
+          failedCount++;
+          logger.error('Error revoking passkey', {
+            deviceId: device.id,
+            deviceName: device.name,
+            error
+          });
         }
       }
 
-      logger.info('All passkeys revoked successfully');
-      await updatePasskeyButton(); // Refresh button state
+      // Show appropriate success/error message
+      if (successCount === devices.length) {
+        logger.info('All passkeys revoked successfully', { count: successCount });
+        showSuccessMessage(`All ${successCount} passkey${successCount > 1 ? 's' : ''} revoked successfully!`);
+      } else if (successCount > 0) {
+        logger.warn('Partial passkey revocation', { successCount, failedCount });
+        showSuccessMessage(`${successCount} passkey${successCount > 1 ? 's' : ''} revoked. ${failedCount} failed - please try again.`);
+      } else {
+        throw new Error('Failed to revoke any passkeys');
+      }
+
+      // Refresh passkey list and button state
+      await updatePasskeyButton();
     } catch (error) {
       logger.error('Failed to revoke passkeys:', error);
-      alert('Failed to revoke passkeys. Please try again.');
+      const errorMsg = error instanceof Error ? error.message : 'Failed to revoke passkeys. Please try again.';
+      showErrorMessage(errorMsg);
+    } finally {
+      // Re-enable button
+      if (revokeButton) {
+        revokeButton.disabled = false;
+        revokeButton.textContent = originalText;
+      }
     }
   }
 
@@ -623,7 +958,8 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
     // Get real user data from the authenticated session (httpOnly cookies)
     let currentUser: UserInfo | null = null;
     try {
-      const userResponse = await fetch('/auth/me', {
+      const apiBaseUrl = getApiBaseUrl();
+      const userResponse = await fetch(`${apiBaseUrl}/auth/me`, {
         method: 'GET',
         credentials: 'include',
         headers: { 'Accept': 'application/json' },
@@ -695,7 +1031,8 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
 
       // Option 1: Try dedicated OAuth connections endpoint
       try {
-        const response = await fetch('/auth/oauth/connections', {
+        const apiBaseUrl = getApiBaseUrl();
+        const response = await fetch(`${apiBaseUrl}/auth/oauth/connections`, {
           method: 'GET',
           credentials: 'include',
           headers: { 'Accept': 'application/json' },
@@ -737,7 +1074,8 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
       }
 
       // Option 2: Check if /auth/me contains OAuth provider information from database
-      const response = await fetch('/auth/me', {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/auth/me`, {
         method: 'GET',
         credentials: 'include',
         headers: { 'Accept': 'application/json' },
@@ -786,42 +1124,51 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
       return null;
     }
 
-    // Skip legacy user settings check for OAuth data to avoid 404s
-    // Option 2: Check user settings for OAuth connection data (when implemented)
-    /*
+    // Note: No additional database checking methods needed - we already check:
+    // 1. /auth/oauth/connections endpoint (definitive data from database)
+    // 2. /auth/me endpoint with oauth_providers/sso_providers/connected_providers fields
+    // 3. /auth/me endpoint with auth_method field
+    // If none of these provide OAuth data, the try-catch above returns null to fall back to heuristic detection
+  }
+
+  // Intelligent SSO connection detection - works for any provider without hardcoding
+  // Now with proper endpoint detection for future-proofing
+  async function detectProviderConnection(provider: string, currentUser: UserInfo | null): Promise<{connected: boolean, email?: string}> {
+    if (!currentUser) {
+      return { connected: false };
+    }
+
+    // Step 1: Try the dedicated OAuth provider status endpoint (future-proof)
     try {
-      const settingsResponse = await fetch('/user/settings/', {
+      const apiBaseUrl = getApiBaseUrl();
+      const statusEndpoint = `${apiBaseUrl}/auth/oauth/${provider}/status`;
+      const statusResponse = await fetch(statusEndpoint, {
         method: 'GET',
         credentials: 'include',
         headers: { 'Accept': 'application/json' },
       });
 
-      if (settingsResponse.ok) {
-        const settings = await settingsResponse.json();
-        const oauthConnections = settings.custom_settings?.oauth_connections;
+      if (statusResponse.ok) {
+        const statusData = await statusResponse.json();
+        logger.info(`OAuth provider ${provider} status from dedicated endpoint:`, { statusData });
 
-        if (oauthConnections && oauthConnections[provider]) {
-          return {
-            connected: oauthConnections[provider].connected || false,
-            email: oauthConnections[provider].email
-          };
-        }
+        // If we get a successful response from the dedicated endpoint, use it
+        return {
+          connected: statusData.connected || false,
+          email: statusData.email || currentUser.email
+        };
+      } else if (statusResponse.status === 404) {
+        // Endpoint not implemented yet, fall through to heuristic detection
+        logger.debug(`OAuth provider ${provider} status endpoint not yet implemented (404), using heuristics`);
+      } else if (statusResponse.status === 401) {
+        // User not authenticated
+        return { connected: false };
       }
-    } catch {
-      // Custom settings don't contain OAuth data yet
-    }
-    */
-
-    // Option 3: TODO - Add more database checking methods as backend evolves
-    // Return null is already done at line 777
-  }
-
-  // Intelligent SSO connection detection - works for any provider without hardcoding
-  async function detectProviderConnection(provider: string, currentUser: UserInfo | null): Promise<{connected: boolean, email?: string}> {
-    // TODO: When backend implements `/auth/oauth/${provider}/status`, replace this entire function
-
-    if (!currentUser) {
-      return { connected: false };
+    } catch (error) {
+      // Network error or endpoint doesn't exist, fall through to heuristic detection
+      logger.debug(`OAuth provider ${provider} status endpoint unavailable, using heuristics`, {
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
 
     // Enhanced heuristics to detect probable connections
@@ -961,12 +1308,13 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
     }
   }
 
-  // Initialize delete confirmation
+  // Initialize delete confirmation and danger zone actions
   function initDeleteConfirmation() {
     const deleteBtn = document.getElementById('delete-account-btn') as HTMLButtonElement;
     const confirmInput = document.getElementById('delete-confirmation') as HTMLInputElement;
     const confirmBtn = document.getElementById('confirm-delete-btn') as HTMLButtonElement;
     const cancelBtn = document.getElementById('cancel-delete-btn') as HTMLButtonElement;
+    const revokePasskeysBtn = document.getElementById('revoke-passkeys-btn') as HTMLButtonElement;
 
     if (deleteBtn) {
       deleteBtn.addEventListener('click', () => {
@@ -1006,6 +1354,11 @@ import OAuthConnectionCard from '../auth/oauth/OAuthConnectionCard.astro';
 
     if (confirmBtn) {
       confirmBtn.addEventListener('click', deleteAccount);
+    }
+
+    // Hook up revoke all passkeys button
+    if (revokePasskeysBtn) {
+      revokePasskeysBtn.addEventListener('click', revokeAllPasskeys);
     }
   }
 
