@@ -16,6 +16,7 @@ export class ConversionFormManager {
   private readonly logger = createContextLogger("ConversionFormManager");
   private container: HTMLElement;
   private currentMode: "bulk" | "single" = "bulk";
+  private apiBaseUrl: string;
 
   // Form elements
   private singlePostInterface: HTMLElement | null = null;
@@ -38,6 +39,7 @@ export class ConversionFormManager {
   constructor(config: ConversionFormConfig) {
     this.container = config.container;
     this.currentMode = config.defaultMode || "bulk";
+    this.apiBaseUrl = config.apiBaseUrl;
   }
 
   /**
@@ -332,38 +334,241 @@ export class ConversionFormManager {
   /**
    * Handle single post form submission
    */
-  private handleSinglePostSubmission() {
-    if (!this.urlInput) return;
+  private async handleSinglePostSubmission() {
+    if (!this.urlInput || !this.convertNowBtn) return;
 
     const url = this.urlInput.value.trim();
+
+    // Validate URL
+    if (!url) {
+      this.logger.warn("Empty URL provided");
+      alert("Please enter a valid WordPress URL");
+      return;
+    }
+
     this.logger.info("Submitting single post conversion", { url });
 
-    // TODO: Implement actual API call to backend
-    // This should integrate with the backend conversion API
+    // Disable button and show loading state
+    this.convertNowBtn.disabled = true;
+    const originalText = this.convertNowBtn.textContent;
+    this.convertNowBtn.textContent = "Converting...";
 
-    // Emit event for JobDashboard to refresh
-    this.emitJobSubmissionEvent("single", { url });
+    try {
+      // Create job via backend API
+      const response = await fetch(`${this.apiBaseUrl}/jobs/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          urls: [url],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.detail || `HTTP ${response.status}: ${response.statusText}`,
+        );
+      }
+
+      const result = await response.json();
+      this.logger.info("Job created successfully", { result });
+
+      // Clear input on success
+      this.urlInput.value = "";
+
+      // Show success feedback
+      this.convertNowBtn.textContent = "✓ Submitted!";
+      setTimeout(() => {
+        if (this.convertNowBtn && originalText) {
+          this.convertNowBtn.textContent = originalText;
+        }
+      }, 2000);
+
+      // Emit event for JobDashboard to refresh
+      this.emitJobSubmissionEvent("single", { url, jobId: result.job_id });
+    } catch (error) {
+      this.logger.error("Failed to create job", { error });
+      alert(
+        `Failed to create conversion job: ${error instanceof Error ? error.message : String(error)}`,
+      );
+
+      // Restore button state
+      if (this.convertNowBtn && originalText) {
+        this.convertNowBtn.textContent = originalText;
+      }
+    } finally {
+      // Re-enable button
+      if (this.convertNowBtn) {
+        this.convertNowBtn.disabled = false;
+      }
+    }
   }
 
   /**
    * Handle bulk upload form submission
+   * Reads CSV/TXT file and submits URLs to backend for bulk processing
    */
-  private handleBulkUploadSubmission() {
-    if (!this.fileInput?.files?.[0]) return;
+  private async handleBulkUploadSubmission() {
+    if (!this.fileInput?.files?.[0] || !this.bulkConvertBtn) return;
 
     const file = this.fileInput.files[0];
     this.logger.info("Submitting bulk upload conversion", {
       fileName: file.name,
     });
 
-    // TODO: Implement actual API call to backend
-    // This should read the file and submit URLs for bulk processing
+    // Disable button and show loading state
+    this.bulkConvertBtn.disabled = true;
+    const originalText = this.bulkConvertBtn.textContent;
+    this.bulkConvertBtn.textContent = "Processing file...";
 
-    // Emit event for JobDashboard to refresh
-    this.emitJobSubmissionEvent("bulk", {
-      fileName: file.name,
-      fileSize: file.size,
+    try {
+      // Read file content
+      const fileContent = await this.readFileContent(file);
+
+      // Parse URLs from file (support both CSV and plain text formats)
+      const urls = this.parseUrlsFromFile(fileContent, file.name);
+
+      if (urls.length === 0) {
+        throw new Error("No valid URLs found in the file");
+      }
+
+      this.logger.info("Parsed URLs from file", { count: urls.length, urls });
+
+      // Update button text to show progress
+      this.bulkConvertBtn.textContent = `Submitting ${urls.length} URL${urls.length > 1 ? "s" : ""}...`;
+
+      // Submit bulk job to backend API
+      const response = await fetch(`${this.apiBaseUrl}/jobs/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Include cookies for authentication
+        body: JSON.stringify({
+          urls: urls,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.detail || `HTTP ${response.status}: ${response.statusText}`,
+        );
+      }
+
+      const result = await response.json();
+      this.logger.info("Bulk job created successfully", {
+        result,
+        urlCount: urls.length,
+      });
+
+      // Show success feedback
+      this.bulkConvertBtn.textContent = `✓ Submitted ${urls.length} URL${urls.length > 1 ? "s" : ""}!`;
+
+      // Clear file selection
+      if (this.fileInput) {
+        this.fileInput.value = "";
+      }
+      if (this.fileName) {
+        this.fileName.classList.add("hidden");
+      }
+
+      // Restore button after delay
+      setTimeout(() => {
+        if (this.bulkConvertBtn && originalText) {
+          this.bulkConvertBtn.textContent = originalText;
+        }
+      }, 2000);
+
+      // Emit event for JobDashboard to refresh
+      this.emitJobSubmissionEvent("bulk", {
+        fileName: file.name,
+        fileSize: file.size,
+        urlCount: urls.length,
+        jobId: result.job_id,
+      });
+    } catch (error) {
+      this.logger.error("Failed to process bulk upload", { error });
+      alert(
+        `Failed to process bulk upload: ${error instanceof Error ? error.message : String(error)}`,
+      );
+
+      // Restore button state
+      if (this.bulkConvertBtn && originalText) {
+        this.bulkConvertBtn.textContent = originalText;
+      }
+    } finally {
+      // Re-enable button
+      if (this.bulkConvertBtn) {
+        this.bulkConvertBtn.disabled = false;
+      }
+    }
+  }
+
+  /**
+   * Read file content as text
+   */
+  private readFileContent(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result;
+        if (typeof content === "string") {
+          resolve(content);
+        } else {
+          reject(new Error("Failed to read file as text"));
+        }
+      };
+      reader.onerror = () => reject(new Error("File reading failed"));
+      reader.readAsText(file);
     });
+  }
+
+  /**
+   * Parse URLs from file content
+   * Supports CSV (comma-separated) and plain text (line-separated) formats
+   */
+  private parseUrlsFromFile(content: string, fileName: string): string[] {
+    const urls: string[] = [];
+    const isCsv = fileName.toLowerCase().endsWith(".csv");
+
+    // Split content into lines
+    const lines = content.split(/\r?\n/).filter((line) => line.trim() !== "");
+
+    for (const line of lines) {
+      if (isCsv) {
+        // For CSV, split by comma and extract URLs
+        const fields = line.split(",").map((field) => field.trim());
+        for (const field of fields) {
+          if (this.isValidUrl(field)) {
+            urls.push(field);
+          }
+        }
+      } else {
+        // For plain text, treat each line as a URL
+        const trimmedLine = line.trim();
+        if (this.isValidUrl(trimmedLine)) {
+          urls.push(trimmedLine);
+        }
+      }
+    }
+
+    // Remove duplicates while preserving order
+    return Array.from(new Set(urls));
+  }
+
+  /**
+   * Validate URL format
+   */
+  private isValidUrl(url: string): boolean {
+    try {
+      const urlObj = new URL(url);
+      return urlObj.protocol === "http:" || urlObj.protocol === "https:";
+    } catch {
+      return false;
+    }
   }
 
   /**

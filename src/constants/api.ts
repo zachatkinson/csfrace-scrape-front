@@ -41,7 +41,7 @@ export const API_CONFIG = {
   DEVELOPMENT_URL:
     import.meta.env.VITE_API_URL ||
     import.meta.env.PUBLIC_API_BASE_URL ||
-    "http://localhost",
+    "https://localhost",
   DOCKER_URL: import.meta.env.VITE_SERVER_API_URL || "http://backend:8000", // Internal Docker networking
 
   // Request Configuration (centralized) - Astro best practice
@@ -106,7 +106,7 @@ function getEnvironmentAwareApiUrl(): string {
   }
 
   // Default fallback (DRY: from environment or sensible default)
-  const defaultUrl = import.meta.env.PUBLIC_API_BASE_URL || "http://localhost";
+  const defaultUrl = import.meta.env.PUBLIC_API_BASE_URL || "https://localhost";
   logger.info("Default API URL selected", { url: defaultUrl });
   return defaultUrl;
 }

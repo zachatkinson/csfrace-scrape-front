@@ -1,230 +1,75 @@
 ---
 /**
- * DashboardJobs - Perfect Astro Islands Server Island Implementation
- * Following Astro MCP best practices with NO define:vars anti-pattern
- * Using data attributes for client-side enhancement instead
+ * DashboardJobs - Client Island Implementation (SECURE)
+ * Following Astro MCP best practices with client:load for authenticated data
+ * NO server-side cookie forwarding - uses browser authentication
  */
 
 // =============================================================================
 // IMPORTS & TYPES (TypeScript strict mode)
 // =============================================================================
-import type { IDashboardStats } from './types/dashboard.types';
-import type { IJobData } from '../../types/job.ts';
-import { DASHBOARD_CONFIG } from './types/dashboard.types';
-import { getJobs } from '../../utils/dashboard/apiClient.ts';
-import { convertBackendJob, calculateJobStats } from '../../utils/dashboard/jobUtils.ts';
-import { createContextLogger } from '../../utils/logger';
-import JobCard from './JobCard.astro';
+import DashboardManager from './DashboardManager.tsx';
 
-const logger = createContextLogger('DashboardJobs');
-
-// =============================================================================
-// SERVER-SIDE DATA FETCHING (Server Island Pattern)
-// =============================================================================
-
-let initialJobs: IJobData[] = [];
-let stats: IDashboardStats = {
-  total: 0,
-  active: 0,
-  completed: 0,
-  failed: 0,
-  queued: 0,
-  processing: 0
-};
-
-try {
-  // Server-side data fetching - will be deferred with server:defer
-  logger.info('Server Island fetching initial data');
-
-  // Real API call integration with timeout
-  const response = await getJobs({
-    page: 1,
-    page_size: DASHBOARD_CONFIG.defaultPageSize
-  });
-
-  // Convert backend jobs to frontend format
-  initialJobs = response.jobs.map(convertBackendJob);
-
-  // Calculate stats from actual job data
-  stats = calculateJobStats(initialJobs);
-
-  logger.info('Successfully loaded jobs', { jobCount: initialJobs.length });
-
-} catch (error) {
-  logger.error('Failed to load initial jobs', { error });
-
-  // Graceful degradation: Initialize with empty state
-  initialJobs = [];
-  stats = {
-    total: 0,
-    active: 0,
-    completed: 0,
-    failed: 0,
-    queued: 0,
-    processing: 0
-  };
-
-  // Note: Component will still render with empty state and fallback content
-  logger.info('Using empty state fallback');
-}
-
-// =============================================================================
-// SERVER-SIDE LOGIC (DRY Principle)
-// =============================================================================
-
-// Generate pagination data
-const currentPage = 1;
-const totalPages = Math.ceil(stats.total / DASHBOARD_CONFIG.defaultPageSize);
-const showingCount = Math.min(initialJobs.length, DASHBOARD_CONFIG.defaultPageSize);
-
-// Generate page numbers for pagination
-const generatePageNumbers = (current: number, total: number): number[] => {
-  const pages: number[] = [];
-  const maxVisible = 5;
-  
-  let start = Math.max(1, current - Math.floor(maxVisible / 2));
-  let end = Math.min(total, start + maxVisible - 1);
-  
-  if (end - start < maxVisible - 1) {
-    start = Math.max(1, end - maxVisible + 1);
-  }
-  
-  for (let i = start; i <= end; i++) {
-    pages.push(i);
-  }
-  
-  return pages;
-};
-
-const pageNumbers = generatePageNumbers(currentPage, totalPages);
+// No server-side data fetching - all authentication happens in browser
+// This follows OWASP security best practices and avoids:
+// - SSRF vulnerabilities from manual cookie forwarding
+// - Cookie leakage in server logs
+// - HttpOnly cookie protection violations
 ---
 
 <!-- =============================================================================
-     JOBS LIST CONTAINER (Server Island - NO define:vars)
-     Using data attributes for client-side enhancement
+     CLIENT ISLAND - Authenticated Data Fetching (SECURE PATTERN)
+     Uses client:load to hydrate React component with browser cookies
      ============================================================================= -->
 
-<div 
-  class="glass-card p-6" 
-  data-component="jobs-list"
-  data-initial-jobs={JSON.stringify(initialJobs)}
-  data-initial-stats={JSON.stringify(stats)}
-  data-current-page={currentPage}
-  data-total-pages={totalPages}
->
-  
-  <!-- =================================================================
-       JOBS DISPLAY SECTION (Single Responsibility)
-       ================================================================= -->
-  <div class="space-y-4" id="jobs-container" data-jobs-container>
-    {initialJobs.length > 0 ? (
-      initialJobs.map(job => (
-        <JobCard job={job} />
-      ))
-    ) : (
-      <div class="text-center py-12" data-empty-state>
-        <div class="w-16 h-16 mx-auto mb-4 bg-gray-800 rounded-full flex items-center justify-center">
-          <svg class="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </div>
-        <h3 class="text-white font-medium mb-2">No jobs found</h3>
-        <p class="text-white/60 text-sm">Your conversion jobs will appear here</p>
-      </div>
-    )}
-  </div>
-  
-  <!-- =================================================================
-       PAGINATION SECTION (Single Responsibility)
-       ================================================================= -->
-  <div class="border-t border-gray-700 pt-6 mt-6" data-pagination>
-    <div class="flex items-center justify-between">
-      
-      <!-- Results Summary -->
-      <div class="text-gray-300 text-sm" data-results-summary>
-        Showing <span id="showing-count" data-showing-count>{showingCount}</span> 
-        of <span id="total-count" data-total-count>{stats.total}</span> jobs
-      </div>
-      
-      <!-- Pagination Controls -->
-      <div class="flex items-center space-x-2" data-pagination-controls>
-        <button 
-          id="prev-page" 
-          class="glass-button px-3 py-2 text-gray-200 hover:text-white disabled:opacity-50" 
-          disabled={currentPage <= 1}
-          aria-label="Previous page"
-          data-action="previous-page"
-          data-page={currentPage - 1}
-          type="button"
-        >
-          Previous
-        </button>
-        
-        <div class="flex space-x-1" id="page-numbers" role="navigation" aria-label="Pagination">
-          {pageNumbers.map(pageNum => (
-            <button 
-              class={`glass-button px-3 py-2 ${pageNum === currentPage ? 'bg-blue-800 text-blue-400' : 'text-gray-200 hover:text-white'}`}
-              data-action="goto-page"
-              data-page={pageNum}
-              aria-label={`Go to page ${pageNum}`}
-              aria-current={pageNum === currentPage ? 'page' : undefined}
-              type="button"
-            >
-              {pageNum}
-            </button>
-          ))}
-        </div>
-        
-        <button 
-          id="next-page" 
-          class="glass-button px-3 py-2 text-gray-200 hover:text-white disabled:opacity-50"
-          disabled={currentPage >= totalPages}
-          aria-label="Next page"
-          data-action="next-page"
-          data-page={currentPage + 1}
-          type="button"
-        >
-          Next
-        </button>
-      </div>
-    </div>
-  </div>
+<div class="dashboard-jobs-wrapper">
+  <!--
+    ✅ SECURE: Client-side hydration with browser authentication
+    ✅ SOLID: Single Responsibility - DashboardManager handles all job logic
+    ✅ DRY: Reuses existing DashboardManager component
+
+    React component hydrates in browser with httpOnly cookies
+    All API calls use credentials: "include" for secure authentication
+  -->
+  <DashboardManager
+    client:load
+    autoRefresh={true}
+    refreshInterval={10000}
+  />
 </div>
 
 <!-- =============================================================================
-     ASTRO ISLANDS ARCHITECTURE (Perfect Implementation)
-     NO define:vars - using data attributes and proper Islands pattern
+     STYLES (Client Island Wrapper)
      ============================================================================= -->
+<style>
+  .dashboard-jobs-wrapper {
+    min-height: 400px;
+    position: relative;
+  }
 
-<!-- =============================================================================
-     SERVER ISLAND DATA EMISSION (Proper Pattern)
-     Emitting initial data for client-side enhancement without define:vars
-     ============================================================================= -->
-<script>
-  import { createContextLogger } from '../../utils/logger';
+  /* Loading skeleton shown while React hydrates */
+  .dashboard-jobs-wrapper:empty::before {
+    content: '';
+    display: block;
+    width: 100%;
+    height: 400px;
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.05) 25%,
+      rgba(255, 255, 255, 0.1) 50%,
+      rgba(255, 255, 255, 0.05) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 8px;
+  }
 
-  const logger = createContextLogger('DashboardJobs-Client');
-
-  // Emit initial data using proper event system (not define:vars)
-  document.addEventListener('DOMContentLoaded', () => {
-    logger.info('Emitting initial data');
-
-    // Get data from DOM attributes (avoiding define:vars)
-    const jobsList = document.querySelector('[data-component="jobs-list"]');
-    if (jobsList) {
-      const initialJobs = JSON.parse(jobsList.getAttribute('data-initial-jobs') || '[]');
-      const initialStats = JSON.parse(jobsList.getAttribute('data-initial-stats') || '{}');
-
-      // Emit data loaded event
-      window.dispatchEvent(new CustomEvent('dashboardDataLoaded', {
-        detail: {
-          jobs: initialJobs,
-          stats: initialStats,
-          timestamp: Date.now()
-        }
-      }));
-
-      logger.info('Data emitted successfully');
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
     }
-  });
-</script>
+    100% {
+      background-position: -200% 0;
+    }
+  }
+</style>

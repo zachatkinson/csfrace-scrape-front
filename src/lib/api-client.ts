@@ -308,7 +308,8 @@ class APIClient extends EnhancedApiClient {
     if (params?.domain) searchParams.append("domain", params.domain);
 
     const query = searchParams.toString();
-    const endpoint = `/jobs${query ? `?${query}` : ""}`;
+    // CRITICAL: Backend endpoint requires trailing slash to avoid 307 redirect
+    const endpoint = `/jobs/${query ? `?${query}` : ""}`;
 
     return this.get<JobListResponse>(endpoint);
   }
