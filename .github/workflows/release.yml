@@ -89,7 +89,7 @@ jobs:
     uses: zachatkinson/csfrace-scrape/.github/workflows/reusable-docker-publish.yml@master
     with:
       service-name: frontend
-      version: v${{ needs.semantic-release.outputs.version }}
+      version: ${{ needs.semantic-release.outputs.version }}
       dockerfile-path: ./Dockerfile
       build-context: .
 
@@ -101,7 +101,7 @@ jobs:
     uses: zachatkinson/csfrace-scrape/.github/workflows/reusable-notify-orchestrator.yml@master
     with:
       service-name: frontend
-      version: v${{ needs.semantic-release.outputs.version }}
+      version: ${{ needs.semantic-release.outputs.version }}
       image-tag: ${{ needs.docker-publish.outputs.image-tag }}
       image-digest: ${{ needs.docker-publish.outputs.image-digest }}
     secrets:
@@ -123,7 +123,7 @@ jobs:
 
           if [[ "${{ needs.semantic-release.outputs.released }}" == "true" ]]; then
             echo "### ✅ Release Created" >> $GITHUB_STEP_SUMMARY
-            echo "**Version:** \`v${{ needs.semantic-release.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "**Version:** \`${{ needs.semantic-release.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
 
             if [[ "${{ needs.docker-publish.result }}" == "success" ]]; then
