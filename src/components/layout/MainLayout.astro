@@ -303,6 +303,8 @@ const {
         connect(): Promise<void>;
         disconnect(): void;
         handleRetry(): void;
+        handleInitialData(event: MessageEvent): void;
+        handleJobEvent(event: MessageEvent, eventType: string): void;
       }
 
       interface PerformanceSSEService {
@@ -506,6 +508,100 @@ const {
                 sseLogger.info('Connection established');
               };
 
+              // Define types for health SSE events
+              interface ServiceData {
+                response_time_ms?: number;
+                [key: string]: unknown;
+              }
+
+              interface BackendService {
+                service: string;
+                status: string;
+                data?: ServiceData;
+              }
+
+              interface InitialHealthData {
+                timestamp?: number;
+                services?: BackendService[];
+              }
+
+              // TypeScript: Match exact types from healthStore/serviceCheckers (DRY principle)
+              type ServiceStatus = "up" | "degraded" | "down" | "error";
+
+              interface IServiceResult {
+                status: ServiceStatus;
+                message: string;
+                metrics: { responseTime?: number; [key: string]: unknown };
+                error?: string;
+                timestamp: number;
+              }
+
+              interface IHealthServiceStatuses {
+                frontend: IServiceResult | null;
+                backend: IServiceResult | null;
+                database: IServiceResult | null;
+                cache: IServiceResult | null;
+              }
+
+              // Listen for initial health data on connection (backend sends "initial-data" event)
+              this.eventSource.addEventListener('initial-data', async (event: MessageEvent) => {
+                try {
+                  const initialData: InitialHealthData = JSON.parse(event.data);
+                  sseLogger.info('Initial health data received', { initialData });
+
+                  // Update nanostore with initial data
+                  const { updateHealthData } = await import('/src/stores/healthStore');
+                  const updateTime = new Date(initialData.timestamp || Date.now());
+
+                  // Transform backend service format to frontend format
+                  // CRITICAL: Match IHealthServiceStatuses interface (frontend|backend|database|cache)
+                  const frontendServiceData: IHealthServiceStatuses = {
+                    frontend: null,
+                    backend: null,
+                    database: null,
+                    cache: null
+                  };
+
+                  if (initialData.services && Array.isArray(initialData.services)) {
+                    initialData.services.forEach((service: BackendService) => {
+                      const serviceName = service.service as keyof IHealthServiceStatuses;
+                      // TypeScript: Cast status to ServiceStatus type for type safety (no 'unknown')
+                      const serviceStatus = (service.status === 'healthy' ? 'up' : service.status) as ServiceStatus;
+                      frontendServiceData[serviceName] = {
+                        status: serviceStatus,
+                        message: `${serviceName} service initialized`,
+                        metrics: {
+                          responseTime: service.data?.response_time_ms || 0,
+                          ...service.data
+                        },
+                        timestamp: updateTime.getTime()
+                      };
+                    });
+                  }
+
+                  const healthData = {
+                    services: frontendServiceData,
+                    overallStatus: {
+                      status: 'up' as const,
+                      text: 'Services Initialized',
+                      summary: 'Initial health data loaded',
+                      color: 'bg-green-500'
+                    },
+                    metadata: {
+                      timestamp: updateTime.getTime(),
+                      isPolling: false,
+                      isVisible: true,
+                      lastUpdateFormatted: formatTimestamp(updateTime)
+                    }
+                  };
+
+                  updateHealthData(healthData);
+                } catch (error) {
+                  sseLogger.error('Error processing initial data', { error });
+                }
+              });
+
+              // Listen for service updates
               this.eventSource.addEventListener('service-update', async (event: MessageEvent) => {
                 try {
                   const serviceUpdate = JSON.parse(event.data);
@@ -661,10 +757,14 @@ const {
             }
 
             try {
-              const backendUrl = getApiBaseUrl();
-              const sseUrl = `${backendUrl}/jobs/stream`;
-              jobLogger.info('Establishing connection to:', { sseUrl });
-              this.eventSource = new EventSource(sseUrl);
+              // Use window.location.origin to connect to same origin (nginx routes to backend)
+              const baseUrl = typeof window !== 'undefined' ? window.location.origin : getApiBaseUrl();
+              // CRITICAL: Use /jobs/stream endpoint (correct backend endpoint)
+              const sseUrl = `${baseUrl}/jobs/stream`;
+              jobLogger.info('Establishing connection to job events:', { sseUrl });
+              this.eventSource = new EventSource(sseUrl, {
+                withCredentials: true // CRITICAL: Include cookies for authentication
+              });
 
               this.eventSource.onopen = () => {
                 this.isConnected = true;
@@ -672,53 +772,71 @@ const {
                 jobLogger.info('Connection established');
               };
 
-              this.eventSource.addEventListener('job-update', async (event: MessageEvent) => {
-                try {
-                  const jobUpdate = JSON.parse(event.data);
-                  jobLogger.info('Job update received', { jobUpdate });
-
-                  // Dispatch custom event for React components to listen to
-                  const jobUpdateEvent = new CustomEvent('jobSSEUpdate', {
-                    detail: { jobUpdate }
-                  });
-                  window.dispatchEvent(jobUpdateEvent);
-
-                  // Also dispatch traditional jobsDataUpdate for existing components
-                  const refreshEvent = new CustomEvent('jobsDataRefresh', {
-                    detail: { source: 'sse', jobUpdate }
-                  });
-                  window.dispatchEvent(refreshEvent);
-
-                } catch (error) {
-                  console.error('❌ JobSSEService: Error processing job update:', error);
-                }
-              });
-
-              this.eventSource.onerror = (error: Event) => {
-                // Check if this might be due to authentication/backend unavailable
-                const isLikelyAuthIssue = this.eventSource?.readyState === EventSource.CLOSED;
-
-                if (isLikelyAuthIssue) {
-                  jobLogger.info('Job SSE connection failed - authentication may be required or backend unavailable', { error });
-                } else {
-                  jobLogger.error('Job SSE unexpected connection error', { error });
-                }
-
-                this.isConnected = false;
-
-                // Only retry if it's not an auth issue
-                if (!isLikelyAuthIssue) {
-                  this.handleRetry();
-                }
-              };
-
+              // Listen for ALL job-* events from the SSE stream (backend uses job-created, job-status-update, etc.)
+              this.eventSource.addEventListener('initial-data', (event: MessageEvent) => this.handleInitialData(event));
+              this.eventSource.addEventListener('job-created', (event: MessageEvent) => this.handleJobEvent(event, 'created'));
+              this.eventSource.addEventListener('job-status-update', (event: MessageEvent) => this.handleJobEvent(event, 'status'));
+              this.eventSource.addEventListener('job-progress', (event: MessageEvent) => this.handleJobEvent(event, 'progress'));
+              this.eventSource.addEventListener('job-deleted', (event: MessageEvent) => this.handleJobEvent(event, 'deleted'));
+              this.eventSource.addEventListener('job-error', (event: MessageEvent) => this.handleJobEvent(event, 'error'));
             } catch (error) {
               jobLogger.error('Failed to create Job SSE connection', { error });
               this.handleRetry();
             }
           },
 
+          handleInitialData(event: MessageEvent) {
+            try {
+              const initialData = JSON.parse(event.data);
+              jobLogger.info('Initial job data received from SSE', {
+                totalJobs: initialData.total_jobs,
+                jobCount: initialData.jobs?.length
+              });
+
+              // Dispatch initial data event for components (like Recent Conversions)
+              const initialDataEvent = new CustomEvent('jobsInitialData', {
+                detail: {
+                  jobs: initialData.jobs || [],
+                  totalJobs: initialData.total_jobs || 0,
+                  activeJobs: initialData.active_jobs || 0,
+                  completedJobs: initialData.completed_jobs || 0,
+                  failedJobs: initialData.failed_jobs || 0
+                }
+              });
+              window.dispatchEvent(initialDataEvent);
+
+            } catch (error) {
+              jobLogger.error('Error processing initial job data', { error });
+            }
+          },
+
+          handleJobEvent(event: MessageEvent, eventType: string) {
+            try {
+              const eventData = JSON.parse(event.data);
+              jobLogger.info(`Job ${eventType} event received`, { eventData });
+
+              // Send FULL event structure to components (includes job_id, status, data, etc.)
+              const jobUpdate = eventData;
+
+              // Dispatch custom event for components to listen to
+              const jobUpdateEvent = new CustomEvent('jobSSEUpdate', {
+                detail: { jobUpdate, eventType }
+              });
+              window.dispatchEvent(jobUpdateEvent);
+
+              // Also dispatch refresh event for existing components
+              const refreshEvent = new CustomEvent('jobsDataRefresh', {
+                detail: { source: 'sse', jobUpdate, eventType }
+              });
+              window.dispatchEvent(refreshEvent);
+
+            } catch (error) {
+              jobLogger.error(`Error processing job ${eventType} event`, { error });
+            }
+          },
+
           handleRetry() {
+            // Retry logic moved to separate method for clarity
             if (this.retryCount < this.maxRetries) {
               const delay = this.retryDelay * Math.pow(2, this.retryCount);
               this.retryCount++;
@@ -736,19 +854,51 @@ const {
           }
         };
 
-        // Initialize job SSE service ONLY for authenticated users
-        document.addEventListener('DOMContentLoaded', () => {
-          // Check if user is authenticated before connecting to job metrics
-          const isAuthenticated = document.cookie.includes('auth_token') ||
-                                 localStorage.getItem('auth_token') ||
-                                 sessionStorage.getItem('auth_token');
+        // PLACEHOLDER - REMOVED DUPLICATE ERROR HANDLER BLOCK
+        // Error handler is now inline in connect() method above
+        // Following DRY principle: single error handling location
 
-          if (isAuthenticated) {
-            jobLogger.info('User authenticated - connecting to job SSE');
-            window.__jobSSEService?.connect();
-          } else {
-            jobLogger.info('User not authenticated - skipping job SSE connection');
+        // Initialize job SSE service ONLY for authenticated users
+        document.addEventListener('DOMContentLoaded', async () => {
+          // CRITICAL: Delay authentication check to allow OAuth callback to complete first
+          // OAuth callback sets cookies and takes 1-2 seconds, so we wait 3 seconds to be safe
+          // This prevents "Not authenticated" errors when redirecting from OAuth providers
+          await new Promise(resolve => setTimeout(resolve, 3000));
+
+          // Check authentication via backend since we use HTTP-only cookies
+          // JavaScript can't read HTTP-only cookies, so we need to verify with server
+          try {
+            const response = await fetch('/auth/me', {
+              method: 'GET',
+              credentials: 'include', // CRITICAL: Include HTTP-only cookies
+              headers: { 'Accept': 'application/json' }
+            });
+
+            if (response.ok) {
+              jobLogger.info('User authenticated - connecting to job SSE');
+              window.__jobSSEService?.connect();
+            } else {
+              jobLogger.info('User not authenticated - skipping job SSE connection', {
+                status: response.status
+              });
+            }
+          } catch (error) {
+            jobLogger.warn('Authentication check failed - skipping job SSE connection', {
+              error: error instanceof Error ? error.message : String(error)
+            });
           }
+        });
+
+        // Also connect when user logs in
+        window.addEventListener('user-logged-in', () => {
+          jobLogger.info('User login detected - connecting to job SSE');
+          window.__jobSSEService?.connect();
+        });
+
+        // Disconnect when user logs out
+        window.addEventListener('user-logged-out', () => {
+          jobLogger.info('User logout detected - disconnecting from job SSE');
+          window.__jobSSEService?.disconnect();
         });
 
         // Cleanup on unload
@@ -757,6 +907,10 @@ const {
         });
       }
     </script>
+
+    <!-- PLACEHOLDER REMOVED - Now handled inline above -->
+    <!-- Job SSE error handling integrated into connect() method -->
+    <!-- Following SOLID Single Responsibility Principle -->
 
     <!-- ASTRO MCP BEST PRACTICE: Global Performance SSE Service in MainLayout (SOLID pattern) -->
     <script>

@@ -253,7 +253,7 @@ export const UnifiedAuthForm: React.FC<UnifiedAuthFormProps> = ({
             </div>
           )}
 
-          {/* Passkey Authentication Section */}
+          {/* Passkey Authentication Section - Existing Users Only */}
           {webauthnSupported && (
             <div className="space-y-3">
               {/* Existing User - Use Passkey */}
@@ -282,40 +282,12 @@ export const UnifiedAuthForm: React.FC<UnifiedAuthFormProps> = ({
               >
                 {authState === "passkey" && isLoading
                   ? "Authenticating..."
-                  : "Use Passkey"}
-              </LiquidButton>
-
-              {/* New User - Create Passkey */}
-              <LiquidButton
-                variant="secondary"
-                size="lg"
-                fullWidth
-                loading={authState === "passkey" && isLoading}
-                disabled={isLoading}
-                onClick={handlePasskeyRegister}
-                leftIcon={
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                    />
-                  </svg>
-                }
-              >
-                Create Account with Passkey
+                  : "Sign In with Passkey"}
               </LiquidButton>
 
               <div className="text-center">
                 <p className="text-xs text-white/60">
-                  Secure authentication with your fingerprint, face, or security
-                  key
+                  New users: Sign in with a provider below to create an account
                 </p>
               </div>
             </div>

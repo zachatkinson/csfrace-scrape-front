@@ -61,8 +61,9 @@ class JobAPI {
    */
   async getRecentJobs(limit: number = 10): Promise<Job[]> {
     try {
+      // CRITICAL: Backend endpoint requires trailing slash to avoid 307 redirect
       const response = await this.request<JobListResponse>(
-        `/jobs?page=1&page_size=${limit}&sort=created_at:desc`,
+        `/jobs/?page=1&page_size=${limit}&sort=created_at:desc`,
       );
       return response.jobs;
     } catch (error) {
@@ -120,10 +121,11 @@ class JobAPI {
     options: Record<string, string | number | boolean> = {},
   ): Promise<Job | null> {
     try {
-      return await this.request<Job>("/jobs", {
+      // CRITICAL: Backend endpoint requires trailing slash
+      return await this.request<Job>("/jobs/", {
         method: "POST",
         body: JSON.stringify({
-          url,
+          urls: [url], // Backend expects array of URLs
           options,
         }),
       });

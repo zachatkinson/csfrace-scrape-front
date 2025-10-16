@@ -106,7 +106,7 @@ async function loadSettingsFromBackend(): Promise<
   (UserSettingsState["appSettings"] & UserSettingsState["apiSettings"]) | null
 > {
   try {
-    const response = await fetch(`${API_BASE}/auth/user/settings`, {
+    const response = await fetch(`${API_BASE}/auth/user/settings/`, {
       method: "GET",
       credentials: "include", // Send httpOnly cookies
       headers: { Accept: "application/json" },
@@ -174,7 +174,7 @@ async function saveSettingsToBackend(
       browser_notifications: appSettings.browserNotifications,
     };
 
-    const response = await fetch(`${API_BASE}/auth/user/settings`, {
+    const response = await fetch(`${API_BASE}/auth/user/settings/`, {
       method: "PUT",
       credentials: "include", // Send httpOnly cookies
       headers: {

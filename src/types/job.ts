@@ -197,8 +197,8 @@ export interface IJobData
     JobContentMetrics,
     JobProcessingConfig,
     JobMetadata {
-  // Override for API compatibility
-  id: number;
+  // CRITICAL: Backend uses UUID strings, not numbers
+  id: string;
   title: string;
 }
 
@@ -231,25 +231,42 @@ export type JobSort = "newest" | "oldest" | "status" | "progress";
  * Backend API job response (before conversion to IJobData)
  */
 export interface IBackendJob {
-  id: number;
+  id: string; // Backend uses UUID strings
   source_url: string;
-  domain: string;
+  target_format?: string;
   status: string;
   created_at: string;
-  started_at?: string;
-  completed_at?: string;
-  error_message?: string;
-  error_type?: string;
-  success: boolean;
+  started_at?: string | null;
+  completed_at?: string | null;
+  error_message?: string | null;
   retry_count: number;
   max_retries: number;
-  priority: string;
+  processing_time_ms?: number | null;
+  output_size_bytes?: number | null;
+  batch_id?: string | null;
+  options?: Record<string, unknown> | null;
+  progress: number; // Progress tracking (0-100)
+
+  // Timing and retry information
+  timeout_seconds: number; // Required: Maximum time allowed for job processing
+  next_retry_at?: string | null; // ISO 8601 timestamp for next retry attempt
+  duration_seconds?: number | null; // Actual duration of job execution in seconds
+
+  // Computed fields (derived on backend or frontend)
+  domain?: string | null; // TypeScript: Allow null for optional fields to satisfy exactOptionalPropertyTypes
   content_size_bytes?: number;
   images_downloaded?: number;
-  batch_id?: string;
-  next_retry_at?: string;
-  duration_seconds?: number;
-  timeout_seconds?: number;
+  priority?: string;
+  error_type?: string;
+
+  // Content metadata from content_results table (backend enrichment)
+  title?: string | null;
+  meta_description?: string | null;
+  word_count?: number | null;
+  image_count?: number | null;
+  link_count?: number | null;
+  author?: string | null;
+  published_date?: string | null;
 }
 
 /**
@@ -432,7 +449,7 @@ export interface IJobStats {
  * Job selection state for batch operations
  */
 export interface IJobSelection {
-  selectedJobs: Set<number>;
+  selectedJobs: Set<string>; // UUID strings, not numbers
   totalJobs: number;
   filteredJobs: number;
 }
@@ -443,7 +460,7 @@ export interface IJobSelection {
 export interface IDashboardState {
   jobs: IJobData[];
   filteredJobs: IJobData[];
-  selectedJobs: Set<number>;
+  selectedJobs: Set<string>; // UUID strings, not numbers
   currentFilter: JobFilter;
   currentSort: JobSort;
   searchQuery: string;
@@ -469,7 +486,7 @@ export interface IJobError {
   url?: string;
   timestamp: Date;
   retryable: boolean;
-  jobId?: number;
+  jobId?: string; // UUID string, not number
 }
 
 /**

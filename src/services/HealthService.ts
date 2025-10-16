@@ -5,8 +5,7 @@
 
 // Use runtime environment variable for API base URL
 const SERVER_API_BASE_URL =
-  import.meta.env.PUBLIC_API_URL || "http://localhost";
-import { ssePerformanceService } from "./SSEPerformanceService";
+  import.meta.env.PUBLIC_API_URL || "https://localhost";
 
 export interface HealthResponse {
   status: string;
@@ -187,7 +186,8 @@ export class HealthService {
 
   /**
    * Compare two health responses and detect changes
-   * Uses smart thresholding to reduce unnecessary updates
+   * Simplified: Backend SSE now handles intelligent change detection with thresholds.
+   * Frontend only checks for status changes (critical events).
    * Returns array of services that have changed significantly
    */
   detectServiceChanges(
@@ -196,86 +196,22 @@ export class HealthService {
   ): ServiceUpdate[] {
     const changes: ServiceUpdate[] = [];
 
-    // Use performance service for intelligent change detection
-    if (!ssePerformanceService.isSignificantChange(current, previous)) {
-      return changes; // No significant changes detected
-    }
-
     // Check backend status change
     if (current.status !== previous.status) {
       changes.push(this.createBackendServiceUpdate(current));
     }
 
-    // Check database status change with smart thresholds
-    if (this.isDatabaseChangeSignificant(current, previous)) {
+    // Check database status change
+    if (current.database.status !== previous.database.status) {
       changes.push(this.createDatabaseServiceUpdate(current));
     }
 
-    // Check cache status change with smart thresholds
-    if (this.isCacheChangeSignificant(current, previous)) {
+    // Check cache status change
+    if (current.cache.status !== previous.cache.status) {
       changes.push(this.createCacheServiceUpdate(current));
     }
 
     return changes;
-  }
-
-  /**
-   * Check if database changes are significant enough to report
-   * Implements smart thresholding following DRY principles
-   */
-  private isDatabaseChangeSignificant(
-    current: HealthResponse,
-    previous: HealthResponse,
-  ): boolean {
-    // Status changes are always significant
-    if (current.database.status !== previous.database.status) {
-      return true;
-    }
-
-    // Use thresholds from performance service
-    const responseTimeDiff = Math.abs(
-      current.database.response_time_ms - previous.database.response_time_ms,
-    );
-    const connectionDiff = Math.abs(
-      current.database.active_connections -
-        previous.database.active_connections,
-    );
-
-    const metrics = ssePerformanceService.getMetrics();
-
-    return (
-      responseTimeDiff > metrics.responseTimeThreshold ||
-      connectionDiff > metrics.connectionCountThreshold
-    );
-  }
-
-  /**
-   * Check if cache changes are significant enough to report
-   * Implements smart thresholding following DRY principles
-   */
-  private isCacheChangeSignificant(
-    current: HealthResponse,
-    previous: HealthResponse,
-  ): boolean {
-    // Status changes are always significant
-    if (current.cache.status !== previous.cache.status) {
-      return true;
-    }
-
-    // Use thresholds from performance service
-    const responseTimeDiff = Math.abs(
-      current.cache.response_time_ms - previous.cache.response_time_ms,
-    );
-    const clientDiff = Math.abs(
-      current.cache.connected_clients - previous.cache.connected_clients,
-    );
-
-    const metrics = ssePerformanceService.getMetrics();
-
-    return (
-      responseTimeDiff > metrics.responseTimeThreshold ||
-      clientDiff > metrics.connectionCountThreshold
-    );
   }
 }
 

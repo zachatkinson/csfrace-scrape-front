@@ -128,6 +128,7 @@ export default [
     ignores: [
       "dist/**",
       "node_modules/**",
+      ".pnpm-store/**",
       ".astro/**",
       ".vite/**",
       "public/**",

@@ -19,7 +19,7 @@ export function useJobActions(options: UseJobActionsOptions = {}) {
   const { onJobUpdated, onError, onSuccess } = options;
 
   const retryJob = useCallback(
-    async (jobId: number) => {
+    async (jobId: string) => {
       try {
         await apiClient.retryJob(jobId);
         onJobUpdated?.();
@@ -33,7 +33,7 @@ export function useJobActions(options: UseJobActionsOptions = {}) {
   );
 
   const cancelJob = useCallback(
-    async (jobId: number) => {
+    async (jobId: string) => {
       try {
         await apiClient.cancelJob(jobId);
         onJobUpdated?.();
@@ -47,7 +47,7 @@ export function useJobActions(options: UseJobActionsOptions = {}) {
   );
 
   const deleteJob = useCallback(
-    async (jobId: number) => {
+    async (jobId: string) => {
       if (!confirm("Delete this job?")) {
         return;
       }
@@ -65,7 +65,7 @@ export function useJobActions(options: UseJobActionsOptions = {}) {
   );
 
   const downloadJob = useCallback(
-    async (jobId: number, jobs: IJobData[]) => {
+    async (jobId: string, jobs: IJobData[]) => {
       try {
         const job = jobs.find((j) => j.id === jobId);
         if (!job || job.status !== "completed") {
@@ -73,13 +73,16 @@ export function useJobActions(options: UseJobActionsOptions = {}) {
           return;
         }
 
-        const content = await apiClient.downloadJobContent(jobId);
+        // Download ZIP blob from backend
+        const blob = await apiClient.downloadJobContent(jobId);
 
-        const blob = new Blob([content], { type: "text/html" });
+        // Create download link for ZIP file
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `job-${jobId}-${job.title.replace(/[^a-z0-9]/gi, "-").toLowerCase()}.html`;
+        // Sanitize filename for ZIP
+        const safeTitle = job.title.replace(/[^a-z0-9]/gi, "-").toLowerCase();
+        a.download = `job-${jobId}-${safeTitle}.zip`;
         a.click();
         URL.revokeObjectURL(url);
 

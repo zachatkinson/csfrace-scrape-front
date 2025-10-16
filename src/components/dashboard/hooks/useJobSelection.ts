@@ -7,9 +7,9 @@
 import { useState, useCallback } from "react";
 
 export function useJobSelection() {
-  const [selectedJobs, setSelectedJobs] = useState<Set<number>>(new Set());
+  const [selectedJobs, setSelectedJobs] = useState<Set<string>>(new Set());
 
-  const selectJob = useCallback((jobId: number) => {
+  const selectJob = useCallback((jobId: string) => {
     setSelectedJobs((prev) => {
       const newSelection = new Set(prev);
       newSelection.add(jobId);
@@ -17,7 +17,7 @@ export function useJobSelection() {
     });
   }, []);
 
-  const deselectJob = useCallback((jobId: number) => {
+  const deselectJob = useCallback((jobId: string) => {
     setSelectedJobs((prev) => {
       const newSelection = new Set(prev);
       newSelection.delete(jobId);
@@ -26,7 +26,7 @@ export function useJobSelection() {
   }, []);
 
   const toggleJobSelection = useCallback(
-    (jobId: number, selected: boolean) => {
+    (jobId: string, selected: boolean) => {
       if (selected) {
         selectJob(jobId);
       } else {
@@ -36,7 +36,7 @@ export function useJobSelection() {
     [selectJob, deselectJob],
   );
 
-  const selectAll = useCallback((jobIds: number[]) => {
+  const selectAll = useCallback((jobIds: string[]) => {
     setSelectedJobs(new Set(jobIds));
   }, []);
 
@@ -45,7 +45,7 @@ export function useJobSelection() {
   }, []);
 
   const isSelected = useCallback(
-    (jobId: number) => {
+    (jobId: string) => {
       return selectedJobs.has(jobId);
     },
     [selectedJobs],

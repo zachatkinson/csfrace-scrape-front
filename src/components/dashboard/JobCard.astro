@@ -20,12 +20,12 @@ const { job, isSelected = false, showActions = true } = Astro.props;
 // SOLID: Single source of truth for status configurations
 const JOB_STATUS_CONFIG = {
   completed: { color: 'green', icon: '✅', label: 'Completed' },
-  running: { color: 'blue', icon: '⚡', label: 'Running' },
+  running: { color: 'blue', icon: '⚡', label: 'Processing' }, // Changed: Running → Processing
   failed: { color: 'red', icon: '❌', label: 'Failed' },
   cancelled: { color: 'yellow', icon: '⏹️', label: 'Cancelled' },
   pending: { color: 'gray', icon: '⏳', label: 'Pending' },
   validating: { color: 'purple', icon: '🔍', label: 'Validating' },
-  scraping: { color: 'blue', icon: '🔄', label: 'Scraping' },
+  scraping: { color: 'blue', icon: '🔄', label: 'Processing' }, // Changed: Scraping → Processing
   error: { color: 'red', icon: '💥', label: 'Error' }
 } as const;
 
@@ -140,15 +140,15 @@ const statusConfig = JOB_STATUS_CONFIG[job.status as keyof typeof JOB_STATUS_CON
     <!-- Right: Status + Progress + Actions -->
     <div class="flex items-center space-x-4">
       <!-- Progress Bar (for processing jobs) -->
-      {job.status === 'running' && job.progress > 0 && (
+      {(job.status === 'running' || job.status === 'scraping' || job.status === 'validating') && (
         <div class="flex items-center space-x-2">
           <div class="w-24 h-2 bg-white/20 rounded-full overflow-hidden">
-            <div 
+            <div
               class="bg-gradient-to-r from-blue-400 to-blue-600 h-full rounded-full transition-all duration-1000"
-              style={`width: ${job.progress}%`}
+              style={`width: ${job.progress || 0}%`}
             />
           </div>
-          <span class="text-white/70 text-xs">{job.progress}%</span>
+          <span class="text-white/70 text-xs">{job.progress || 0}%</span>
         </div>
       )}
       
