@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0](https://github.com/zachatkinson/csfrace-scrape-front/compare/v1.2.0...v1.3.0) (2025-10-16)
+
+### 🚀 Features
+
+* add Facebook data deletion instructions page ([c8a3079](https://github.com/zachatkinson/csfrace-scrape-front/commit/c8a30799a86c9f87ca8c5d277e9619738c9892e0))
+
+### 🐛 Bug Fixes
+
+* remove 'v' prefix from semantic release version outputs ([effd5b3](https://github.com/zachatkinson/csfrace-scrape-front/commit/effd5b330aec60cdb2f51b2b2c1907f85a81dbc7))
+
 ## [1.2.0](https://github.com/zachatkinson/csfrace-scrape-front/compare/v1.1.6...v1.2.0) (2025-10-07)
 
 ### ⚠ BREAKING CHANGES
